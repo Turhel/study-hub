@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Study Hub Timer",
+  "version": "0.1.0",
+  "identifier": "com.studyhub.timer",
+  "build": {
+    "beforeDevCommand": "npm run dev -- --host 127.0.0.1 --port 5173 --strictPort",
+    "devUrl": "http://127.0.0.1:5173/timer",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "timer",
+        "title": "Study Hub Timer",
+        "url": "/timer",
+        "width": 330,
+        "height": 500,
+        "minWidth": 300,
+        "minHeight": 420,
+        "resizable": true,
+        "decorations": true,
+        "alwaysOnTop": true,
+        "center": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}
