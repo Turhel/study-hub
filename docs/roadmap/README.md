@@ -443,8 +443,10 @@ Refinamentos mais recentes em Humanas:
 - `Filosofia Antiga` foi suavizada para separar `Socrates e os Sofistas` de `Platao e Aristoteles`
 - `Filosofia Moderna` foi refinada para separar `racionalismo`, `empirismo`, `Revolucao Cientifica` e `Iluminismo/contratualismo`
 - a entrada de `Sociologia` foi refinada para separar `teoria da sociologia`, `sociologia do Brasil` e `educacao/socializacao`
+- `Historia Geral` foi refinada para separar `Pre-historia` de `Antiguidade Oriental`, `Revolucao Francesa` de `Era Napoleonica`, e `Primeira Guerra` de `Revolucao Russa`
+- `Historia do Brasil` foi refinada para separar `expansao territorial/mineracao` de `Periodo Pombalino`, `Era Vargas inicial` de `Estado Novo`, e `Ditadura Militar inicial` da fase final do regime
 
 Leitura honesta desta rodada:
 
 - Humanas continua em fase de lapidacao, mas ja deixou de ser so cobertura ampla
-- o maior ganho desta rodada veio em Filosofia e Sociologia, que estava mais agregada que Geografia e Historia
+- o maior ganho desta rodada veio em Historia e Filosofia/Sociologia, que eram os trechos mais agregados da area

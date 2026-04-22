@@ -375,8 +375,9 @@ Geografia,23,GEO_022,core,1
 Geografia,25,GEO_021,review,1
 Geografia,26,GEO_022,review,1
 Historia Geral,1,HGE_001,core,1
-Historia Geral,2,HGE_001,review,1
-Historia Geral,3,HGE_001,support,1
+Historia Geral,2,HGE_018,core,1
+Historia Geral,2,HGE_001,review,2
+Historia Geral,3,HGE_018,review,1
 Historia Geral,6,HGE_002,core,1
 Historia Geral,7,HGE_003,core,1
 Historia Geral,9,HGE_004,core,1
@@ -390,10 +391,12 @@ Historia Geral,16,HGE_008,review,1
 Historia Geral,17,HGE_010,core,1
 Historia Geral,18,HGE_011,core,1
 Historia Geral,19,HGE_012,core,1
-Historia Geral,20,HGE_012,review,1
+Historia Geral,20,HGE_019,core,1
+Historia Geral,20,HGE_012,review,2
 Historia Geral,21,HGE_013,core,1
 Historia Geral,22,HGE_013,review,1
 Historia Geral,23,HGE_014,core,1
+Historia Geral,23,HGE_020,support,2
 Historia Geral,24,HGE_015,core,1
 Historia Geral,25,HGE_016,core,1
 Historia Geral,26,HGE_017,core,1
@@ -402,7 +405,8 @@ Historia do Brasil,2,HBR_002,core,1
 Historia do Brasil,3,HBR_003,core,1
 Historia do Brasil,4,HBR_004,core,1
 Historia do Brasil,5,HBR_005,core,1
-Historia do Brasil,6,HBR_005,review,1
+Historia do Brasil,6,HBR_018,core,1
+Historia do Brasil,6,HBR_005,review,2
 Historia do Brasil,7,HBR_006,core,1
 Historia do Brasil,8,HBR_006,review,1
 Historia do Brasil,9,HBR_007,core,1
@@ -415,11 +419,14 @@ Historia do Brasil,15,HBR_012,core,1
 Historia do Brasil,16,HBR_013,core,1
 Historia do Brasil,17,HBR_013,review,1
 Historia do Brasil,19,HBR_014,core,1
-Historia do Brasil,20,HBR_014,review,1
+Historia do Brasil,20,HBR_019,core,1
+Historia do Brasil,20,HBR_014,review,2
 Historia do Brasil,21,HBR_015,core,1
 Historia do Brasil,22,HBR_015,review,1
-Historia do Brasil,23,HBR_016,core,1
-Historia do Brasil,24,HBR_016,review,1
+Historia do Brasil,23,HBR_020,core,1
+Historia do Brasil,23,HBR_016,support,2
+Historia do Brasil,24,HBR_021,core,1
+Historia do Brasil,24,HBR_016,review,2
 Historia do Brasil,25,HBR_017,core,1
 Historia do Brasil,26,HBR_017,review,1
 Filosofia e Sociologia,1,FIL_001,core,1

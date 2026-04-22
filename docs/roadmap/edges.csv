@@ -434,7 +434,8 @@ GEO_018,GEO_019,recommended,1,Industria e energia entram melhor depois do espaco
 GEO_019,GEO_020,required,2,Globalizacao entra melhor depois da base economica e produtiva.
 GEO_020,GEO_021,required,2,Geopolitica e blocos economicos dependem da base de globalizacao.
 GEO_021,GEO_022,recommended,1,Leitura regional do mundo entra melhor depois da base geopolitica.
-HGE_001,HGE_002,recommended,1,Grecia entra melhor depois da base da Antiguidade Oriental.
+HGE_001,HGE_018,required,2,As civilizacoes orientais entram melhor depois da base pre-historica.
+HGE_018,HGE_002,recommended,1,Grecia entra melhor depois da base da Antiguidade Oriental.
 HGE_002,HGE_003,required,2,Roma entra melhor depois da base classica grega.
 HGE_003,HGE_004,recommended,1,Bizancio e Islam entram mais organizados depois da crise do mundo romano.
 HGE_004,HGE_005,required,2,Alta Idade Media depende da transicao do mundo antigo para o medieval.
@@ -444,9 +445,12 @@ HGE_007,HGE_008,recommended,1,Expansao maritima entra melhor depois do Renascime
 HGE_007,HGE_009,recommended,1,Absolutismo e mercantilismo entram melhor depois da transicao moderna inicial.
 HGE_009,HGE_010,required,2,Iluminismo e Liberalismo entram melhor depois do Estado moderno.
 HGE_010,HGE_011,required,2,Revolucoes burguesas entram melhor depois das ideias iluministas.
-HGE_011,HGE_012,required,2,Revolucao Francesa e Era Napoleonica dependem da trilha revolucionaria moderna.
-HGE_012,HGE_013,required,2,Nacionalismos e imperialismo entram melhor depois da reordenacao europeia.
-HGE_013,HGE_014,required,2,Primeira Guerra e Revolucao Russa dependem do mundo imperialista.
+HGE_011,HGE_012,required,2,A Revolucao Francesa depende da trilha revolucionaria moderna.
+HGE_012,HGE_019,required,2,Era Napoleonica e Congresso de Viena entram melhor depois da Revolucao Francesa.
+HGE_019,HGE_013,required,2,Nacionalismos e imperialismo entram melhor depois da reordenacao europeia.
+HGE_013,HGE_014,required,2,A Primeira Guerra depende do mundo imperialista.
+HGE_014,HGE_020,required,2,A Revolucao Russa entra melhor depois da crise global da Primeira Guerra.
+HGE_020,HGE_015,recommended,1,O entreguerras entra mais claro depois da Revolucao Russa.
 HGE_014,HGE_015,required,2,Entreguerras depende da base da Primeira Guerra.
 HGE_015,HGE_016,required,2,Segunda Guerra entra melhor depois das crises do entreguerras.
 HGE_016,HGE_017,required,2,Guerra Fria depende da nova ordem do pos-guerra.
@@ -454,7 +458,8 @@ HBR_001,HBR_002,recommended,1,Capitanias entram melhor depois da chegada portugu
 HBR_002,HBR_003,required,2,Acucar e escravidao dependem da organizacao colonial inicial.
 HBR_003,HBR_004,recommended,1,Uniao Iberica e invasoes holandesas entram melhor depois da base acucareira.
 HBR_004,HBR_005,required,2,Expansao territorial e mineracao dependem da consolidacao colonial.
-HBR_005,HBR_006,required,2,Revoltas coloniais entram melhor depois da segunda fase colonial.
+HBR_005,HBR_018,required,2,O Periodo Pombalino entra melhor depois da expansao territorial e mineracao.
+HBR_018,HBR_006,required,2,Revoltas coloniais entram melhor depois da segunda fase colonial.
 HBR_006,HBR_007,required,2,Periodo Joanino e Independencia dependem da crise colonial.
 HBR_007,HBR_008,required,2,Primeiro Reinado depende da ruptura com Portugal.
 HBR_008,HBR_009,required,2,Regencia depende da crise do Primeiro Reinado.
@@ -462,10 +467,12 @@ HBR_009,HBR_010,required,2,Segundo Reinado entra melhor depois da experiencia re
 HBR_010,HBR_011,required,2,Crise do Imperio depende da base do Segundo Reinado.
 HBR_011,HBR_012,required,2,Republica Oligarquica entra melhor depois da Proclamacao da Republica.
 HBR_012,HBR_013,required,2,Movimentos sociais da Primeira Republica dependem da base republicana inicial.
-HBR_013,HBR_014,required,2,Era Vargas entra melhor depois da crise da Republica Velha.
-HBR_014,HBR_015,required,2,Republica Populista depende da experiencia varguista.
-HBR_015,HBR_016,required,2,Ditadura Militar depende da crise do periodo populista.
-HBR_016,HBR_017,required,2,Nova Republica depende do processo de abertura e redemocratizacao.
+HBR_013,HBR_014,required,2,A entrada na Era Vargas depende da crise da Republica Velha.
+HBR_014,HBR_019,required,2,O Estado Novo entra melhor depois dos governos iniciais de Vargas.
+HBR_019,HBR_015,required,2,A Republica Populista depende da experiencia varguista.
+HBR_015,HBR_020,required,2,A ditadura militar inicial depende da crise do periodo populista.
+HBR_020,HBR_021,required,2,A fase final da ditadura entra melhor depois da implantacao do regime.
+HBR_021,HBR_017,required,2,A Nova Republica depende do processo de abertura e redemocratizacao.
 FIL_001,FIL_002,required,2,Socrates e Sofistas entram melhor depois da origem da filosofia.
 FIL_002,FIL_017,required,2,Platao e Aristoteles entram melhor depois do debate socratico e sofistico.
 FIL_017,FIL_003,recommended,1,Helenismo entra melhor depois da filosofia classica.
