@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.rules import (
@@ -71,13 +72,14 @@ def _execution_progress(
     subject_id: int,
     planned_questions: int,
 ) -> tuple[int, int, float, str]:
-    completed_today = len(
+    completed_today = int(
         session.exec(
-            select(QuestionAttempt.id)
+            select(func.count(QuestionAttempt.id))
             .where(QuestionAttempt.block_id == block_id)
             .where(QuestionAttempt.subject_id == subject_id)
             .where(QuestionAttempt.data == today)
-        ).all()
+        ).one()
+        or 0
     )
     remaining_today = max(planned_questions - completed_today, 0)
     progress_ratio = min(completed_today / planned_questions, 1.0) if planned_questions > 0 else 0.0
