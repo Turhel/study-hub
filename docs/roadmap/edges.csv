@@ -468,14 +468,17 @@ HBR_018,HBR_006,required,2,Revoltas coloniais entram melhor depois da segunda fa
 HBR_006,HBR_007,required,2,Periodo Joanino e Independencia dependem da crise colonial.
 HBR_007,HBR_008,required,2,Primeiro Reinado depende da ruptura com Portugal.
 HBR_008,HBR_009,required,2,Regencia depende da crise do Primeiro Reinado.
-HBR_009,HBR_010,required,2,Segundo Reinado entra melhor depois da experiencia regencial.
-HBR_010,HBR_011,required,2,Crise do Imperio depende da base do Segundo Reinado.
+HBR_009,HBR_010,required,2,A politica interna do Segundo Reinado entra melhor depois da experiencia regencial.
+HBR_010,HBR_022,required,2,A economia e sociedade do Segundo Reinado entram melhor depois da base politica imperial.
+HBR_022,HBR_011,required,2,A crise do Imperio depende da consolidacao e contradicoes do Segundo Reinado.
 HBR_011,HBR_012,required,2,Republica Oligarquica entra melhor depois da Proclamacao da Republica.
-HBR_012,HBR_013,required,2,Movimentos sociais da Primeira Republica dependem da base republicana inicial.
+HBR_012,HBR_013,required,2,Os conflitos rurais da Primeira Republica dependem da base republicana inicial.
+HBR_013,HBR_023,required,2,As revoltas urbanas e o movimento operario entram melhor depois dos conflitos rurais e da base republicana.
 HBR_013,HBR_014,required,2,A entrada na Era Vargas depende da crise da Republica Velha.
 HBR_014,HBR_019,required,2,O Estado Novo entra melhor depois dos governos iniciais de Vargas.
-HBR_019,HBR_015,required,2,A Republica Populista depende da experiencia varguista.
-HBR_015,HBR_020,required,2,A ditadura militar inicial depende da crise do periodo populista.
+HBR_019,HBR_015,required,2,A Republica Populista inicial depende da experiencia varguista.
+HBR_015,HBR_024,required,2,Janio e Jango entram melhor depois do pos-guerra inicial com Dutra Vargas e JK.
+HBR_024,HBR_020,required,2,A ditadura militar inicial depende da crise do periodo populista.
 HBR_020,HBR_021,required,2,A fase final da ditadura entra melhor depois da implantacao do regime.
 HBR_021,HBR_017,required,2,A Nova Republica depende do processo de abertura e redemocratizacao.
 FIL_001,FIL_002,required,2,Socrates e Sofistas entram melhor depois da origem da filosofia.
