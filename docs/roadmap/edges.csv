@@ -1,0 +1,253 @@
+from_node_id,to_node_id,relation_type,strength,notes
+MATH_001,MATH_047,required,3,Multiplicacao e divisao entram melhor depois da seguranca em soma e subtracao.
+MATH_001,MATH_002,recommended,1,Divisibilidade melhora com base aritmetica inicial.
+MATH_047,MATH_002,required,2,Divisibilidade usa multiplicacao e divisao com seguranca.
+MATH_047,MATH_003,required,2,Potencias e raizes exigem seguranca em multiplicacao e divisao.
+MATH_001,MATH_004,required,2,Leitura numerica e sistema metrico pedem base aritmetica.
+MATH_001,MATH_011,required,2,Equacao do primeiro grau precisa de contas basicas seguras.
+MATH_047,MATH_005,recommended,2,Produtos notaveis e fatoracao ficam menos travados com multiplicacao segura.
+MATH_002,MATH_005,required,3,Multiplos e divisores sustentam fatoracao.
+MATH_047,MATH_006,required,2,Comparacao entre grandezas depende de multiplicacao e divisao.
+MATH_006,MATH_045,required,3,Proporcao entra melhor depois da nocao de razao.
+MATH_004,MATH_045,recommended,1,Leitura de grandezas ajuda a montar proporcoes.
+MATH_045,MATH_007,required,2,Divisao proporcional depende da estrutura de proporcao.
+MATH_004,MATH_008,required,2,Escalas dependem de leitura metrica e unidades.
+MATH_045,MATH_008,required,3,Escalas sao aplicacao direta de proporcao.
+MATH_045,MATH_009,required,3,Porcentagem e aplicacao proporcional.
+MATH_007,MATH_010,recommended,1,Divisao proporcional reforca pensamento proporcional.
+MATH_008,MATH_010,recommended,2,Escalas ajudam leitura de problemas de regra de tres.
+MATH_009,MATH_010,required,3,Regra de tres costuma caminhar junto de porcentagem.
+MATH_005,MATH_012,recommended,2,Produtos notaveis ajudam a leitura da quadratica.
+MATH_011,MATH_012,required,3,Equacao do segundo grau depende da linguagem algebrica do primeiro grau.
+MATH_011,MATH_014,required,2,Progressoes pedem linguagem algebrica e sequencial.
+MATH_015,MATH_048,required,2,Poligonos se apoiam nos fundamentos geometricos iniciais.
+MATH_015,MATH_016,required,3,Triangulos dependem dos fundamentos de geometria plana.
+MATH_015,MATH_017,required,2,Circunferencia e circulo dependem da base geometrica inicial.
+MATH_015,MATH_018,required,2,Quadrilateros dependem dos fundamentos de geometria plana.
+MATH_016,MATH_019,required,3,Teorema de Tales depende de triangulos.
+MATH_019,MATH_049,required,2,Semelhanca entra melhor depois do Tales.
+MATH_045,MATH_019,recommended,2,Tales conversa fortemente com proporcionalidade.
+MATH_049,MATH_026,recommended,1,Semelhanca ajuda no raciocinio de solidos semelhantes.
+MATH_015,MATH_020,required,2,Geometria espacial depende da base plana inicial.
+MATH_020,MATH_021,required,2,Prismas e cubos aprofundam a entrada em solidos espaciais.
+MATH_020,MATH_022,required,2,Cilindro entra melhor depois da base espacial.
+MATH_020,MATH_023,required,2,Piramide depende da leitura espacial inicial.
+MATH_020,MATH_024,required,2,Cone depende da leitura espacial inicial.
+MATH_020,MATH_025,required,2,Esfera entra melhor depois da base espacial.
+MATH_020,MATH_026,required,3,Troncos e semelhanca espacial dependem da base dos solidos.
+MATH_021,MATH_026,recommended,1,Prismas ajudam comparacao entre solidos e cortes.
+MATH_021,MATH_057,recommended,2,Prismas e cubos ajudam a consolidar medidas espaciais iniciais.
+MATH_022,MATH_057,required,2,Cilindro entra na mesma camada aplicada de medidas.
+MATH_023,MATH_058,recommended,2,Piramide prepara a camada mais exigente de medidas espaciais.
+MATH_024,MATH_058,required,2,Cone entra na camada mais exigente de medidas espaciais.
+MATH_025,MATH_058,required,2,Esfera compoe a camada aplicada mais avancada.
+MATH_026,MATH_058,recommended,1,Semelhanca espacial ajuda problemas mais completos de medidas.
+MATH_027,MATH_050,required,2,Dispersao entra melhor depois das medidas centrais.
+MATH_027,MATH_028,recommended,2,Interpretacao de graficos fica mais rica com base estatistica.
+MATH_028,MATH_050,recommended,1,Leitura grafica ajuda interpretar variacao e dispersao.
+MATH_029,MATH_051,required,3,Arranjos e combinacoes dependem do principio fundamental da contagem.
+MATH_029,MATH_030,required,2,Probabilidade basica depende de contagem.
+MATH_051,MATH_030,recommended,2,Combinatoria mais estruturada ajuda problemas de probabilidade.
+MATH_030,MATH_052,required,2,Probabilidade composta entra melhor depois da basica.
+MATH_051,MATH_052,recommended,2,Combinatoria ajuda eventos compostos e condicionais.
+MATH_027,MATH_030,recommended,1,Leitura estatistica ajuda interpretacao de eventos e frequencias.
+MATH_011,MATH_031,required,3,Funcao afim depende da linguagem de equacao linear.
+MATH_013,MATH_031,recommended,1,Conjuntos ajudam dominio e imagem de funcao.
+MATH_031,MATH_053,required,2,Taxa de variacao refina a leitura inicial de funcao afim.
+MATH_053,MATH_054,required,2,Grafico da reta entra melhor depois da leitura de taxa e coeficientes.
+MATH_011,MATH_032,required,2,Funcao quadratica depende de algebra de equacoes.
+MATH_012,MATH_032,required,3,Quadratica e base direta para a funcao quadratica.
+MATH_031,MATH_032,recommended,2,A linguagem geral de funcao ajuda a parabolica.
+MATH_032,MATH_055,required,2,Raizes e fatoracao refinam a funcao quadratica.
+MATH_032,MATH_056,required,2,Vertice e concavidade refinam a leitura grafica da quadratica.
+MATH_055,MATH_056,recommended,1,Compreender raizes ajuda a interpretar a parabola completa.
+MATH_031,MATH_033,required,2,Funcao exponencial entra melhor depois da nocao geral de funcao.
+MATH_033,MATH_034,required,3,Logaritmo depende da intuicao exponencial.
+MATH_009,MATH_035,required,3,Matematica financeira depende de porcentagem.
+MATH_011,MATH_035,required,2,Modelos financeiros simples usam algebra linear basica.
+MATH_035,MATH_046,required,3,Juros compostos entram melhor depois da base financeira inicial.
+MATH_016,MATH_037,required,3,Razoes trigonometricas nascem dos triangulos.
+MATH_017,MATH_036,recommended,1,Circunferencia plana ajuda o ciclo trigonometrico.
+MATH_036,MATH_059,required,2,Reducao ao ciclo depende do entendimento inicial do ciclo trigonometrico.
+MATH_059,MATH_060,required,2,Graficos trigonometricos entram melhor depois da leitura de sinais e angulos no ciclo.
+MATH_037,MATH_060,recommended,2,Razoes trigonometricas ajudam leitura dos graficos.
+MATH_060,MATH_039,required,2,Funcoes trigonometricas ficam mais claras depois dos graficos basicos.
+MATH_059,MATH_038,required,2,Equacoes trigonometricas dependem de leitura segura do ciclo.
+MATH_039,MATH_038,recommended,1,Leitura funcional ajuda a resolver equacoes trigonometricas.
+MATH_011,MATH_040,recommended,1,Matrizes pedem alguma maturidade algebrica.
+MATH_011,MATH_041,required,3,Sistemas lineares dependem de equacao linear.
+MATH_040,MATH_041,recommended,2,Matrizes ajudam representacao de sistemas.
+MATH_011,MATH_042,required,2,Geometria analitica usa coordenadas e algebra linear simples.
+MATH_015,MATH_042,recommended,1,Base geometrica ajuda a leitura no plano cartesiano.
+MATH_042,MATH_043,required,3,Reta depende dos fundamentos da geometria analitica.
+MATH_043,MATH_044,required,2,Circunferencia analitica entra melhor depois da reta.
+MATH_017,MATH_044,recommended,1,Circunferencia plana reforca a intuicao analitica da circunferencia.
+MATH_031,MATH_039,recommended,1,Leitura de funcao afim ajuda grafico e linguagem funcional da trigonometria.
+PHY_001,PHY_002,recommended,2,Analise dimensional melhora a leitura das grandezas iniciais da cinematica.
+PHY_002,PHY_003,required,2,Movimento uniforme depende da base conceitual de cinematica.
+PHY_003,PHY_004,required,2,MUV aprofunda a leitura quantitativa do movimento.
+PHY_003,PHY_006,recommended,1,MCU entra melhor depois da leitura basica de velocidade e periodo.
+PHY_005,PHY_008,required,2,Lancamento horizontal depende de leitura vetorial basica.
+PHY_005,PHY_009,required,3,Lancamento obliquo depende de vetores.
+PHY_004,PHY_007,required,2,Movimentos verticais sao aplicacao direta do MUV.
+PHY_007,PHY_008,recommended,1,Lancamento horizontal entra melhor depois da intuicao de queda livre e movimento vertical.
+PHY_004,PHY_008,recommended,1,Lancamento horizontal usa intuicao de aceleracao vertical.
+PHY_008,PHY_009,recommended,2,Lancamento obliquo entra melhor depois da leitura do lancamento horizontal.
+PHY_006,PHY_014,required,2,Forca centripeta conversa diretamente com MCU.
+PHY_010,PHY_011,recommended,1,Roldanas entram melhor depois da base de Newton.
+PHY_010,PHY_012,recommended,1,Forca elastica entra melhor depois da leitura de forcas e resultante.
+PHY_010,PHY_013,required,2,Sistema de blocos depende das leis de Newton.
+PHY_010,PHY_015,required,2,Atrito e aplicacao direta da dinamica.
+PHY_010,PHY_016,required,2,Plano inclinado depende da base de dinamica.
+PHY_005,PHY_016,required,2,Plano inclinado pede decomposicao vetorial.
+PHY_014,PHY_016,recommended,1,Leitura de componente centripeta reforca decomposicao e resultante.
+PHY_010,PHY_017,recommended,1,Quantidade de movimento entra melhor com base de dinamica.
+PHY_010,PHY_018,required,2,Trabalho e energia cinetica dependem de leitura de forcas e movimento.
+PHY_017,PHY_018,recommended,1,Impulso e momento ajudam a leitura energetica da mecanica.
+PHY_018,PHY_066,required,2,Conservacao da energia mecanica entra melhor depois do teorema trabalho-energia.
+PHY_012,PHY_066,recommended,1,Energia potencial elastica reforca a leitura de conservacao da energia mecanica.
+PHY_019,PHY_020,required,2,Kepler entra melhor depois da lei gravitacional.
+PHY_010,PHY_021,recommended,1,Estatica entra melhor depois da leitura de resultante e equilibrio de forcas.
+PHY_021,PHY_022,required,2,Corpo extenso aprofunda a estatica alem do ponto material.
+PHY_023,PHY_024,recommended,2,Pressao entra melhor depois da leitura de densidade e grandezas.
+PHY_023,PHY_025,required,2,Empuxo depende de densidade.
+PHY_024,PHY_025,required,2,Empuxo e flutuacao dependem de pressao em fluidos.
+PHY_024,PHY_026,required,2,Pascal aplica transmissao de pressao em fluidos.
+PHY_024,PHY_027,recommended,1,Vazao e continuidade aproveitam leitura previa de pressao.
+PHY_027,PHY_067,required,2,Hidrodinamica aplicada depende da base de vazao e continuidade.
+PHY_028,PHY_029,recommended,1,Escalas ajudam a entrada conceitual em termologia.
+PHY_029,PHY_030,required,2,Calorimetria depende dos fundamentos da termologia.
+PHY_029,PHY_031,required,2,Dilatacao depende da leitura de variacao termica.
+PHY_029,PHY_032,recommended,1,Transferencia de calor entra melhor com a base conceitual de calor e temperatura.
+PHY_029,PHY_033,required,2,Gases dependem da base de termologia.
+PHY_030,PHY_034,recommended,1,Calorimetria ajuda a leitura energetica da termodinamica.
+PHY_033,PHY_034,required,2,Termodinamica depende da leitura de gases e estados.
+PHY_035,PHY_036,required,2,Fenomenos ondulatorios dependem da base geral de ondas.
+PHY_035,PHY_037,recommended,1,Propriedades do som entram melhor com a base de ondas.
+PHY_035,PHY_038,required,2,Cordas e tubos sonoros dependem da leitura estrutural das ondas.
+PHY_036,PHY_039,recommended,1,Fenomenos gerais das ondas ajudam a leitura do som.
+PHY_037,PHY_039,recommended,1,Propriedades do som reforcam fenomenos sonoros.
+PHY_035,PHY_040,recommended,1,MHS entra melhor depois da intuicao de periodicidade.
+PHY_041,PHY_042,required,2,Espelhos planos dependem da base de optica.
+PHY_041,PHY_043,recommended,1,Espelhos esfericos entram melhor depois da base de optica.
+PHY_042,PHY_043,recommended,1,Espelhos esfericos entram mais suaves depois da leitura de formacao de imagem em espelhos planos.
+PHY_041,PHY_044,required,2,Refracao depende da base de optica.
+PHY_043,PHY_045,recommended,1,Lentes delgadas entram melhor depois da leitura de formacao de imagens.
+PHY_044,PHY_045,required,2,Lentes dependem de refracao.
+PHY_045,PHY_068,required,2,Fisica da visao depende da base de lentes delgadas.
+PHY_046,PHY_047,required,2,Coulomb entra melhor depois da base de eletrizacao.
+PHY_047,PHY_048,required,2,Campo eletrico depende da interacao entre cargas.
+PHY_047,PHY_049,recommended,1,Potencial eletrico entra melhor depois da leitura quantitativa de interacoes eletrostaticas.
+PHY_048,PHY_049,required,2,Potencial eletrico depende da leitura de campo e energia.
+PHY_049,PHY_050,recommended,1,Condutor eletrizado entra melhor depois de potencial e distribuicao de cargas.
+PHY_050,PHY_051,recommended,1,Capacitores entram melhor depois da intuicao de condutores e distribuicao de cargas.
+PHY_049,PHY_051,recommended,1,Capacitores aproveitam a base de diferenca de potencial.
+PHY_049,PHY_052,required,2,Trabalho e energia eletrica dependem da leitura de potencial.
+PHY_053,PHY_054,required,2,Leis de Ohm dependem da base de corrente.
+PHY_054,PHY_055,required,2,Associacao de resistores depende da leitura de resistencia e ddp.
+PHY_053,PHY_056,required,2,Potencia e energia eletrica dependem da base de corrente e tempo.
+PHY_054,PHY_056,recommended,1,Potencia eletrica entra melhor depois de Ohm.
+PHY_053,PHY_057,recommended,1,Circuitos entram melhor depois da leitura inicial de corrente eletrica.
+PHY_055,PHY_057,recommended,2,Circuitos integram associacoes de resistores.
+PHY_054,PHY_057,required,2,Circuitos dependem de relacoes eletricas basicas.
+PHY_057,PHY_058,recommended,1,Geradores entram melhor depois da base de circuitos.
+PHY_057,PHY_059,recommended,1,Instrumentos se apoiam na leitura de circuitos.
+PHY_060,PHY_061,required,2,Fontes do campo magnetico dependem da base magnetica.
+PHY_061,PHY_062,required,2,Forca magnetica depende da leitura de campo magnetico.
+PHY_054,PHY_062,recommended,1,Leitura de corrente ajuda forca magnetica em condutores.
+PHY_061,PHY_063,required,2,Fluxo magnetico e inducao dependem de compreender campo magnetico e variacao.
+PHY_058,PHY_063,recommended,1,Geradores reforcam a intuicao de inducao eletromagnetica no uso de fem.
+PHY_063,PHY_069,required,2,Lei de Faraday-Lenz aprofunda a leitura operacional da inducao.
+PHY_064,PHY_065,recommended,1,Relatividade fecha a trilha moderna depois do primeiro contato com fisica moderna.
+CHEM_001,CHEM_002,required,3,Calculo estequiometrico depende das grandezas quimicas.
+CHEM_003,CHEM_004,required,3,Diluicao depende da leitura de concentracao.
+CHEM_006,CHEM_007,recommended,2,Balanceamento entra melhor depois da leitura segura de nox.
+CHEM_006,CHEM_008,recommended,2,Oxidacao e reducao dependem de nox.
+CHEM_007,CHEM_008,recommended,1,Balanceamento reforca o entendimento quantitativo das reacoes redox.
+MATH_004,PHY_001,cross_required,3,Sistema metrico e leitura de unidades sustentam analise dimensional.
+MATH_006,PHY_001,cross_support,1,Razao ajuda comparar grandezas fisicas.
+MATH_004,PHY_002,cross_required,2,Grandezas cinematicas pedem leitura segura de unidades e medidas.
+MATH_006,PHY_003,cross_required,2,Velocidade media nasce de razao entre grandezas.
+MATH_031,PHY_003,cross_support,2,Funcao afim ajuda a interpretar taxa constante e graficos.
+MATH_028,PHY_003,cross_support,1,Leitura de graficos ajuda a interpretar movimento uniforme.
+MATH_011,PHY_004,cross_required,2,MUV usa modelagem algebrica simples.
+MATH_031,PHY_004,cross_support,2,Leitura funcional ajuda a interpretar variacao no movimento.
+MATH_028,PHY_004,cross_support,1,Leitura de graficos ajuda a interpretar MUV.
+MATH_015,PHY_005,cross_support,1,Base geometrica ajuda direcao e leitura espacial de vetores.
+MATH_016,PHY_005,cross_support,1,Triangulos ajudam decomposicao vetorial simples.
+MATH_006,PHY_006,cross_required,2,MCU usa razao entre grandezas angulares e temporais.
+MATH_036,PHY_006,cross_support,2,Circunferencia trigonometrica ajuda angulo e periodicidade no MCU.
+MATH_028,PHY_006,cross_support,1,Leitura de graficos e periodicidade ajuda a interpretar MCU.
+MATH_011,PHY_007,cross_support,1,Movimentos verticais usam leitura algebrica de equacoes simples.
+MATH_037,PHY_008,cross_support,1,Lancamento horizontal se beneficia de leitura angular basica e triangulos.
+MATH_037,PHY_009,cross_required,3,Lancamento obliquo depende fortemente de razoes trigonometricas.
+MATH_008,PHY_009,cross_support,1,Escalas e leitura de grandezas ajudam representacao do movimento.
+MATH_011,PHY_010,cross_support,1,Leis de Newton usam organizacao algebrica em forca resultante.
+MATH_006,PHY_011,cross_support,1,Roldanas usam comparacao proporcional entre tensoes e deslocamentos.
+MATH_045,PHY_012,cross_support,1,Forca elastica conversa com proporcionalidade entre deformacao e forca.
+MATH_011,PHY_013,cross_required,2,Sistema de blocos exige manipulacao algebrica simples.
+MATH_006,PHY_014,cross_support,1,Forca centripeta usa relacao entre grandezas do movimento circular.
+MATH_015,PHY_016,cross_support,1,Plano inclinado depende de leitura geometrica.
+MATH_016,PHY_016,cross_support,1,Triangulos ajudam decompor componentes no plano inclinado.
+MATH_011,PHY_017,cross_support,1,Quantidade de movimento usa organizacao algebrica simples.
+MATH_011,PHY_018,cross_support,1,Trabalho e energia cinetica usam manipulacao de expressoes simples.
+MATH_011,PHY_066,cross_support,1,Conservacao da energia mecanica usa organizacao algebrica simples.
+MATH_006,PHY_019,cross_support,1,Gravitacao usa comparacao entre grandezas e variacao com distancia.
+MATH_006,PHY_020,cross_support,1,Kepler depende de leitura de proporcionalidade orbital.
+MATH_011,PHY_021,cross_support,1,Estatica em ponto material se apoia em equacoes simples.
+MATH_011,PHY_022,cross_support,1,Corpo extenso exige organizacao algoritimica de torques e equilibrio.
+MATH_006,PHY_023,cross_required,3,Densidade e relacao entre grandezas.
+MATH_004,PHY_023,cross_support,2,Leitura de unidades e medidas ajuda densidade.
+MATH_006,PHY_024,cross_required,2,Pressao pede comparacao proporcional entre grandezas.
+MATH_015,PHY_024,cross_support,1,Area e fundamentos geometricos ajudam em pressao.
+MATH_006,PHY_025,cross_support,1,Empuxo e flutuacao conversam com relacoes proporcionais entre grandezas.
+MATH_006,PHY_026,cross_support,1,Pascal usa transmissao proporcional de pressao.
+MATH_006,PHY_027,cross_support,1,Vazao e continuidade usam comparacoes entre grandezas.
+MATH_006,PHY_067,cross_support,1,Bernoulli usa comparacoes entre pressao velocidade e altura.
+MATH_004,PHY_028,cross_required,3,Escalas termometricas dependem de leitura metrica e escalas.
+MATH_045,PHY_030,cross_support,1,Calorimetria usa proporcoes simples em trocas de calor.
+MATH_045,PHY_033,cross_support,1,Gases usam relacoes proporcionais entre variaveis.
+MATH_031,PHY_034,cross_support,1,Leitura funcional ajuda interpretar graficos e transformacoes termodinamicas.
+MATH_028,PHY_034,cross_support,1,Leitura de graficos ajuda a interpretar estados e transformacoes termodinamicas.
+MATH_006,PHY_035,cross_support,1,Frequencia e periodo se apoiam em razao entre grandezas.
+MATH_028,PHY_035,cross_support,1,Leitura de graficos ajuda a interpretar amplitude periodo e propagacao.
+MATH_006,PHY_036,cross_support,1,Fenomenos ondulatorios usam relacoes entre velocidade frequencia e comprimento.
+MATH_006,PHY_038,cross_support,1,Cordas e tubos sonoros usam razao e periodicidade.
+MATH_006,PHY_040,cross_support,1,MHS usa relacoes entre periodo frequencia e posicao.
+MATH_015,PHY_041,cross_support,1,Optica se beneficia da leitura geometrica basica.
+MATH_015,PHY_042,cross_support,1,Espelhos planos usam geometria de reflexao.
+MATH_015,PHY_043,cross_support,1,Espelhos esfericos se beneficiam da leitura geometrica.
+MATH_037,PHY_044,cross_support,1,Refracao conversa com triangulos e leitura angular.
+MATH_037,PHY_045,cross_support,1,Lentes delgadas usam leitura angular e geometrica.
+MATH_015,PHY_068,cross_support,1,Fisica da visao usa leitura geometrica de trajetorias luminosas.
+MATH_045,PHY_047,cross_support,1,Lei de Coulomb se beneficia de leitura proporcional entre cargas e distancia.
+MATH_045,PHY_048,cross_support,1,Campo eletrico usa comparacao proporcional entre grandezas.
+MATH_011,PHY_049,cross_support,1,Potencial eletrico exige manipulacao algebrica simples.
+MATH_011,PHY_052,cross_support,1,Trabalho e energia eletrica usam organizacao algebrica.
+MATH_011,PHY_053,cross_support,1,Corrente eletrica exige relacao entre carga e tempo.
+MATH_011,PHY_054,cross_required,3,Leis de Ohm exigem manipulacao algebrica simples.
+MATH_045,PHY_054,cross_support,2,Proporcao ajuda ler relacoes entre tensao corrente e resistencia.
+MATH_011,PHY_055,cross_support,1,Associacao de resistores exige organizacao algoritimica.
+MATH_009,PHY_056,cross_support,1,Potencia e energia eletrica conversam com porcentagem e consumo.
+MATH_011,PHY_057,cross_support,1,Circuitos exigem manipulacao de relacoes simples.
+MATH_011,PHY_058,cross_support,1,Geradores pedem leitura algoritimica de circuito.
+MATH_011,PHY_059,cross_support,1,Instrumentos pedem leitura de medidas e relacoes simples.
+MATH_006,PHY_061,cross_support,1,Magnetismo usa leitura comparativa de grandezas fisicas.
+MATH_011,PHY_062,cross_support,1,Forca magnetica exige organizacao algoritimica simples.
+MATH_031,PHY_063,cross_support,1,Fluxo magnetico e inducao se beneficiam de leitura de variacao funcional.
+MATH_031,PHY_069,cross_support,1,Lei de Faraday-Lenz se beneficia de leitura de variacao e sinal.
+CHEM_003,PHY_023,cross_support,1,Densidade em solucoes reforca a intuicao de densidade em fisica.
+CHEM_005,PHY_033,cross_support,1,Leitura de gases em quimica reforca as variaveis de estado em fisica.
+CHEM_005,PHY_034,cross_support,1,Transformacoes gasosas reforcam a intuicao de termodinamica.
+MATH_001,CHEM_001,cross_required,2,Grandezas quimicas exigem contas basicas seguras.
+MATH_004,CHEM_001,cross_support,1,Leitura de unidades ajuda grandezas quimicas.
+MATH_045,CHEM_002,cross_required,3,Calculo estequiometrico depende de proporcao.
+MATH_010,CHEM_002,cross_support,2,Regra de tres reforca conversoes estequiometricas.
+MATH_045,CHEM_003,cross_required,3,Concentracao e densidade dependem de relacoes proporcionais.
+MATH_004,CHEM_003,cross_support,2,Leitura de unidades ajuda concentracao e densidade.
+MATH_045,CHEM_004,cross_required,3,Diluicao e aplicada com proporcao.
+MATH_009,CHEM_004,cross_support,2,Porcentagem ajuda leitura de concentracao e variacao.
+MATH_045,CHEM_005,cross_required,2,Gases exigem comparacao proporcional entre variaveis.
+MATH_031,CHEM_005,cross_support,1,Leitura funcional pode ajudar interpretacao de variacao entre grandezas.
+MATH_011,CHEM_006,cross_support,1,Calculo de nox se beneficia de organizacao algoritimica e sequencial.
+MATH_011,CHEM_007,cross_support,1,Balanceamento por inspecao pede manipulacao estruturada de quantidades.

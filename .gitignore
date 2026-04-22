@@ -4,8 +4,10 @@ __pycache__/
 
 node_modules/
 dist/
+*.tsbuildinfo
 
 frontend/src-tauri/target/
+frontend/src-tauri/gen/
 
 *.db
 *.sqlite

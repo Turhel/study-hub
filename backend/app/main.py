@@ -5,7 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401
 from app.db import init_db
+from app.routes.block_progress import router as block_progress_router
+from app.routes.essay import router as essay_router
+from app.routes.essay_study import router as essay_study_router
 from app.routes.health import router as health_router
+from app.routes.question_attempts import router as question_attempts_router
+from app.routes.roadmap import router as roadmap_router
+from app.routes.study_plan import router as study_plan_router
+from app.settings import load_env_file
 from app.routes.today import router as today_router
 from app.routes.timer_sessions import router as timer_sessions_router
 
@@ -22,9 +29,16 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(today_router)
+app.include_router(study_plan_router)
+app.include_router(question_attempts_router)
 app.include_router(timer_sessions_router)
+app.include_router(essay_router)
+app.include_router(essay_study_router)
+app.include_router(block_progress_router)
+app.include_router(roadmap_router)
 
 
 @app.on_event("startup")
 def on_startup() -> None:
+    load_env_file()
     init_db()

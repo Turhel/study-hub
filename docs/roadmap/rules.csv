@@ -1,0 +1,10 @@
+rule_key,rule_value,notes
+continuous_daily_limit,2,Maximo de microconteudos continuos por dia no modo guiado.
+free_mode_warn_only,true,Modo livre mostra aviso pedagogico e nao bloqueio duro.
+default_spacing_micro,1,Dias base para no com tamanho micro.
+default_spacing_pequeno,2,Dias base para no com tamanho pequeno.
+default_spacing_medio,3,Dias base para no com tamanho medio.
+default_spacing_grande,5,Dias base para no com tamanho grande.
+expected_contacts_strategy,min_target,Usar expected_contacts_min e expected_contacts_target junto do desempenho.
+guided_mode_respects_dependencies,true,No modo guiado a trilha respeita dependencias do roadmap.
+reviewable_previous_blocks,true,Blocos anteriores continuam revisaveis como fase operacional.

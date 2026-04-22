@@ -5,11 +5,13 @@ from datetime import date
 from sqlmodel import Session, select
 
 from app.core.rules import (
+    BLOCK_STATUS_ACTIVE,
+    BLOCK_STATUS_READY_TO_ADVANCE,
+    BLOCK_STATUS_TRANSITION,
+    block_is_focus_status,
     discipline_priority,
     FORGOTTEN_CONTACT_THRESHOLD_DAYS,
     FORGOTTEN_GRACE_DAYS,
-    PROGRESS_AVAILABLE,
-    PROGRESS_IN_PROGRESS,
 )
 from app.models import Block, BlockMastery, BlockProgress, BlockSubject, Review, Subject, SubjectProgress
 from app.schemas import (
@@ -70,7 +72,7 @@ def _risk_blocks(session: Session, block_progress: dict[int, BlockProgress]) -> 
     items: list[TodayRiskBlockItem] = []
     for mastery in masteries:
         progress = block_progress.get(mastery.block_id)
-        if progress is None or progress.status not in {PROGRESS_AVAILABLE, PROGRESS_IN_PROGRESS}:
+        if progress is None or not block_is_focus_status(progress.status):
             continue
 
         block = session.get(Block, mastery.block_id)
@@ -108,7 +110,7 @@ def _forgotten_subjects(
             continue
 
         progress = subject_progress.get(subject.id)
-        if progress is None or progress.status not in {PROGRESS_AVAILABLE, PROGRESS_IN_PROGRESS}:
+        if progress is None or progress.status not in {"available", "in_progress", "reviewing"}:
             continue
         if progress.unlocked_at is None:
             continue
@@ -159,7 +161,7 @@ def _starting_points(
         if block.id is None:
             continue
         progress = block_progress.get(block.id)
-        if progress is None or progress.status != PROGRESS_AVAILABLE:
+        if progress is None or progress.status not in {BLOCK_STATUS_ACTIVE, BLOCK_STATUS_READY_TO_ADVANCE, BLOCK_STATUS_TRANSITION}:
             continue
         available_blocks.append(block)
 
@@ -193,7 +195,7 @@ def _starting_points(
                 block_name=block.nome,
                 subject_id=subject.id,
                 subject_name=subject_name,
-                reason="Primeiro bloco disponivel da disciplina prioritaria",
+                reason="Primeiro bloco acessivel da trilha atual da disciplina prioritaria",
                 title=f"{block.disciplina} - {block.nome}",
                 description=subject_name,
             )

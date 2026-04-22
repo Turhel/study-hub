@@ -33,6 +33,42 @@ GET /health
 GET /api/today
 ```
 
+## LLM Local Com LM Studio
+
+O backend agora estah preparado para usar provider local configuravel, com padrao:
+
+- provider: `lm_studio`
+- model: `gemma-4-e4b`
+
+Crie `backend/.env` a partir de `backend/.env.example`:
+
+```text
+STUDY_HUB_LLM_PROVIDER=lm_studio
+STUDY_HUB_LLM_MODEL=gemma-4-e4b
+STUDY_HUB_LLM_BASE_URL=http://127.0.0.1:1234/v1
+STUDY_HUB_LLM_TIMEOUT_SECONDS=30
+```
+
+No LM Studio:
+
+1. carregue o modelo `Gemma 4 E4B`
+2. ative o servidor local OpenAI-compatible
+3. confirme a URL base, normalmente `http://127.0.0.1:1234/v1`
+
+Exemplo simples de teste no backend:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -c "from app.llm.tasks import EssayScorePayload, essay_score; r = essay_score(EssayScorePayload(essay_text='Texto curto de teste sobre educacao no Brasil.')); print(r.model_dump_json(indent=2))"
+```
+
+Outro teste com questao por texto:
+
+```powershell
+python -c "from app.llm.tasks import QuestionExplainTextPayload, question_explain_text; r = question_explain_text(QuestionExplainTextPayload(question_text='Se a funcao f(x)=2x+1, qual eh f(3)?', student_answer='6')); print(r.output_text)"
+```
+
 ## Rodar Frontend
 
 Em outro terminal:

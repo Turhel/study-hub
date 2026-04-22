@@ -8,8 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri:dev": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:Path=\\\"$env:USERPROFILE\\.cargo\\bin;$env:Path\\\"; npx tauri dev\"",
-    "tauri:build": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:Path=\\\"$env:USERPROFILE\\.cargo\\bin;$env:Path\\\"; npx tauri build\""
+    "tauri:dev": "npm --prefix .. run tauri:dev",
+    "tauri:build": "cmd /d /s /c \"call D:\\.dev\\.program\\vs-build-tools\\Common7\\Tools\\VsDevCmd.bat -arch=x64 && set RUSTUP_HOME=D:\\.dev\\.program\\rust\\rustup&& set CARGO_HOME=D:\\.dev\\.program\\rust\\cargo&& set PATH=D:\\.dev\\.program\\rust\\cargo\\bin;D:\\.dev\\.program\\node;%PATH%&& npx tauri build\"",
+    "tauri:dev:inner": "tauri dev"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
