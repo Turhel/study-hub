@@ -412,3 +412,27 @@ Leitura honesta do estado atual:
 - Matematica ja esta perto de uma versao v1 estavel do roadmap
 - ainda pode receber refinamentos pontuais no futuro
 - mas ja esta granular o suficiente para servir como primeira espinha pedagogica forte do projeto
+
+## Roadmap Atual de Humanas
+
+Humanas entrou como area estrategica com quatro disciplinas operacionais:
+
+1. Geografia
+2. Historia Geral
+3. Historia do Brasil
+4. Filosofia/Sociologia
+
+Decisoes desta versao:
+
+- a prioridade foi criar uma cobertura robusta e verificavel, sem tentar microfragmentar toda a area de uma vez
+- Geografia foi organizada em cartografia, climatologia, geologia, hidrografia, demografia, espaco agrario-urbano, economia e geopolitica
+- Historia Geral foi organizada em Antiguidade, Idade Media, Idade Moderna e Idade Contemporanea
+- Historia do Brasil foi organizada em Colonia, Imperio e Republica
+- Filosofia/Sociologia foi organizada em trilha filosofica e depois em trilha sociologica
+- entraram alguns cruzamentos leves entre Historia, Geografia e Filosofia/Sociologia, sem transformar a malha em algo exagerado
+
+Leitura honesta do estado atual:
+
+- Humanas entra agora em uma primeira versao robusta de cobertura
+- a estrutura ja e suficiente para servir como base pedagogica editavel do projeto
+- ainda deve existir espaco para refinamentos finos futuros, principalmente em Geografia regional e em Filosofia/Sociologia contemporanea

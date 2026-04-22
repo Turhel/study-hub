@@ -415,3 +415,74 @@ PHY_033,BIO_059,cross_support,1,Gases em fisica reforcam a leitura do sistema re
 PHY_024,BIO_047,cross_support,1,Pressao e fluidos ajudam a intuir filtracao e funcionamento excretor.
 PHY_034,BIO_013,cross_support,1,Termodinamica ajuda a pensar trocas energeticas na fotossintese.
 PHY_054,CHEM_057,cross_support,1,Leitura de ddp e circuitos em fisica reforca potencial de pilha em quimica.
+GEO_001,GEO_002,recommended,1,Orientacao espacial entra melhor depois da base astronomica inicial.
+GEO_002,GEO_003,required,2,Escala cartografica depende de localizacao e coordenadas.
+GEO_003,GEO_004,required,2,Projecoes entram melhor depois da escala e representacao espacial basica.
+GEO_004,GEO_005,recommended,1,Fusos e posicao geografica se apoiam na base cartografica.
+GEO_003,GEO_006,recommended,1,Mapas tematicos entram melhor depois da leitura cartografica.
+GEO_007,GEO_008,required,2,Elementos e fenomenos climaticos dependem dos fatores do clima.
+GEO_008,GEO_009,required,2,Climas do Brasil entram melhor depois da base atmosferica.
+GEO_010,GEO_011,required,2,Intemperismo e ciclo das rochas dependem da leitura do relevo e estrutura terrestre.
+GEO_012,GEO_013,required,2,Hidrografia do Brasil entra melhor depois da base geral da agua.
+GEO_013,GEO_014,recommended,1,Biomas entram mais organizados depois da base hidrografica e natural.
+GEO_015,GEO_016,required,2,Indicadores e migracoes dependem da base demografica inicial.
+GEO_015,GEO_017,recommended,1,Urbanizacao entra melhor depois da leitura populacional.
+GEO_017,GEO_018,recommended,1,Geografia agraria conversa com urbanizacao e ocupacao do espaco.
+GEO_018,GEO_019,recommended,1,Industria e energia entram melhor depois do espaco agrario e uso do territorio.
+GEO_019,GEO_020,required,2,Globalizacao entra melhor depois da base economica e produtiva.
+GEO_020,GEO_021,required,2,Geopolitica e blocos economicos dependem da base de globalizacao.
+GEO_021,GEO_022,recommended,1,Leitura regional do mundo entra melhor depois da base geopolitica.
+HGE_001,HGE_002,recommended,1,Grecia entra melhor depois da base da Antiguidade Oriental.
+HGE_002,HGE_003,required,2,Roma entra melhor depois da base classica grega.
+HGE_003,HGE_004,recommended,1,Bizancio e Islam entram mais organizados depois da crise do mundo romano.
+HGE_004,HGE_005,required,2,Alta Idade Media depende da transicao do mundo antigo para o medieval.
+HGE_005,HGE_006,required,2,Baixa Idade Media depende da base feudal.
+HGE_006,HGE_007,required,2,Renascimento e Reformas entram melhor depois da crise medieval.
+HGE_007,HGE_008,recommended,1,Expansao maritima entra melhor depois do Renascimento.
+HGE_007,HGE_009,recommended,1,Absolutismo e mercantilismo entram melhor depois da transicao moderna inicial.
+HGE_009,HGE_010,required,2,Iluminismo e Liberalismo entram melhor depois do Estado moderno.
+HGE_010,HGE_011,required,2,Revolucoes burguesas entram melhor depois das ideias iluministas.
+HGE_011,HGE_012,required,2,Revolucao Francesa e Era Napoleonica dependem da trilha revolucionaria moderna.
+HGE_012,HGE_013,required,2,Nacionalismos e imperialismo entram melhor depois da reordenacao europeia.
+HGE_013,HGE_014,required,2,Primeira Guerra e Revolucao Russa dependem do mundo imperialista.
+HGE_014,HGE_015,required,2,Entreguerras depende da base da Primeira Guerra.
+HGE_015,HGE_016,required,2,Segunda Guerra entra melhor depois das crises do entreguerras.
+HGE_016,HGE_017,required,2,Guerra Fria depende da nova ordem do pos-guerra.
+HBR_001,HBR_002,recommended,1,Capitanias entram melhor depois da chegada portuguesa e base indigena.
+HBR_002,HBR_003,required,2,Acucar e escravidao dependem da organizacao colonial inicial.
+HBR_003,HBR_004,recommended,1,Uniao Iberica e invasoes holandesas entram melhor depois da base acucareira.
+HBR_004,HBR_005,required,2,Expansao territorial e mineracao dependem da consolidacao colonial.
+HBR_005,HBR_006,required,2,Revoltas coloniais entram melhor depois da segunda fase colonial.
+HBR_006,HBR_007,required,2,Periodo Joanino e Independencia dependem da crise colonial.
+HBR_007,HBR_008,required,2,Primeiro Reinado depende da ruptura com Portugal.
+HBR_008,HBR_009,required,2,Regencia depende da crise do Primeiro Reinado.
+HBR_009,HBR_010,required,2,Segundo Reinado entra melhor depois da experiencia regencial.
+HBR_010,HBR_011,required,2,Crise do Imperio depende da base do Segundo Reinado.
+HBR_011,HBR_012,required,2,Republica Oligarquica entra melhor depois da Proclamacao da Republica.
+HBR_012,HBR_013,required,2,Movimentos sociais da Primeira Republica dependem da base republicana inicial.
+HBR_013,HBR_014,required,2,Era Vargas entra melhor depois da crise da Republica Velha.
+HBR_014,HBR_015,required,2,Republica Populista depende da experiencia varguista.
+HBR_015,HBR_016,required,2,Ditadura Militar depende da crise do periodo populista.
+HBR_016,HBR_017,required,2,Nova Republica depende do processo de abertura e redemocratizacao.
+FIL_001,FIL_002,required,2,A filosofia classica entra melhor depois da origem da filosofia.
+FIL_002,FIL_003,recommended,1,Helenismo entra melhor depois da filosofia classica.
+FIL_003,FIL_004,required,2,Escolastica entra melhor depois da transicao antiga-medieval.
+FIL_004,FIL_005,recommended,1,O Estado moderno entra melhor depois do fechamento medieval.
+FIL_005,FIL_006,required,2,Racionalismo e empirismo entram melhor depois da base moderna inicial.
+FIL_006,FIL_007,required,2,Iluminismo e Revolucao Cientifica dependem da trilha epistemologica moderna.
+FIL_007,FIL_008,required,2,Kant Hegel e Marx entram melhor depois da modernidade filosofica.
+FIL_008,FIL_009,recommended,1,As criticas contemporaneas entram melhor depois dos grandes sistemas filosoficos.
+FIL_009,FIL_010,required,2,Fenomenologia e existencialismo entram melhor depois das crises da modernidade.
+FIL_010,FIL_011,required,2,Autores contemporaneos finais entram melhor depois da trilha filosofica do seculo XX.
+FIL_008,FIL_012,recommended,1,A sociologia entra mais organizada depois da base da critica social moderna.
+FIL_012,FIL_013,required,2,Temas sociais entram melhor depois da base sociologica.
+FIL_013,FIL_014,required,2,Trabalho e movimentos sociais dependem da leitura de cultura e desigualdades.
+FIL_014,FIL_015,required,2,Estado e cidadania entram melhor depois da base sociopolitica.
+FIL_015,FIL_016,required,2,Temas contemporaneos entram melhor depois da base sociopolitica.
+HGE_010,FIL_007,cross_support,1,Iluminismo historico reforca a leitura filosofica da modernidade.
+HGE_012,HBR_007,cross_support,1,Revolucao Francesa e Era Napoleonica ajudam a contextualizar a independencia do Brasil.
+HGE_017,GEO_021,cross_support,1,Guerra Fria reforca a leitura geopolitica da ordem mundial.
+GEO_020,FIL_014,cross_support,1,Globalizacao e capitalismo reforcam trabalho e producao em sociologia.
+GEO_017,FIL_015,cross_support,1,Urbanizacao e problemas urbanos reforcam cidadania e politicas publicas.
+HBR_014,FIL_015,cross_support,1,Era Vargas reforca Estado cidadania e formacao social brasileira.
+GEO_015,HBR_017,cross_support,1,Demografia e indicadores ajudam a leitura da Nova Republica e do Brasil recente.

@@ -342,3 +342,106 @@ Biologia,25,BIO_042,review,4
 Biologia,26,BIO_051,core,1
 Biologia,26,BIO_045,core,2
 Biologia,26,BIO_044,review,3
+Geografia,1,GEO_001,core,1
+Geografia,1,GEO_002,support,2
+Geografia,2,GEO_003,core,1
+Geografia,2,GEO_004,core,2
+Geografia,3,GEO_005,core,1
+Geografia,3,GEO_006,core,2
+Geografia,3,GEO_002,review,3
+Geografia,4,GEO_007,core,1
+Geografia,4,GEO_008,core,2
+Geografia,5,GEO_009,core,1
+Geografia,5,GEO_007,review,2
+Geografia,6,GEO_010,core,1
+Geografia,6,GEO_011,core,2
+Geografia,7,GEO_012,core,1
+Geografia,7,GEO_013,core,2
+Geografia,8,GEO_014,core,1
+Geografia,8,GEO_013,review,2
+Geografia,10,GEO_014,review,1
+Geografia,11,GEO_015,core,1
+Geografia,12,GEO_016,core,1
+Geografia,12,GEO_015,review,2
+Geografia,13,GEO_016,review,1
+Geografia,15,GEO_017,core,1
+Geografia,16,GEO_018,core,1
+Geografia,17,GEO_019,core,1
+Geografia,18,GEO_020,core,1
+Geografia,22,GEO_021,core,1
+Geografia,23,GEO_022,core,1
+Geografia,25,GEO_021,review,1
+Geografia,26,GEO_022,review,1
+Historia Geral,1,HGE_001,core,1
+Historia Geral,2,HGE_001,review,1
+Historia Geral,3,HGE_001,support,1
+Historia Geral,6,HGE_002,core,1
+Historia Geral,7,HGE_003,core,1
+Historia Geral,9,HGE_004,core,1
+Historia Geral,10,HGE_005,core,1
+Historia Geral,11,HGE_006,core,1
+Historia Geral,12,HGE_007,core,1
+Historia Geral,13,HGE_007,review,1
+Historia Geral,14,HGE_008,core,1
+Historia Geral,15,HGE_009,core,1
+Historia Geral,16,HGE_008,review,1
+Historia Geral,17,HGE_010,core,1
+Historia Geral,18,HGE_011,core,1
+Historia Geral,19,HGE_012,core,1
+Historia Geral,20,HGE_012,review,1
+Historia Geral,21,HGE_013,core,1
+Historia Geral,22,HGE_013,review,1
+Historia Geral,23,HGE_014,core,1
+Historia Geral,24,HGE_015,core,1
+Historia Geral,25,HGE_016,core,1
+Historia Geral,26,HGE_017,core,1
+Historia do Brasil,1,HBR_001,core,1
+Historia do Brasil,2,HBR_002,core,1
+Historia do Brasil,3,HBR_003,core,1
+Historia do Brasil,4,HBR_004,core,1
+Historia do Brasil,5,HBR_005,core,1
+Historia do Brasil,6,HBR_005,review,1
+Historia do Brasil,7,HBR_006,core,1
+Historia do Brasil,8,HBR_006,review,1
+Historia do Brasil,9,HBR_007,core,1
+Historia do Brasil,10,HBR_008,core,1
+Historia do Brasil,11,HBR_009,core,1
+Historia do Brasil,12,HBR_010,core,1
+Historia do Brasil,13,HBR_010,review,1
+Historia do Brasil,14,HBR_011,core,1
+Historia do Brasil,15,HBR_012,core,1
+Historia do Brasil,16,HBR_013,core,1
+Historia do Brasil,17,HBR_013,review,1
+Historia do Brasil,19,HBR_014,core,1
+Historia do Brasil,20,HBR_014,review,1
+Historia do Brasil,21,HBR_015,core,1
+Historia do Brasil,22,HBR_015,review,1
+Historia do Brasil,23,HBR_016,core,1
+Historia do Brasil,24,HBR_016,review,1
+Historia do Brasil,25,HBR_017,core,1
+Historia do Brasil,26,HBR_017,review,1
+Filosofia/Sociologia,1,FIL_001,core,1
+Filosofia/Sociologia,2,FIL_001,review,1
+Filosofia/Sociologia,3,FIL_002,core,1
+Filosofia/Sociologia,4,FIL_002,review,1
+Filosofia/Sociologia,5,FIL_003,core,1
+Filosofia/Sociologia,6,FIL_003,review,1
+Filosofia/Sociologia,7,FIL_004,core,1
+Filosofia/Sociologia,8,FIL_005,core,1
+Filosofia/Sociologia,9,FIL_005,review,1
+Filosofia/Sociologia,10,FIL_006,core,1
+Filosofia/Sociologia,11,FIL_006,review,1
+Filosofia/Sociologia,12,FIL_007,core,1
+Filosofia/Sociologia,13,FIL_008,core,1
+Filosofia/Sociologia,14,FIL_009,core,1
+Filosofia/Sociologia,15,FIL_010,core,1
+Filosofia/Sociologia,16,FIL_011,core,1
+Filosofia/Sociologia,17,FIL_011,review,1
+Filosofia/Sociologia,19,FIL_012,core,1
+Filosofia/Sociologia,20,FIL_012,review,1
+Filosofia/Sociologia,21,FIL_013,core,1
+Filosofia/Sociologia,22,FIL_014,core,1
+Filosofia/Sociologia,23,FIL_014,review,1
+Filosofia/Sociologia,24,FIL_015,core,1
+Filosofia/Sociologia,25,FIL_016,core,1
+Filosofia/Sociologia,26,FIL_016,review,1
