@@ -164,6 +164,66 @@ CHEM_003,CHEM_004,required,3,Diluicao depende da leitura de concentracao.
 CHEM_006,CHEM_007,recommended,2,Balanceamento entra melhor depois da leitura segura de nox.
 CHEM_006,CHEM_008,recommended,2,Oxidacao e reducao dependem de nox.
 CHEM_007,CHEM_008,recommended,1,Balanceamento reforca o entendimento quantitativo das reacoes redox.
+CHEM_009,CHEM_010,required,2,Materia e misturas entram melhor depois da entrada conceitual da disciplina.
+CHEM_011,CHEM_012,required,2,Modelo atual entra melhor depois da evolucao historica dos modelos atomicos.
+CHEM_012,CHEM_013,required,2,Tabela periodica depende da estrutura atomica.
+CHEM_013,CHEM_014,required,2,Ligacoes quimicas dependem da leitura periodica dos elementos.
+CHEM_014,CHEM_015,recommended,1,Forcas intermoleculares entram melhor depois da base de ligacoes.
+CHEM_014,CHEM_016,required,2,Geometria molecular depende da base de ligacoes.
+CHEM_016,CHEM_051,required,2,Hibridacao e polaridade entram melhor depois da geometria molecular.
+CHEM_014,CHEM_017,recommended,1,Funcoes inorganicas entram mais suaves depois da base estrutural.
+CHEM_017,CHEM_055,required,2,Estudo dos acidos depende da base conceitual de acido e base.
+CHEM_055,CHEM_018,required,2,Bases e sais complementam a base de acidos.
+CHEM_017,CHEM_019,recommended,1,Oxidos entram melhor depois das funcoes inorganicas iniciais.
+CHEM_018,CHEM_020,recommended,1,Reacoes inorganicas entram melhor depois da base de funcoes.
+CHEM_019,CHEM_020,recommended,1,Reacoes inorganicas aproveitam a leitura de oxidos.
+CHEM_001,CHEM_021,recommended,1,Grandezas quimicas ajudam o calculo de formulas.
+CHEM_021,CHEM_002,required,2,Fatores de calculo estequiometrico entram melhor depois do calculo de formulas.
+CHEM_010,CHEM_022,recommended,1,Solucoes entram melhor depois da leitura de materia e misturas.
+CHEM_022,CHEM_003,required,2,Unidades de concentracao entram melhor depois da base de solucoes e dispersoes.
+CHEM_003,CHEM_023,required,2,Misturas de solucoes dependem da leitura de concentracao.
+CHEM_004,CHEM_023,recommended,1,Misturas de solucoes conversam com diluicao.
+CHEM_020,CHEM_024,recommended,1,Leitura de reacoes ajuda a entrada na termoquimica.
+CHEM_024,CHEM_025,required,2,Entalpia depende da leitura energetica das reacoes.
+CHEM_025,CHEM_026,recommended,1,Gibbs e entropia entram melhor depois da base de entalpia.
+CHEM_024,CHEM_027,recommended,1,Cinetica conversa com leitura de transformacao das reacoes.
+CHEM_027,CHEM_052,required,2,Fatores cineticos entram melhor depois dos fundamentos da cinetica.
+CHEM_052,CHEM_028,recommended,1,Equilibrio entra melhor depois da intuicao de fatores que alteram a velocidade.
+CHEM_027,CHEM_028,recommended,1,Equilibrio entra melhor depois da intuicao dinamica de velocidade de reacao.
+CHEM_028,CHEM_029,required,2,Deslocamento depende da base de constante de equilibrio.
+CHEM_028,CHEM_030,recommended,1,Equilibrio ionico entra melhor depois da base geral de equilibrio.
+CHEM_029,CHEM_030,recommended,1,Le Chatelier ajuda a ler meios ionicos em equilibrio.
+CHEM_030,CHEM_056,required,2,pH e meio acido-base dependem da base de ionizacao e dissociacao.
+CHEM_056,CHEM_031,recommended,1,Hidrolise entra melhor depois da leitura de pH e meio acido-base.
+CHEM_030,CHEM_031,required,2,Hidrolise depende da base de equilibrio ionico.
+CHEM_056,CHEM_032,recommended,1,Tampao e Kps entram mais suaves depois da leitura de pH e meio acido-base.
+CHEM_030,CHEM_032,required,2,Tampao e Kps dependem da base de equilibrio ionico.
+CHEM_006,CHEM_033,recommended,1,Pilha entra melhor depois da leitura de nox.
+CHEM_008,CHEM_033,required,2,Pilha depende da intuicao de oxidacao e reducao.
+CHEM_033,CHEM_034,required,2,Eletrolise entra melhor depois da base de pilha e reacoes redox.
+CHEM_003,CHEM_035,recommended,1,Propriedades coligativas entram melhor depois da base de solucoes.
+CHEM_035,CHEM_053,required,2,Osmose e variacoes de fase entram melhor depois dos fundamentos coligativos.
+CHEM_014,CHEM_036,recommended,1,Organica entra mais suave depois da base de ligacoes quimicas.
+CHEM_036,CHEM_037,required,2,Funcoes organicas dependem da leitura de cadeias carbonicas.
+CHEM_037,CHEM_038,recommended,1,Hidrocarbonetos entram melhor depois da base de funcoes e series.
+CHEM_037,CHEM_039,required,2,Funcoes oxigenadas dependem da base de grupos funcionais.
+CHEM_037,CHEM_040,required,2,Funcoes nitrogenadas dependem da base de grupos funcionais.
+CHEM_037,CHEM_041,recommended,1,Outras funcoes entram melhor depois da base de grupos funcionais.
+CHEM_015,CHEM_042,recommended,1,Forcas intermoleculares ajudam a leitura de propriedades organicas.
+CHEM_051,CHEM_042,recommended,1,Polaridade ajuda a interpretar propriedades fisicas dos compostos organicos.
+CHEM_039,CHEM_042,required,2,Propriedades fisicas em organica dependem de funcoes oxigenadas recorrentes.
+CHEM_042,CHEM_054,recommended,1,Propriedades quimicas entram melhor depois da leitura fisica e estrutural dos compostos.
+CHEM_037,CHEM_054,recommended,1,Reatividade organica entra melhor depois da base de grupos funcionais.
+CHEM_036,CHEM_043,recommended,1,Isomeria plana entra melhor depois da base estrutural de cadeias.
+CHEM_043,CHEM_044,required,2,Estereoisomeria entra melhor depois da isomeria plana.
+CHEM_005,CHEM_045,recommended,2,Leis dos gases refinam o no amplo de gases.
+CHEM_022,CHEM_047,recommended,1,Quimica ambiental entra melhor depois da leitura de solucoes e dispersoes.
+CHEM_022,CHEM_048,recommended,1,Agua entra melhor depois da base de solucoes e misturas.
+CHEM_037,CHEM_049,required,2,Reacoes organicas dependem da base de funcoes organicas.
+CHEM_038,CHEM_049,recommended,1,Hidrocarbonetos reforcam varias reacoes organicas classicas.
+CHEM_039,CHEM_049,recommended,1,Funcoes oxigenadas reforcam a leitura de reacoes organicas.
+CHEM_054,CHEM_049,required,2,Principais reacoes entram melhor depois da base de reatividade organica.
+CHEM_049,CHEM_050,required,2,Polimeros e outras reacoes dependem da base de reatividade organica.
 MATH_004,PHY_001,cross_required,3,Sistema metrico e leitura de unidades sustentam analise dimensional.
 MATH_006,PHY_001,cross_support,1,Razao ajuda comparar grandezas fisicas.
 MATH_004,PHY_002,cross_required,2,Grandezas cinematicas pedem leitura segura de unidades e medidas.
@@ -241,6 +301,8 @@ CHEM_005,PHY_033,cross_support,1,Leitura de gases em quimica reforca as variavei
 CHEM_005,PHY_034,cross_support,1,Transformacoes gasosas reforcam a intuicao de termodinamica.
 MATH_001,CHEM_001,cross_required,2,Grandezas quimicas exigem contas basicas seguras.
 MATH_004,CHEM_001,cross_support,1,Leitura de unidades ajuda grandezas quimicas.
+MATH_004,CHEM_010,cross_support,1,Separacao de misturas e leitura de materiais se beneficiam de unidades e medidas.
+MATH_011,CHEM_021,cross_support,1,Calculo de formulas se beneficia de organizacao algebrica simples.
 MATH_045,CHEM_002,cross_required,3,Calculo estequiometrico depende de proporcao.
 MATH_010,CHEM_002,cross_support,2,Regra de tres reforca conversoes estequiometricas.
 MATH_045,CHEM_003,cross_required,3,Concentracao e densidade dependem de relacoes proporcionais.
@@ -249,5 +311,22 @@ MATH_045,CHEM_004,cross_required,3,Diluicao e aplicada com proporcao.
 MATH_009,CHEM_004,cross_support,2,Porcentagem ajuda leitura de concentracao e variacao.
 MATH_045,CHEM_005,cross_required,2,Gases exigem comparacao proporcional entre variaveis.
 MATH_031,CHEM_005,cross_support,1,Leitura funcional pode ajudar interpretacao de variacao entre grandezas.
+MATH_045,CHEM_023,cross_support,2,Misturas de solucoes usam relacoes proporcionais.
+MATH_011,CHEM_025,cross_support,1,Entalpia se beneficia de organizacao algoritimica e equacoes simples.
+MATH_031,CHEM_027,cross_support,1,Cinetica se beneficia de leitura de variacao e grafico.
+MATH_028,CHEM_027,cross_support,1,Leitura de graficos ajuda a interpretar velocidade de reacao.
+MATH_028,CHEM_052,cross_support,1,Leitura de graficos ajuda a interpretar fatores que alteram a velocidade.
+MATH_011,CHEM_028,cross_support,1,Constante de equilibrio exige manipulacao estruturada de expressoes.
+MATH_011,CHEM_029,cross_support,1,Deslocamento quantitativo do equilibrio se beneficia de leitura algoritimica.
+MATH_011,CHEM_056,cross_support,1,pH e pOH se beneficiam de organizacao algoritimica e leitura quantitativa.
 MATH_011,CHEM_006,cross_support,1,Calculo de nox se beneficia de organizacao algoritimica e sequencial.
 MATH_011,CHEM_007,cross_support,1,Balanceamento por inspecao pede manipulacao estruturada de quantidades.
+MATH_011,CHEM_033,cross_support,1,Pilha exige leitura organizada de relacoes e sinais.
+MATH_011,CHEM_034,cross_support,1,Eletrolise se beneficia de organizacao quantitativa simples.
+MATH_045,CHEM_035,cross_support,1,Propriedades coligativas usam relacoes proporcionais entre quantidade de soluto e efeito.
+PHY_012,CHEM_025,cross_support,1,Energia potencial e conservacao reforcam a intuicao energetica da termoquimica.
+PHY_030,CHEM_025,cross_support,1,Calorimetria em fisica reforca a leitura de entalpia.
+PHY_034,CHEM_026,cross_support,1,Termodinamica em fisica reforca a leitura de Gibbs e espontaneidade.
+PHY_036,CHEM_053,cross_support,1,Fenomenos de membrana e propagacao ajudam a intuir osmose em contextos aplicados.
+PHY_033,CHEM_045,cross_support,1,Gases em fisica reforcam as transformacoes gasosas em quimica.
+PHY_064,CHEM_046,cross_support,1,Fisica moderna reforca a intuicao de radioatividade.

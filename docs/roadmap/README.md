@@ -261,6 +261,47 @@ Leitura honesta do estado atual:
 - Fisica ja saiu da semente minima e entrou numa versao bem mais estruturada
 - ainda ha espaco para refinamentos futuros, mas a disciplina ja esta granular o suficiente para evolucao real
 
+## Roadmap Atual de Quimica
+
+Quimica agora tambem saiu da semente minima e passou a cobrir a trilha operacional principal da planilha versionada.
+
+Cobertura atual da disciplina:
+
+1. quimica basica
+2. atomo e tabela periodica
+3. ligacoes quimicas
+4. funcoes inorganicas
+5. estequiometria
+6. solucoes
+7. termoquimica e cinetica
+8. equilibrio quimico
+9. eletroquimica
+10. propriedades coligativas
+11. quimica organica
+12. gases, radioatividade e quimica ambiental
+
+Decisoes desta versao:
+
+- a disciplina foi expandida mantendo blocos como unidade operacional, nao pedagogica
+- os nos quantitativos mais dependentes de matematica receberam cruzamentos proprios
+- entraram alguns cruzamentos com Fisica em termoquimica, gases e radioatividade, mas sem exagerar a malha
+- a trilha organica foi modelada em degraus simples: cadeias, funcoes, propriedades, isomeria e reacoes
+
+Leitura honesta do estado atual:
+
+- Quimica agora esta em uma primeira versao robusta
+- ainda nao esta tao lapidada quanto Matematica e Fisica
+- o proximo ganho real viria de uma rodada especifica de refinamento fino so na disciplina
+
+Refinamentos mais recentes em Quimica:
+
+- `geometria hibridacao e polaridade` foi quebrado para separar geometria molecular de hibridacao/polaridade
+- `cinetica` ganhou um degrau proprio de fatores que alteram a velocidade da reacao
+- `propriedades coligativas` ganhou uma camada aplicada separada para osmose e variacoes de fase
+- `propriedades fisicas e quimicas dos compostos organicos` foi quebrado para separar leitura fisica de reatividade organica
+- a entrada de `acidos e bases` foi quebrada para separar conceitos fundamentais do estudo dos acidos
+- `equilibrio ionico` foi refinado para separar ionizacao/dissociacao de `pH pOH e meio acido-base`
+
 Leitura honesta do estado atual:
 
 - Matematica ja esta perto de uma versao v1 estavel do roadmap
