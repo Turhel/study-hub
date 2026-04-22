@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -287,12 +288,22 @@ def import_roadmap_from_csv(session: "Session | None" = None) -> RoadmapImportSu
 def _main() -> None:
     parser = argparse.ArgumentParser(description="Ferramentas simples para o roadmap pedagogico.")
     parser.add_argument("--validate", action="store_true", help="Valida os CSVs em docs/roadmap sem importar.")
+    parser.add_argument("--dry-run", action="store_true", help="Compara CSVs com o banco sem importar.")
     args = parser.parse_args()
 
     if args.validate:
         result = validate_roadmap_csvs()
         print(result.model_dump_json(indent=2))
         raise SystemExit(0 if result.is_valid else 1)
+
+    if args.dry_run:
+        from app.db import init_db
+        from app.services.roadmap_diff_service import get_roadmap_dry_run
+
+        init_db()
+        result = get_roadmap_dry_run()
+        print(json.dumps(result.model_dump(), indent=2, ensure_ascii=False))
+        raise SystemExit(0)
 
     parser.print_help()
 

@@ -6,11 +6,13 @@ from app.schemas import (
     ApiErrorResponse,
     RoadmapDisciplineItem,
     RoadmapDisciplineSummaryResponse,
+    RoadmapDryRunResponse,
     RoadmapEdgeResponse,
     RoadmapNodeResponse,
     RoadmapSummaryResponse,
     RoadmapValidationResponse,
 )
+from app.services.roadmap_diff_service import get_roadmap_dry_run
 from app.services.roadmap_query_service import (
     RoadmapQueryError,
     get_roadmap_discipline_summary,
@@ -33,6 +35,11 @@ def get_roadmap_validation_route() -> RoadmapValidationResponse:
 @router.get("/summary", response_model=RoadmapSummaryResponse)
 def get_roadmap_summary_route() -> RoadmapSummaryResponse:
     return get_roadmap_summary()
+
+
+@router.get("/dry-run", response_model=RoadmapDryRunResponse)
+def get_roadmap_dry_run_route() -> RoadmapDryRunResponse:
+    return get_roadmap_dry_run()
 
 
 @router.get(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TodayMetrics(BaseModel):
@@ -428,3 +428,31 @@ class RoadmapSummaryResponse(BaseModel):
     edge_count: int
     block_count: int
     disciplines: list[RoadmapDisciplineSummaryResponse]
+
+
+class RoadmapDryRunTypeSummary(BaseModel):
+    to_create: int = 0
+    to_update: int = 0
+    only_in_db: int = 0
+
+
+class RoadmapDryRunExamples(BaseModel):
+    nodes_to_create: list[str] = Field(default_factory=list)
+    nodes_to_update: list[str] = Field(default_factory=list)
+    nodes_only_in_db: list[str] = Field(default_factory=list)
+    edges_to_create: list[str] = Field(default_factory=list)
+    edges_to_update: list[str] = Field(default_factory=list)
+    edges_only_in_db: list[str] = Field(default_factory=list)
+    block_map_to_create: list[str] = Field(default_factory=list)
+    block_map_to_update: list[str] = Field(default_factory=list)
+    block_map_only_in_db: list[str] = Field(default_factory=list)
+    rules_to_create: list[str] = Field(default_factory=list)
+    rules_to_update: list[str] = Field(default_factory=list)
+    rules_only_in_db: list[str] = Field(default_factory=list)
+
+
+class RoadmapDryRunResponse(BaseModel):
+    summary: dict[str, int]
+    types: dict[str, RoadmapDryRunTypeSummary]
+    by_discipline: dict[str, dict[str, int]]
+    examples: RoadmapDryRunExamples

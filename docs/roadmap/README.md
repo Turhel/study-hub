@@ -174,11 +174,36 @@ Erros indicam que o roadmap nao deve ser importado ainda. Avisos indicam pontos 
 
 O validador nao altera os CSVs e nao tenta corrigir pedagogicamente o roadmap.
 
+## Como Ver o Impacto Antes de Importar
+
+Use o dry-run para comparar os CSVs atuais com o roadmap ja importado no banco:
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m app.services.roadmap_import_service --dry-run
+```
+
+O dry-run retorna JSON com contagens de:
+
+- itens que seriam criados
+- itens que seriam atualizados
+- itens que existem no banco, mas nao aparecem mais nos CSVs
+
+Chaves usadas na comparacao:
+
+- nodes: `node_id`
+- edges: `from_node_id + to_node_id + relation_type`
+- block map: `disciplina + block_number + node_id + role_in_block + sequence_in_block`
+- rules: `rule_key`
+
+O dry-run nao importa, nao corrige e nao altera CSVs nem banco.
+
 ## Endpoints de Leitura
 
 Depois de importar:
 
 - `GET /api/roadmap/validation`
+- `GET /api/roadmap/dry-run`
 - `GET /api/roadmap/summary`
 - `GET /api/roadmap/discipline/{discipline}/summary`
 - `GET /api/roadmap/disciplines`
