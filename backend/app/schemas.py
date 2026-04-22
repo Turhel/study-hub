@@ -245,6 +245,8 @@ class EssayStudySessionResponse(BaseModel):
     model: str
     prompt_name: str
     prompt_hash: str
+    tokens_input: int
+    tokens_output: int
     status: Literal["active", "closed", "token_limit_reached"]
     tokens_total: int
     started_at: str
@@ -357,3 +359,37 @@ class RoadmapImportSummary(BaseModel):
     rules_updated: int = 0
     rules_deleted: int = 0
     disciplines_detected: list[str]
+
+
+class RoadmapValidationIssue(BaseModel):
+    severity: Literal["error", "warning"]
+    file: str
+    code: str
+    message: str
+    row: int | None = None
+    node_id: str | None = None
+
+
+class RoadmapValidationResponse(BaseModel):
+    is_valid: bool
+    errors_count: int
+    warnings_count: int
+    errors: list[RoadmapValidationIssue]
+    warnings: list[RoadmapValidationIssue]
+
+
+class RoadmapDisciplineSummaryResponse(BaseModel):
+    discipline: str
+    node_count: int
+    edge_count: int
+    subjects: list[str]
+    blocks: list[int]
+    initial_nodes: list[RoadmapNodeResponse]
+
+
+class RoadmapSummaryResponse(BaseModel):
+    discipline_count: int
+    node_count: int
+    edge_count: int
+    block_count: int
+    disciplines: list[RoadmapDisciplineSummaryResponse]

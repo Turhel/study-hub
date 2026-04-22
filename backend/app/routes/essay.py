@@ -12,6 +12,7 @@ from app.schemas import (
 from app.services.essay_service import (
     EssayCorrectionError,
     EssayCorrectionProviderError,
+    EssayCorrectionTokenLimitError,
     correct_essay,
     create_essay_correction,
     get_essay_correction,
@@ -34,6 +35,8 @@ router = APIRouter(prefix="/api/essay")
 def correct_essay_route(payload: EssayCorrectionRequest) -> EssayCorrectionResponse:
     try:
         return correct_essay(payload)
+    except EssayCorrectionTokenLimitError as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": str(exc)}) from exc
     except EssayCorrectionError as exc:
         raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
     except EssayCorrectionProviderError as exc:
@@ -56,6 +59,8 @@ def correct_essay_route(payload: EssayCorrectionRequest) -> EssayCorrectionRespo
 def create_essay_correction_route(payload: EssayCorrectionCreateRequest) -> EssayCorrectionStoredResponse:
     try:
         return create_essay_correction(payload)
+    except EssayCorrectionTokenLimitError as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": str(exc)}) from exc
     except EssayCorrectionError as exc:
         raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
     except EssayCorrectionProviderError as exc:

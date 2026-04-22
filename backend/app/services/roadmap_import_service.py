@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import argparse
 import csv
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from sqlmodel import Session, select
-
-from app.db import get_session
-from app.models import RoadmapBlockMap, RoadmapEdge, RoadmapNode, RoadmapRule
 from app.schemas import RoadmapImportSummary
-from app.services.roadmap_query_service import normalize_discipline
+from app.services.roadmap_validation_service import normalize_discipline, validate_roadmap_csvs
+
+if TYPE_CHECKING:
+    from sqlmodel import Session
 
 
 VALID_RELATION_TYPES = {"required", "recommended", "cross_required", "cross_support"}
@@ -95,7 +96,12 @@ def _parse_float(value: str, field_name: str) -> float:
         raise RoadmapImportError(f"Valor numerico invalido em {field_name}: {value}") from exc
 
 
-def import_roadmap_from_csv(session: Session | None = None) -> RoadmapImportSummary:
+def import_roadmap_from_csv(session: "Session | None" = None) -> RoadmapImportSummary:
+    from sqlmodel import select
+
+    from app.db import get_session
+    from app.models import RoadmapBlockMap, RoadmapEdge, RoadmapNode, RoadmapRule
+
     own_session = session is None
     db = session or get_session()
     try:
@@ -276,3 +282,20 @@ def import_roadmap_from_csv(session: Session | None = None) -> RoadmapImportSumm
     finally:
         if own_session:
             db.close()
+
+
+def _main() -> None:
+    parser = argparse.ArgumentParser(description="Ferramentas simples para o roadmap pedagogico.")
+    parser.add_argument("--validate", action="store_true", help="Valida os CSVs em docs/roadmap sem importar.")
+    args = parser.parse_args()
+
+    if args.validate:
+        result = validate_roadmap_csvs()
+        print(result.model_dump_json(indent=2))
+        raise SystemExit(0 if result.is_valid else 1)
+
+    parser.print_help()
+
+
+if __name__ == "__main__":
+    _main()

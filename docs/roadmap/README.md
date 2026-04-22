@@ -153,15 +153,81 @@ O importador:
 - cria ou atualiza block map por `disciplina + block_number + node_id`
 - cria ou atualiza rules por `rule_key`
 
+## Como Validar Sem Importar
+
+Use o validador antes de importar quando estiver editando os CSVs:
+
+```powershell
+cd backend
+.\.venv\Scripts\python -m app.services.roadmap_import_service --validate
+```
+
+O comando retorna JSON com:
+
+- `is_valid`
+- `errors_count`
+- `warnings_count`
+- `errors`
+- `warnings`
+
+Erros indicam que o roadmap nao deve ser importado ainda. Avisos indicam pontos suspeitos que podem ser intencionais, mas merecem revisao humana.
+
+O validador nao altera os CSVs e nao tenta corrigir pedagogicamente o roadmap.
+
 ## Endpoints de Leitura
 
 Depois de importar:
 
+- `GET /api/roadmap/validation`
+- `GET /api/roadmap/summary`
+- `GET /api/roadmap/discipline/{discipline}/summary`
 - `GET /api/roadmap/disciplines`
 - `GET /api/roadmap/nodes/{discipline}`
 - `GET /api/roadmap/edges/{discipline}`
 
 A disciplina e normalizada de forma simples para comparar caixa e acentos.
+
+### Validacoes Cobertas
+
+`nodes.csv`:
+
+- colunas obrigatorias
+- `node_id` unico
+- campos essenciais preenchidos
+- `tamanho_pedagogico`, `tipo_no`, `free_mode` e `ativo` validos
+- contatos esperados numericos e coerencia simples entre minimo/alvo
+
+`edges.csv`:
+
+- colunas obrigatorias
+- referencias existentes em `nodes.csv`
+- `relation_type` valido
+- `strength` numerico entre 1 e 3
+- auto-referencia
+- arestas duplicadas
+
+`block_map.csv`:
+
+- colunas obrigatorias
+- `node_id` existente
+- `role_in_block` valido
+- `block_number` e `sequence_in_block` positivos
+- duplicidade de sequencia dentro do mesmo bloco/disciplina
+- divergencia de disciplina entre `nodes.csv` e `block_map.csv`
+
+`rules.csv`:
+
+- colunas obrigatorias
+- `rule_key` unico
+- `rule_value` preenchido
+
+Auditorias extras:
+
+- nodes sem uso em `block_map.csv`
+- nodes sem arestas de entrada ou saida
+- ciclos em dependencias `required` e `cross_required`
+- relacoes cruzadas suspeitas
+- lacunas de blocos dentro da sequencia mapeada por disciplina
 
 ## Roadmap Atual de Matematica
 

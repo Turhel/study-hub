@@ -19,6 +19,10 @@ PROMPT_FILES = {
 }
 
 
+class PromptLoadError(RuntimeError):
+    pass
+
+
 def _prompts_root() -> Path:
     return Path(__file__).resolve().parents[3] / "docs" / "prompts"
 
@@ -26,11 +30,11 @@ def _prompts_root() -> Path:
 def load_prompt_file(prompt_name: str) -> PromptFile:
     filename = PROMPT_FILES.get(prompt_name)
     if filename is None:
-        raise ValueError(f"Prompt nao mapeado: {prompt_name}")
+        raise PromptLoadError(f"Prompt nao mapeado: {prompt_name}")
 
     path = (_prompts_root() / filename).resolve()
     if not path.exists():
-        raise FileNotFoundError(f"Prompt nao encontrado em disco: {path}")
+        raise PromptLoadError(f"Prompt nao encontrado em disco: {path}")
 
     text = path.read_text(encoding="utf-8")
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()

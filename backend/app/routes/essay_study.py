@@ -13,6 +13,7 @@ from app.schemas import (
 from app.services.essay_study_service import (
     EssayStudyError,
     EssayStudyProviderError,
+    EssayStudyTokenLimitError,
     close_study_session,
     create_study_message,
     create_study_session,
@@ -37,6 +38,8 @@ router = APIRouter(prefix="/api/essay")
 def create_study_session_route(payload: EssayStudySessionCreateRequest) -> EssayStudySessionResponse:
     try:
         return create_study_session(payload.essay_correction_id)
+    except EssayStudyTokenLimitError as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": str(exc)}) from exc
     except EssayStudyError as exc:
         raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
     except EssayStudyProviderError as exc:
@@ -56,6 +59,8 @@ def create_study_session_route(payload: EssayStudySessionCreateRequest) -> Essay
 def create_study_message_route(session_id: int, payload: EssayStudyMessageCreateRequest) -> EssayStudySessionResponse:
     try:
         return create_study_message(session_id, payload.content)
+    except EssayStudyTokenLimitError as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": str(exc)}) from exc
     except EssayStudyError as exc:
         status_code = 404 if "nao encontrada" in str(exc).lower() else 400
         code = "essay_study_session_not_found" if status_code == 404 else "invalid_request"

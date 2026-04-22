@@ -5,12 +5,13 @@ from datetime import datetime
 from sqlmodel import Session, select
 
 from app.db import get_session
-from app.llm.prompt_loader import load_prompt_file
+from app.llm.prompt_loader import PromptLoadError, load_prompt_file
 from app.llm.providers.lm_studio import LMStudioMessage
 from app.llm.tasks import (
     LLMTaskConnectionError,
     LLMTaskResponseError,
     LLMTaskTimeoutError,
+    estimate_messages_tokens,
     estimate_tokens,
     run_chat_messages,
 )
@@ -22,11 +23,18 @@ from app.schemas import (
     EssayStudySessionResponse,
 )
 from app.services.essay_service import EssayCorrectionError, get_submission_for_correction, get_essay_correction
-from app.settings import get_env_float
+from app.settings import get_env_int
 
 
 class EssayStudyError(ValueError):
     pass
+
+
+class EssayStudyTokenLimitError(EssayStudyError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.error_code = "essay_study_token_limit_exceeded"
+        self.status_code = 400
 
 
 class EssayStudyProviderError(RuntimeError):
@@ -51,8 +59,13 @@ class EssayStudyInvalidResponseError(EssayStudyProviderError):
         super().__init__(message, error_code="lm_invalid_response", status_code=502)
 
 
+class EssayStudyPromptError(EssayStudyProviderError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, error_code="prompt_not_found", status_code=500)
+
+
 def _study_token_limit() -> int:
-    return int(get_env_float("STUDY_HUB_LLM_ESSAY_STUDY_TOKEN_LIMIT", 60000, minimum=1000.0))
+    return get_env_int("STUDY_HUB_LLM_ESSAY_STUDY_TOKEN_LIMIT", 60000, minimum=1000)
 
 
 def _to_message_response(message: EssayStudyMessage) -> EssayStudyMessageResponse:
@@ -66,6 +79,8 @@ def _to_message_response(message: EssayStudyMessage) -> EssayStudyMessageRespons
 
 
 def _to_session_response(session: EssayStudySession, messages: list[EssayStudyMessage]) -> EssayStudySessionResponse:
+    tokens_input = sum(item.tokens_estimated for item in messages if item.role in {"system", "user"})
+    tokens_output = sum(item.tokens_estimated for item in messages if item.role == "assistant")
     return EssayStudySessionResponse(
         id=session.id or 0,
         essay_submission_id=session.essay_submission_id,
@@ -74,6 +89,8 @@ def _to_session_response(session: EssayStudySession, messages: list[EssayStudyMe
         model=session.model,
         prompt_name=session.prompt_name,
         prompt_hash=session.prompt_hash,
+        tokens_input=tokens_input,
+        tokens_output=tokens_output,
         status=session.status,  # type: ignore[arg-type]
         tokens_total=session.tokens_total,
         started_at=session.started_at.isoformat(),
@@ -104,12 +121,18 @@ def _render_correction_snapshot(correction_id: int, db: Session) -> str:
     )
 
 
-def _append_message(db: Session, session_id: int, role: str, content: str) -> EssayStudyMessage:
+def _append_message(
+    db: Session,
+    session_id: int,
+    role: str,
+    content: str,
+    tokens_estimated: int | None = None,
+) -> EssayStudyMessage:
     message = EssayStudyMessage(
         session_id=session_id,
         role=role,
         content=content,
-        tokens_estimated=estimate_tokens(content),
+        tokens_estimated=tokens_estimated if tokens_estimated is not None else estimate_tokens(content),
     )
     db.add(message)
     db.commit()
@@ -132,9 +155,18 @@ def _refresh_session_tokens(db: Session, study_session: EssayStudySession) -> Es
 
 def _ensure_active_session(study_session: EssayStudySession) -> None:
     if study_session.status == "token_limit_reached":
-        raise EssayStudyError("A sessao de estudo ja atingiu o limite de tokens e nao pode continuar.")
+        raise EssayStudyTokenLimitError("A sessao de estudo ja atingiu o limite de tokens e nao pode continuar.")
     if study_session.status == "closed":
         raise EssayStudyError("A sessao de estudo ja foi encerrada.")
+
+
+def _mark_token_limit_reached(db: Session, study_session: EssayStudySession) -> EssayStudySession:
+    study_session.status = "token_limit_reached"
+    study_session.ended_at = datetime.utcnow()
+    db.add(study_session)
+    db.commit()
+    db.refresh(study_session)
+    return study_session
 
 
 def create_study_session(essay_correction_id: int, session: Session | None = None) -> EssayStudySessionResponse:
@@ -142,7 +174,10 @@ def create_study_session(essay_correction_id: int, session: Session | None = Non
     db = session or get_session()
     try:
         submission, correction = get_submission_for_correction(essay_correction_id, db)
-        prompt = load_prompt_file("essay_study")
+        try:
+            prompt = load_prompt_file("essay_study")
+        except PromptLoadError as exc:
+            raise EssayStudyPromptError(str(exc)) from exc
 
         study_session = EssayStudySession(
             essay_submission_id=submission.id or 0,
@@ -163,11 +198,7 @@ def create_study_session(essay_correction_id: int, session: Session | None = Non
         _refresh_session_tokens(db, study_session)
 
         if study_session.tokens_total >= _study_token_limit():
-            study_session.status = "token_limit_reached"
-            study_session.ended_at = datetime.utcnow()
-            db.add(study_session)
-            db.commit()
-            db.refresh(study_session)
+            study_session = _mark_token_limit_reached(db, study_session)
 
         messages = list(
             db.exec(
@@ -243,11 +274,7 @@ def create_study_message(session_id: int, content: str, session: Session | None 
         _append_message(db, session_id, "user", user_content)
         study_session = _refresh_session_tokens(db, study_session)
         if study_session.tokens_total >= _study_token_limit():
-            study_session.status = "token_limit_reached"
-            study_session.ended_at = datetime.utcnow()
-            db.add(study_session)
-            db.commit()
-            db.refresh(study_session)
+            study_session = _mark_token_limit_reached(db, study_session)
             messages = list(
                 db.exec(
                     select(EssayStudyMessage).where(EssayStudyMessage.session_id == session_id).order_by(EssayStudyMessage.created_at.asc())
@@ -261,9 +288,12 @@ def create_study_message(session_id: int, content: str, session: Session | None 
             )
         )
         llm_messages = [LMStudioMessage(role=item.role, content=item.content) for item in history]
+        if estimate_messages_tokens(llm_messages) >= _study_token_limit():
+            study_session = _mark_token_limit_reached(db, study_session)
+            return _to_session_response(study_session, history)
 
         try:
-            result = run_chat_messages(task_name="essay_teach", messages=llm_messages, temperature=0.2)
+            result = run_chat_messages(task_name="essay_study_chat", messages=llm_messages, temperature=0.2)
         except LLMTaskTimeoutError as exc:
             raise EssayStudyTimeoutError(
                 "A resposta do estudo de redacao demorou mais do que o esperado no provider local."
@@ -277,14 +307,10 @@ def create_study_message(session_id: int, content: str, session: Session | None 
                 "O modelo respondeu, mas a saida nao veio em formato utilizavel para o estudo da redacao."
             ) from exc
 
-        _append_message(db, session_id, "assistant", result.output_text)
+        _append_message(db, session_id, "assistant", result.output_text, tokens_estimated=result.tokens_output)
         study_session = _refresh_session_tokens(db, study_session)
         if study_session.tokens_total >= _study_token_limit():
-            study_session.status = "token_limit_reached"
-            study_session.ended_at = datetime.utcnow()
-            db.add(study_session)
-            db.commit()
-            db.refresh(study_session)
+            study_session = _mark_token_limit_reached(db, study_session)
 
         messages = list(
             db.exec(
