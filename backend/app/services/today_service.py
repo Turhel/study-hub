@@ -24,6 +24,7 @@ from app.schemas import (
     TodayStartingPointItem,
 )
 from app.services.progression_service import sync_progression
+from app.services.discipline_normalization_service import normalize_discipline
 
 
 def _subject_label(subject: Subject | None) -> str:
@@ -48,11 +49,16 @@ def _due_reviews(session: Session, today: date) -> list[TodayReviewItem]:
         block = session.get(Block, review.block_id) if review.block_id else None
         subject_name = _subject_label(subject)
         block_name = block.nome if block else None
+        discipline = subject.disciplina if subject else block.disciplina if block else None
+        normalized = normalize_discipline(discipline)
         items.append(
             TodayReviewItem(
                 id=review.id or 0,
                 subject=subject_name,
                 block=block_name,
+                discipline=discipline,
+                strategic_discipline=normalized.strategic_discipline or None,
+                subarea=normalized.subarea or None,
                 due_date=review.proxima_data.isoformat(),
                 title=subject_name,
                 description=f"Venceu em {review.proxima_data.isoformat()}",
@@ -78,11 +84,14 @@ def _risk_blocks(session: Session, block_progress: dict[int, BlockProgress]) -> 
         block = session.get(Block, mastery.block_id)
         name = block.nome if block else f"Bloco {mastery.block_id}"
         discipline = block.disciplina if block else None
+        normalized = normalize_discipline(discipline)
         items.append(
             TodayRiskBlockItem(
                 id=mastery.id or 0,
                 name=name,
                 discipline=discipline,
+                strategic_discipline=normalized.strategic_discipline or None,
+                subarea=normalized.subarea or None,
                 score=mastery.score_domino,
                 status=mastery.status,
                 title=name,
@@ -129,6 +138,7 @@ def _forgotten_subjects(
             continue
 
         subject_name = _subject_label(subject)
+        normalized = normalize_discipline(subject.disciplina)
         description = (
             f"Desbloqueado ha {days_without_contact} dias e ainda nao visto"
             if not is_seen
@@ -139,6 +149,8 @@ def _forgotten_subjects(
                 id=subject.id or 0,
                 subject=subject_name,
                 discipline=subject.disciplina,
+                strategic_discipline=normalized.strategic_discipline,
+                subarea=normalized.subarea,
                 days_without_contact=days_without_contact,
                 title=subject_name,
                 description=description,
@@ -188,9 +200,12 @@ def _starting_points(
             continue
 
         subject_name = _subject_label(subject)
+        normalized = normalize_discipline(block.disciplina)
         starting_points.append(
             TodayStartingPointItem(
                 discipline=block.disciplina,
+                strategic_discipline=normalized.strategic_discipline,
+                subarea=normalized.subarea,
                 block_id=block.id,
                 block_name=block.nome,
                 subject_id=subject.id,

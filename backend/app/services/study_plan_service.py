@@ -30,12 +30,15 @@ from app.models import (
 )
 from app.schemas import StudyPlanItem, StudyPlanSummary, StudyPlanTodayResponse
 from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load
+from app.services.discipline_normalization_service import normalize_discipline
 from app.services.progression_service import sync_progression
 
 
 @dataclass(frozen=True)
 class StudyPlanCandidate:
     discipline: str
+    strategic_discipline: str
+    subarea: str
     block_id: int
     block_name: str
     block_order: int
@@ -105,6 +108,7 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
     for row in rows:
         block = session.get(Block, row.block_id)
         subject = session.get(Subject, row.subject_id)
+        normalized = normalize_discipline(subject.disciplina if subject else row.discipline)
         completed_today, remaining_today, progress_ratio, execution_status = _execution_progress(
             session=session,
             today=today,
@@ -115,6 +119,8 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
         items.append(
             StudyPlanItem(
                 discipline=row.discipline,
+                strategic_discipline=normalized.strategic_discipline,
+                subarea=normalized.subarea,
                 block_id=row.block_id,
                 block_name=block.nome if block else f"Bloco {row.block_id}",
                 subject_id=row.subject_id,
@@ -212,7 +218,8 @@ def _candidate_score(
 ) -> tuple[float, float, str]:
     subject_name = _subject_label(subject)
     topic_text = f"{subject.assunto} {subject.subassunto or ''}"
-    strategic_weight = strategic_discipline_weight(subject.disciplina)
+    normalized = normalize_discipline(subject.disciplina)
+    strategic_weight = strategic_discipline_weight(normalized.strategic_discipline)
     historical_weight = historical_topic_weight(subject.disciplina, topic_text, subject.prioridade_enem)
     gap_weight, gap_label = _gap_weight(session, subject.id or 0)
     prerequisite_weight = prerequisite_topic_weight(topic_text)
@@ -269,6 +276,7 @@ def _eligible_candidates(
 
             raw_score, priority_score, reason = _candidate_score(session, today, block, subject, progress_subject)
             planned_mode = block_planned_mode(progress.status)
+            normalized = normalize_discipline(subject.disciplina)
             if progress.status == BLOCK_STATUS_READY_TO_ADVANCE:
                 reason = "Bloco pronto para avancar, mas ainda em consolidacao antes da decisao"
             elif progress.status == BLOCK_STATUS_TRANSITION:
@@ -277,6 +285,8 @@ def _eligible_candidates(
             candidates.append(
                 StudyPlanCandidate(
                     discipline=subject.disciplina,
+                    strategic_discipline=normalized.strategic_discipline,
+                    subarea=normalized.subarea,
                     block_id=block.id,
                     block_name=block.nome,
                     block_order=block.ordem,
@@ -293,10 +303,7 @@ def _eligible_candidates(
 
 
 def _discipline_group(value: str) -> str:
-    normalized = normalize_discipline_name(value)
-    if normalized in {"biologia", "quimica", "fisica"}:
-        return "natureza"
-    return normalized
+    return normalize_discipline_name(normalize_discipline(value).strategic_discipline)
 
 
 def _select_candidates(candidates: list[StudyPlanCandidate], focus_count: int) -> list[StudyPlanCandidate]:

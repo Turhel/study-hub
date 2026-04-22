@@ -21,6 +21,9 @@ class TodayReviewItem(BaseModel):
     id: int
     subject: str
     block: str | None = None
+    discipline: str | None = None
+    strategic_discipline: str | None = None
+    subarea: str | None = None
     due_date: str
     title: str
     description: str | None = None
@@ -30,6 +33,8 @@ class TodayRiskBlockItem(BaseModel):
     id: int
     name: str
     discipline: str | None = None
+    strategic_discipline: str | None = None
+    subarea: str | None = None
     score: float
     status: str
     title: str
@@ -40,6 +45,8 @@ class TodayForgottenSubjectItem(BaseModel):
     id: int
     subject: str
     discipline: str | None = None
+    strategic_discipline: str | None = None
+    subarea: str | None = None
     days_without_contact: int
     title: str
     description: str | None = None
@@ -47,6 +54,8 @@ class TodayForgottenSubjectItem(BaseModel):
 
 class TodayStartingPointItem(BaseModel):
     discipline: str
+    strategic_discipline: str | None = None
+    subarea: str | None = None
     block_id: int
     block_name: str
     subject_id: int
@@ -72,6 +81,8 @@ class StudyPlanSummary(BaseModel):
 
 class StudyPlanItem(BaseModel):
     discipline: str
+    strategic_discipline: str | None = None
+    subarea: str | None = None
     block_id: int
     block_name: str
     subject_id: int
@@ -285,6 +296,8 @@ class ActivityItem(BaseModel):
     title: str
     description: str
     discipline: str | None = None
+    strategic_discipline: str | None = None
+    subarea: str | None = None
     block_id: int | None = None
     subject_id: int | None = None
     metadata: dict[str, Any]

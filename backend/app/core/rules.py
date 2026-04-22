@@ -42,6 +42,7 @@ FORGOTTEN_CONTACT_THRESHOLD_DAYS = 14
 
 DISCIPLINE_PRIORITY = {
     "matematica": 1,
+    "natureza": 2,
     "biologia": 2,
     "quimica": 3,
     "fisica": 4,
@@ -53,6 +54,7 @@ DISCIPLINE_PRIORITY = {
 STRATEGIC_DISCIPLINE_WEIGHTS = {
     "matematica": 1.30,
     "redacao": 1.25,
+    "natureza": 1.10,
     "biologia": 1.10,
     "quimica": 1.10,
     "fisica": 1.10,
@@ -136,13 +138,21 @@ def normalize_discipline_name(value: str | None) -> str:
 
     if "matematica" in text:
         return "matematica"
+    if "natureza" in text or "ciencias da natureza" in text:
+        return "natureza"
     if "biologia" in text:
         return "biologia"
     if "quimica" in text:
         return "quimica"
     if "fisica" in text:
         return "fisica"
-    if "linguagem" in text or "portugues" in text:
+    if (
+        "linguagem" in text
+        or "portugues" in text
+        or "gramatica" in text
+        or "literatura" in text
+        or "interpretacao" in text
+    ):
         return "linguagens"
     if "humana" in text or "historia" in text or "geografia" in text or "filosofia" in text or "sociologia" in text:
         return "humanas"

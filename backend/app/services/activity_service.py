@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 
 from app.models import Block, BlockProgress, DailyStudyPlan, DailyStudyPlanItem, QuestionAttempt, Review, Subject
 from app.schemas import ActivityItem, ActivityTodayResponse
+from app.services.discipline_normalization_service import normalize_discipline
 
 
 def _subject_label(subject: Subject | None, subject_id: int | None) -> str:
@@ -36,16 +37,21 @@ def _activity(
     title: str,
     description: str,
     discipline: str | None = None,
+    strategic_discipline: str | None = None,
+    subarea: str | None = None,
     block_id: int | None = None,
     subject_id: int | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> ActivityItem:
+    normalized = normalize_discipline(discipline)
     return ActivityItem(
         type=activity_type,  # type: ignore[arg-type]
         created_at=created_at.isoformat(),
         title=title,
         description=description,
         discipline=discipline,
+        strategic_discipline=strategic_discipline or normalized.strategic_discipline or None,
+        subarea=subarea or normalized.subarea or None,
         block_id=block_id,
         subject_id=subject_id,
         metadata=metadata or {},
