@@ -45,3 +45,16 @@ def get_env_float(name: str, default: float, minimum: float | None = None) -> fl
         raise ValueError(f"{name} deve ser maior ou igual a {minimum}.")
 
     return value
+
+
+def get_env_int(name: str, default: int, minimum: int | None = None) -> int:
+    raw_value = get_env_str(name, str(default))
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise ValueError(f"{name} deve ser inteiro.") from exc
+
+    if minimum is not None and value < minimum:
+        raise ValueError(f"{name} deve ser maior ou igual a {minimum}.")
+
+    return value

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import socket
+from http.client import RemoteDisconnected
 from dataclasses import dataclass
 from urllib import error, request
 
@@ -63,9 +64,21 @@ class LLMHttpClient:
         except error.URLError as exc:
             reason = exc.reason
             if isinstance(reason, (TimeoutError, socket.timeout)):
-                raise LLMTimeoutError("Tempo esgotado ao chamar o provider LLM.") from exc
-            raise LLMConnectionError(f"Nao foi possivel conectar ao provider LLM: {reason}") from exc
+                raise LLMTimeoutError(
+                    f"Tempo esgotado ao chamar o provider LLM em {url} apos {effective_timeout:.0f}s."
+                ) from exc
+            if isinstance(reason, ConnectionRefusedError):
+                raise LLMConnectionError(
+                    f"LM Studio parece offline em {self.settings.base_url}. Ative o servidor local OpenAI-compatible."
+                ) from exc
+            raise LLMConnectionError(f"Nao foi possivel conectar ao provider LLM em {url}: {reason}") from exc
         except (TimeoutError, socket.timeout) as exc:
-            raise LLMTimeoutError("Tempo esgotado ao chamar o provider LLM.") from exc
+            raise LLMTimeoutError(
+                f"Tempo esgotado ao chamar o provider LLM em {url} apos {effective_timeout:.0f}s."
+            ) from exc
+        except RemoteDisconnected as exc:
+            raise LLMConnectionError(
+                "O provider LLM encerrou a conexao antes de responder. Verifique o LM Studio e o modelo carregado."
+            ) from exc
         except json.JSONDecodeError as exc:
-            raise LLMInvalidResponseError("Resposta JSON invalida do provider LLM.") from exc
+            raise LLMInvalidResponseError("Resposta HTTP do provider LLM nao era JSON valido.") from exc

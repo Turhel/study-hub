@@ -245,6 +245,8 @@ class EssayStudySessionResponse(BaseModel):
     model: str
     prompt_name: str
     prompt_hash: str
+    tokens_input: int
+    tokens_output: int
     status: Literal["active", "closed", "token_limit_reached"]
     tokens_total: int
     started_at: str

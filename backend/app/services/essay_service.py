@@ -8,13 +8,15 @@ from typing import Literal
 from sqlmodel import Session, select
 
 from app.db import get_session
-from app.llm.prompt_loader import PromptFile, load_prompt_file
+from app.llm.parsing import LLMParsingError, parse_json_object
+from app.llm.prompt_loader import PromptFile, PromptLoadError, load_prompt_file
 from app.llm.providers.lm_studio import LMStudioMessage
 from app.llm.tasks import (
     LLMTaskConnectionError,
     LLMTaskResponse,
     LLMTaskResponseError,
     LLMTaskTimeoutError,
+    estimate_messages_tokens,
     estimate_tokens,
     run_chat_messages,
 )
@@ -28,7 +30,7 @@ from app.schemas import (
     EssayScoreRange,
     EssaySubmissionResponse,
 )
-from app.settings import get_env_float
+from app.settings import get_env_int
 
 
 VALID_COMPETENCY_KEYS = ("C1", "C2", "C3", "C4", "C5")
@@ -37,6 +39,13 @@ DEFAULT_CONFIDENCE_NOTE = "Estimativa assistida por modelo local. Nao substitui 
 
 class EssayCorrectionError(ValueError):
     pass
+
+
+class EssayCorrectionTokenLimitError(EssayCorrectionError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.error_code = "essay_token_limit_exceeded"
+        self.status_code = 400
 
 
 class EssayCorrectionProviderError(RuntimeError):
@@ -61,6 +70,11 @@ class EssayCorrectionInvalidResponseError(EssayCorrectionProviderError):
         super().__init__(message, error_code="lm_invalid_response", status_code=502)
 
 
+class EssayCorrectionPromptError(EssayCorrectionProviderError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, error_code="prompt_not_found", status_code=500)
+
+
 @dataclass(frozen=True)
 class ParsedEssayCorrection:
     estimated_score_min: int
@@ -73,7 +87,7 @@ class ParsedEssayCorrection:
 
 
 def _essay_correction_token_limit() -> int:
-    return int(get_env_float("STUDY_HUB_LLM_ESSAY_CORRECTION_TOKEN_LIMIT", 64000, minimum=1000.0))
+    return get_env_int("STUDY_HUB_LLM_ESSAY_CORRECTION_TOKEN_LIMIT", 64000, minimum=1000)
 
 
 def _clean_text(value: str) -> str:
@@ -169,7 +183,13 @@ def _dedupe_keep_order(values: list[str]) -> list[str]:
 
 
 def _parse_correction_output(raw_text: str) -> ParsedEssayCorrection:
+    return _parse_correction_output_defensive(raw_text)
+
     cleaned = _clean_text(raw_text)
+    json_parsed = _parse_json_correction_output(cleaned)
+    if json_parsed is not None:
+        return json_parsed
+
     competencies = {key: _parse_competency_section(cleaned, key) for key in VALID_COMPETENCY_KEYS}
 
     final_section = _extract_section(cleaned, "NOTA FINAL ESTIMADA")
@@ -188,24 +208,118 @@ def _parse_correction_output(raw_text: str) -> ParsedEssayCorrection:
     strengths = _dedupe_keep_order(
         [_extract_competency_note(cleaned, key, "ponto forte principal") for key in VALID_COMPETENCY_KEYS]
     )
-    weaknesses = _dedupe_keep_order(
-        [_extract_competency_note(cleaned, key, "falha principal") for key in VALID_COMPETENCY_KEYS]
-    )
-    improvement_plan = _dedupe_keep_order(
-        [_extract_competency_note(cleaned, key, "por que nao recebeu a nota acima") for key in VALID_COMPETENCY_KEYS]
+    confidence_level = confidence_match.group(1).splitlines()[0].strip(" -:") if confidence_match else ""
+    confidence_note = DEFAULT_CONFIDENCE_NOTE
+    if confidence_level:
+        confidence_note = f"{DEFAULT_CONFIDENCE_NOTE} Grau de confianca do modelo: {confidence_level}."
+
+    return ParsedEssayCorrection(
+        estimated_score_min=final_score,
+        estimated_score_max=final_score,
+        competencies=competencies,
+        strengths=strengths,
+        weaknesses=weaknesses,
+        improvement_plan=improvement_plan,
+        confidence_note=confidence_note,
     )
 
-    if not strengths:
-        strengths = ["Boa base identificada em pelo menos uma competencia, mas a correcao precisa ser lida junto dos comentarios."]
-    if not weaknesses:
-        weaknesses = ["A correcao nao destacou falhas de forma limpa o suficiente para resumir melhor."]
-    if not improvement_plan:
-        improvement_plan = [
-            "Revise os comentarios de cada competencia e priorize o primeiro ponto que impediu uma nota mais alta."
-        ]
 
+def _parse_json_correction_output(raw_text: str) -> ParsedEssayCorrection | None:
+    try:
+        payload = parse_json_object(raw_text)
+    except LLMParsingError:
+        return None
+
+    try:
+        score_range = payload["estimated_score_range"]
+        competencies_payload = payload["competencies"]
+        strengths = payload.get("strengths") or []
+        weaknesses = payload.get("weaknesses") or []
+        improvement_plan = payload.get("improvement_plan") or []
+        confidence_note = payload.get("confidence_note") or DEFAULT_CONFIDENCE_NOTE
+    except (KeyError, TypeError) as exc:
+        raise EssayCorrectionInvalidResponseError(
+            "O modelo retornou JSON, mas faltam campos obrigatorios da correcao de redacao."
+        ) from exc
+
+    if not isinstance(score_range, dict) or not isinstance(competencies_payload, dict):
+        raise EssayCorrectionInvalidResponseError(
+            "O modelo retornou JSON com estrutura invalida para nota ou competencias."
+        )
+
+    try:
+        estimated_min = int(score_range["min"])
+        estimated_max = int(score_range["max"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise EssayCorrectionInvalidResponseError("O modelo retornou faixa de nota invalida no JSON.") from exc
+
+    if estimated_min < 0 or estimated_max > 1000 or estimated_max < estimated_min:
+        raise EssayCorrectionInvalidResponseError("O modelo retornou faixa de nota fora da faixa esperada.")
+
+    competencies: dict[str, EssayCompetencyResult] = {}
+    for key in VALID_COMPETENCY_KEYS:
+        item = competencies_payload.get(key)
+        if not isinstance(item, dict):
+            raise EssayCorrectionInvalidResponseError(f"O JSON da correcao nao trouxe a competencia {key}.")
+        try:
+            score = int(item["score"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise EssayCorrectionInvalidResponseError(f"O JSON da correcao trouxe nota invalida para {key}.") from exc
+        comment = str(item.get("comment") or "").strip()
+        if score < 0 or score > 200:
+            raise EssayCorrectionInvalidResponseError(f"O JSON da correcao trouxe nota fora da faixa para {key}.")
+        if not comment:
+            raise EssayCorrectionInvalidResponseError(f"O JSON da correcao nao trouxe comentario para {key}.")
+        competencies[key] = EssayCompetencyResult(score=score, comment=comment)
+
+    def clean_list(value: object, fallback: str) -> list[str]:
+        if not isinstance(value, list):
+            return [fallback]
+        cleaned = _dedupe_keep_order([str(item) for item in value])
+        return cleaned or [fallback]
+
+    return ParsedEssayCorrection(
+        estimated_score_min=estimated_min,
+        estimated_score_max=estimated_max,
+        competencies=competencies,
+        strengths=clean_list(strengths, "A resposta JSON nao trouxe pontos fortes utilizaveis."),
+        weaknesses=clean_list(weaknesses, "A resposta JSON nao trouxe fragilidades utilizaveis."),
+        improvement_plan=clean_list(improvement_plan, "Revise os comentarios por competencia e priorize o ponto mais fraco."),
+        confidence_note=str(confidence_note).strip() or DEFAULT_CONFIDENCE_NOTE,
+    )
     confidence_match = re.search(
         r"GRAU DE CONFIAN[ÇC]A\s*:?\s*(.+)",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+def _parse_correction_output_defensive(raw_text: str) -> ParsedEssayCorrection:
+    cleaned = _clean_text(raw_text)
+    json_parsed = _parse_json_correction_output(cleaned)
+    if json_parsed is not None:
+        return json_parsed
+
+    competencies = {key: _parse_competency_section(cleaned, key) for key in VALID_COMPETENCY_KEYS}
+    final_section = _extract_section(cleaned, "NOTA FINAL ESTIMADA")
+    final_score = _extract_first_score(final_section or cleaned, "NOTA FINAL ESTIMADA")
+    if final_score is None:
+        digits = re.findall(r"\b([0-9]{3,4})\b", final_section or "")
+        final_score = int(digits[0]) if digits else sum(item.score for item in competencies.values())
+
+    if final_score < 0 or final_score > 1000:
+        raise EssayCorrectionInvalidResponseError("O modelo retornou nota final estimada fora da faixa esperada.")
+
+    strengths = _dedupe_keep_order(
+        [_extract_competency_note(cleaned, key, "ponto forte principal") for key in VALID_COMPETENCY_KEYS]
+    ) or ["Boa base identificada em pelo menos uma competencia, mas a correcao precisa ser lida junto dos comentarios."]
+    weaknesses = _dedupe_keep_order(
+        [_extract_competency_note(cleaned, key, "falha principal") for key in VALID_COMPETENCY_KEYS]
+    ) or ["A correcao nao destacou falhas de forma limpa o suficiente para resumir melhor."]
+    improvement_plan = _dedupe_keep_order(
+        [_extract_competency_note(cleaned, key, "por que nao recebeu a nota acima") for key in VALID_COMPETENCY_KEYS]
+    ) or ["Revise os comentarios de cada competencia e priorize o primeiro ponto que impediu uma nota mais alta."]
+
+    confidence_match = re.search(
+        r"GRAU DE CONFIAN[Ã‡C]A\s*:?\s*(.+)",
         cleaned,
         flags=re.IGNORECASE,
     )
@@ -311,14 +425,18 @@ def _run_essay_correction(payload: EssayCorrectionCreateRequest, prompt: PromptF
     if not payload.essay_text.strip():
         raise EssayCorrectionError("Texto da redacao e obrigatorio.")
 
-    estimated_input = estimate_tokens(prompt.text) + estimate_tokens(payload.theme) + estimate_tokens(payload.essay_text)
-    if estimated_input >= _essay_correction_token_limit():
-        raise EssayCorrectionError("A redacao ficou grande demais para o limite configurado de tokens da correcao.")
+    messages = _compose_correction_messages(prompt, payload)
+    estimated_input = estimate_messages_tokens(messages)
+    token_limit = _essay_correction_token_limit()
+    if estimated_input >= token_limit:
+        raise EssayCorrectionTokenLimitError(
+            f"A redacao ficou grande demais para o limite configurado de {token_limit} tokens da correcao."
+        )
 
     try:
         result = run_chat_messages(
-            task_name="essay_score" if payload.mode == "score_only" else "essay_detailed",
-            messages=_compose_correction_messages(prompt, payload),
+            task_name={"score_only": "essay_score", "detailed": "essay_detailed", "teach": "essay_teach"}[payload.mode],
+            messages=messages,
             temperature=0.1,
         )
     except LLMTaskTimeoutError as exc:
@@ -334,11 +452,18 @@ def _run_essay_correction(payload: EssayCorrectionCreateRequest, prompt: PromptF
             "O modelo respondeu, mas a saida nao veio em formato confiavel para a correcao de redacao."
         ) from exc
 
-    parsed = _parse_correction_output(result.output_text)
-    total_tokens = result.tokens_total or (estimated_input + estimate_tokens(result.output_text))
-    if total_tokens > _essay_correction_token_limit():
+    try:
+        parsed = _parse_correction_output_defensive(result.output_text)
+    except EssayCorrectionInvalidResponseError:
+        raise
+    except Exception as exc:
         raise EssayCorrectionInvalidResponseError(
-            "A correcao excedeu o limite configurado de tokens e nao foi persistida."
+            "O modelo respondeu, mas a correcao nao pode ser interpretada com seguranca."
+        ) from exc
+    total_tokens = result.tokens_total or (estimated_input + estimate_tokens(result.output_text))
+    if total_tokens > token_limit:
+        raise EssayCorrectionTokenLimitError(
+            f"A correcao excedeu o limite configurado de {token_limit} tokens e nao foi persistida."
         )
 
     return result, parsed
@@ -347,8 +472,12 @@ def _run_essay_correction(payload: EssayCorrectionCreateRequest, prompt: PromptF
 def create_essay_correction(payload: EssayCorrectionCreateRequest, session: Session | None = None) -> EssayCorrectionStoredResponse:
     own_session = session is None
     db = session or get_session()
-    prompt = load_prompt_file("essay_correction")
     try:
+        try:
+            prompt = load_prompt_file("essay_correction")
+        except PromptLoadError as exc:
+            raise EssayCorrectionPromptError(str(exc)) from exc
+
         llm_result, parsed = _run_essay_correction(payload, prompt)
 
         submission = EssaySubmission(theme=payload.theme.strip(), essay_text=payload.essay_text.strip())

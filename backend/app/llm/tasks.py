@@ -78,13 +78,17 @@ def _task_timeout_seconds(task_name: str) -> float:
         "essay_score": 60.0,
         "essay_detailed": 90.0,
         "essay_teach": 105.0,
+        "essay_study_chat": 75.0,
     }
     env_names = {
         "question_explain_text": "STUDY_HUB_LLM_TIMEOUT_QUESTION_EXPLAIN_TEXT_SECONDS",
         "essay_score": "STUDY_HUB_LLM_TIMEOUT_ESSAY_SCORE_SECONDS",
         "essay_detailed": "STUDY_HUB_LLM_TIMEOUT_ESSAY_DETAILED_SECONDS",
         "essay_teach": "STUDY_HUB_LLM_TIMEOUT_ESSAY_TEACH_SECONDS",
+        "essay_study_chat": "STUDY_HUB_LLM_TIMEOUT_ESSAY_STUDY_CHAT_SECONDS",
     }
+    if task_name not in timeout_defaults:
+        raise LLMTaskError(f"Tarefa LLM sem timeout configurado: {task_name}")
     return get_env_float(env_names[task_name], timeout_defaults[task_name], minimum=1.0)
 
 
@@ -118,23 +122,32 @@ def _run_messages(task_name: str, messages: list[LMStudioMessage], temperature: 
     except (LLMInvalidResponseError, LLMHttpStatusError) as exc:
         raise LLMTaskResponseError(str(exc)) from exc
 
-    return _response_from_provider(task_name, result)
+    return _response_from_provider(task_name, result, messages)
 
 
-def _response_from_provider(task_name: str, result: LMStudioCompletionResult) -> LLMTaskResponse:
+def _response_from_provider(
+    task_name: str,
+    result: LMStudioCompletionResult,
+    messages: list[LMStudioMessage],
+) -> LLMTaskResponse:
     usage = result.raw_response.get("usage") if isinstance(result.raw_response, dict) else {}
     prompt_tokens = usage.get("prompt_tokens") if isinstance(usage, dict) else None
     completion_tokens = usage.get("completion_tokens") if isinstance(usage, dict) else None
     total_tokens = usage.get("total_tokens") if isinstance(usage, dict) else None
+    estimated_input = estimate_messages_tokens(messages)
+    estimated_output = estimate_tokens(result.content)
+    tokens_input = prompt_tokens if isinstance(prompt_tokens, int) and prompt_tokens >= 0 else estimated_input
+    tokens_output = completion_tokens if isinstance(completion_tokens, int) and completion_tokens >= 0 else estimated_output
+    tokens_total = total_tokens if isinstance(total_tokens, int) and total_tokens >= 0 else tokens_input + tokens_output
     return LLMTaskResponse(
         task=task_name,
         provider=result.provider,
         model=result.model,
         output_text=result.content,
         finish_reason=result.finish_reason,
-        tokens_input=prompt_tokens if isinstance(prompt_tokens, int) and prompt_tokens >= 0 else 0,
-        tokens_output=completion_tokens if isinstance(completion_tokens, int) and completion_tokens >= 0 else 0,
-        tokens_total=total_tokens if isinstance(total_tokens, int) and total_tokens >= 0 else 0,
+        tokens_input=tokens_input,
+        tokens_output=tokens_output,
+        tokens_total=tokens_total,
         raw_response=result.raw_response,
     )
 
@@ -144,6 +157,11 @@ def estimate_tokens(text: str) -> int:
     if not cleaned:
         return 0
     return max(1, (len(cleaned) + 3) // 4)
+
+
+def estimate_messages_tokens(messages: list[LMStudioMessage]) -> int:
+    # Small per-message overhead keeps the estimate conservative without adding tokenizer dependencies.
+    return sum(estimate_tokens(message.content) + 4 for message in messages)
 
 
 def run_chat_messages(

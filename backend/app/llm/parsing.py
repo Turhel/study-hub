@@ -20,7 +20,10 @@ def parse_json_object(raw_text: str) -> dict:
         if extracted is not None:
             return extracted
 
-    raise LLMParsingError("O modelo nao retornou um JSON valido para esta tarefa.")
+    preview = raw_text.strip().replace("\n", " ")[:240]
+    if not preview:
+        preview = "<resposta vazia>"
+    raise LLMParsingError(f"O modelo nao retornou um JSON valido para esta tarefa. Inicio da resposta: {preview}")
 
 
 def _candidate_texts(raw_text: str) -> list[str]:
