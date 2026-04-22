@@ -456,3 +456,63 @@ class RoadmapDryRunResponse(BaseModel):
     types: dict[str, RoadmapDryRunTypeSummary]
     by_discipline: dict[str, dict[str, int]]
     examples: RoadmapDryRunExamples
+
+
+class RoadmapNodeBrief(BaseModel):
+    node_id: str
+    discipline: str
+    subject_area: str
+    content: str
+    subunit: str | None = None
+
+
+class RoadmapDependencyItem(BaseModel):
+    node: RoadmapNodeBrief
+    relation_type: Literal["required", "recommended", "cross_required", "cross_support"]
+    strength: float
+    notes: str | None = None
+
+
+class RoadmapNodeExplainResponse(BaseModel):
+    node_id: str
+    discipline: str
+    subject_area: str
+    content: str
+    subunit: str | None = None
+    incoming_dependencies: list[RoadmapDependencyItem]
+    required_dependencies: list[RoadmapDependencyItem]
+    cross_required_dependencies: list[RoadmapDependencyItem]
+    recommended_dependencies: list[RoadmapDependencyItem]
+    cross_support_dependencies: list[RoadmapDependencyItem]
+    outgoing_dependents: list[RoadmapDependencyItem]
+    classification: Literal[
+        "entry",
+        "available_if_prereqs_met",
+        "blocked_by_required",
+        "blocked_by_cross_required",
+    ]
+    message: str
+
+
+class RoadmapDependentNodeResponse(BaseModel):
+    node: RoadmapNodeBrief
+    direct_dependents: list[RoadmapDependencyItem]
+    second_level_dependents: list[RoadmapDependencyItem] = Field(default_factory=list)
+
+
+class RoadmapEntryPathItem(BaseModel):
+    nodes: list[RoadmapNodeBrief]
+    relation_types: list[str] = Field(default_factory=list)
+
+
+class RoadmapNodeDepthItem(BaseModel):
+    node: RoadmapNodeBrief
+    depth: int | None = None
+
+
+class RoadmapDisciplineEntryPathsResponse(BaseModel):
+    discipline: str
+    entry_nodes: list[RoadmapNodeBrief]
+    nodes_without_required_dependencies: list[RoadmapNodeBrief]
+    suggested_paths: list[RoadmapEntryPathItem]
+    node_depths: list[RoadmapNodeDepthItem]

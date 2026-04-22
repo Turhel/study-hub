@@ -5,14 +5,22 @@ from fastapi import APIRouter, HTTPException
 from app.schemas import (
     ApiErrorResponse,
     RoadmapDisciplineItem,
+    RoadmapDisciplineEntryPathsResponse,
     RoadmapDisciplineSummaryResponse,
+    RoadmapDependentNodeResponse,
     RoadmapDryRunResponse,
     RoadmapEdgeResponse,
+    RoadmapNodeExplainResponse,
     RoadmapNodeResponse,
     RoadmapSummaryResponse,
     RoadmapValidationResponse,
 )
 from app.services.roadmap_diff_service import get_roadmap_dry_run
+from app.services.roadmap_explain_service import (
+    explain_roadmap_node,
+    get_roadmap_discipline_entry_paths,
+    get_roadmap_node_dependents,
+)
 from app.services.roadmap_query_service import (
     RoadmapQueryError,
     get_roadmap_discipline_summary,
@@ -43,6 +51,30 @@ def get_roadmap_dry_run_route() -> RoadmapDryRunResponse:
 
 
 @router.get(
+    "/node/{node_id}/explain",
+    response_model=RoadmapNodeExplainResponse,
+    responses={404: {"model": ApiErrorResponse}},
+)
+def explain_roadmap_node_route(node_id: str) -> RoadmapNodeExplainResponse:
+    try:
+        return explain_roadmap_node(node_id)
+    except RoadmapQueryError as exc:
+        raise HTTPException(status_code=404, detail={"code": "roadmap_node_not_found", "message": str(exc)}) from exc
+
+
+@router.get(
+    "/node/{node_id}/dependents",
+    response_model=RoadmapDependentNodeResponse,
+    responses={404: {"model": ApiErrorResponse}},
+)
+def get_roadmap_node_dependents_route(node_id: str) -> RoadmapDependentNodeResponse:
+    try:
+        return get_roadmap_node_dependents(node_id)
+    except RoadmapQueryError as exc:
+        raise HTTPException(status_code=404, detail={"code": "roadmap_node_not_found", "message": str(exc)}) from exc
+
+
+@router.get(
     "/discipline/{discipline}/summary",
     response_model=RoadmapDisciplineSummaryResponse,
     responses={404: {"model": ApiErrorResponse}},
@@ -50,6 +82,18 @@ def get_roadmap_dry_run_route() -> RoadmapDryRunResponse:
 def get_roadmap_discipline_summary_route(discipline: str) -> RoadmapDisciplineSummaryResponse:
     try:
         return get_roadmap_discipline_summary(discipline)
+    except RoadmapQueryError as exc:
+        raise HTTPException(status_code=404, detail={"code": "roadmap_discipline_not_found", "message": str(exc)}) from exc
+
+
+@router.get(
+    "/discipline/{discipline}/entry-paths",
+    response_model=RoadmapDisciplineEntryPathsResponse,
+    responses={404: {"model": ApiErrorResponse}},
+)
+def get_roadmap_discipline_entry_paths_route(discipline: str) -> RoadmapDisciplineEntryPathsResponse:
+    try:
+        return get_roadmap_discipline_entry_paths(discipline)
     except RoadmapQueryError as exc:
         raise HTTPException(status_code=404, detail={"code": "roadmap_discipline_not_found", "message": str(exc)}) from exc
 

@@ -205,12 +205,25 @@ Depois de importar:
 - `GET /api/roadmap/validation`
 - `GET /api/roadmap/dry-run`
 - `GET /api/roadmap/summary`
+- `GET /api/roadmap/node/{node_id}/explain`
+- `GET /api/roadmap/node/{node_id}/dependents`
 - `GET /api/roadmap/discipline/{discipline}/summary`
+- `GET /api/roadmap/discipline/{discipline}/entry-paths`
 - `GET /api/roadmap/disciplines`
 - `GET /api/roadmap/nodes/{discipline}`
 - `GET /api/roadmap/edges/{discipline}`
 
 A disciplina e normalizada de forma simples para comparar caixa e acentos.
+
+### Explainability do Roadmap
+
+Use os endpoints de explicacao para auditar a malha pedagogica ja importada:
+
+- `GET /api/roadmap/node/{node_id}/explain` mostra dependencias diretas, pre-requisitos fortes, recomendacoes, dependencias cruzadas e o que o node desbloqueia.
+- `GET /api/roadmap/node/{node_id}/dependents` mostra dependentes diretos e um segundo nivel simples.
+- `GET /api/roadmap/discipline/{discipline}/entry-paths` mostra entradas reais da disciplina, nodes sem dependencia forte e caminhos iniciais sugeridos.
+
+Essa camada e somente leitura. Ela explica a estrutura existente no banco, sem importar CSVs, sem alterar dados e sem tentar corrigir pedagogicamente o roadmap.
 
 ### Validacoes Cobertas
 
