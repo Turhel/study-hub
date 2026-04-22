@@ -389,17 +389,20 @@ Historia Geral,9,HGE_004,core,1
 Historia Geral,10,HGE_005,core,1
 Historia Geral,11,HGE_006,core,1
 Historia Geral,12,HGE_007,core,1
-Historia Geral,13,HGE_007,review,1
+Historia Geral,13,HGE_021,core,1
+Historia Geral,13,HGE_007,review,2
 Historia Geral,14,HGE_008,core,1
 Historia Geral,15,HGE_009,core,1
 Historia Geral,16,HGE_008,review,1
 Historia Geral,17,HGE_010,core,1
 Historia Geral,18,HGE_011,core,1
+Historia Geral,18,HGE_022,support,2
 Historia Geral,19,HGE_012,core,1
 Historia Geral,20,HGE_019,core,1
 Historia Geral,20,HGE_012,review,2
 Historia Geral,21,HGE_013,core,1
-Historia Geral,22,HGE_013,review,1
+Historia Geral,22,HGE_023,core,1
+Historia Geral,22,HGE_013,review,2
 Historia Geral,23,HGE_014,core,1
 Historia Geral,23,HGE_020,support,2
 Historia Geral,24,HGE_015,core,1
@@ -456,10 +459,16 @@ Filosofia e Sociologia,12,FIL_007,core,1
 Filosofia e Sociologia,12,FIL_019,support,2
 Filosofia e Sociologia,13,FIL_019,core,1
 Filosofia e Sociologia,13,FIL_008,support,2
-Filosofia e Sociologia,14,FIL_009,core,1
-Filosofia e Sociologia,15,FIL_010,core,1
-Filosofia e Sociologia,16,FIL_011,core,1
-Filosofia e Sociologia,17,FIL_011,review,1
+Filosofia e Sociologia,14,FIL_008,core,1
+Filosofia e Sociologia,14,FIL_022,support,2
+Filosofia e Sociologia,15,FIL_022,core,1
+Filosofia e Sociologia,15,FIL_009,support,2
+Filosofia e Sociologia,16,FIL_009,core,1
+Filosofia e Sociologia,16,FIL_023,support,2
+Filosofia e Sociologia,17,FIL_010,core,1
+Filosofia e Sociologia,17,FIL_024,support,2
+Filosofia e Sociologia,18,FIL_011,core,1
+Filosofia e Sociologia,18,FIL_025,support,2
 Filosofia e Sociologia,19,FIL_012,core,1
 Filosofia e Sociologia,20,FIL_020,core,1
 Filosofia e Sociologia,20,FIL_012,review,2

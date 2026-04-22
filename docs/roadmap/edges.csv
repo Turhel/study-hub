@@ -445,15 +445,19 @@ HGE_002,HGE_003,required,2,Roma entra melhor depois da base classica grega.
 HGE_003,HGE_004,recommended,1,Bizancio e Islam entram mais organizados depois da crise do mundo romano.
 HGE_004,HGE_005,required,2,Alta Idade Media depende da transicao do mundo antigo para o medieval.
 HGE_005,HGE_006,required,2,Baixa Idade Media depende da base feudal.
-HGE_006,HGE_007,required,2,Renascimento e Reformas entram melhor depois da crise medieval.
-HGE_007,HGE_008,recommended,1,Expansao maritima entra melhor depois do Renascimento.
-HGE_007,HGE_009,recommended,1,Absolutismo e mercantilismo entram melhor depois da transicao moderna inicial.
+HGE_006,HGE_007,required,2,O Renascimento entra melhor depois da crise medieval.
+HGE_007,HGE_021,required,2,As Reformas Religiosas entram melhor depois da base renascentista e da crise da cristandade.
+HGE_021,HGE_008,recommended,1,Expansao maritima entra melhor depois da reorganizacao religiosa e politica da Europa moderna.
+HGE_021,HGE_009,recommended,1,Absolutismo e mercantilismo entram melhor depois da transicao moderna inicial.
 HGE_009,HGE_010,required,2,Iluminismo e Liberalismo entram melhor depois do Estado moderno.
-HGE_010,HGE_011,required,2,Revolucoes burguesas entram melhor depois das ideias iluministas.
+HGE_010,HGE_011,required,2,A Revolucao Industrial entra melhor depois das ideias iluministas.
+HGE_011,HGE_022,recommended,1,A Independencia dos EUA conversa com a trilha das revolucoes burguesas.
 HGE_011,HGE_012,required,2,A Revolucao Francesa depende da trilha revolucionaria moderna.
 HGE_012,HGE_019,required,2,Era Napoleonica e Congresso de Viena entram melhor depois da Revolucao Francesa.
-HGE_019,HGE_013,required,2,Nacionalismos e imperialismo entram melhor depois da reordenacao europeia.
-HGE_013,HGE_014,required,2,A Primeira Guerra depende do mundo imperialista.
+HGE_022,HGE_012,recommended,1,A experiencia norte-americana ajuda a ler as revolucoes politicas do Atlantico.
+HGE_019,HGE_013,required,2,Guerra de Secessao e unificacoes tardias entram melhor depois da reordenacao europeia.
+HGE_013,HGE_023,required,2,Imperialismo entra melhor depois dos nacionalismos e reorganizacao dos Estados.
+HGE_023,HGE_014,required,2,A Primeira Guerra depende do mundo imperialista.
 HGE_014,HGE_020,required,2,A Revolucao Russa entra melhor depois da crise global da Primeira Guerra.
 HGE_020,HGE_015,recommended,1,O entreguerras entra mais claro depois da Revolucao Russa.
 HGE_014,HGE_015,required,2,Entreguerras depende da base da Primeira Guerra.
@@ -491,10 +495,14 @@ FIL_006,FIL_018,required,2,O empirismo entra melhor depois do debate moderno sob
 FIL_006,FIL_007,recommended,1,A Revolucao Cientifica conversa com a afirmacao da razao moderna.
 FIL_018,FIL_019,required,2,Iluminismo e contratualismo entram melhor depois do racionalismo e empirismo.
 FIL_007,FIL_019,recommended,1,O Iluminismo entra mais claro depois da Revolucao Cientifica.
-FIL_019,FIL_008,required,2,Kant Hegel e Marx entram melhor depois da modernidade filosofica inicial.
-FIL_008,FIL_009,recommended,1,As criticas contemporaneas entram melhor depois dos grandes sistemas filosoficos.
-FIL_009,FIL_010,required,2,Fenomenologia e existencialismo entram melhor depois das crises da modernidade.
-FIL_010,FIL_011,required,2,Autores contemporaneos finais entram melhor depois da trilha filosofica do seculo XX.
+FIL_019,FIL_008,required,2,Kant entra melhor depois da modernidade filosofica inicial.
+FIL_008,FIL_022,required,2,Hegel e Marx entram melhor depois da critica kantiana.
+FIL_022,FIL_009,recommended,1,As criticas contemporaneas entram melhor depois dos grandes sistemas filosoficos.
+FIL_009,FIL_023,required,2,Nietzsche entra melhor depois da leitura das correntes contemporaneas iniciais.
+FIL_023,FIL_010,recommended,1,Fenomenologia e existencialismo entram mais claros depois da ruptura nietzschiana.
+FIL_010,FIL_024,required,2,Arendt e Walter Benjamin entram melhor depois da camada existencial e fenomenologica.
+FIL_024,FIL_011,recommended,1,Habermas e Foucault entram mais claros depois da critica politica do seculo XX.
+FIL_011,FIL_025,required,2,Rawls Jonas e filosofia da ciencia entram melhor depois da base de poder e racionalidade.
 FIL_008,FIL_012,recommended,1,A teoria sociologica entra mais organizada depois da base da critica social moderna.
 FIL_012,FIL_020,required,2,A sociologia do Brasil entra melhor depois da teoria sociologica.
 FIL_012,FIL_013,required,2,Temas sociais entram melhor depois da base sociologica.
