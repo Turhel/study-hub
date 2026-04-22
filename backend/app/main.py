@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401
 from app.db import init_db
+from app.routes.activity import router as activity_router
 from app.routes.block_progress import router as block_progress_router
 from app.routes.essay import router as essay_router
 from app.routes.essay_study import router as essay_study_router
@@ -36,6 +37,7 @@ app.include_router(essay_router)
 app.include_router(essay_study_router)
 app.include_router(block_progress_router)
 app.include_router(roadmap_router)
+app.include_router(activity_router)
 
 
 @app.on_event("startup")
