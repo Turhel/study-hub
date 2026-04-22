@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -277,6 +277,28 @@ class ApiErrorDetail(BaseModel):
 
 class ApiErrorResponse(BaseModel):
     detail: ApiErrorDetail
+
+
+class ActivityItem(BaseModel):
+    type: Literal["question_attempt_bulk", "review_upsert", "daily_plan_generated", "block_progress_decision"]
+    created_at: str
+    title: str
+    description: str
+    discipline: str | None = None
+    block_id: int | None = None
+    subject_id: int | None = None
+    metadata: dict[str, Any]
+
+
+class ActivityTodayResponse(BaseModel):
+    date: str
+    question_attempts_registered: int
+    subjects_studied_today: int
+    blocks_impacted_today: int
+    reviews_generated_today: int
+    progression_decisions_today: int
+    studied_subject_ids: list[int]
+    impacted_block_ids: list[int]
 
 
 class BlockProgressDecisionRequest(BaseModel):
