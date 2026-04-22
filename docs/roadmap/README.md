@@ -445,8 +445,9 @@ Refinamentos mais recentes em Humanas:
 - a entrada de `Sociologia` foi refinada para separar `teoria da sociologia`, `sociologia do Brasil` e `educacao/socializacao`
 - `Historia Geral` foi refinada para separar `Pre-historia` de `Antiguidade Oriental`, `Revolucao Francesa` de `Era Napoleonica`, e `Primeira Guerra` de `Revolucao Russa`
 - `Historia do Brasil` foi refinada para separar `expansao territorial/mineracao` de `Periodo Pombalino`, `Era Vargas inicial` de `Estado Novo`, e `Ditadura Militar inicial` da fase final do regime
+- `Geografia` foi refinada para separar `climas do Brasil` de `climogramas`, `estrutura interna` de `relevo do Brasil`, `biomas mundiais` de `dominios morfoclimaticos`, `industria/energia` de `transportes`, e `espacos mundiais` de `regionalizacao do Brasil`
 
 Leitura honesta desta rodada:
 
 - Humanas continua em fase de lapidacao, mas ja deixou de ser so cobertura ampla
-- o maior ganho desta rodada veio em Historia e Filosofia/Sociologia, que eram os trechos mais agregados da area
+- o maior ganho mais recente veio em Historia, Filosofia/Sociologia e agora em Geografia, reduzindo bastante os nos largos de Humanas

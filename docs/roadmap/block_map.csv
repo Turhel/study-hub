@@ -352,13 +352,16 @@ Geografia,3,GEO_002,review,3
 Geografia,4,GEO_007,core,1
 Geografia,4,GEO_008,core,2
 Geografia,5,GEO_009,core,1
-Geografia,5,GEO_007,review,2
+Geografia,5,GEO_025,support,2
+Geografia,5,GEO_007,review,3
 Geografia,6,GEO_010,core,1
-Geografia,6,GEO_011,core,2
+Geografia,6,GEO_026,support,2
+Geografia,6,GEO_011,core,3
 Geografia,7,GEO_012,core,1
 Geografia,7,GEO_013,core,2
 Geografia,8,GEO_014,core,1
-Geografia,8,GEO_013,review,2
+Geografia,8,GEO_027,support,2
+Geografia,8,GEO_013,review,3
 Geografia,10,GEO_014,review,1
 Geografia,11,GEO_015,core,1
 Geografia,12,GEO_023,core,1
@@ -369,9 +372,11 @@ Geografia,13,GEO_024,support,2
 Geografia,15,GEO_017,core,1
 Geografia,16,GEO_018,core,1
 Geografia,17,GEO_019,core,1
+Geografia,17,GEO_028,support,2
 Geografia,18,GEO_020,core,1
 Geografia,22,GEO_021,core,1
 Geografia,23,GEO_022,core,1
+Geografia,23,GEO_029,support,2
 Geografia,25,GEO_021,review,1
 Geografia,26,GEO_022,review,1
 Historia Geral,1,HGE_001,core,1

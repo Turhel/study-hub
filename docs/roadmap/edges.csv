@@ -422,18 +422,23 @@ GEO_004,GEO_005,recommended,1,Fusos e posicao geografica se apoiam na base carto
 GEO_003,GEO_006,recommended,1,Mapas tematicos entram melhor depois da leitura cartografica.
 GEO_007,GEO_008,required,2,Elementos e fenomenos climaticos dependem dos fatores do clima.
 GEO_008,GEO_009,required,2,Climas do Brasil entram melhor depois da base atmosferica.
-GEO_010,GEO_011,required,2,Intemperismo e ciclo das rochas dependem da leitura do relevo e estrutura terrestre.
+GEO_009,GEO_025,required,2,Climogramas e tipos climaticos entram melhor depois da base climatica brasileira.
+GEO_010,GEO_026,required,2,O relevo do Brasil entra melhor depois da base de estrutura terrestre.
+GEO_026,GEO_011,required,2,Intemperismo e ciclo das rochas dependem da leitura do relevo e superficie terrestre.
 GEO_012,GEO_013,required,2,Hidrografia do Brasil entra melhor depois da base geral da agua.
 GEO_013,GEO_014,recommended,1,Biomas entram mais organizados depois da base hidrografica e natural.
+GEO_014,GEO_027,required,2,Dominios morfoclimaticos entram melhor depois da base de biomas mundiais.
 GEO_015,GEO_023,required,2,Estrutura etaria entra melhor depois da base de crescimento e transicao demografica.
 GEO_023,GEO_016,recommended,1,Indicadores sociais entram mais organizados depois da estrutura etaria.
 GEO_016,GEO_024,required,2,Migracoes entram melhor depois da base socioeconomica da populacao.
 GEO_015,GEO_017,recommended,1,Urbanizacao entra melhor depois da leitura populacional.
 GEO_017,GEO_018,recommended,1,Geografia agraria conversa com urbanizacao e ocupacao do espaco.
 GEO_018,GEO_019,recommended,1,Industria e energia entram melhor depois do espaco agrario e uso do territorio.
+GEO_019,GEO_028,recommended,1,Transportes e circulacao entram melhor depois da base economica territorial.
 GEO_019,GEO_020,required,2,Globalizacao entra melhor depois da base economica e produtiva.
 GEO_020,GEO_021,required,2,Geopolitica e blocos economicos dependem da base de globalizacao.
 GEO_021,GEO_022,recommended,1,Leitura regional do mundo entra melhor depois da base geopolitica.
+GEO_021,GEO_029,recommended,1,Regionalizacao do Brasil entra mais organizada depois da leitura geopolitica e territorial.
 HGE_001,HGE_018,required,2,As civilizacoes orientais entram melhor depois da base pre-historica.
 HGE_018,HGE_002,recommended,1,Grecia entra melhor depois da base da Antiguidade Oriental.
 HGE_002,HGE_003,required,2,Roma entra melhor depois da base classica grega.
