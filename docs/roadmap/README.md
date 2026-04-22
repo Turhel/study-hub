@@ -449,8 +449,32 @@ Refinamentos mais recentes em Humanas:
 - `Historia do Brasil` foi refinada de novo para separar `politica interna` de `economia/sociedade` no Segundo Reinado, `conflitos rurais` de `revoltas urbanas`, e `Dutra/Vargas/JK` de `Janio e Jango`
 - `Historia Geral` foi refinada mais uma vez para separar `Renascimento` de `Reformas Religiosas`, `Revolucao Industrial` de `Independencia dos EUA`, e `Guerra de Secessao/unificacoes` de `Imperialismo`
 - `Filosofia e Sociologia` foi refinada de novo para separar `Kant` de `Hegel e Marx`, `correntes contemporaneas iniciais` de `Nietzsche`, `Fenomenologia/Existencialismo` de `Arendt e Walter Benjamin`, e `Habermas/Foucault` de `Rawls/Jonas/Filosofia da Ciencia`
+- `Linguagens` entrou com tres disciplinas operacionais: `Interpretacao de Texto`, `Gramatica` e `Literatura`
+- a prioridade em Linguagens foi cobertura robusta da area com trilhas simples, sem tentar microfragmentar demais na primeira entrada
+- entraram cruzamentos leves entre gramatica, interpretacao e literatura para reforcar leitura textual e leitura estetica
 
 Leitura honesta desta rodada:
 
 - Humanas continua em fase de lapidacao, mas ja deixou de ser so cobertura ampla
 - o maior ganho mais recente veio em Historia Geral e Filosofia/Sociologia, reduzindo quase todo o restante dos nos largos de Humanas
+
+## Roadmap Atual de Linguagens
+
+Linguagens entrou como area estrategica com tres disciplinas operacionais:
+
+1. Interpretacao de Texto
+2. Gramatica
+3. Literatura
+
+Decisoes desta versao:
+
+- a cobertura foi montada a partir da planilha versionada, respeitando os blocos operacionais
+- Interpretacao de Texto foi organizada em comunicacao, linguagem verbal e nao verbal, generos, intertextualidade, coesao e leitura artistica
+- Gramatica foi organizada em ortografia, morfologia, sintaxe e coesao textual
+- Literatura foi organizada em leitura literaria, escolas literarias e trilha historica ate a contemporaneidade
+
+Leitura honesta do estado atual:
+
+- Linguagens entra agora em uma primeira versao robusta de cobertura
+- ainda deve existir espaco para lapidacao fina futura, principalmente em Interpretacao de Texto e Literatura modernista
+- a estrutura ja ficou boa o suficiente para servir como base pedagogica editavel do projeto
