@@ -420,7 +420,7 @@ Humanas entrou como area estrategica com quatro disciplinas operacionais:
 1. Geografia
 2. Historia Geral
 3. Historia do Brasil
-4. Filosofia/Sociologia
+4. Filosofia e Sociologia
 
 Decisoes desta versao:
 
@@ -428,7 +428,7 @@ Decisoes desta versao:
 - Geografia foi organizada em cartografia, climatologia, geologia, hidrografia, demografia, espaco agrario-urbano, economia e geopolitica
 - Historia Geral foi organizada em Antiguidade, Idade Media, Idade Moderna e Idade Contemporanea
 - Historia do Brasil foi organizada em Colonia, Imperio e Republica
-- Filosofia/Sociologia foi organizada em trilha filosofica e depois em trilha sociologica
+- Filosofia e Sociologia foi organizada em trilha filosofica e depois em trilha sociologica
 - entraram alguns cruzamentos leves entre Historia, Geografia e Filosofia/Sociologia, sem transformar a malha em algo exagerado
 
 Leitura honesta do estado atual:
