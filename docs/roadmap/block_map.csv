@@ -361,9 +361,11 @@ Geografia,8,GEO_014,core,1
 Geografia,8,GEO_013,review,2
 Geografia,10,GEO_014,review,1
 Geografia,11,GEO_015,core,1
-Geografia,12,GEO_016,core,1
-Geografia,12,GEO_015,review,2
-Geografia,13,GEO_016,review,1
+Geografia,12,GEO_023,core,1
+Geografia,12,GEO_016,support,2
+Geografia,12,GEO_015,review,3
+Geografia,13,GEO_016,core,1
+Geografia,13,GEO_024,support,2
 Geografia,15,GEO_017,core,1
 Geografia,16,GEO_018,core,1
 Geografia,17,GEO_019,core,1
@@ -423,25 +425,33 @@ Historia do Brasil,26,HBR_017,review,1
 Filosofia e Sociologia,1,FIL_001,core,1
 Filosofia e Sociologia,2,FIL_001,review,1
 Filosofia e Sociologia,3,FIL_002,core,1
-Filosofia e Sociologia,4,FIL_002,review,1
+Filosofia e Sociologia,4,FIL_017,core,1
+Filosofia e Sociologia,4,FIL_002,review,2
 Filosofia e Sociologia,5,FIL_003,core,1
 Filosofia e Sociologia,6,FIL_003,review,1
 Filosofia e Sociologia,7,FIL_004,core,1
 Filosofia e Sociologia,8,FIL_005,core,1
 Filosofia e Sociologia,9,FIL_005,review,1
 Filosofia e Sociologia,10,FIL_006,core,1
-Filosofia e Sociologia,11,FIL_006,review,1
+Filosofia e Sociologia,10,FIL_018,support,2
+Filosofia e Sociologia,11,FIL_018,core,1
+Filosofia e Sociologia,11,FIL_006,review,2
 Filosofia e Sociologia,12,FIL_007,core,1
-Filosofia e Sociologia,13,FIL_008,core,1
+Filosofia e Sociologia,12,FIL_019,support,2
+Filosofia e Sociologia,13,FIL_019,core,1
+Filosofia e Sociologia,13,FIL_008,support,2
 Filosofia e Sociologia,14,FIL_009,core,1
 Filosofia e Sociologia,15,FIL_010,core,1
 Filosofia e Sociologia,16,FIL_011,core,1
 Filosofia e Sociologia,17,FIL_011,review,1
 Filosofia e Sociologia,19,FIL_012,core,1
-Filosofia e Sociologia,20,FIL_012,review,1
+Filosofia e Sociologia,20,FIL_020,core,1
+Filosofia e Sociologia,20,FIL_012,review,2
 Filosofia e Sociologia,21,FIL_013,core,1
+Filosofia e Sociologia,21,FIL_021,support,2
 Filosofia e Sociologia,22,FIL_014,core,1
 Filosofia e Sociologia,23,FIL_014,review,1
 Filosofia e Sociologia,24,FIL_015,core,1
+Filosofia e Sociologia,24,FIL_021,review,2
 Filosofia e Sociologia,25,FIL_016,core,1
 Filosofia e Sociologia,26,FIL_016,review,1

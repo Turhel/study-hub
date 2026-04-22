@@ -425,7 +425,9 @@ GEO_008,GEO_009,required,2,Climas do Brasil entram melhor depois da base atmosfe
 GEO_010,GEO_011,required,2,Intemperismo e ciclo das rochas dependem da leitura do relevo e estrutura terrestre.
 GEO_012,GEO_013,required,2,Hidrografia do Brasil entra melhor depois da base geral da agua.
 GEO_013,GEO_014,recommended,1,Biomas entram mais organizados depois da base hidrografica e natural.
-GEO_015,GEO_016,required,2,Indicadores e migracoes dependem da base demografica inicial.
+GEO_015,GEO_023,required,2,Estrutura etaria entra melhor depois da base de crescimento e transicao demografica.
+GEO_023,GEO_016,recommended,1,Indicadores sociais entram mais organizados depois da estrutura etaria.
+GEO_016,GEO_024,required,2,Migracoes entram melhor depois da base socioeconomica da populacao.
 GEO_015,GEO_017,recommended,1,Urbanizacao entra melhor depois da leitura populacional.
 GEO_017,GEO_018,recommended,1,Geografia agraria conversa com urbanizacao e ocupacao do espaco.
 GEO_018,GEO_019,recommended,1,Industria e energia entram melhor depois do espaco agrario e uso do territorio.
@@ -464,20 +466,27 @@ HBR_013,HBR_014,required,2,Era Vargas entra melhor depois da crise da Republica 
 HBR_014,HBR_015,required,2,Republica Populista depende da experiencia varguista.
 HBR_015,HBR_016,required,2,Ditadura Militar depende da crise do periodo populista.
 HBR_016,HBR_017,required,2,Nova Republica depende do processo de abertura e redemocratizacao.
-FIL_001,FIL_002,required,2,A filosofia classica entra melhor depois da origem da filosofia.
-FIL_002,FIL_003,recommended,1,Helenismo entra melhor depois da filosofia classica.
+FIL_001,FIL_002,required,2,Socrates e Sofistas entram melhor depois da origem da filosofia.
+FIL_002,FIL_017,required,2,Platao e Aristoteles entram melhor depois do debate socratico e sofistico.
+FIL_017,FIL_003,recommended,1,Helenismo entra melhor depois da filosofia classica.
 FIL_003,FIL_004,required,2,Escolastica entra melhor depois da transicao antiga-medieval.
 FIL_004,FIL_005,recommended,1,O Estado moderno entra melhor depois do fechamento medieval.
-FIL_005,FIL_006,required,2,Racionalismo e empirismo entram melhor depois da base moderna inicial.
-FIL_006,FIL_007,required,2,Iluminismo e Revolucao Cientifica dependem da trilha epistemologica moderna.
-FIL_007,FIL_008,required,2,Kant Hegel e Marx entram melhor depois da modernidade filosofica.
+FIL_005,FIL_006,required,2,O racionalismo entra melhor depois da base moderna inicial.
+FIL_006,FIL_018,required,2,O empirismo entra melhor depois do debate moderno sobre conhecimento.
+FIL_006,FIL_007,recommended,1,A Revolucao Cientifica conversa com a afirmacao da razao moderna.
+FIL_018,FIL_019,required,2,Iluminismo e contratualismo entram melhor depois do racionalismo e empirismo.
+FIL_007,FIL_019,recommended,1,O Iluminismo entra mais claro depois da Revolucao Cientifica.
+FIL_019,FIL_008,required,2,Kant Hegel e Marx entram melhor depois da modernidade filosofica inicial.
 FIL_008,FIL_009,recommended,1,As criticas contemporaneas entram melhor depois dos grandes sistemas filosoficos.
 FIL_009,FIL_010,required,2,Fenomenologia e existencialismo entram melhor depois das crises da modernidade.
 FIL_010,FIL_011,required,2,Autores contemporaneos finais entram melhor depois da trilha filosofica do seculo XX.
-FIL_008,FIL_012,recommended,1,A sociologia entra mais organizada depois da base da critica social moderna.
+FIL_008,FIL_012,recommended,1,A teoria sociologica entra mais organizada depois da base da critica social moderna.
+FIL_012,FIL_020,required,2,A sociologia do Brasil entra melhor depois da teoria sociologica.
 FIL_012,FIL_013,required,2,Temas sociais entram melhor depois da base sociologica.
 FIL_013,FIL_014,required,2,Trabalho e movimentos sociais dependem da leitura de cultura e desigualdades.
+FIL_013,FIL_021,recommended,1,Educacao e socializacao entram melhor depois da base de cultura e desigualdade.
 FIL_014,FIL_015,required,2,Estado e cidadania entram melhor depois da base sociopolitica.
+FIL_021,FIL_015,recommended,1,A leitura de educacao ajuda a consolidar cidadania e instituicoes.
 FIL_015,FIL_016,required,2,Temas contemporaneos entram melhor depois da base sociopolitica.
 HGE_010,FIL_007,cross_support,1,Iluminismo historico reforca a leitura filosofica da modernidade.
 HGE_012,HBR_007,cross_support,1,Revolucao Francesa e Era Napoleonica ajudam a contextualizar a independencia do Brasil.

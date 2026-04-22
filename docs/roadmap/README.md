@@ -436,3 +436,15 @@ Leitura honesta do estado atual:
 - Humanas entra agora em uma primeira versao robusta de cobertura
 - a estrutura ja e suficiente para servir como base pedagogica editavel do projeto
 - ainda deve existir espaco para refinamentos finos futuros, principalmente em Geografia regional e em Filosofia/Sociologia contemporanea
+
+Refinamentos mais recentes em Humanas:
+
+- `Demografia` em Geografia foi suavizada para separar crescimento/transicao de estrutura etaria, indicadores e migracoes
+- `Filosofia Antiga` foi suavizada para separar `Socrates e os Sofistas` de `Platao e Aristoteles`
+- `Filosofia Moderna` foi refinada para separar `racionalismo`, `empirismo`, `Revolucao Cientifica` e `Iluminismo/contratualismo`
+- a entrada de `Sociologia` foi refinada para separar `teoria da sociologia`, `sociologia do Brasil` e `educacao/socializacao`
+
+Leitura honesta desta rodada:
+
+- Humanas continua em fase de lapidacao, mas ja deixou de ser so cobertura ampla
+- o maior ganho desta rodada veio em Filosofia e Sociologia, que estava mais agregada que Geografia e Historia
