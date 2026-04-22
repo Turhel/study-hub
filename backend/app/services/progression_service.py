@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import date
 from itertools import groupby
 
-from sqlalchemy import text
 from sqlmodel import Session, select
 
 from app.core.rules import (
@@ -36,21 +35,6 @@ from app.models import (
     SubjectProgress,
 )
 from app.schemas import DisciplineBlockProgressItem, DisciplineBlockProgressSnapshotResponse
-
-
-def _ensure_block_progress_columns(session: Session) -> None:
-    columns = {
-        row[1]
-        for row in session.exec(text("PRAGMA table_info(block_progress)")).all()
-    }
-    if "user_decision" not in columns:
-        session.exec(
-            text(
-                "ALTER TABLE block_progress "
-                "ADD COLUMN user_decision VARCHAR DEFAULT 'continue_current'"
-            )
-        )
-        session.commit()
 
 
 def _block_has_attempts(session: Session, block_id: int) -> bool:
@@ -89,7 +73,6 @@ def sync_block_progress(
     today: date,
     discipline_filter: str | None = None,
 ) -> dict[int, BlockProgress]:
-    _ensure_block_progress_columns(session)
     blocks = session.exec(select(Block).order_by(Block.disciplina, Block.ordem, Block.id)).all()
     mastery_by_id = _block_mastery_by_id(session)
     progress_by_id = _block_progress_by_id(session)

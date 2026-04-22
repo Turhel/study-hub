@@ -17,7 +17,7 @@ from app.core.rules import (
 )
 from app.models import Block, BlockProgress
 from app.schemas import BlockProgressDecisionRequest, BlockProgressDecisionResponse
-from app.services.progression_service import _ensure_block_progress_columns, sync_progression
+from app.services.progression_service import sync_progression
 
 
 class BlockDecisionError(ValueError):
@@ -45,7 +45,6 @@ def save_block_progress_decision(
     session: Session,
     payload: BlockProgressDecisionRequest,
 ) -> BlockProgressDecisionResponse:
-    _ensure_block_progress_columns(session)
     requested_discipline = normalize_discipline_name(payload.discipline)
 
     block = session.get(Block, payload.block_id)

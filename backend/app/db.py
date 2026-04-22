@@ -4,6 +4,8 @@ from pathlib import Path
 
 from sqlmodel import Session, SQLModel, create_engine
 
+from app.db_migrations.runner import run_migrations
+
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BACKEND_DIR / "data"
@@ -16,6 +18,7 @@ engine = create_engine(DATABASE_URL, echo=False)
 
 def init_db() -> None:
     SQLModel.metadata.create_all(engine)
+    run_migrations(engine)
 
 
 def get_session() -> Session:
