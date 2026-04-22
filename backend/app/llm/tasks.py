@@ -74,11 +74,11 @@ def _load_prompt(filename: str) -> str:
 
 def _task_timeout_seconds(task_name: str) -> float:
     timeout_defaults = {
-        "question_explain_text": 25.0,
-        "essay_score": 60.0,
-        "essay_detailed": 90.0,
-        "essay_teach": 105.0,
-        "essay_study_chat": 75.0,
+        "question_explain_text": 60.0,
+        "essay_score": 600.0,
+        "essay_detailed": 900.0,
+        "essay_teach": 1080.0,
+        "essay_study_chat": 720.0,
     }
     env_names = {
         "question_explain_text": "STUDY_HUB_LLM_TIMEOUT_QUESTION_EXPLAIN_TEXT_SECONDS",
