@@ -293,6 +293,41 @@ Leitura honesta do estado atual:
 - ainda nao esta tao lapidada quanto Matematica e Fisica
 - o proximo ganho real viria de uma rodada especifica de refinamento fino so na disciplina
 
+## Roadmap Atual de Biologia
+
+Biologia entrou agora como a disciplina mais ampla do roadmap fora de Matematica, com uma primeira versao robusta baseada na planilha versionada.
+
+Cobertura atual da disciplina:
+
+1. introducao a biologia e bioquimica
+2. biologia molecular e citologia
+3. bioenergetica
+4. nucleo e divisao celular
+5. reproducao, embriologia e histologia
+6. fisiologia animal
+7. genetica
+8. origem da vida e evolucao
+9. taxonomia e microbiologia
+10. botanica
+11. zoologia
+12. ecologia
+
+Decisoes desta versao:
+
+- a disciplina foi organizada em eixos amplos, mas com nos ja estudaveis
+- a prioridade foi criar uma espinha pedagogica coerente antes de lapidar detalhes finos
+- entraram cruzamentos pontuais com Quimica em bioquimica, metabolismo e ecologia
+- entraram cruzamentos pontuais com Matematica em genetica e ecologia
+- a primeira rodada de refinamento ja separou trechos mais pesados de fisiologia animal e zoologia dos cordados
+- uma rodada adicional de refinamento ja separou melhor genetica mendeliana aplicada e a camada ecologica entre processos, dinamica e biomas
+- outra rodada de refinamento ja separou melhor microbiologia e botanica entre entrada conceitual e partes mais aplicadas
+
+Leitura honesta do estado atual:
+
+- Biologia ja saiu do zero e entrou numa versao robusta de cobertura
+- ainda esta longe do nivel de lapidacao fina de Matematica e Fisica
+- o proximo ganho real viria de rodadas especificas de refinamento interno da disciplina
+
 Refinamentos mais recentes em Quimica:
 
 - `geometria hibridacao e polaridade` foi quebrado para separar geometria molecular de hibridacao/polaridade
@@ -301,6 +336,10 @@ Refinamentos mais recentes em Quimica:
 - `propriedades fisicas e quimicas dos compostos organicos` foi quebrado para separar leitura fisica de reatividade organica
 - a entrada de `acidos e bases` foi quebrada para separar conceitos fundamentais do estudo dos acidos
 - `equilibrio ionico` foi refinado para separar ionizacao/dissociacao de `pH pOH e meio acido-base`
+- `pilha` ganhou um degrau proprio de `potencial de pilha e ddp`
+- `agua` ganhou uma camada aplicada separada para `tratamento e quimica da agua`
+- `pilha` tambem passou a explicitar melhor a leitura de espontaneidade redox antes do degrau quantitativo de ddp
+- `quimica ambiental` foi refinada para separar `poluentes e impactos ambientais` de `tratamento e quimica da agua`
 
 Leitura honesta do estado atual:
 

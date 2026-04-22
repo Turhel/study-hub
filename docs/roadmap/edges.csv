@@ -200,6 +200,7 @@ CHEM_056,CHEM_032,recommended,1,Tampao e Kps entram mais suaves depois da leitur
 CHEM_030,CHEM_032,required,2,Tampao e Kps dependem da base de equilibrio ionico.
 CHEM_006,CHEM_033,recommended,1,Pilha entra melhor depois da leitura de nox.
 CHEM_008,CHEM_033,required,2,Pilha depende da intuicao de oxidacao e reducao.
+CHEM_033,CHEM_057,required,2,Potencial de pilha entra melhor depois da base de pilhas e espontaneidade redox.
 CHEM_033,CHEM_034,required,2,Eletrolise entra melhor depois da base de pilha e reacoes redox.
 CHEM_003,CHEM_035,recommended,1,Propriedades coligativas entram melhor depois da base de solucoes.
 CHEM_035,CHEM_053,required,2,Osmose e variacoes de fase entram melhor depois dos fundamentos coligativos.
@@ -219,6 +220,7 @@ CHEM_043,CHEM_044,required,2,Estereoisomeria entra melhor depois da isomeria pla
 CHEM_005,CHEM_045,recommended,2,Leis dos gases refinam o no amplo de gases.
 CHEM_022,CHEM_047,recommended,1,Quimica ambiental entra melhor depois da leitura de solucoes e dispersoes.
 CHEM_022,CHEM_048,recommended,1,Agua entra melhor depois da base de solucoes e misturas.
+CHEM_048,CHEM_058,required,2,Tratamento da agua depende da base de propriedades e papel ambiental da agua.
 CHEM_037,CHEM_049,required,2,Reacoes organicas dependem da base de funcoes organicas.
 CHEM_038,CHEM_049,recommended,1,Hidrocarbonetos reforcam varias reacoes organicas classicas.
 CHEM_039,CHEM_049,recommended,1,Funcoes oxigenadas reforcam a leitura de reacoes organicas.
@@ -322,6 +324,7 @@ MATH_011,CHEM_056,cross_support,1,pH e pOH se beneficiam de organizacao algoriti
 MATH_011,CHEM_006,cross_support,1,Calculo de nox se beneficia de organizacao algoritimica e sequencial.
 MATH_011,CHEM_007,cross_support,1,Balanceamento por inspecao pede manipulacao estruturada de quantidades.
 MATH_011,CHEM_033,cross_support,1,Pilha exige leitura organizada de relacoes e sinais.
+MATH_011,CHEM_057,cross_support,1,Potencial de pilha se beneficia de organizacao quantitativa e comparacao algoritimica.
 MATH_011,CHEM_034,cross_support,1,Eletrolise se beneficia de organizacao quantitativa simples.
 MATH_045,CHEM_035,cross_support,1,Propriedades coligativas usam relacoes proporcionais entre quantidade de soluto e efeito.
 PHY_012,CHEM_025,cross_support,1,Energia potencial e conservacao reforcam a intuicao energetica da termoquimica.
@@ -330,3 +333,85 @@ PHY_034,CHEM_026,cross_support,1,Termodinamica em fisica reforca a leitura de Gi
 PHY_036,CHEM_053,cross_support,1,Fenomenos de membrana e propagacao ajudam a intuir osmose em contextos aplicados.
 PHY_033,CHEM_045,cross_support,1,Gases em fisica reforcam as transformacoes gasosas em quimica.
 PHY_064,CHEM_046,cross_support,1,Fisica moderna reforca a intuicao de radioatividade.
+BIO_001,BIO_002,recommended,1,Bioquimica entra melhor depois da base geral da biologia.
+BIO_002,BIO_003,required,2,Glicidios e lipidios entram melhor depois dos constituintes inorganicos.
+BIO_003,BIO_004,required,2,Proteinas e enzimas complementam a base de biomoleculas.
+BIO_004,BIO_005,recommended,1,Acidos nucleicos entram melhor depois da base bioquimica.
+BIO_005,BIO_006,required,2,Codigo genetico depende do entendimento de DNA RNA e replicacao.
+BIO_006,BIO_057,required,2,Transcricao e traducao entram melhor depois da leitura de codons e codigo genetico.
+BIO_057,BIO_007,recommended,1,Engenharia genetica entra melhor depois da base de expressao genetica.
+BIO_002,BIO_008,recommended,1,Citologia entra melhor depois da base bioquimica celular.
+BIO_008,BIO_009,required,2,Membrana e transporte dependem da entrada citologica.
+BIO_009,BIO_010,required,2,Transporte ativo complementa a base de membrana.
+BIO_008,BIO_011,required,2,Organelas e microscopia dependem da entrada citologica.
+BIO_011,BIO_012,recommended,1,Respiracao celular entra melhor depois da leitura de organelas.
+BIO_012,BIO_061,required,2,Fermentacao entra melhor depois da base de producao de ATP e metabolismo energetico.
+BIO_011,BIO_013,recommended,1,Fotossintese entra melhor depois da leitura de organelas e cloroplastos.
+BIO_008,BIO_014,recommended,1,Nucleo entra melhor depois da base celular.
+BIO_014,BIO_015,required,2,Ciclo celular e mitose dependem de nucleo cromossomos e genes.
+BIO_015,BIO_058,required,2,Meiose entra melhor depois da base de ciclo celular e mitose.
+BIO_058,BIO_016,required,2,Alteracoes cromossomicas dependem da base de meiose e variabilidade genetica.
+BIO_058,BIO_017,recommended,1,Reproducao humana entra melhor depois da base de meiose.
+BIO_017,BIO_018,required,2,Embriologia depende da reproducao e fecundacao.
+BIO_018,BIO_019,recommended,1,Histologia entra melhor depois da base de desenvolvimento embrionario.
+BIO_019,BIO_020,required,2,Tecidos especializados dependem da base histologica.
+BIO_020,BIO_021,recommended,1,Nervoso e endocrino entram melhor depois do tecido nervoso.
+BIO_021,BIO_046,recommended,1,Sentidos entram melhor depois da base de sistema nervoso.
+BIO_020,BIO_022,recommended,1,Sistema circulatorio entra melhor depois da base histologica.
+BIO_022,BIO_059,required,2,Sistema respiratorio entra melhor depois da leitura de circulacao e transporte.
+BIO_022,BIO_047,recommended,1,Excretor e osmorregulacao entram melhor depois da base sistemica de manutencao.
+BIO_020,BIO_023,recommended,1,Sistema digestorio entra melhor depois dos tecidos especializados.
+BIO_023,BIO_060,required,2,Imunologia e saude entram melhor depois da base de manutencao e digestao.
+BIO_058,BIO_024,recommended,1,Genetica mendeliana entra melhor depois da base de meiose.
+BIO_024,BIO_025,required,2,Segunda lei depende da primeira base mendeliana.
+BIO_025,BIO_049,required,2,Heredogramas e probabilidades entram melhor depois da segunda lei.
+BIO_049,BIO_026,required,2,Grupos sanguineos e herancas especiais entram melhor depois da base de heredogramas e probabilidades.
+BIO_026,BIO_027,recommended,1,Interacao genica entra melhor depois das herancas especiais.
+BIO_049,BIO_028,recommended,1,Hardy-Weinberg entra melhor depois da base quantitativa de heredogramas e probabilidades.
+BIO_029,BIO_030,required,2,Teorias evolutivas entram melhor depois da origem da vida.
+BIO_030,BIO_031,required,2,Especiacao e evolucao humana dependem da base evolucionista.
+BIO_031,BIO_032,recommended,1,Taxonomia entra mais organizada depois da base evolutiva.
+BIO_032,BIO_033,recommended,1,Microbiologia entra melhor depois da organizacao dos seres vivos.
+BIO_033,BIO_052,recommended,1,Protozoarios e algas entram melhor depois da entrada microbiologica.
+BIO_052,BIO_053,recommended,1,Fungos entram melhor depois da base dos demais microorganismos e protistas.
+BIO_033,BIO_034,required,2,Protistas fungos e doencas complementam a entrada microbiologica.
+BIO_032,BIO_035,recommended,1,Botanica entra melhor depois da visao geral dos reinos.
+BIO_035,BIO_036,required,2,Angiospermas e reproducao dependem da base dos grupos vegetais.
+BIO_036,BIO_054,recommended,1,Frutos e sementes entram melhor depois da base reprodutiva das angiospermas.
+BIO_035,BIO_037,required,2,Morfologia vegetal depende da entrada botanica.
+BIO_037,BIO_055,required,2,Nutricao e conducao vegetal dependem de morfologia e histologia vegetal.
+BIO_055,BIO_056,required,2,Transpiracao e fitormonios entram melhor depois da base de conducao e nutricao.
+BIO_037,BIO_038,required,2,Fisiologia vegetal depende de morfologia e histologia vegetal.
+BIO_032,BIO_039,recommended,1,Zoologia entra melhor depois da organizacao dos reinos.
+BIO_039,BIO_040,required,2,Invertebrados complexos entram melhor depois dos grupos basicos.
+BIO_040,BIO_041,required,2,Cordados iniciais entram melhor depois da progressao zoologica inicial.
+BIO_041,BIO_048,required,2,Tetrapodes entram melhor depois da base dos cordados iniciais.
+BIO_032,BIO_042,recommended,1,Ecologia entra mais organizada depois da classificacao da biodiversidade.
+BIO_042,BIO_043,required,2,Ciclos e piramides dependem dos fundamentos de ecologia.
+BIO_043,BIO_050,required,2,Relacoes ecologicas entram melhor depois da base de processos ecologicos.
+BIO_050,BIO_044,required,2,Dinamica ecologica entra melhor depois da leitura das relacoes entre seres vivos.
+BIO_044,BIO_051,required,2,Biomas e biociclos entram melhor depois da base de dinamica ecologica.
+BIO_051,BIO_045,required,2,Ambiente e sociedade dependem da base ecologica aplicada e da leitura dos biomas.
+CHEM_002,BIO_002,cross_support,1,Grandezas quimicas ajudam a leitura de constituintes celulares.
+CHEM_003,BIO_002,cross_support,1,Solucoes ajudam a interpretar agua e sais no meio biologico.
+CHEM_014,BIO_003,cross_support,1,Ligacoes quimicas ajudam a leitura estrutural de biomoleculas.
+CHEM_004,BIO_012,cross_support,1,Processos de concentracao e meio ajudam a pensar fermentacao e respiracao em contexto.
+CHEM_025,BIO_012,cross_support,1,Entalpia reforca a leitura energetica do metabolismo.
+CHEM_025,BIO_013,cross_support,1,Termoquimica ajuda a leitura energetica da fotossintese.
+CHEM_046,BIO_016,cross_support,1,Radioatividade ajuda a pensar mutacoes e alteracoes geneticas em contexto.
+CHEM_005,BIO_059,cross_support,1,Gases reforcam a leitura de trocas respiratorias.
+CHEM_003,BIO_047,cross_support,1,Solucoes ajudam a interpretar equilibrio hidrico e osmorregulacao.
+CHEM_058,BIO_038,cross_support,1,Quimica da agua reforca nutricao e conducao vegetal.
+CHEM_058,BIO_055,cross_support,1,Quimica da agua reforca absorcao e conducao vegetal.
+CHEM_047,BIO_045,cross_support,1,Quimica ambiental reforca poluicao e impactos ecologicos.
+MATH_025,BIO_025,cross_support,1,Probabilidade e contagem ajudam genealogias e leis de Mendel.
+MATH_030,BIO_049,cross_support,1,Probabilidade basica ajuda heredogramas e cruzamentos.
+MATH_028,BIO_028,cross_support,1,Leitura de graficos ajuda genetica de populacoes.
+MATH_028,BIO_044,cross_support,1,Leitura de graficos ajuda dinamica populacional e sucessao.
+MATH_030,BIO_044,cross_support,1,Probabilidade e estatistica apoiam leitura de populacoes.
+MATH_028,BIO_051,cross_support,1,Leitura de mapas e distribuicoes ajuda a interpretar biomas e biociclos.
+PHY_030,BIO_012,cross_support,1,Calorimetria e energia em fisica reforcam a intuicao energetica do metabolismo.
+PHY_033,BIO_059,cross_support,1,Gases em fisica reforcam a leitura do sistema respiratorio.
+PHY_024,BIO_047,cross_support,1,Pressao e fluidos ajudam a intuir filtracao e funcionamento excretor.
+PHY_034,BIO_013,cross_support,1,Termodinamica ajuda a pensar trocas energeticas na fotossintese.
+PHY_054,CHEM_057,cross_support,1,Leitura de ddp e circuitos em fisica reforca potencial de pilha em quimica.
