@@ -2,16 +2,49 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from app.schemas import ApiErrorResponse, RoadmapDisciplineItem, RoadmapEdgeResponse, RoadmapNodeResponse
+from app.schemas import (
+    ApiErrorResponse,
+    RoadmapDisciplineItem,
+    RoadmapDisciplineSummaryResponse,
+    RoadmapEdgeResponse,
+    RoadmapNodeResponse,
+    RoadmapSummaryResponse,
+    RoadmapValidationResponse,
+)
 from app.services.roadmap_query_service import (
     RoadmapQueryError,
+    get_roadmap_discipline_summary,
     get_roadmap_edges_by_discipline,
     get_roadmap_nodes_by_discipline,
+    get_roadmap_summary,
     list_roadmap_disciplines,
 )
+from app.services.roadmap_validation_service import validate_roadmap_csvs
 
 
 router = APIRouter(prefix="/api/roadmap")
+
+
+@router.get("/validation", response_model=RoadmapValidationResponse)
+def get_roadmap_validation_route() -> RoadmapValidationResponse:
+    return validate_roadmap_csvs()
+
+
+@router.get("/summary", response_model=RoadmapSummaryResponse)
+def get_roadmap_summary_route() -> RoadmapSummaryResponse:
+    return get_roadmap_summary()
+
+
+@router.get(
+    "/discipline/{discipline}/summary",
+    response_model=RoadmapDisciplineSummaryResponse,
+    responses={404: {"model": ApiErrorResponse}},
+)
+def get_roadmap_discipline_summary_route(discipline: str) -> RoadmapDisciplineSummaryResponse:
+    try:
+        return get_roadmap_discipline_summary(discipline)
+    except RoadmapQueryError as exc:
+        raise HTTPException(status_code=404, detail={"code": "roadmap_discipline_not_found", "message": str(exc)}) from exc
 
 
 @router.get("/disciplines", response_model=list[RoadmapDisciplineItem])

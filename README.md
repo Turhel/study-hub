@@ -31,6 +31,9 @@ Endpoints:
 ```text
 GET /health
 GET /api/today
+GET /api/roadmap/validation
+GET /api/roadmap/summary
+GET /api/roadmap/discipline/{discipline}/summary
 ```
 
 ## LLM Local Com LM Studio
@@ -136,6 +139,12 @@ Verificar contagens:
 
 ```powershell
 python -c "import sqlite3; c=sqlite3.connect('data/study_hub.db'); print('blocks', c.execute('select count(*) from blocks').fetchone()[0]); print('subjects', c.execute('select count(*) from subjects').fetchone()[0])"
+```
+
+Validar os CSVs do roadmap sem importar:
+
+```powershell
+python -m app.services.roadmap_import_service --validate
 ```
 
 ## Legado
