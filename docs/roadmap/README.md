@@ -436,3 +436,21 @@ Leitura honesta do estado atual:
 - Humanas entra agora em uma primeira versao robusta de cobertura
 - a estrutura ja e suficiente para servir como base pedagogica editavel do projeto
 - ainda deve existir espaco para refinamentos finos futuros, principalmente em Geografia regional e em Filosofia/Sociologia contemporanea
+
+Refinamentos mais recentes em Humanas:
+
+- `Demografia` em Geografia foi suavizada para separar crescimento/transicao de estrutura etaria, indicadores e migracoes
+- `Filosofia Antiga` foi suavizada para separar `Socrates e os Sofistas` de `Platao e Aristoteles`
+- `Filosofia Moderna` foi refinada para separar `racionalismo`, `empirismo`, `Revolucao Cientifica` e `Iluminismo/contratualismo`
+- a entrada de `Sociologia` foi refinada para separar `teoria da sociologia`, `sociologia do Brasil` e `educacao/socializacao`
+- `Historia Geral` foi refinada para separar `Pre-historia` de `Antiguidade Oriental`, `Revolucao Francesa` de `Era Napoleonica`, e `Primeira Guerra` de `Revolucao Russa`
+- `Historia do Brasil` foi refinada para separar `expansao territorial/mineracao` de `Periodo Pombalino`, `Era Vargas inicial` de `Estado Novo`, e `Ditadura Militar inicial` da fase final do regime
+- `Geografia` foi refinada para separar `climas do Brasil` de `climogramas`, `estrutura interna` de `relevo do Brasil`, `biomas mundiais` de `dominios morfoclimaticos`, `industria/energia` de `transportes`, e `espacos mundiais` de `regionalizacao do Brasil`
+- `Historia do Brasil` foi refinada de novo para separar `politica interna` de `economia/sociedade` no Segundo Reinado, `conflitos rurais` de `revoltas urbanas`, e `Dutra/Vargas/JK` de `Janio e Jango`
+- `Historia Geral` foi refinada mais uma vez para separar `Renascimento` de `Reformas Religiosas`, `Revolucao Industrial` de `Independencia dos EUA`, e `Guerra de Secessao/unificacoes` de `Imperialismo`
+- `Filosofia e Sociologia` foi refinada de novo para separar `Kant` de `Hegel e Marx`, `correntes contemporaneas iniciais` de `Nietzsche`, `Fenomenologia/Existencialismo` de `Arendt e Walter Benjamin`, e `Habermas/Foucault` de `Rawls/Jonas/Filosofia da Ciencia`
+
+Leitura honesta desta rodada:
+
+- Humanas continua em fase de lapidacao, mas ja deixou de ser so cobertura ampla
+- o maior ganho mais recente veio em Historia Geral e Filosofia/Sociologia, reduzindo quase todo o restante dos nos largos de Humanas
