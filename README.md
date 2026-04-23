@@ -60,6 +60,42 @@ Nesta fase:
 - o SQLite continua existindo como fallback de desenvolvimento
 - nao ha integracao com auth/storage do Supabase
 
+### Carga estrutural inicial no Postgres
+
+Depois de validar a conexao com Supabase/Postgres, voce pode carregar apenas os dados estruturais:
+
+- `subjects`
+- `blocks`
+- `block_subjects`
+- `roadmap_nodes`
+- `roadmap_edges`
+- `roadmap_block_map`
+- `roadmap_rules`
+
+Sem migrar ainda os dados de uso, como:
+
+- `question_attempts`
+- `reviews`
+- `study_events`
+- `daily_study_plan`
+- `timer_sessions`
+
+Com `DATABASE_URL` apontando para o Postgres remoto:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.bootstrap_postgres
+```
+
+Se quiser informar outro SQLite de origem:
+
+```powershell
+python -m app.bootstrap_postgres --source-sqlite "D:\.dev\.repo\study-hub\backend\data\study_hub.db"
+```
+
+Esse passo preserva os IDs de `subjects`, `blocks` e `block_subjects`, para manter o mapeamento do roadmap consistente no Postgres.
+
 Backend:
 
 ```text
