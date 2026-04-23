@@ -96,6 +96,64 @@ python -m app.bootstrap_postgres --source-sqlite "D:\.dev\.repo\study-hub\backen
 
 Esse passo preserva os IDs de `subjects`, `blocks` e `block_subjects`, para manter o mapeamento do roadmap consistente no Postgres.
 
+### Sincronizar tambem os dados de uso
+
+Quando quiser levar para o Postgres o que ja existe no SQLite local em:
+
+- `block_progress`
+- `subject_progress`
+- `study_capacity`
+- `daily_study_plan`
+- `daily_study_plan_items`
+- `essay_submissions`
+- `essay_corrections`
+- `essay_study_sessions`
+- `essay_study_messages`
+
+use:
+
+```powershell
+python -m app.bootstrap_postgres --include-usage
+```
+
+Se a estrutura ja estiver carregada e voce quiser sincronizar apenas uso:
+
+```powershell
+python -m app.bootstrap_postgres --usage-only
+```
+
+O sync de uso:
+
+- preserva os IDs quando isso faz sentido
+- faz merge por chave de negocio em `block_progress`, `subject_progress` e `block_mastery`
+- nao apaga dados existentes no Postgres
+
+### Fluxo recomendado para usar Postgres como banco principal
+
+1. definir `DATABASE_URL` no `backend/.env`
+2. rodar:
+
+```powershell
+python -m app.bootstrap_postgres --include-usage
+```
+
+3. subir o backend normalmente:
+
+```powershell
+python -m uvicorn app.main:app --reload
+```
+
+4. validar:
+
+```powershell
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/api/roadmap/summary
+curl http://127.0.0.1:8000/api/study-plan/today
+curl http://127.0.0.1:8000/api/activity/recent
+```
+
+Com `DATABASE_URL` presente, o backend passa a operar sobre o Postgres remoto. O SQLite continua disponivel apenas como fallback/dev e como fonte de bootstrap.
+
 Backend:
 
 ```text
