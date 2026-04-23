@@ -18,7 +18,7 @@ def main() -> None:
     parser.add_argument(
         "--source-sqlite",
         default=str(get_default_sqlite_db_path()),
-        help="Caminho para o SQLite oficial de origem. Default: backend/data/study_hub.db",
+        help="Caminho para o SQLite oficial de origem. Necessario para uso; opcional para estrutura se os seeds do repo existirem.",
     )
     parser.add_argument(
         "--include-usage",

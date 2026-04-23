@@ -31,6 +31,7 @@ from app.models import (
     TimerSessionItem,
 )
 from app.services.roadmap_import_service import import_roadmap_from_csv
+from app.services.repo_seed_service import load_structural_seed_rows
 
 
 @dataclass
@@ -172,11 +173,12 @@ def _masked_target_database_url() -> str:
     )
 
 
+def _parse_bool(value: str) -> bool:
+    return value.strip().casefold() in {"1", "true", "sim", "yes", "on"}
+
+
 def bootstrap_structural_data_to_postgres(source_sqlite_path: Path) -> PostgresStructuralBootstrapSummary:
     source_path = source_sqlite_path.resolve()
-    if not source_path.exists():
-        raise FileNotFoundError(f"SQLite de origem nao encontrado: {source_path}")
-
     _validate_target_is_postgres(target_engine)
     init_db()
 
@@ -185,14 +187,70 @@ def bootstrap_structural_data_to_postgres(source_sqlite_path: Path) -> PostgresS
         target_database_url=_masked_target_database_url(),
     )
 
-    source_engine = create_db_engine(_sqlite_url(source_path))
+    seed_rows = load_structural_seed_rows()
 
-    with Session(source_engine) as source_session, get_session() as target_session:
-        summary.subjects_created, summary.subjects_updated = _copy_table_by_id(source_session, target_session, Subject)
-        summary.blocks_created, summary.blocks_updated = _copy_table_by_id(source_session, target_session, Block)
-        summary.block_subjects_created, summary.block_subjects_updated = _copy_table_by_id(
-            source_session, target_session, BlockSubject
-        )
+    with get_session() as target_session:
+        subject_source_rows = seed_rows["subjects"]
+        target_subjects = {row.id: row for row in target_session.exec(select(Subject)).all()}
+        for row in subject_source_rows:
+            payload = dict(
+                id=int(row["id"]),
+                disciplina=row["disciplina"],
+                assunto=row["assunto"],
+                subassunto=row["subassunto"] or None,
+                competencia=row["competencia"] or None,
+                habilidade=row["habilidade"] or None,
+                prioridade_enem=int(row["prioridade_enem"] or 3),
+                ativo=_parse_bool(row["ativo"]),
+            )
+            target_row = target_subjects.get(payload["id"])
+            if target_row is None:
+                target_session.add(Subject(**payload))
+                summary.subjects_created += 1
+            else:
+                for field_name, value in payload.items():
+                    setattr(target_row, field_name, value)
+                target_session.add(target_row)
+                summary.subjects_updated += 1
+
+        block_source_rows = seed_rows["blocks"]
+        target_blocks = {row.id: row for row in target_session.exec(select(Block)).all()}
+        for row in block_source_rows:
+            payload = dict(
+                id=int(row["id"]),
+                nome=row["nome"],
+                disciplina=row["disciplina"],
+                descricao=row["descricao"] or None,
+                ordem=int(row["ordem"] or 0),
+                status=row["status"] or "em_andamento",
+            )
+            target_row = target_blocks.get(payload["id"])
+            if target_row is None:
+                target_session.add(Block(**payload))
+                summary.blocks_created += 1
+            else:
+                for field_name, value in payload.items():
+                    setattr(target_row, field_name, value)
+                target_session.add(target_row)
+                summary.blocks_updated += 1
+
+        block_subject_source_rows = seed_rows["block_subjects"]
+        target_block_subjects = {row.id: row for row in target_session.exec(select(BlockSubject)).all()}
+        for row in block_subject_source_rows:
+            payload = dict(
+                id=int(row["id"]),
+                block_id=int(row["block_id"]),
+                subject_id=int(row["subject_id"]),
+            )
+            target_row = target_block_subjects.get(payload["id"])
+            if target_row is None:
+                target_session.add(BlockSubject(**payload))
+                summary.block_subjects_created += 1
+            else:
+                for field_name, value in payload.items():
+                    setattr(target_row, field_name, value)
+                target_session.add(target_row)
+                summary.block_subjects_updated += 1
         target_session.commit()
 
         _sync_postgres_sequence(target_session, "subjects")

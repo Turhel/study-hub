@@ -64,7 +64,22 @@ Estado atual desta integracao:
 
 ### Carga estrutural inicial no Postgres
 
-Depois de validar a conexao com Supabase/Postgres, voce pode carregar apenas os dados estruturais:
+Depois de validar a conexao com Supabase/Postgres, voce pode carregar apenas os dados estruturais.
+
+Esses dados agora ficam versionados no repositório em:
+
+- `docs/data_seed/subjects.csv`
+- `docs/data_seed/blocks.csv`
+- `docs/data_seed/block_subjects.csv`
+- `docs/roadmap/*.csv`
+
+Ou seja:
+
+- o repositório vira a fonte de verdade da estrutura pedagógica e operacional
+- o Supabase/Postgres fica focado em dados operacionais
+- o SQLite pode continuar como fallback/offline e também como fonte de sync de uso
+
+Os dados estruturais carregados no Postgres são:
 
 - `subjects`
 - `blocks`
@@ -97,6 +112,14 @@ python -m app.bootstrap_postgres --source-sqlite "D:\.dev\.repo\study-hub\backen
 ```
 
 Esse passo preserva os IDs de `subjects`, `blocks` e `block_subjects`, para manter o mapeamento do roadmap consistente no Postgres.
+
+Se voce quiser atualizar os CSVs estruturais versionados a partir do SQLite local:
+
+```powershell
+python -m app.export_repo_seed
+```
+
+O bootstrap estrutural do Postgres usa os CSVs versionados do repositório como fonte principal. Portanto, ele continua funcionando mesmo que o SQLite local nao esteja disponivel.
 
 ### Sincronizar tambem os dados de uso
 
