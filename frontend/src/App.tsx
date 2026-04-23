@@ -8,7 +8,11 @@ const navigationItems = [
   { label: "Timer", path: "/timer", marker: "T" },
 ];
 
-const futureItems = ["Trilha", "Revisoes", "Redacao"];
+const futureItems = [
+  { label: "Trilha", marker: "R" },
+  { label: "Revisoes", marker: "V" },
+  { label: "Redacao", marker: "E" },
+];
 
 export default function App() {
   return (
@@ -16,7 +20,7 @@ export default function App() {
       <aside className="app-sidebar">
         <div className="app-sidebar-brand">
           <span className="app-brand-mark">SH</span>
-          <div>
+          <div className="app-sidebar-brand-copy">
             <p className="text-sm font-bold text-slate-950">Study Hub</p>
             <p className="text-xs text-slate-500">Rotina de estudo</p>
           </div>
@@ -30,17 +34,18 @@ export default function App() {
               className={({ isActive }) => `app-nav-link ${isActive ? "app-nav-link-active" : ""}`}
             >
               <span>{item.marker}</span>
-              {item.label}
+              <span className="app-nav-label">{item.label}</span>
             </NavLink>
           ))}
         </nav>
 
         <div className="mt-8 border-t border-slate-950/10 pt-6">
-          <p className="mb-3 text-xs font-semibold uppercase text-slate-400">Em breve</p>
+          <p className="app-sidebar-section-label mb-3 text-xs font-semibold uppercase text-slate-400">Em breve</p>
           <div className="space-y-1">
             {futureItems.map((item) => (
-              <span key={item} className="app-nav-link app-nav-link-disabled">
-                {item}
+              <span key={item.label} className="app-nav-link app-nav-link-disabled">
+                <span>{item.marker}</span>
+                <span className="app-nav-label">{item.label}</span>
               </span>
             ))}
           </div>
