@@ -151,6 +151,22 @@ class StudyCapacity(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
 
+class StudyEvent(SQLModel, table=True):
+    __tablename__ = "study_events"
+
+    id: int | None = Field(default=None, primary_key=True)
+    event_type: str = Field(index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    discipline: str | None = Field(default=None, index=True)
+    strategic_discipline: str | None = Field(default=None, index=True)
+    subarea: str | None = Field(default=None, index=True)
+    block_id: int | None = Field(default=None, foreign_key="blocks.id", index=True)
+    subject_id: int | None = Field(default=None, foreign_key="subjects.id", index=True)
+    title: str
+    description: str
+    metadata_json: str = Field(default="{}")
+
+
 class DailyStudyPlan(SQLModel, table=True):
     __tablename__ = "daily_study_plan"
 
