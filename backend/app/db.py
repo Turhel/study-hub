@@ -30,6 +30,8 @@ engine = create_db_engine(DATABASE_URL)
 
 
 def init_db() -> None:
+    from app import models  # noqa: F401
+
     SQLModel.metadata.create_all(engine)
     run_migrations(engine)
 

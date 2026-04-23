@@ -1,20 +1,19 @@
 from __future__ import annotations
 
+from sqlalchemy import inspect
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
 
 def _table_exists(connection: Connection, table_name: str) -> bool:
-    result = connection.execute(
-        text("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :table_name"),
-        {"table_name": table_name},
-    ).first()
-    return result is not None
+    inspector = inspect(connection)
+    return table_name in inspector.get_table_names()
 
 
 def _column_exists(connection: Connection, table_name: str, column_name: str) -> bool:
-    columns = connection.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
-    return any(row[1] == column_name for row in columns)
+    inspector = inspect(connection)
+    columns = inspector.get_columns(table_name)
+    return any(str(column.get("name")) == column_name for column in columns)
 
 
 def apply(connection: Connection) -> None:
