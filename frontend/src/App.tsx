@@ -4,8 +4,8 @@ import TodayPage from "./pages/TodayPage";
 import TimerPage from "./pages/TimerPage";
 
 const navigationItems = [
-  { label: "Foco do dia", path: "/", marker: "•" },
-  { label: "Timer", path: "/timer", marker: "◦" },
+  { label: "Foco do dia", path: "/", marker: "D" },
+  { label: "Timer", path: "/timer", marker: "T" },
 ];
 
 const futureItems = ["Trilha", "Revisoes", "Redacao"];
@@ -17,7 +17,7 @@ export default function App() {
         <div className="app-sidebar-brand">
           <span className="app-brand-mark">SH</span>
           <div>
-            <p className="text-sm font-bold text-white">Study Hub</p>
+            <p className="text-sm font-bold text-slate-950">Study Hub</p>
             <p className="text-xs text-slate-500">Rotina de estudo</p>
           </div>
         </div>
@@ -35,8 +35,8 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="mt-8 border-t border-white/10 pt-6">
-          <p className="mb-3 text-xs font-semibold uppercase text-slate-500">Em breve</p>
+        <div className="mt-8 border-t border-slate-950/10 pt-6">
+          <p className="mb-3 text-xs font-semibold uppercase text-slate-400">Em breve</p>
           <div className="space-y-1">
             {futureItems.map((item) => (
               <span key={item} className="app-nav-link app-nav-link-disabled">
