@@ -1,4 +1,5 @@
 import type {
+  ActivityItem,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
   StudyPlanTodayResponse,
@@ -26,6 +27,16 @@ export async function getStudyPlanToday(): Promise<StudyPlanTodayResponse> {
   }
 
   return response.json() as Promise<StudyPlanTodayResponse>;
+}
+
+export async function getRecentActivity(limit = 100): Promise<ActivityItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/activity/recent?limit=${limit}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar a atividade recente.");
+  }
+
+  return response.json() as Promise<ActivityItem[]>;
 }
 
 export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPayload): Promise<QuestionAttemptBulkResponse> {

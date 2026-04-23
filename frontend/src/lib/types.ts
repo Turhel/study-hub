@@ -24,6 +24,19 @@ export type TodayResponse = {
   forgotten_subjects: TodayItem[];
 };
 
+export type ActivityItem = {
+  type: "question_attempt_bulk" | "review_upsert" | "daily_plan_generated" | "block_progress_decision";
+  created_at: string;
+  title: string;
+  description: string;
+  discipline?: string | null;
+  strategic_discipline?: string | null;
+  subarea?: string | null;
+  block_id?: number | null;
+  subject_id?: number | null;
+  metadata: Record<string, unknown>;
+};
+
 export type StudyPlanSummary = {
   total_questions: number;
   focus_count: number;

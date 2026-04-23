@@ -93,6 +93,62 @@ body {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;
 }
 
+.hero-play-button {
+  display: inline-grid;
+  place-items: center;
+  width: 6.5rem;
+  height: 6.5rem;
+  flex: 0 0 auto;
+  border: 2px solid #0b0c0a;
+  border-radius: 8px;
+  background: #7ddc9a;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.18) inset,
+    7px 7px 0 #030403;
+  color: #0b0c0a;
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.hero-play-button:hover {
+  background: #a5efbd;
+}
+
+.hero-play-button:active {
+  transform: translate(4px, 4px);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.18) inset,
+    3px 3px 0 #030403;
+}
+
+.hero-play-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.hero-play-button span {
+  width: 0;
+  height: 0;
+  margin-left: 0.45rem;
+  border-top: 1.15rem solid transparent;
+  border-bottom: 1.15rem solid transparent;
+  border-left: 1.75rem solid currentColor;
+}
+
+.pomodoro-ring {
+  display: grid;
+  place-items: center;
+  width: 10rem;
+  height: 10rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background:
+    conic-gradient(#f4b860 var(--pomodoro-progress, 0%), rgba(255, 255, 255, 0.07) 0),
+    #0b0c0a;
+  box-shadow:
+    0 0 0 12px rgba(0, 0, 0, 0.28) inset,
+    4px 4px 0 rgba(0, 0, 0, 0.52);
+}
+
 .pixel-button {
   border: 2px solid #0b0c0a;
   border-radius: 0;

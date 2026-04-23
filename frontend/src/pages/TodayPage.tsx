@@ -1,54 +1,14 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from "react";
 
-import MetricCard from "../components/MetricCard";
-import SectionCard from "../components/SectionCard";
-import { getStudyPlanToday, getToday, saveQuestionAttemptsBulk } from "../lib/api";
+import { getRecentActivity, getStudyPlanToday, getToday, saveQuestionAttemptsBulk } from "../lib/api";
 import type {
+  ActivityItem,
   QuestionAttemptBulkPayload,
-  QuestionAttemptBulkResponse,
-  StudyPlanExecutionStatus,
   StudyPlanItem,
   StudyPlanTodayResponse,
-  TodayItem,
 } from "../lib/types";
-
-function EmptyState({ text }: { text: string }) {
-  return <p className="bento-surface p-4 text-sm leading-6 text-zinc-500">{text}</p>;
-}
-
-function ItemList({ items, emptyText }: { items: TodayItem[]; emptyText: string }) {
-  if (items.length === 0) {
-    return <EmptyState text={emptyText} />;
-  }
-
-  return (
-    <div className="space-y-3">
-      {items.map((item, index) => (
-        <div key={item.id ?? `${item.title}-${index}`} className="bento-surface px-4 py-3">
-          <p className="pixel-font text-sm font-bold text-zinc-100">{item.title}</p>
-          {item.description ? <p className="mt-1 text-sm text-zinc-500">{item.description}</p> : null}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function StudyPlanStats({ plan }: { plan: StudyPlanTodayResponse }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div className="bento-surface px-4 py-3">
-        <p className="pixel-font text-xs font-bold uppercase text-zinc-500">Questoes</p>
-        <p className="pixel-font mt-3 text-3xl font-bold text-zinc-50">{plan.summary.total_questions}</p>
-      </div>
-      <div className="bento-surface px-4 py-3">
-        <p className="pixel-font text-xs font-bold uppercase text-zinc-500">Focos</p>
-        <p className="pixel-font mt-3 text-3xl font-bold text-zinc-50">{plan.summary.focus_count}</p>
-      </div>
-    </div>
-  );
-}
 
 type RegisterFormState = {
   quantity: number;
@@ -60,6 +20,14 @@ type RegisterFormState = {
   confidence: NonNullable<QuestionAttemptBulkPayload["confidence"]>;
   errorType: string;
   notes: string;
+};
+
+type SubjectPerformance = {
+  discipline: string;
+  planned: number;
+  completed: number;
+  accuracy: number;
+  difficulty: number;
 };
 
 const defaultRegisterForm: RegisterFormState = {
@@ -74,163 +42,306 @@ const defaultRegisterForm: RegisterFormState = {
   notes: "",
 };
 
-const executionStatusLabels: Record<StudyPlanExecutionStatus, string> = {
-  nao_iniciado: "Nao iniciado",
-  em_andamento: "Em andamento",
-  concluido: "Concluido",
-};
-
-const executionStatusClasses: Record<StudyPlanExecutionStatus, string> = {
-  nao_iniciado: "study-plan-status study-plan-status-idle",
-  em_andamento: "study-plan-status study-plan-status-progress",
-  concluido: "study-plan-status study-plan-status-done",
-};
-
-function StudyPlanCard({
-  item,
-  index,
-  onRegister,
-  feedback,
-}: {
-  item: StudyPlanItem;
-  index: number;
-  onRegister: (item: StudyPlanItem) => void;
-  feedback?: QuestionAttemptBulkResponse;
-}) {
-  const scoreLabel = feedback?.mastery_score == null ? "a definir" : `${Math.round(feedback.mastery_score * 100)}%`;
-  const progressPercent = Math.round(Math.min(Math.max(item.progress_ratio, 0), 1) * 100);
-  const remainingLabel =
-    item.execution_status === "concluido"
-      ? "Foco concluido hoje"
-      : `Restam ${item.remaining_today} questoes`;
-
-  return (
-    <article className="bento-card p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="pixel-font text-xs font-bold uppercase text-focus-400">
-            Foco {index + 1} / {item.discipline}
-          </p>
-          <h3 className="mt-3 text-lg font-semibold text-zinc-50">{item.subject_name}</h3>
-          <p className="mt-1 text-sm text-zinc-500">{item.block_name}</p>
-        </div>
-        <div className="bento-surface shrink-0 px-3 py-2 text-right">
-          <p className="pixel-font text-2xl font-bold text-focus-400">{item.planned_questions}</p>
-          <p className="text-[11px] text-zinc-500">questoes</p>
-        </div>
-      </div>
-
-      <div className="bento-surface mt-4 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-zinc-100">
-              {item.completed_today} / {item.planned_questions} questoes
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">{remainingLabel}</p>
-          </div>
-          <span className={executionStatusClasses[item.execution_status]}>{executionStatusLabels[item.execution_status]}</span>
-        </div>
-        <div className="study-plan-progress mt-3">
-          <div className="study-plan-progress-fill" style={{ width: `${progressPercent}%` }} />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-2 text-sm text-zinc-400 sm:grid-cols-[1fr_auto] sm:items-end">
-        <p className="leading-6">{item.primary_reason}</p>
-        <span className="pixel-badge text-zinc-300">
-          {item.planned_mode}
-        </span>
-      </div>
-      <button
-        className="pixel-button mt-5 px-4 py-2 text-sm"
-        onClick={() => onRegister(item)}
-      >
-        Registrar questoes
-      </button>
-      {feedback ? (
-        <div className="bento-surface mt-5 p-4">
-          <p className="pixel-font text-xs font-bold uppercase text-focus-400">Registrado agora</p>
-          <div className="mt-3 grid gap-2 text-sm text-zinc-300 sm:grid-cols-3">
-            <p>
-              <span className="block text-xs text-zinc-500">Tentativas</span>
-              {feedback.created_attempts}
-            </p>
-            <p>
-              <span className="block text-xs text-zinc-500">Bloco</span>
-              {feedback.mastery_status ?? "a definir"}
-            </p>
-            <p>
-              <span className="block text-xs text-zinc-500">Score</span>
-              {scoreLabel}
-            </p>
-          </div>
-          <p className="mt-3 text-sm text-zinc-400">
-            Proxima revisao: {feedback.next_review_date ?? "a definir"}
-          </p>
-          <p className="mt-2 text-sm font-medium text-zinc-100">
-            {feedback.impact_message ?? "Registro salvo e progresso atualizado."}
-          </p>
-        </div>
-      ) : null}
-    </article>
-  );
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(Math.round(value), 100));
 }
 
-function StudyPlanSection({
-  plan,
+function getLocalDateKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function groupPerformance(plan: StudyPlanTodayResponse | undefined): SubjectPerformance[] {
+  if (!plan || plan.items.length === 0) {
+    return [];
+  }
+
+  const maxScore = Math.max(...plan.items.map((item) => item.priority_score), 1);
+  const grouped = plan.items.reduce<Record<string, SubjectPerformance>>((acc, item) => {
+    const key = item.discipline || "Geral";
+    const current = acc[key] ?? {
+      discipline: key,
+      planned: 0,
+      completed: 0,
+      accuracy: 0,
+      difficulty: 0,
+    };
+
+    current.planned += item.planned_questions;
+    current.completed += item.completed_today;
+    current.difficulty = Math.max(current.difficulty, (item.priority_score / maxScore) * 100);
+    acc[key] = current;
+    return acc;
+  }, {});
+
+  return Object.values(grouped)
+    .map((item) => ({
+      ...item,
+      accuracy: item.planned > 0 ? (item.completed / item.planned) * 100 : 0,
+      difficulty: clampPercent(item.difficulty),
+    }))
+    .sort((a, b) => b.difficulty - a.difficulty)
+    .slice(0, 5);
+}
+
+function HeroStudyCard({
+  focus,
   isLoading,
-  isError,
+  fallbackTitle,
+  fallbackDescription,
   onRegister,
-  feedbackByItem,
 }: {
-  plan: StudyPlanTodayResponse | undefined;
+  focus: StudyPlanItem | undefined;
   isLoading: boolean;
-  isError: boolean;
+  fallbackTitle: string;
+  fallbackDescription: string;
   onRegister: (item: StudyPlanItem) => void;
-  feedbackByItem: Record<string, QuestionAttemptBulkResponse>;
 }) {
-  if (isLoading) {
-    return <EmptyState text="Carregando o plano diario..." />;
-  }
-
-  if (isError || !plan) {
-    return <EmptyState text="Ainda nao foi possivel carregar o plano diario." />;
-  }
-
-  if (plan.items.length === 0) {
-    return <EmptyState text="Ainda nao ha plano diario disponivel. Importe ou desbloqueie conteudos para gerar os focos de hoje." />;
-  }
+  const title = focus ? `Continuar: ${focus.subject_name}` : isLoading ? "Carregando plano..." : fallbackTitle;
+  const description = focus
+    ? `${focus.block_name} / ${focus.discipline}`
+    : fallbackDescription;
+  const progress = focus ? clampPercent(focus.progress_ratio * 100) : 0;
 
   return (
-    <div className="space-y-4">
-      <StudyPlanStats plan={plan} />
-      <div className="space-y-3">
-        {plan.items.map((item, index) => (
-          <StudyPlanCard
-            key={`${item.block_id}-${item.subject_id}`}
-            item={item}
-            index={index}
-            onRegister={onRegister}
-            feedback={feedbackByItem[planItemKey(item)]}
-          />
-        ))}
+    <section className="bento-card-feature min-h-[320px] p-6 sm:p-8 lg:col-span-12">
+      <div className="flex h-full flex-col justify-between gap-10">
+        <div>
+          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Study Hub</p>
+          <h1 className="mt-8 max-w-3xl text-3xl font-semibold leading-tight text-zinc-50 sm:text-5xl">
+            {title}
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">{description}</p>
+        </div>
+
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <button
+            className="hero-play-button"
+            disabled={!focus}
+            onClick={() => focus && onRegister(focus)}
+            aria-label="Continuar estudo"
+            title="Continuar estudo"
+          >
+            <span />
+          </button>
+          <div className="min-w-0 flex-1 sm:max-w-sm">
+            <div className="flex items-center justify-between gap-3 text-sm text-zinc-400">
+              <span>{focus ? `${focus.completed_today}/${focus.planned_questions} questoes hoje` : "Sem progresso"}</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="study-plan-progress mt-3">
+              <div className="study-plan-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-zinc-500">
+              {focus?.primary_reason ?? "O plano aparece aqui quando o backend retorna um foco para hoje."}
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function planItemKey(item: Pick<StudyPlanItem, "block_id" | "subject_id">): string {
-  return `${item.block_id}-${item.subject_id}`;
+function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
+  const countsByDay = useMemo(() => {
+    return activity.reduce<Record<string, number>>((acc, item) => {
+      const parsed = new Date(item.created_at);
+      if (!Number.isNaN(parsed.getTime())) {
+        const key = getLocalDateKey(parsed);
+        acc[key] = (acc[key] ?? 0) + 1;
+      }
+      return acc;
+    }, {});
+  }, [activity]);
+
+  const days = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 35 }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (34 - index));
+      const key = getLocalDateKey(date);
+      const count = countsByDay[key] ?? 0;
+      return { key, count };
+    });
+  }, [countsByDay]);
+
+  const activeDays = days.filter((day) => day.count > 0).length;
+
+  return (
+    <section className="bento-card p-5 lg:col-span-3">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="pixel-font text-sm font-bold uppercase text-ember-400">Sua consistencia</p>
+          <p className="mt-2 text-sm text-zinc-500">Ultimos 35 dias</p>
+        </div>
+        <p className="pixel-font text-3xl font-bold text-zinc-50">{activeDays}</p>
+      </div>
+
+      <div className="mt-7 grid grid-cols-7 gap-2">
+        {days.map((day) => {
+          const level =
+            day.count === 0
+              ? "bg-zinc-900"
+            : day.count === 1
+                ? "bg-[#102417]"
+                : day.count === 2
+                  ? "bg-[#1f6f45]"
+                  : "bg-focus-400";
+
+          return <div key={day.key} className={`aspect-square rounded-[3px] border border-black/40 ${level}`} title={day.key} />;
+        })}
+      </div>
+
+      <div className="mt-5 flex items-center justify-between text-xs text-zinc-500">
+        <span>Menos</span>
+        <div className="flex gap-1">
+          <span className="h-3 w-3 rounded-[2px] bg-zinc-900" />
+          <span className="h-3 w-3 rounded-[2px] bg-[#102417]" />
+          <span className="h-3 w-3 rounded-[2px] bg-[#1f6f45]" />
+          <span className="h-3 w-3 rounded-[2px] bg-focus-400" />
+        </div>
+        <span>Mais</span>
+      </div>
+    </section>
+  );
+}
+
+function PerformanceWidget({ performance }: { performance: SubjectPerformance[] }) {
+  const radarItems = performance.length > 0 ? performance : [{ discipline: "Sem dados", planned: 0, completed: 0, accuracy: 0, difficulty: 0 }];
+  const center = 82;
+  const radius = 58;
+  const points = radarItems.map((item, index) => {
+    const angle = (Math.PI * 2 * index) / radarItems.length - Math.PI / 2;
+    const value = Math.max(item.accuracy, item.difficulty) / 100;
+    return `${center + Math.cos(angle) * radius * value},${center + Math.sin(angle) * radius * value}`;
+  });
+
+  return (
+    <section className="bento-card p-5 lg:col-span-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Desempenho por materia</p>
+          <p className="mt-2 text-sm text-zinc-500">Dificuldade e acuracia atual</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[170px_1fr]">
+        <svg className="mx-auto h-40 w-40 overflow-visible" viewBox="0 0 164 164" role="img" aria-label="Radar de desempenho">
+          {[0.33, 0.66, 1].map((scale) => (
+            <circle key={scale} cx={center} cy={center} r={radius * scale} fill="none" stroke="rgba(255,255,255,0.08)" />
+          ))}
+          {radarItems.map((_, index) => {
+            const angle = (Math.PI * 2 * index) / radarItems.length - Math.PI / 2;
+            return (
+              <line
+                key={index}
+                x1={center}
+                y1={center}
+                x2={center + Math.cos(angle) * radius}
+                y2={center + Math.sin(angle) * radius}
+                stroke="rgba(255,255,255,0.08)"
+              />
+            );
+          })}
+          <polygon points={points.join(" ")} fill="rgba(125, 220, 154, 0.2)" stroke="#7ddc9a" strokeWidth="2" />
+        </svg>
+
+        <div className="space-y-4">
+          <div className="flex gap-4 text-xs text-zinc-500">
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-ember-400" />Dificuldade</span>
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-focus-400" />Acuracia</span>
+          </div>
+          {performance.length === 0 ? (
+            <p className="bento-surface p-4 text-sm leading-6 text-zinc-500">
+              O grafico aparece quando o plano diario tiver focos carregados.
+            </p>
+          ) : (
+            performance.map((item) => (
+              <div key={item.discipline}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="pixel-font text-xs font-bold uppercase text-zinc-200">{item.discipline}</p>
+                  <p className="text-xs text-zinc-500">
+                    {item.completed}/{item.planned}
+                  </p>
+                </div>
+                <div className="mt-2 grid gap-2">
+                  <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
+                    <div className="h-full rounded-full bg-ember-400" style={{ width: `${item.difficulty}%` }} />
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
+                    <div className="h-full rounded-full bg-focus-400" style={{ width: `${clampPercent(item.accuracy)}%` }} />
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PomodoroWidget() {
+  const [seconds, setSeconds] = useState(25 * 60);
+  const [isRunning, setIsRunning] = useState(false);
+
+  useEffect(() => {
+    if (!isRunning || seconds <= 0) {
+      return;
+    }
+
+    const timerId = window.setInterval(() => {
+      setSeconds((current) => Math.max(current - 1, 0));
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [isRunning, seconds]);
+
+  useEffect(() => {
+    if (seconds === 0) {
+      setIsRunning(false);
+    }
+  }, [seconds]);
+
+  const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+  const remainingSeconds = String(seconds % 60).padStart(2, "0");
+  const progress = ((25 * 60 - seconds) / (25 * 60)) * 100;
+
+  return (
+    <section className="bento-card p-5 lg:col-span-3">
+      <p className="pixel-font text-sm font-bold uppercase text-ember-400">Pomodoro teste</p>
+      <div className="mt-7 grid place-items-center">
+        <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
+          <span className="pixel-font text-3xl font-bold text-zinc-50">
+            {minutes}:{remainingSeconds}
+          </span>
+        </div>
+      </div>
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <button className="pixel-button px-3 py-2 text-sm" onClick={() => setIsRunning((current) => !current)}>
+          {isRunning ? "Pausar" : "Iniciar"}
+        </button>
+        <button
+          className="pixel-button-muted px-3 py-2 text-sm"
+          onClick={() => {
+            setIsRunning(false);
+            setSeconds(25 * 60);
+          }}
+        >
+          Reset
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function RegisterQuestionsModal({
   item,
   onClose,
-  onRegistered,
 }: {
   item: StudyPlanItem;
   onClose: () => void;
-  onRegistered: (item: StudyPlanItem, response: QuestionAttemptBulkResponse) => void;
 }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<RegisterFormState>({
@@ -255,9 +366,9 @@ function RegisterQuestionsModal({
       setMessage(
         `Registradas ${response.created_attempts} questoes. Proxima revisao: ${response.next_review_date ?? "a definir"}.`,
       );
-      onRegistered(item, response);
       queryClient.invalidateQueries({ queryKey: ["today"] });
       queryClient.invalidateQueries({ queryKey: ["study-plan-today"] });
+      queryClient.invalidateQueries({ queryKey: ["activity-recent"] });
       window.setTimeout(onClose, 900);
     },
     onError: () => {
@@ -293,7 +404,7 @@ function RegisterQuestionsModal({
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4">
-      <form className="pixel-panel w-full max-w-lg p-5" onSubmit={handleSubmit}>
+      <form className="bento-card w-full max-w-lg p-5" onSubmit={handleSubmit}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="pixel-font text-xs font-bold uppercase text-focus-400">Registro rapido</p>
@@ -404,11 +515,7 @@ function RegisterQuestionsModal({
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <p className="text-sm text-zinc-500">{message}</p>
-          <button
-            type="submit"
-            className="pixel-button px-4 py-2 text-sm"
-            disabled={mutation.isPending}
-          >
+          <button type="submit" className="pixel-button px-4 py-2 text-sm" disabled={mutation.isPending}>
             {mutation.isPending ? "Salvando..." : "Salvar registro"}
           </button>
         </div>
@@ -419,7 +526,6 @@ function RegisterQuestionsModal({
 
 export default function TodayPage() {
   const [registeringItem, setRegisteringItem] = useState<StudyPlanItem | null>(null);
-  const [feedbackByItem, setFeedbackByItem] = useState<Record<string, QuestionAttemptBulkResponse>>({});
   const { data, isLoading, isError } = useQuery({
     queryKey: ["today"],
     queryFn: getToday,
@@ -427,11 +533,17 @@ export default function TodayPage() {
   const {
     data: studyPlan,
     isLoading: isStudyPlanLoading,
-    isError: isStudyPlanError,
   } = useQuery({
     queryKey: ["study-plan-today"],
     queryFn: getStudyPlanToday,
   });
+  const { data: recentActivity = [] } = useQuery({
+    queryKey: ["activity-recent"],
+    queryFn: () => getRecentActivity(100),
+  });
+
+  const performance = useMemo(() => groupPerformance(studyPlan), [studyPlan]);
+  const focus = studyPlan?.items[0];
 
   if (isLoading) {
     return <main className="min-h-screen bg-ink-950 px-6 py-10 text-zinc-100">Carregando seu foco de hoje...</main>;
@@ -441,106 +553,30 @@ export default function TodayPage() {
     return <main className="min-h-screen bg-ink-950 px-6 py-10 text-zinc-100">Nao foi possivel conectar ao backend.</main>;
   }
 
-  const metrics = [
-    { label: "Blocos", value: data.metrics.blocks, hint: "estrutura do plano" },
-    { label: "Assuntos", value: data.metrics.subjects, hint: "conteudos mapeados" },
-    { label: "Revisoes", value: data.metrics.due_reviews, hint: "vencidas hoje" },
-    { label: "Sem contato", value: data.metrics.forgotten_subjects, hint: "pedem revisita" },
-  ];
-
   return (
     <main className="min-h-screen px-5 py-8 pb-28 text-zinc-100 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-7xl">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="grid gap-5 lg:grid-cols-12"
-        >
-          <header className="bento-card-feature p-6 sm:p-8 lg:col-span-8">
-            <p className="pixel-font text-sm font-bold uppercase text-focus-400">Study Hub</p>
-            <div className="mt-12 max-w-3xl sm:mt-16">
-              <h1 className="pixel-font text-3xl font-bold text-zinc-50 sm:text-5xl">O estudo de hoje, sem ruido.</h1>
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-400">
-                Um resumo limpo para decidir o proximo passo e manter o plano vivo.
-              </p>
-            </div>
-          </header>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-12"
+      >
+        <HeroStudyCard
+          focus={focus}
+          isLoading={isStudyPlanLoading}
+          fallbackTitle={data.priority.title}
+          fallbackDescription={data.priority.description}
+          onRegister={setRegisteringItem}
+        />
+        <ConsistencyWidget activity={recentActivity} />
+        <PerformanceWidget performance={performance} />
+        <PomodoroWidget />
+      </motion.div>
 
-          <section className="bento-card p-6 lg:col-span-4">
-            <p className="pixel-font text-sm font-bold uppercase text-focus-400">Prioridade de hoje</p>
-            <h2 className="mt-5 text-2xl font-semibold text-zinc-50">{data.priority.title}</h2>
-            <p className="mt-3 text-base leading-7 text-zinc-400">{data.priority.description}</p>
-            <div className="bento-surface mt-6 p-4">
-              <p className="pixel-font text-xs font-bold uppercase text-ember-400">Status</p>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                Prioridade adaptativa, revisoes e execucao real em um painel unico.
-              </p>
-            </div>
-          </section>
-        </motion.div>
-
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.08 }}
-          className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        >
-          {metrics.map((metric) => (
-            <MetricCard key={metric.label} {...metric} />
-          ))}
-        </motion.section>
-
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.14 }}
-          className="mt-8 grid gap-5 lg:grid-cols-12"
-        >
-          <div className="lg:col-span-8">
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="pixel-font text-sm font-bold uppercase text-focus-400">Execucao</p>
-                <h2 className="mt-2 text-2xl font-semibold text-zinc-50">Plano de hoje</h2>
-              </div>
-              <p className="max-w-md text-sm leading-6 text-zinc-500">
-                Focos com progresso real baseado nas questoes registradas hoje.
-              </p>
-            </div>
-            <StudyPlanSection
-              plan={studyPlan}
-              isLoading={isStudyPlanLoading}
-              isError={isStudyPlanError}
-              onRegister={setRegisteringItem}
-              feedbackByItem={feedbackByItem}
-            />
-          </div>
-
-          <aside className="space-y-5 lg:col-span-4">
-            <SectionCard title="Revisoes vencidas">
-              <ItemList items={data.due_reviews} emptyText="Nenhuma revisao vencida por enquanto." />
-            </SectionCard>
-
-            <SectionCard title="Blocos em risco">
-              <ItemList items={data.risk_blocks} emptyText="Nenhum bloco em risco no resumo atual." />
-            </SectionCard>
-          </aside>
-
-          <SectionCard title="Assuntos sem contato recente" className="lg:col-span-12">
-            <ItemList items={data.forgotten_subjects} emptyText="Nenhum assunto esquecido no momento." />
-          </SectionCard>
-        </motion.section>
-      </div>
       {registeringItem ? (
         <RegisterQuestionsModal
           item={registeringItem}
           onClose={() => setRegisteringItem(null)}
-          onRegistered={(item, response) =>
-            setFeedbackByItem((current) => ({
-              ...current,
-              [planItemKey(item)]: response,
-            }))
-          }
         />
       ) : null}
     </main>
