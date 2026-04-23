@@ -5,22 +5,37 @@ import json
 from pathlib import Path
 
 from app.settings import get_default_sqlite_db_path
-from app.services.postgres_bootstrap_service import bootstrap_structural_data_to_postgres
+from app.services.postgres_bootstrap_service import (
+    bootstrap_structural_data_to_postgres,
+    bootstrap_usage_data_to_postgres,
+)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Carrega dados estruturais do SQLite local para o Postgres configurado em DATABASE_URL."
+        description="Carrega dados do SQLite local para o Postgres configurado em DATABASE_URL."
     )
     parser.add_argument(
         "--source-sqlite",
         default=str(get_default_sqlite_db_path()),
         help="Caminho para o SQLite oficial de origem. Default: backend/data/study_hub.db",
     )
+    parser.add_argument(
+        "--include-usage",
+        action="store_true",
+        help="Tambem carrega dados operacionais/uso, sem apagar o que ja existe no Postgres.",
+    )
     args = parser.parse_args()
 
-    summary = bootstrap_structural_data_to_postgres(Path(args.source_sqlite))
-    print(json.dumps(summary.__dict__, indent=2, ensure_ascii=False))
+    source_path = Path(args.source_sqlite)
+    structural_summary = bootstrap_structural_data_to_postgres(source_path)
+    result: dict[str, object] = {"structural": structural_summary.__dict__}
+
+    if args.include_usage:
+        usage_summary = bootstrap_usage_data_to_postgres(source_path)
+        result["usage"] = usage_summary.__dict__
+
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
