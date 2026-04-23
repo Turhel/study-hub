@@ -4,8 +4,8 @@ import TodayPage from "./pages/TodayPage";
 import TimerPage from "./pages/TimerPage";
 
 const navigationItems = [
-  { label: "Hoje", path: "/" },
-  { label: "Timer", path: "/timer" },
+  { label: "Hoje", path: "/", marker: "01" },
+  { label: "Timer", path: "/timer", marker: "02" },
 ];
 
 const futureItems = ["Roadmap", "Revisoes", "Redacao"];
@@ -29,6 +29,7 @@ export default function App() {
               to={item.path}
               className={({ isActive }) => `app-nav-link ${isActive ? "app-nav-link-active" : ""}`}
             >
+              <span>{item.marker}</span>
               {item.label}
             </NavLink>
           ))}

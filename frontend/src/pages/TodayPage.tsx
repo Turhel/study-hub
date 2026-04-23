@@ -102,15 +102,22 @@ function HeroStudyCard({
   const title = focus ? focus.subject_name : isLoading ? "Carregando plano..." : fallbackTitle;
   const description = focus ? `${focus.block_name} / ${focus.discipline}` : fallbackDescription;
   const progress = focus ? clampPercent(focus.progress_ratio * 100) : 0;
+  const remaining = focus ? Math.max(focus.remaining_today, 0) : 0;
 
   return (
     <section className="app-hero">
       <div className="min-w-0">
-        <p className="text-sm font-semibold uppercase text-sky-300">Onde paramos?</p>
-        <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-white sm:text-5xl">
+        <p className="text-sm font-semibold uppercase text-sky-300">Proximo foco</p>
+        <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-white sm:text-4xl">
           {focus ? `Continuar: ${title}` : title}
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{description}</p>
+
+        <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
+          <HeroStat label="Disciplina" value={focus?.discipline ?? "Hoje"} />
+          <HeroStat label="Planejado" value={focus ? `${focus.planned_questions} questoes` : "A definir"} />
+          <HeroStat label="Restante" value={focus ? `${remaining} questoes` : "A definir"} />
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 sm:min-w-72">
@@ -128,6 +135,15 @@ function HeroStudyCard({
         </div>
       </div>
     </section>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="app-hero-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
@@ -211,17 +227,17 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
                   {week.map((day) => {
                     const level =
                       day.count === 0
-                        ? "bg-slate-800/90"
+                        ? "heatmap-level-0"
                         : day.count === 1
-                          ? "bg-emerald-950"
+                          ? "heatmap-level-1"
                           : day.count === 2
-                            ? "bg-emerald-700"
-                            : "bg-emerald-400";
+                            ? "heatmap-level-2"
+                            : "heatmap-level-3";
 
                     return (
                       <div
                         key={day.key}
-                        className={`h-3 w-3 rounded-[3px] border border-black/20 ${level}`}
+                        className={`heatmap-cell ${level}`}
                         title={`${day.key}: ${day.count} atividade${day.count === 1 ? "" : "s"}`}
                       />
                     );
@@ -236,10 +252,10 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
       <div className="mt-5 flex items-center justify-between text-xs text-slate-500">
         <span>Menos</span>
         <div className="flex gap-1">
-          <span className="h-3 w-3 rounded-[3px] bg-slate-800" />
-          <span className="h-3 w-3 rounded-[3px] bg-emerald-950" />
-          <span className="h-3 w-3 rounded-[3px] bg-emerald-700" />
-          <span className="h-3 w-3 rounded-[3px] bg-emerald-400" />
+          <span className="heatmap-legend-cell heatmap-level-0" />
+          <span className="heatmap-legend-cell heatmap-level-1" />
+          <span className="heatmap-legend-cell heatmap-level-2" />
+          <span className="heatmap-legend-cell heatmap-level-3" />
         </div>
         <span>Mais</span>
       </div>
@@ -259,7 +275,7 @@ function ReviewWidget({ reviews }: { reviews: TodayItem[] }) {
           <p className="app-empty-state">Nenhuma revisao vencida por enquanto.</p>
         ) : (
           visibleReviews.map((review, index) => (
-            <div key={review.id ?? `${review.title}-${index}`} className="flex items-start gap-3 rounded-lg bg-white/[0.03] p-3">
+            <div key={review.id ?? `${review.title}-${index}`} className="app-list-row">
               <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-100">{review.title}</p>
@@ -594,6 +610,18 @@ export default function TodayPage() {
         transition={{ duration: 0.35 }}
         className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-12"
       >
+        <header className="app-page-header lg:col-span-12">
+          <div>
+            <p className="text-sm font-medium text-slate-500">Painel de hoje</p>
+            <h1 className="mt-1 text-2xl font-bold text-white">Execucao do estudo</h1>
+          </div>
+          <div className="app-page-header-stats">
+            <span>{studyPlan?.summary.focus_count ?? 0} focos</span>
+            <span>{studyPlan?.summary.total_questions ?? 0} questoes</span>
+            <span>{data.metrics.due_reviews} revisoes</span>
+          </div>
+        </header>
+
         <div className="lg:col-span-12">
           <HeroStudyCard
             focus={focus}
