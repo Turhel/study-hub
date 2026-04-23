@@ -144,6 +144,7 @@ function HeroStudyCard({
 }
 
 function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
+  const visibleDays = 84;
   const countsByDay = useMemo(() => {
     return activity.reduce<Record<string, number>>((acc, item) => {
       const parsed = new Date(item.created_at);
@@ -157,9 +158,9 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
 
   const days = useMemo(() => {
     const today = new Date();
-    return Array.from({ length: 35 }, (_, index) => {
+    return Array.from({ length: visibleDays }, (_, index) => {
       const date = new Date(today);
-      date.setDate(today.getDate() - (34 - index));
+      date.setDate(today.getDate() - (visibleDays - 1 - index));
       const key = getLocalDateKey(date);
       const count = countsByDay[key] ?? 0;
       return { key, count };
@@ -169,16 +170,16 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
   const activeDays = days.filter((day) => day.count > 0).length;
 
   return (
-    <section className="bento-card p-5 lg:col-span-3">
+    <section className="bento-card p-5 lg:col-span-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="pixel-font text-sm font-bold uppercase text-ember-400">Sua consistencia</p>
-          <p className="mt-2 text-sm text-zinc-500">Ultimos 35 dias</p>
+          <p className="mt-2 text-sm text-zinc-500">Ultimos 84 dias</p>
         </div>
         <p className="pixel-font text-3xl font-bold text-zinc-50">{activeDays}</p>
       </div>
 
-      <div className="mt-7 grid grid-cols-7 gap-2">
+      <div className="mt-7 grid grid-cols-12 gap-1.5 sm:grid-cols-[repeat(21,minmax(0,1fr))]">
         {days.map((day) => {
           const level =
             day.count === 0
@@ -218,7 +219,7 @@ function PerformanceWidget({ performance }: { performance: SubjectPerformance[] 
   });
 
   return (
-    <section className="bento-card p-5 lg:col-span-6">
+    <section className="bento-card p-5 lg:col-span-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="pixel-font text-sm font-bold uppercase text-focus-400">Desempenho por materia</p>
@@ -309,7 +310,7 @@ function PomodoroWidget() {
   const progress = ((25 * 60 - seconds) / (25 * 60)) * 100;
 
   return (
-    <section className="bento-card p-5 lg:col-span-3">
+    <section className="bento-card p-5 lg:col-span-2">
       <p className="pixel-font text-sm font-bold uppercase text-ember-400">Pomodoro teste</p>
       <div className="mt-7 grid place-items-center">
         <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
