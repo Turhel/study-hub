@@ -99,44 +99,31 @@ function HeroStudyCard({
   fallbackDescription: string;
   onRegister: (item: StudyPlanItem) => void;
 }) {
-  const title = focus ? `Continuar: ${focus.subject_name}` : isLoading ? "Carregando plano..." : fallbackTitle;
-  const description = focus
-    ? `${focus.block_name} / ${focus.discipline}`
-    : fallbackDescription;
+  const title = focus ? focus.subject_name : isLoading ? "Carregando plano..." : fallbackTitle;
+  const description = focus ? `${focus.block_name} / ${focus.discipline}` : fallbackDescription;
   const progress = focus ? clampPercent(focus.progress_ratio * 100) : 0;
 
   return (
-    <section className="bento-card-feature min-h-[320px] p-6 sm:p-8 lg:col-span-12">
-      <div className="flex h-full flex-col justify-between gap-10">
-        <div>
-          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Study Hub</p>
-          <h1 className="mt-8 max-w-3xl text-3xl font-semibold leading-tight text-zinc-50 sm:text-5xl">
-            {title}
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">{description}</p>
-        </div>
+    <section className="app-hero">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold uppercase text-sky-300">Onde paramos?</p>
+        <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-white sm:text-5xl">
+          {focus ? `Continuar: ${title}` : title}
+        </h1>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{description}</p>
+      </div>
 
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <button
-            className="hero-play-button"
-            disabled={!focus}
-            onClick={() => focus && onRegister(focus)}
-            aria-label="Continuar estudo"
-            title="Continuar estudo"
-          >
-            <span />
-          </button>
-          <div className="min-w-0 flex-1 sm:max-w-sm">
-            <div className="flex items-center justify-between gap-3 text-sm text-zinc-400">
-              <span>{focus ? `${focus.completed_today}/${focus.planned_questions} questoes hoje` : "Sem progresso"}</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="study-plan-progress mt-3">
-              <div className="study-plan-progress-fill" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="mt-3 text-sm leading-6 text-zinc-500">
-              {focus?.primary_reason ?? "O plano aparece aqui quando o backend retorna um foco para hoje."}
-            </p>
+      <div className="flex flex-col gap-4 sm:min-w-72">
+        <button className="app-primary-action" disabled={!focus} onClick={() => focus && onRegister(focus)}>
+          Iniciar estudo
+        </button>
+        <div>
+          <div className="flex items-center justify-between text-sm text-slate-400">
+            <span>{focus ? `${focus.completed_today}/${focus.planned_questions} questoes hoje` : "Sem progresso"}</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="app-progress mt-2">
+            <div className="app-progress-fill" style={{ width: `${progress}%` }} />
           </div>
         </div>
       </div>
@@ -171,37 +158,31 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
   const activeDays = days.filter((day) => day.count > 0).length;
 
   return (
-    <section className="bento-card p-5 lg:col-span-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="pixel-font text-sm font-bold uppercase text-ember-400">Sua consistencia</p>
-          <p className="mt-2 text-sm text-zinc-500">Ultimos 84 dias</p>
-        </div>
-        <p className="pixel-font text-3xl font-bold text-zinc-50">{activeDays}</p>
-      </div>
+    <section className="app-card lg:col-span-8">
+      <CardHeader eyebrow="01" title="Ritmo de estudo" value={`${activeDays} dias ativos`} />
 
-      <div className="mt-7 grid grid-cols-12 gap-1.5 sm:grid-cols-[repeat(21,minmax(0,1fr))]">
+      <div className="mt-6 grid grid-cols-12 gap-1.5 sm:grid-cols-[repeat(21,minmax(0,1fr))]">
         {days.map((day) => {
           const level =
             day.count === 0
-              ? "bg-zinc-900"
-            : day.count === 1
-                ? "bg-[#102417]"
+              ? "bg-slate-800"
+              : day.count === 1
+                ? "bg-emerald-900"
                 : day.count === 2
-                  ? "bg-[#1f6f45]"
-                  : "bg-focus-400";
+                  ? "bg-emerald-600"
+                  : "bg-emerald-400";
 
-          return <div key={day.key} className={`aspect-square rounded-[3px] border border-black/40 ${level}`} title={day.key} />;
+          return <div key={day.key} className={`aspect-square rounded border border-black/20 ${level}`} title={day.key} />;
         })}
       </div>
 
-      <div className="mt-5 flex items-center justify-between text-xs text-zinc-500">
+      <div className="mt-5 flex items-center justify-between text-xs text-slate-500">
         <span>Menos</span>
         <div className="flex gap-1">
-          <span className="h-3 w-3 rounded-[2px] bg-zinc-900" />
-          <span className="h-3 w-3 rounded-[2px] bg-[#102417]" />
-          <span className="h-3 w-3 rounded-[2px] bg-[#1f6f45]" />
-          <span className="h-3 w-3 rounded-[2px] bg-focus-400" />
+          <span className="h-3 w-3 rounded bg-slate-800" />
+          <span className="h-3 w-3 rounded bg-emerald-900" />
+          <span className="h-3 w-3 rounded bg-emerald-600" />
+          <span className="h-3 w-3 rounded bg-emerald-400" />
         </div>
         <span>Mais</span>
       </div>
@@ -213,25 +194,19 @@ function ReviewWidget({ reviews }: { reviews: TodayItem[] }) {
   const visibleReviews = reviews.slice(0, 3);
 
   return (
-    <section className="bento-card p-5 lg:col-span-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="pixel-font text-sm font-bold uppercase text-ember-400">Minhas revisoes</p>
-          <p className="mt-2 text-sm text-zinc-500">{reviews.length} pendentes hoje</p>
-        </div>
-        <span className="text-sm text-zinc-500">...</span>
-      </div>
+    <section className="app-card lg:col-span-4">
+      <CardHeader eyebrow="02" title="Minhas revisoes" value={`${reviews.length} hoje`} />
 
       <div className="mt-5 space-y-3">
         {visibleReviews.length === 0 ? (
-          <p className="bento-surface p-4 text-sm leading-6 text-zinc-500">Nenhuma revisao vencida por enquanto.</p>
+          <p className="app-empty-state">Nenhuma revisao vencida por enquanto.</p>
         ) : (
           visibleReviews.map((review, index) => (
-            <div key={review.id ?? `${review.title}-${index}`} className="flex items-start gap-3 text-sm">
-              <span className="mt-2 h-2 w-2 shrink-0 rounded-[2px] bg-focus-400" />
+            <div key={review.id ?? `${review.title}-${index}`} className="flex items-start gap-3 rounded-lg bg-white/[0.03] p-3">
+              <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
               <div className="min-w-0">
-                <p className="truncate font-semibold text-zinc-100">{review.title}</p>
-                {review.description ? <p className="mt-1 truncate text-zinc-500">{review.description}</p> : null}
+                <p className="truncate text-sm font-semibold text-slate-100">{review.title}</p>
+                {review.description ? <p className="mt-1 truncate text-sm text-slate-500">{review.description}</p> : null}
               </div>
             </div>
           ))
@@ -252,18 +227,13 @@ function PerformanceWidget({ performance }: { performance: SubjectPerformance[] 
   });
 
   return (
-    <section className="bento-card p-5 lg:col-span-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Desempenho por materia</p>
-          <p className="mt-2 text-sm text-zinc-500">Dificuldade e acuracia atual</p>
-        </div>
-      </div>
+    <section className="app-card lg:col-span-8">
+      <CardHeader eyebrow="03" title="Desempenho por materia" value="TRI" />
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[170px_1fr]">
-        <svg className="mx-auto h-40 w-40 overflow-visible" viewBox="0 0 164 164" role="img" aria-label="Radar de desempenho">
+      <div className="mt-5 grid gap-6 xl:grid-cols-[180px_1fr]">
+        <svg className="mx-auto h-44 w-44 overflow-visible" viewBox="0 0 164 164" role="img" aria-label="Radar de desempenho">
           {[0.33, 0.66, 1].map((scale) => (
-            <circle key={scale} cx={center} cy={center} r={radius * scale} fill="none" stroke="rgba(255,255,255,0.08)" />
+            <circle key={scale} cx={center} cy={center} r={radius * scale} fill="none" stroke="rgba(148,163,184,0.18)" />
           ))}
           {radarItems.map((_, index) => {
             const angle = (Math.PI * 2 * index) / radarItems.length - Math.PI / 2;
@@ -274,37 +244,35 @@ function PerformanceWidget({ performance }: { performance: SubjectPerformance[] 
                 y1={center}
                 x2={center + Math.cos(angle) * radius}
                 y2={center + Math.sin(angle) * radius}
-                stroke="rgba(255,255,255,0.08)"
+                stroke="rgba(148,163,184,0.16)"
               />
             );
           })}
-          <polygon points={points.join(" ")} fill="rgba(125, 220, 154, 0.2)" stroke="#7ddc9a" strokeWidth="2" />
+          <polygon points={points.join(" ")} fill="rgba(56, 189, 248, 0.18)" stroke="#38bdf8" strokeWidth="2" />
         </svg>
 
         <div className="space-y-4">
-          <div className="flex gap-4 text-xs text-zinc-500">
-            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-ember-400" />Dificuldade</span>
-            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-focus-400" />Acuracia</span>
+          <div className="flex gap-4 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-rose-400" />Dificuldade</span>
+            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-sky-400" />Acuracia</span>
           </div>
           {performance.length === 0 ? (
-            <p className="bento-surface p-4 text-sm leading-6 text-zinc-500">
-              O grafico aparece quando o plano diario tiver focos carregados.
-            </p>
+            <p className="app-empty-state">O grafico aparece quando o plano diario tiver focos carregados.</p>
           ) : (
             performance.map((item) => (
               <div key={item.discipline}>
                 <div className="flex items-center justify-between gap-3">
-                  <p className="pixel-font text-xs font-bold uppercase text-zinc-200">{item.discipline}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs font-semibold uppercase text-slate-200">{item.discipline}</p>
+                  <p className="text-xs text-slate-500">
                     {item.completed}/{item.planned}
                   </p>
                 </div>
                 <div className="mt-2 grid gap-2">
-                  <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
-                    <div className="h-full rounded-full bg-ember-400" style={{ width: `${item.difficulty}%` }} />
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                    <div className="h-full rounded-full bg-rose-400" style={{ width: `${item.difficulty}%` }} />
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
-                    <div className="h-full rounded-full bg-focus-400" style={{ width: `${clampPercent(item.accuracy)}%` }} />
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                    <div className="h-full rounded-full bg-sky-400" style={{ width: `${clampPercent(item.accuracy)}%` }} />
                   </div>
                 </div>
               </div>
@@ -343,30 +311,45 @@ function PomodoroWidget() {
   const progress = ((25 * 60 - seconds) / (25 * 60)) * 100;
 
   return (
-    <section className="bento-card p-5 lg:col-span-4">
-      <p className="pixel-font text-sm font-bold uppercase text-ember-400">Pomodoro teste</p>
-      <div className="mt-7 grid place-items-center">
+    <section className="app-card lg:col-span-4">
+      <CardHeader eyebrow="04" title="Cronometro Pomodoro" value={isRunning ? "ativo" : "pronto"} />
+
+      <div className="mt-6 grid gap-6 sm:grid-cols-[140px_1fr] sm:items-center lg:grid-cols-1 xl:grid-cols-[140px_1fr]">
         <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
-          <span className="pixel-font text-3xl font-bold text-zinc-50">
+          <span className="text-2xl font-bold text-white">
             {minutes}:{remainingSeconds}
           </span>
         </div>
-      </div>
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <button className="pixel-button px-3 py-2 text-sm" onClick={() => setIsRunning((current) => !current)}>
-          {isRunning ? "Pausar" : "Iniciar"}
-        </button>
-        <button
-          className="pixel-button-muted px-3 py-2 text-sm"
-          onClick={() => {
-            setIsRunning(false);
-            setSeconds(25 * 60);
-          }}
-        >
-          Reset
-        </button>
+
+        <div>
+          <p className="text-sm text-slate-500">Foco de 25 minutos</p>
+          <button className="app-primary-action mt-4 w-full" onClick={() => setIsRunning((current) => !current)}>
+            {isRunning ? "Pausar" : "Iniciar pomodoro"}
+          </button>
+          <button
+            className="app-secondary-action mt-3 w-full"
+            onClick={() => {
+              setIsRunning(false);
+              setSeconds(25 * 60);
+            }}
+          >
+            Resetar
+          </button>
+        </div>
       </div>
     </section>
+  );
+}
+
+function CardHeader({ eyebrow, title, value }: { eyebrow: string; title: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="text-xs font-semibold uppercase text-slate-500">{eyebrow}</p>
+        <h2 className="mt-1 text-base font-semibold text-white">{title}</h2>
+      </div>
+      <span className="rounded-full bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400">{value}</span>
+    </div>
   );
 }
 
@@ -437,119 +420,74 @@ function RegisterQuestionsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4">
-      <form className="bento-card w-full max-w-lg p-5" onSubmit={handleSubmit}>
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+      <form className="app-card w-full max-w-lg" onSubmit={handleSubmit}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="pixel-font text-xs font-bold uppercase text-focus-400">Registro rapido</p>
-            <h2 className="mt-2 text-xl font-semibold text-zinc-50">{item.subject_name}</h2>
-            <p className="mt-1 text-sm text-zinc-500">{item.discipline} / {item.block_name}</p>
+            <p className="text-xs font-semibold uppercase text-sky-300">Registro rapido</p>
+            <h2 className="mt-2 text-xl font-semibold text-white">{item.subject_name}</h2>
+            <p className="mt-1 text-sm text-slate-500">{item.discipline} / {item.block_name}</p>
           </div>
-          <button type="button" className="pixel-button-muted px-3 py-2 text-xs" onClick={onClose}>
+          <button type="button" className="app-secondary-action px-3 py-2 text-xs" onClick={onClose}>
             Fechar
           </button>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Quantidade feita
-            <input
-              className="pixel-input mt-1"
-              type="number"
-              min={1}
-              value={form.quantity}
-              onChange={(event) => update("quantity", Number(event.target.value))}
-            />
+            <input className="app-input mt-1" type="number" min={1} value={form.quantity} onChange={(event) => update("quantity", Number(event.target.value))} />
           </label>
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Acertos
-            <input
-              className="pixel-input mt-1"
-              type="number"
-              min={0}
-              max={form.quantity}
-              value={form.correctCount}
-              onChange={(event) => update("correctCount", Number(event.target.value))}
-            />
+            <input className="app-input mt-1" type="number" min={0} max={form.quantity} value={form.correctCount} onChange={(event) => update("correctCount", Number(event.target.value))} />
           </label>
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Fonte
-            <input
-              className="pixel-input mt-1"
-              value={form.source}
-              onChange={(event) => update("source", event.target.value)}
-              placeholder="Lista, livro, simulado..."
-            />
+            <input className="app-input mt-1" value={form.source} onChange={(event) => update("source", event.target.value)} placeholder="Lista, livro, simulado..." />
           </label>
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Tempo medio por questao
-            <input
-              className="pixel-input mt-1"
-              type="number"
-              min={0}
-              value={form.averageSeconds}
-              onChange={(event) => update("averageSeconds", Number(event.target.value))}
-            />
+            <input className="app-input mt-1" type="number" min={0} value={form.averageSeconds} onChange={(event) => update("averageSeconds", Number(event.target.value))} />
           </label>
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Dificuldade do banco
-            <select
-              className="pixel-input mt-1"
-              value={form.difficultyBank}
-              onChange={(event) => update("difficultyBank", event.target.value as RegisterFormState["difficultyBank"])}
-            >
+            <select className="app-input mt-1" value={form.difficultyBank} onChange={(event) => update("difficultyBank", event.target.value as RegisterFormState["difficultyBank"])}>
               <option value="facil">Facil</option>
               <option value="media">Media</option>
               <option value="dificil">Dificil</option>
             </select>
           </label>
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Dificuldade pessoal
-            <select
-              className="pixel-input mt-1"
-              value={form.difficultyPersonal}
-              onChange={(event) => update("difficultyPersonal", event.target.value as RegisterFormState["difficultyPersonal"])}
-            >
+            <select className="app-input mt-1" value={form.difficultyPersonal} onChange={(event) => update("difficultyPersonal", event.target.value as RegisterFormState["difficultyPersonal"])}>
               <option value="facil">Facil</option>
               <option value="media">Media</option>
               <option value="dificil">Dificil</option>
             </select>
           </label>
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Confianca
-            <select
-              className="pixel-input mt-1"
-              value={form.confidence}
-              onChange={(event) => update("confidence", event.target.value as RegisterFormState["confidence"])}
-            >
+            <select className="app-input mt-1" value={form.confidence} onChange={(event) => update("confidence", event.target.value as RegisterFormState["confidence"])}>
               <option value="baixa">Baixa</option>
               <option value="media">Media</option>
               <option value="alta">Alta</option>
             </select>
           </label>
-          <label className="text-sm text-zinc-400">
+          <label className="text-sm text-slate-400">
             Erro mais comum
-            <input
-              className="pixel-input mt-1"
-              value={form.errorType}
-              onChange={(event) => update("errorType", event.target.value)}
-              placeholder="conceito, atencao, tempo..."
-            />
+            <input className="app-input mt-1" value={form.errorType} onChange={(event) => update("errorType", event.target.value)} placeholder="conceito, atencao, tempo..." />
           </label>
         </div>
 
-        <label className="mt-3 block text-sm text-zinc-400">
+        <label className="mt-3 block text-sm text-slate-400">
           Observacoes
-          <textarea
-            className="pixel-input mt-1 min-h-20 resize-none"
-            value={form.notes}
-            onChange={(event) => update("notes", event.target.value)}
-          />
+          <textarea className="app-input mt-1 min-h-20 resize-none" value={form.notes} onChange={(event) => update("notes", event.target.value)} />
         </label>
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          <p className="text-sm text-zinc-500">{message}</p>
-          <button type="submit" className="pixel-button px-4 py-2 text-sm" disabled={mutation.isPending}>
+          <p className="text-sm text-slate-500">{message}</p>
+          <button type="submit" className="app-primary-action px-4 py-2 text-sm" disabled={mutation.isPending}>
             {mutation.isPending ? "Salvando..." : "Salvar registro"}
           </button>
         </div>
@@ -564,10 +502,7 @@ export default function TodayPage() {
     queryKey: ["today"],
     queryFn: getToday,
   });
-  const {
-    data: studyPlan,
-    isLoading: isStudyPlanLoading,
-  } = useQuery({
+  const { data: studyPlan, isLoading: isStudyPlanLoading } = useQuery({
     queryKey: ["study-plan-today"],
     queryFn: getStudyPlanToday,
   });
@@ -580,40 +515,37 @@ export default function TodayPage() {
   const focus = studyPlan?.items[0];
 
   if (isLoading) {
-    return <main className="min-h-screen bg-ink-950 px-6 py-10 text-zinc-100">Carregando seu foco de hoje...</main>;
+    return <main className="min-h-screen px-6 py-10 text-slate-100">Carregando seu foco de hoje...</main>;
   }
 
   if (isError || !data) {
-    return <main className="min-h-screen bg-ink-950 px-6 py-10 text-zinc-100">Nao foi possivel conectar ao backend.</main>;
+    return <main className="min-h-screen px-6 py-10 text-slate-100">Nao foi possivel conectar ao backend.</main>;
   }
 
   return (
-    <main className="min-h-screen px-5 py-8 pb-28 text-zinc-100 sm:px-8 lg:px-12">
+    <main className="px-5 py-6 text-slate-100 sm:px-8 lg:px-10">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
+        transition={{ duration: 0.35 }}
         className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-12"
       >
-        <HeroStudyCard
-          focus={focus}
-          isLoading={isStudyPlanLoading}
-          fallbackTitle={data.priority.title}
-          fallbackDescription={data.priority.description}
-          onRegister={setRegisteringItem}
-        />
+        <div className="lg:col-span-12">
+          <HeroStudyCard
+            focus={focus}
+            isLoading={isStudyPlanLoading}
+            fallbackTitle={data.priority.title}
+            fallbackDescription={data.priority.description}
+            onRegister={setRegisteringItem}
+          />
+        </div>
         <ConsistencyWidget activity={recentActivity} />
         <ReviewWidget reviews={data.due_reviews} />
         <PerformanceWidget performance={performance} />
         <PomodoroWidget />
       </motion.div>
 
-      {registeringItem ? (
-        <RegisterQuestionsModal
-          item={registeringItem}
-          onClose={() => setRegisteringItem(null)}
-        />
-      ) : null}
+      {registeringItem ? <RegisterQuestionsModal item={registeringItem} onClose={() => setRegisteringItem(null)} /> : null}
     </main>
   );
 }

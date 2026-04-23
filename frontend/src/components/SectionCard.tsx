@@ -8,8 +8,8 @@ type SectionCardProps = {
 
 export default function SectionCard({ title, children, className = "" }: SectionCardProps) {
   return (
-    <section className={`bento-card p-6 ${className}`}>
-      <h2 className="pixel-font text-base font-bold uppercase text-zinc-100">{title}</h2>
+    <section className={`app-card ${className}`}>
+      <h2 className="text-base font-semibold text-white">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
   );

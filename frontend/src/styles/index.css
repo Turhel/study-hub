@@ -1,6 +1,3 @@
-@import "pixel-retroui/dist/index.css";
-@import "pixel-retroui/dist/fonts.css";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,416 +5,222 @@
 :root {
   color-scheme: dark;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  background: #0b0c0a;
+  background: #050914;
 }
 
 body {
   margin: 0;
   min-width: 300px;
   background:
-    linear-gradient(180deg, rgba(244, 184, 96, 0.08), transparent 380px),
-    linear-gradient(90deg, rgba(125, 220, 154, 0.035) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(125, 220, 154, 0.035) 1px, transparent 1px),
-    #0b0c0a;
-  background-size: auto, 24px 24px, 24px 24px, auto;
+    radial-gradient(circle at 25% -10%, rgba(56, 189, 248, 0.16), transparent 32rem),
+    radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.1), transparent 28rem),
+    #050914;
 }
 
 * {
   box-sizing: border-box;
 }
 
-.pixel-font {
-  font-family: "Minecraft", Inter, ui-sans-serif, system-ui, sans-serif;
-  letter-spacing: 0;
+.app-shell {
+  min-height: 100vh;
+  color: #f8fafc;
 }
 
-.pixel-panel {
-  border: 2px solid #22251d;
-  border-radius: 0;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.055), transparent 38%),
-    #12130f;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.045) inset,
-    8px 8px 0 #030403;
+.app-sidebar {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 16rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 13, 27, 0.92);
+  padding: 1.25rem;
+  backdrop-filter: blur(18px);
 }
 
-.pixel-panel-soft {
-  border: 2px solid rgba(244, 184, 96, 0.42);
-  border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(244, 184, 96, 0.12), rgba(18, 19, 15, 0.96)),
-    #12130f;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.045) inset,
-    8px 8px 0 rgba(0, 0, 0, 0.58);
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.pixel-inset {
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0;
-  background: rgba(0, 0, 0, 0.28);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.18) inset;
-}
-
-.bento-card {
-  border: 1px solid rgba(244, 244, 245, 0.1);
-  border-radius: 8px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.06), transparent 34%),
-    linear-gradient(180deg, rgba(125, 220, 154, 0.035), rgba(18, 19, 15, 0.96)),
-    #12130f;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.035) inset,
-    0 18px 44px rgba(0, 0, 0, 0.26),
-    5px 5px 0 rgba(0, 0, 0, 0.56);
-}
-
-.bento-card-feature {
-  border: 1px solid rgba(244, 184, 96, 0.36);
-  border-radius: 8px;
-  background:
-    linear-gradient(145deg, rgba(244, 184, 96, 0.16), transparent 42%),
-    linear-gradient(180deg, rgba(18, 19, 15, 0.82), rgba(18, 19, 15, 0.98)),
-    #14140f;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 22px 56px rgba(0, 0, 0, 0.32),
-    5px 5px 0 rgba(0, 0, 0, 0.58);
-}
-
-.bento-surface {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.22);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;
-}
-
-.hero-play-button {
+.app-brand-mark {
   display: inline-grid;
   place-items: center;
-  width: 6.5rem;
-  height: 6.5rem;
-  flex: 0 0 auto;
-  border: 2px solid #0b0c0a;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 8px;
-  background: #7ddc9a;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.18) inset,
-    7px 7px 0 #030403;
-  color: #0b0c0a;
-  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+  background: #38bdf8;
+  color: #07101a;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
-.hero-play-button:hover {
-  background: #a5efbd;
+.app-nav-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: 8px;
+  padding: 0.68rem 0.78rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 150ms ease, color 150ms ease;
 }
 
-.hero-play-button:active {
-  transform: translate(4px, 4px);
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.18) inset,
-    3px 3px 0 #030403;
+.app-nav-link:hover {
+  background: rgba(255, 255, 255, 0.055);
+  color: #e2e8f0;
 }
 
-.hero-play-button:disabled {
-  cursor: not-allowed;
+.app-nav-link-active {
+  background: rgba(56, 189, 248, 0.14);
+  color: #f8fafc;
+}
+
+.app-nav-link-disabled {
+  cursor: default;
   opacity: 0.48;
 }
 
-.hero-play-button span {
-  width: 0;
-  height: 0;
-  margin-left: 0.45rem;
-  border-top: 1.15rem solid transparent;
-  border-bottom: 1.15rem solid transparent;
-  border-left: 1.75rem solid currentColor;
+.app-content {
+  min-height: 100vh;
+  padding-left: 16rem;
+}
+
+.app-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(56, 189, 248, 0.18), transparent 40%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.76));
+  padding: 2rem;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+}
+
+.app-card {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.76);
+  padding: 1.25rem;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
+}
+
+.app-empty-state {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 1rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.app-primary-action,
+.app-secondary-action {
+  border-radius: 8px;
+  padding: 0.72rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
+}
+
+.app-primary-action {
+  background: #38bdf8;
+  color: #07101a;
+}
+
+.app-primary-action:hover {
+  background: #67d3fb;
+}
+
+.app-primary-action:active,
+.app-secondary-action:active {
+  transform: translateY(1px);
+}
+
+.app-primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.app-secondary-action {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.055);
+  color: #e2e8f0;
+}
+
+.app-secondary-action:hover {
+  background: rgba(255, 255, 255, 0.085);
+}
+
+.app-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.55);
+  padding: 0.62rem 0.72rem;
+  color: #f8fafc;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.app-input:focus {
+  border-color: rgba(56, 189, 248, 0.72);
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.app-progress {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #38bdf8, #34d399);
+  transition: width 180ms ease;
 }
 
 .pomodoro-ring {
   display: grid;
   place-items: center;
-  width: 10rem;
-  height: 10rem;
+  width: 8.75rem;
+  height: 8.75rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   background:
-    conic-gradient(#f4b860 var(--pomodoro-progress, 0%), rgba(255, 255, 255, 0.07) 0),
-    #0b0c0a;
+    conic-gradient(#38bdf8 var(--pomodoro-progress, 0%), rgba(255, 255, 255, 0.08) 0),
+    #07101a;
   box-shadow:
-    0 0 0 12px rgba(0, 0, 0, 0.28) inset,
-    4px 4px 0 rgba(0, 0, 0, 0.52);
+    0 0 0 10px rgba(2, 6, 23, 0.42) inset,
+    0 18px 40px rgba(0, 0, 0, 0.2);
 }
 
-.pixel-button {
-  border: 2px solid #0b0c0a;
-  border-radius: 0;
-  background: #7ddc9a;
-  box-shadow: 4px 4px 0 #030403;
-  color: #0b0c0a;
-  font-family: "Minecraft", Inter, ui-sans-serif, system-ui, sans-serif;
-  font-weight: 700;
-  letter-spacing: 0;
-  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
-}
-
-.pixel-button:hover {
-  background: #a5efbd;
-}
-
-.pixel-button:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0 #030403;
-}
-
-.pixel-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.pixel-button-muted {
-  border: 2px solid rgba(255, 255, 255, 0.14);
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.055);
-  color: #e4e4e7;
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
-}
-
-.pixel-badge {
-  display: inline-flex;
-  align-items: center;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.055);
-  padding: 0.28rem 0.55rem;
-  font-family: "Minecraft", Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.pixel-input {
-  width: 100%;
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0;
-  background: rgba(0, 0, 0, 0.28);
-  padding: 0.62rem 0.72rem;
-  color: #f4f4f5;
-  font-size: 0.82rem;
-  outline: none;
-  transition: border-color 140ms ease, background 140ms ease;
-}
-
-.pixel-input:focus {
-  border-color: rgba(125, 220, 154, 0.85);
-  background: rgba(0, 0, 0, 0.36);
-}
-
-.adaptive-dock {
-  display: flex;
-  position: relative;
-  align-items: center;
-  gap: 0.5rem;
-  border: 2px solid rgba(244, 184, 96, 0.56);
-  border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(244, 184, 96, 0.12), rgba(18, 19, 15, 0.98)),
-    #12130f;
-  padding: 0.62rem;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.045) inset,
-    6px 6px 0 rgba(0, 0, 0, 0.68);
-  transform: translateY(calc(100% - 18px));
-  opacity: 0.72;
-  transition: transform 180ms ease, opacity 180ms ease;
-}
-
-.adaptive-dock-visible {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.adaptive-dock-handle {
-  position: absolute;
-  top: -0.55rem;
-  left: 50%;
-  width: 4.75rem;
-  height: 0.38rem;
-  border: 2px solid rgba(244, 184, 96, 0.5);
-  border-bottom: 0;
-  background: #12130f;
-  transform: translateX(-50%);
-}
-
-.adaptive-dock-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
-  min-width: 4.5rem;
-  justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.11);
-  border-radius: 0;
-  background: rgba(0, 0, 0, 0.24);
-  padding: 0.52rem 0.72rem;
-  color: #d4d4d8;
-  font-family: "Minecraft", Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-decoration: none;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
-}
-
-.adaptive-dock-item:hover,
-.adaptive-dock-item:focus-visible {
-  border-color: rgba(125, 220, 154, 0.76);
-  background: rgba(125, 220, 154, 0.12);
-  color: #f4f4f5;
-  outline: none;
-}
-
-.adaptive-dock-item-active {
-  border-color: rgba(125, 220, 154, 0.9);
-  background: rgba(125, 220, 154, 0.18);
-  color: #7ddc9a;
-}
-
-.adaptive-dock-icon {
-  display: inline-grid;
-  position: relative;
-  place-items: center;
-  width: 1.38rem;
-  height: 1.38rem;
-  flex: 0 0 auto;
-  color: currentColor;
-}
-
-.adaptive-dock-icon span,
-.adaptive-dock-icon::before,
-.adaptive-dock-icon::after {
-  content: "";
-  display: block;
-  position: absolute;
-}
-
-.adaptive-dock-icon-today {
-  border: 2px solid currentColor;
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow:
-    2px 2px 0 rgba(0, 0, 0, 0.72),
-    0 0.32rem 0 rgba(0, 0, 0, 0.24) inset;
-}
-
-.adaptive-dock-icon-today::before {
-  top: 0.2rem;
-  left: 0.18rem;
-  width: 0.72rem;
-  height: 0.16rem;
-  background: currentColor;
-  box-shadow:
-    0 0.34rem 0 currentColor,
-    0 0.68rem 0 currentColor;
-}
-
-.adaptive-dock-icon-today::after {
-  right: 0.14rem;
-  bottom: 0.18rem;
-  width: 0.34rem;
-  height: 0.58rem;
-  border-right: 0.16rem solid currentColor;
-  border-bottom: 0.16rem solid currentColor;
-}
-
-.adaptive-dock-icon-today span {
-  top: -0.24rem;
-  left: 0.18rem;
-  width: 0.18rem;
-  height: 0.34rem;
-  background: currentColor;
-  box-shadow: 0.62rem 0 0 currentColor;
-}
-
-.adaptive-dock-icon-timer {
-  border: 2px solid currentColor;
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow:
-    2px 2px 0 rgba(0, 0, 0, 0.72),
-    0 0 0 0.16rem rgba(0, 0, 0, 0.18) inset;
-}
-
-.adaptive-dock-icon-timer::before {
-  top: -0.28rem;
-  left: 50%;
-  width: 0.42rem;
-  height: 0.18rem;
-  background: currentColor;
-  transform: translateX(-50%);
-}
-
-.adaptive-dock-icon-timer::after {
-  top: 0.32rem;
-  left: 0.58rem;
-  width: 0.16rem;
-  height: 0.5rem;
-  background: currentColor;
-  box-shadow: 0.24rem 0.34rem 0 currentColor;
-}
-
-.adaptive-dock-icon-timer span {
-  top: 0.16rem;
-  left: 0.16rem;
-  right: 0.16rem;
-  bottom: 0.16rem;
-  border: 0.14rem solid currentColor;
-  background: transparent;
-}
-
-@media (max-width: 520px) {
-  .adaptive-dock {
-    width: calc(100% - 2rem);
-    justify-content: center;
+@media (max-width: 900px) {
+  .app-sidebar {
+    position: static;
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .adaptive-dock-item {
-    flex: 1;
-    min-width: 0;
+  .app-content {
+    padding-left: 0;
   }
-}
 
-.study-plan-status {
-  border-radius: 999px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.study-plan-status-idle {
-  background: rgba(255, 255, 255, 0.06);
-  color: #a1a1aa;
-}
-
-.study-plan-status-progress {
-  background: rgba(56, 189, 248, 0.15);
-  color: #67e8f9;
-}
-
-.study-plan-status-done {
-  background: rgba(16, 185, 129, 0.16);
-  color: #a7f3d0;
-}
-
-.study-plan-progress {
-  height: 0.5rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.study-plan-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #34d399 0%, #38bdf8 100%);
-  transition: width 180ms ease;
+  .app-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 .timer-input {
