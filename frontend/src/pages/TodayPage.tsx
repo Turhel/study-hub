@@ -15,7 +15,7 @@ import type {
 } from "../lib/types";
 
 function EmptyState({ text }: { text: string }) {
-  return <p className="pixel-inset p-4 text-sm leading-6 text-zinc-500">{text}</p>;
+  return <p className="bento-surface p-4 text-sm leading-6 text-zinc-500">{text}</p>;
 }
 
 function ItemList({ items, emptyText }: { items: TodayItem[]; emptyText: string }) {
@@ -26,7 +26,7 @@ function ItemList({ items, emptyText }: { items: TodayItem[]; emptyText: string 
   return (
     <div className="space-y-3">
       {items.map((item, index) => (
-        <div key={item.id ?? `${item.title}-${index}`} className="pixel-inset px-4 py-3">
+        <div key={item.id ?? `${item.title}-${index}`} className="bento-surface px-4 py-3">
           <p className="pixel-font text-sm font-bold text-zinc-100">{item.title}</p>
           {item.description ? <p className="mt-1 text-sm text-zinc-500">{item.description}</p> : null}
         </div>
@@ -38,11 +38,11 @@ function ItemList({ items, emptyText }: { items: TodayItem[]; emptyText: string 
 function StudyPlanStats({ plan }: { plan: StudyPlanTodayResponse }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <div className="pixel-inset px-4 py-3">
+      <div className="bento-surface px-4 py-3">
         <p className="pixel-font text-xs font-bold uppercase text-zinc-500">Questoes</p>
         <p className="pixel-font mt-3 text-3xl font-bold text-zinc-50">{plan.summary.total_questions}</p>
       </div>
-      <div className="pixel-inset px-4 py-3">
+      <div className="bento-surface px-4 py-3">
         <p className="pixel-font text-xs font-bold uppercase text-zinc-500">Focos</p>
         <p className="pixel-font mt-3 text-3xl font-bold text-zinc-50">{plan.summary.focus_count}</p>
       </div>
@@ -105,7 +105,7 @@ function StudyPlanCard({
       : `Restam ${item.remaining_today} questoes`;
 
   return (
-    <article className="pixel-panel p-4">
+    <article className="bento-card p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="pixel-font text-xs font-bold uppercase text-focus-400">
@@ -114,13 +114,13 @@ function StudyPlanCard({
           <h3 className="mt-3 text-lg font-semibold text-zinc-50">{item.subject_name}</h3>
           <p className="mt-1 text-sm text-zinc-500">{item.block_name}</p>
         </div>
-        <div className="pixel-inset shrink-0 px-3 py-2 text-right">
+        <div className="bento-surface shrink-0 px-3 py-2 text-right">
           <p className="pixel-font text-2xl font-bold text-focus-400">{item.planned_questions}</p>
           <p className="text-[11px] text-zinc-500">questoes</p>
         </div>
       </div>
 
-      <div className="pixel-inset mt-4 p-3">
+      <div className="bento-surface mt-4 p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-zinc-100">
@@ -148,7 +148,7 @@ function StudyPlanCard({
         Registrar questoes
       </button>
       {feedback ? (
-        <div className="pixel-panel-soft mt-5 p-4">
+        <div className="bento-surface mt-5 p-4">
           <p className="pixel-font text-xs font-bold uppercase text-focus-400">Registrado agora</p>
           <div className="mt-3 grid gap-2 text-sm text-zinc-300 sm:grid-cols-3">
             <p>
@@ -449,38 +449,42 @@ export default function TodayPage() {
   ];
 
   return (
-    <main className="min-h-screen px-5 py-8 text-zinc-100 sm:px-8 lg:px-12">
+    <main className="min-h-screen px-5 py-8 pb-28 text-zinc-100 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <motion.header
+        <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
-          className="pixel-panel-soft mb-10 p-6 sm:p-8"
+          className="grid gap-5 lg:grid-cols-12"
         >
-          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Study Hub</p>
-          <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_280px] lg:items-end">
-            <div className="max-w-3xl">
-              <h1 className="pixel-font text-3xl font-bold text-zinc-50 sm:text-5xl">
-              O estudo de hoje, sem ruido.
-              </h1>
+          <header className="bento-card-feature p-6 sm:p-8 lg:col-span-8">
+            <p className="pixel-font text-sm font-bold uppercase text-focus-400">Study Hub</p>
+            <div className="mt-12 max-w-3xl sm:mt-16">
+              <h1 className="pixel-font text-3xl font-bold text-zinc-50 sm:text-5xl">O estudo de hoje, sem ruido.</h1>
               <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-400">
                 Um resumo limpo para decidir o proximo passo e manter o plano vivo.
               </p>
             </div>
-            <div className="pixel-inset p-4">
+          </header>
+
+          <section className="bento-card p-6 lg:col-span-4">
+            <p className="pixel-font text-sm font-bold uppercase text-focus-400">Prioridade de hoje</p>
+            <h2 className="mt-5 text-2xl font-semibold text-zinc-50">{data.priority.title}</h2>
+            <p className="mt-3 text-base leading-7 text-zinc-400">{data.priority.description}</p>
+            <div className="bento-surface mt-6 p-4">
               <p className="pixel-font text-xs font-bold uppercase text-ember-400">Status</p>
               <p className="mt-3 text-sm leading-6 text-zinc-400">
                 Prioridade adaptativa, revisoes e execucao real em um painel unico.
               </p>
             </div>
-          </div>
-        </motion.header>
+          </section>
+        </motion.div>
 
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.08 }}
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
         >
           {metrics.map((metric) => (
             <MetricCard key={metric.label} {...metric} />
@@ -491,20 +495,18 @@ export default function TodayPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.14 }}
-          className="pixel-panel-soft mt-8 p-7"
+          className="mt-8 grid gap-5 lg:grid-cols-12"
         >
-          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Prioridade de hoje</p>
-          <h2 className="mt-3 text-2xl font-semibold text-zinc-50">{data.priority.title}</h2>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-zinc-400">{data.priority.description}</p>
-        </motion.section>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.18 }}
-          className="my-8"
-        >
-          <SectionCard title="Plano de hoje">
+          <div className="lg:col-span-8">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="pixel-font text-sm font-bold uppercase text-focus-400">Execucao</p>
+                <h2 className="mt-2 text-2xl font-semibold text-zinc-50">Plano de hoje</h2>
+              </div>
+              <p className="max-w-md text-sm leading-6 text-zinc-500">
+                Focos com progresso real baseado nas questoes registradas hoje.
+              </p>
+            </div>
             <StudyPlanSection
               plan={studyPlan}
               isLoading={isStudyPlanLoading}
@@ -512,24 +514,22 @@ export default function TodayPage() {
               onRegister={setRegisteringItem}
               feedbackByItem={feedbackByItem}
             />
-          </SectionCard>
-        </motion.div>
+          </div>
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <SectionCard title="Revisoes vencidas">
-            <ItemList items={data.due_reviews} emptyText="Nenhuma revisao vencida por enquanto." />
-          </SectionCard>
+          <aside className="space-y-5 lg:col-span-4">
+            <SectionCard title="Revisoes vencidas">
+              <ItemList items={data.due_reviews} emptyText="Nenhuma revisao vencida por enquanto." />
+            </SectionCard>
 
-          <SectionCard title="Blocos em risco">
-            <ItemList items={data.risk_blocks} emptyText="Nenhum bloco em risco no resumo atual." />
-          </SectionCard>
-        </div>
+            <SectionCard title="Blocos em risco">
+              <ItemList items={data.risk_blocks} emptyText="Nenhum bloco em risco no resumo atual." />
+            </SectionCard>
+          </aside>
 
-        <div className="mt-5">
-          <SectionCard title="Assuntos sem contato recente">
+          <SectionCard title="Assuntos sem contato recente" className="lg:col-span-12">
             <ItemList items={data.forgotten_subjects} emptyText="Nenhum assunto esquecido no momento." />
           </SectionCard>
-        </div>
+        </motion.section>
       </div>
       {registeringItem ? (
         <RegisterQuestionsModal
