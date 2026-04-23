@@ -5,7 +5,7 @@ Monorepo local para um hub de estudos ENEM/Medicina.
 Esta versão inicia a migração do MVP Streamlit para frontend e backend separados:
 
 - `frontend/`: Vite + React + TypeScript + Tailwind CSS
-- `backend/`: FastAPI + Pydantic + SQLModel + SQLite
+- `backend/`: FastAPI + Pydantic + SQLModel + SQLite/Postgres
 - `legacy_streamlit/`: código Streamlit preservado para migração gradual
 
 Não há autenticação, multiusuário, Docker, Ollama, correção de redação, flashcards ou dashboard completo nesta etapa.
@@ -19,6 +19,46 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
+
+Por padrao, sem `DATABASE_URL`, o backend usa SQLite local em `backend/data/study_hub.db`.
+
+## Banco De Dados: SQLite Ou Postgres
+
+O backend agora suporta os dois modos:
+
+- sem `DATABASE_URL`: SQLite local
+- com `DATABASE_URL=postgresql+psycopg://...`: Postgres
+
+O fluxo de schema continua o mesmo:
+
+- `init_db()`
+- `SQLModel.metadata.create_all(...)`
+- `run_migrations(engine)`
+
+### Exemplo `.env` com SQLite
+
+```text
+STUDY_HUB_DB_ECHO=false
+```
+
+Sem `DATABASE_URL`, o backend usa:
+
+```text
+backend/data/study_hub.db
+```
+
+### Exemplo `.env` com Supabase/Postgres
+
+```text
+DATABASE_URL=postgresql+psycopg://postgres:SUASENHA@db.seu-projeto.supabase.co:5432/postgres
+STUDY_HUB_DB_ECHO=false
+```
+
+Nesta fase:
+
+- nao ha migracao de dados reais do SQLite para o Postgres
+- o SQLite continua existindo como fallback de desenvolvimento
+- nao ha integracao com auth/storage do Supabase
 
 Backend:
 
@@ -96,7 +136,7 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## Dados Do Today
 
-O banco oficial do backend é sempre:
+Sem `DATABASE_URL`, o banco local oficial do backend é:
 
 ```text
 backend/data/study_hub.db
