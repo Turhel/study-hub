@@ -95,6 +95,8 @@ class StudyPlanItem(BaseModel):
     priority_score: float
     primary_reason: str
     planned_mode: str
+    roadmap_node_id: str | None = None
+    roadmap_mapped: bool = False
     roadmap_status: Literal[
         "entry",
         "available",

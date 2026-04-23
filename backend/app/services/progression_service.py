@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date
 from itertools import groupby
 
@@ -37,7 +38,9 @@ from app.models import (
 from app.schemas import DisciplineBlockProgressItem, DisciplineBlockProgressSnapshotResponse
 from app.services.roadmap_progression_service import (
     GuidedRoadmapDisciplineSummary,
+    GuidedRoadmapOverview,
     get_discipline_guided_roadmap_summary,
+    build_guided_roadmap_overview,
 )
 
 
@@ -350,4 +353,71 @@ def get_discipline_roadmap_progression_summary(
         session=session,
         discipline=discipline,
         block_progress_by_id=block_progress_by_id,
+    )
+
+
+@dataclass(frozen=True)
+class DisciplineRoadmapSubjectSummary:
+    discipline: str
+    mapped_node_ids: tuple[str, ...]
+    available_node_ids: tuple[str, ...]
+    blocked_node_ids: tuple[str, ...]
+    reviewable_node_ids: tuple[str, ...]
+    unmapped_subject_ids: tuple[int, ...]
+
+
+def get_discipline_roadmap_subject_summary(
+    session: Session,
+    discipline: str,
+    block_progress_by_id: dict[int, BlockProgress] | None = None,
+    overview: GuidedRoadmapOverview | None = None,
+) -> DisciplineRoadmapSubjectSummary:
+    blocks = _blocks_for_normalized_discipline(session, discipline)
+    if not blocks:
+        raise ValueError("Disciplina nao encontrada.")
+
+    canonical_discipline = blocks[0].disciplina
+    if block_progress_by_id is None:
+        block_progress_by_id, _ = sync_progression(session, date.today(), discipline_filter=canonical_discipline)
+    if overview is None:
+        overview = build_guided_roadmap_overview(session, block_progress_by_id)
+
+    relevant_block_ids = {
+        block.id or 0
+        for block in blocks
+        if block_progress_by_id.get(block.id or 0) is not None
+        and (
+            block_is_focus_status(block_progress_by_id[block.id or 0].status)
+            or block_is_reviewable(block_progress_by_id[block.id or 0].status)
+        )
+    }
+    subject_links = session.exec(select(BlockSubject).where(BlockSubject.block_id.in_(relevant_block_ids))).all() if relevant_block_ids else []
+    subject_ids = {link.subject_id for link in subject_links}
+
+    mapped_node_ids: set[str] = set()
+    available_node_ids: set[str] = set()
+    blocked_node_ids: set[str] = set()
+    reviewable_node_ids: set[str] = set()
+    unmapped_subject_ids: set[int] = set()
+
+    for subject_id in subject_ids:
+        state = overview.subject_states.get(subject_id)
+        if state is None or not state.mapped or state.roadmap_node_id is None:
+            unmapped_subject_ids.add(subject_id)
+            continue
+        mapped_node_ids.add(state.roadmap_node_id)
+        if state.status in {"entry", "available"}:
+            available_node_ids.add(state.roadmap_node_id)
+        elif state.status in {"blocked_required", "blocked_cross_required"}:
+            blocked_node_ids.add(state.roadmap_node_id)
+        elif state.status == "reviewable":
+            reviewable_node_ids.add(state.roadmap_node_id)
+
+    return DisciplineRoadmapSubjectSummary(
+        discipline=canonical_discipline,
+        mapped_node_ids=tuple(sorted(mapped_node_ids)),
+        available_node_ids=tuple(sorted(available_node_ids)),
+        blocked_node_ids=tuple(sorted(blocked_node_ids)),
+        reviewable_node_ids=tuple(sorted(reviewable_node_ids)),
+        unmapped_subject_ids=tuple(sorted(unmapped_subject_ids)),
     )
