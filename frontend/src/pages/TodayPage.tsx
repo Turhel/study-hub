@@ -107,26 +107,28 @@ function HeroStudyCard({
   return (
     <section className="app-hero">
       <div className="min-w-0">
-        <p className="text-sm font-semibold uppercase text-sky-300">Proximo foco</p>
+        <p className="text-sm font-semibold text-sky-300">Sua próxima sessão</p>
         <h1 className="mt-3 max-w-4xl text-3xl font-bold leading-tight text-white sm:text-4xl">
-          {focus ? `Continuar: ${title}` : title}
+          {focus ? title : fallbackTitle}
         </h1>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{description}</p>
+        <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">
+          {focus ? `Você parou em ${description}. Volte por aqui e registre as questões quando terminar.` : fallbackDescription}
+        </p>
 
         <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
-          <HeroStat label="Disciplina" value={focus?.discipline ?? "Hoje"} />
-          <HeroStat label="Planejado" value={focus ? `${focus.planned_questions} questoes` : "A definir"} />
-          <HeroStat label="Restante" value={focus ? `${remaining} questoes` : "A definir"} />
+          <HeroStat label="Área" value={focus?.discipline ?? "Hoje"} />
+          <HeroStat label="Meta leve" value={focus ? `${focus.planned_questions} questoes` : "A definir"} />
+          <HeroStat label="Faltam" value={focus ? `${remaining} questoes` : "A definir"} />
         </div>
       </div>
 
       <div className="flex flex-col gap-4 sm:min-w-72">
         <button className="app-primary-action" disabled={!focus} onClick={() => focus && onRegister(focus)}>
-          Iniciar estudo
+          Começar agora
         </button>
         <div>
           <div className="flex items-center justify-between text-sm text-slate-400">
-            <span>{focus ? `${focus.completed_today}/${focus.planned_questions} questoes hoje` : "Sem progresso"}</span>
+            <span>{focus ? `${focus.completed_today}/${focus.planned_questions} feitas hoje` : "Sem progresso"}</span>
             <span>{progress}%</span>
           </div>
           <div className="app-progress mt-2">
@@ -198,7 +200,7 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
 
   return (
     <section className="app-card lg:col-span-8">
-      <CardHeader eyebrow="01" title="Ritmo de estudo" value={`${activeDays} dias ativos`} />
+      <CardHeader eyebrow="Constância" title="Dias em que você apareceu" value={`${activeDays} dias`} />
 
       <div className="mt-6 overflow-x-auto pb-1">
         <div className="min-w-[620px]">
@@ -268,11 +270,11 @@ function ReviewWidget({ reviews }: { reviews: TodayItem[] }) {
 
   return (
     <section className="app-card lg:col-span-4">
-      <CardHeader eyebrow="02" title="Minhas revisoes" value={`${reviews.length} hoje`} />
+      <CardHeader eyebrow="Memória" title="Revisões que pedem atenção" value={`${reviews.length} hoje`} />
 
       <div className="mt-5 space-y-3">
         {visibleReviews.length === 0 ? (
-          <p className="app-empty-state">Nenhuma revisao vencida por enquanto.</p>
+          <p className="app-empty-state">Nada vencido agora. Bom momento para avançar no foco principal.</p>
         ) : (
           visibleReviews.map((review, index) => (
             <div key={review.id ?? `${review.title}-${index}`} className="app-list-row">
@@ -301,7 +303,7 @@ function PerformanceWidget({ performance }: { performance: SubjectPerformance[] 
 
   return (
     <section className="app-card lg:col-span-8">
-      <CardHeader eyebrow="03" title="Desempenho por materia" value="TRI" />
+      <CardHeader eyebrow="Leitura do dia" title="Como os focos estão distribuídos" value="Objetivas" />
 
       <div className="mt-5 grid gap-6 xl:grid-cols-[180px_1fr]">
         <svg className="mx-auto h-44 w-44 overflow-visible" viewBox="0 0 164 164" role="img" aria-label="Radar de desempenho">
@@ -330,7 +332,7 @@ function PerformanceWidget({ performance }: { performance: SubjectPerformance[] 
             <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-sky-400" />Acuracia</span>
           </div>
           {performance.length === 0 ? (
-            <p className="app-empty-state">O grafico aparece quando o plano diario tiver focos carregados.</p>
+            <p className="app-empty-state">Quando houver focos no plano, esta área mostra onde a sessão de hoje está mais pesada.</p>
           ) : (
             performance.map((item) => (
               <div key={item.discipline}>
@@ -386,7 +388,7 @@ function PomodoroWidget() {
 
   return (
     <section className="app-card lg:col-span-4">
-      <CardHeader eyebrow="04" title="Cronometro Pomodoro" value={isRunning ? "ativo" : "pronto"} />
+      <CardHeader eyebrow="Ritual" title="Bloco de foco" value={isRunning ? "rodando" : "25 min"} />
 
       <div className="mt-6 grid gap-6 sm:grid-cols-[140px_1fr] sm:items-center lg:grid-cols-1 xl:grid-cols-[140px_1fr]">
         <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
@@ -402,9 +404,9 @@ function PomodoroWidget() {
         </div>
 
         <div>
-          <p className="text-sm text-slate-500">Foco de 25 minutos</p>
+          <p className="text-sm text-slate-500">Um bloco curto para entrar no ritmo antes de revisar o resultado.</p>
           <button className="app-primary-action mt-4 w-full" onClick={() => setIsRunning((current) => !current)}>
-            {isRunning ? "Pausar" : "Iniciar pomodoro"}
+            {isRunning ? "Pausar" : "Iniciar foco"}
           </button>
           <button
             className="app-secondary-action mt-3 w-full"
@@ -413,7 +415,7 @@ function PomodoroWidget() {
               setSeconds(25 * 60);
             }}
           >
-            Resetar
+            Recomeçar
           </button>
         </div>
       </div>
@@ -425,7 +427,7 @@ function CardHeader({ eyebrow, title, value }: { eyebrow: string; title: string;
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-xs font-semibold uppercase text-slate-500">{eyebrow}</p>
+        <p className="text-xs font-semibold text-slate-500">{eyebrow}</p>
         <h2 className="mt-1 text-base font-semibold text-white">{title}</h2>
       </div>
       <span className="rounded-full bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400">{value}</span>
@@ -504,7 +506,7 @@ function RegisterQuestionsModal({
       <form className="app-card w-full max-w-lg" onSubmit={handleSubmit}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase text-sky-300">Registro rapido</p>
+            <p className="text-xs font-semibold text-sky-300">Registro da sessão</p>
             <h2 className="mt-2 text-xl font-semibold text-white">{item.subject_name}</h2>
             <p className="mt-1 text-sm text-slate-500">{item.discipline} / {item.block_name}</p>
           </div>
@@ -515,7 +517,7 @@ function RegisterQuestionsModal({
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <label className="text-sm text-slate-400">
-            Quantidade feita
+            Questões feitas
             <input className="app-input mt-1" type="number" min={1} value={form.quantity} onChange={(event) => update("quantity", Number(event.target.value))} />
           </label>
           <label className="text-sm text-slate-400">
@@ -527,7 +529,7 @@ function RegisterQuestionsModal({
             <input className="app-input mt-1" value={form.source} onChange={(event) => update("source", event.target.value)} placeholder="Lista, livro, simulado..." />
           </label>
           <label className="text-sm text-slate-400">
-            Tempo medio por questao
+            Ritmo médio por questão
             <input className="app-input mt-1" type="number" min={0} value={form.averageSeconds} onChange={(event) => update("averageSeconds", Number(event.target.value))} />
           </label>
           <label className="text-sm text-slate-400">
@@ -555,7 +557,7 @@ function RegisterQuestionsModal({
             </select>
           </label>
           <label className="text-sm text-slate-400">
-            Erro mais comum
+            Principal tropeço
             <input className="app-input mt-1" value={form.errorType} onChange={(event) => update("errorType", event.target.value)} placeholder="conceito, atencao, tempo..." />
           </label>
         </div>
@@ -612,8 +614,8 @@ export default function TodayPage() {
       >
         <header className="app-page-header lg:col-span-12">
           <div>
-            <p className="text-sm font-medium text-slate-500">Painel de hoje</p>
-            <h1 className="mt-1 text-2xl font-bold text-white">Execucao do estudo</h1>
+            <p className="text-sm font-medium text-slate-500">Hoje</p>
+            <h1 className="mt-1 text-2xl font-bold text-white">Sua mesa de estudo</h1>
           </div>
           <div className="app-page-header-stats">
             <span>{studyPlan?.summary.focus_count ?? 0} focos</span>

@@ -4,11 +4,11 @@ import TodayPage from "./pages/TodayPage";
 import TimerPage from "./pages/TimerPage";
 
 const navigationItems = [
-  { label: "Hoje", path: "/", marker: "01" },
-  { label: "Timer", path: "/timer", marker: "02" },
+  { label: "Foco do dia", path: "/", marker: "•" },
+  { label: "Timer", path: "/timer", marker: "◦" },
 ];
 
-const futureItems = ["Roadmap", "Revisoes", "Redacao"];
+const futureItems = ["Trilha", "Revisoes", "Redacao"];
 
 export default function App() {
   return (
@@ -18,7 +18,7 @@ export default function App() {
           <span className="app-brand-mark">SH</span>
           <div>
             <p className="text-sm font-bold text-white">Study Hub</p>
-            <p className="text-xs text-slate-500">ENEM / Medicina</p>
+            <p className="text-xs text-slate-500">Rotina de estudo</p>
           </div>
         </div>
 
