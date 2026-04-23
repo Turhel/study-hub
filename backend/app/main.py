@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -18,7 +20,14 @@ from app.routes.today import router as today_router
 from app.routes.timer_sessions import router as timer_sessions_router
 
 
-app = FastAPI(title="Study Hub API")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    load_env_file()
+    init_db()
+    yield
+
+
+app = FastAPI(title="Study Hub API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,9 +47,3 @@ app.include_router(essay_study_router)
 app.include_router(block_progress_router)
 app.include_router(roadmap_router)
 app.include_router(activity_router)
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    load_env_file()
-    init_db()
