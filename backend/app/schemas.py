@@ -260,6 +260,9 @@ class EssayStudySessionResponse(BaseModel):
     tokens_output: int
     status: Literal["active", "closed", "token_limit_reached"]
     tokens_total: int
+    token_limit: int
+    can_accept_messages: bool
+    messages_count: int
     started_at: str
     ended_at: str | None = None
     messages: list[EssayStudyMessageResponse]
@@ -269,8 +272,17 @@ class EssayStudySessionListItem(BaseModel):
     id: int
     essay_submission_id: int
     essay_correction_id: int
+    provider: str
+    model: str
+    prompt_name: str
+    prompt_hash: str
     status: Literal["active", "closed", "token_limit_reached"]
+    tokens_input: int
+    tokens_output: int
     tokens_total: int
+    token_limit: int
+    can_accept_messages: bool
+    messages_count: int
     started_at: str
     ended_at: str | None = None
 
