@@ -16,3 +16,101 @@ Biologia,61,BIO_007,Terapia genica e transgenico ficam agrupados no node de enge
 Biologia,62,BIO_007,Teste de paternidade fica consolidado no node de testes geneticos.
 Geografia,226,GEO_016,IDH entra no node de indicadores sociais e leitura socioeconomica.
 Geografia,250,GEO_016,PEA entra no node de indicadores sociais e leitura socioeconomica.
+Matemática,17,MATH_001,Subject legado amplo de quatro operacoes ancorado no primeiro degrau do eixo operacional.
+Matemática,56,MATH_006,Subject legado amplo de razao e proporcao ancorado no node de entrada do eixo proporcional.
+Matemática,303,MATH_027,Estatistica geral ancorada no primeiro degrau de estatistica descritiva.
+Matemática,352,MATH_029,Analise combinatoria ampla ancorada no principio fundamental da contagem.
+Matemática,371,MATH_030,Probabilidade ampla ancorada no primeiro degrau de probabilidade.
+Matemática,477,MATH_035,Matematica comercial e financeira ampla ancorada em juros simples e descontos.
+Biologia,44,BIO_057,Topico legado de transcricao e RNA ancorado no node de expressao genetica.
+Biologia,60,BIO_057,Sintese proteica ancorada no node de transcricao e traducao.
+Biologia,87,BIO_008,Comparacao entre tipos celulares ancorada no node de introducao a citologia e tipos celulares.
+Biologia,88,BIO_008,Comparacao entre procariontes e eucariontes ancorada no node de tipos celulares.
+Biologia,102,BIO_010,Bomba de sodio e potassio ancorada no node de transporte ativo e vesicular.
+Biologia,129,BIO_063,Ciclos ovarianos ancorados no node de sistemas reprodutores humanos.
+Biologia,166,BIO_019,Pele ancorada no node de tecidos basicos com enfase epitelial.
+Biologia,170,BIO_017,Reproducao humana ampla ancorada no node de gametogenese e fecundacao.
+Biologia,171,BIO_018,Reproducao e desenvolvimento ancorados no node de embriologia inicial.
+Biologia,187,BIO_019,Pele humana ancorada no node de tecidos basicos.
+Biologia,188,BIO_060,Sistema imune ancorado no node de imunologia e saude.
+Biologia,189,BIO_019,Tecido adiposo ancorado no node de tecidos conjuntivos.
+Biologia,191,BIO_019,Tecido epitelial ancorado no node de tecidos basicos.
+Biologia,217,BIO_021,Impulso nervoso e sinapses ancorados no node de sistema nervoso.
+Biologia,237,BIO_060,Drogas ancoradas no node de imunologia e saude por compatibilidade com saude humana.
+Biologia,264,BIO_047,Sistema excretorio I ancorado no node de sistema excretor e osmorregulacao.
+Biologia,265,BIO_047,Sistema excretorio II ancorado no node de sistema excretor e osmorregulacao.
+Biologia,284,BIO_027,Erros inatos ancorados no node de genetica avancada.
+Biologia,287,BIO_049,Heredrograma ancorado no node de leitura de heredogramas.
+Biologia,289,BIO_024,Introducao a genetica e primeira lei ancoradas no node de entrada mendeliano.
+Biologia,290,BIO_026,Polialelismo e sistema ABO ancorados no node de herancas especiais.
+Biologia,293,BIO_026,Sistema Rh ancorado no node de herancas especiais.
+Biologia,294,BIO_024,Variacoes da primeira lei ancoradas no node mendeliano inicial.
+Biologia,305,BIO_025,Segunda lei de Mendel ancorada no node especifico.
+Biologia,309,BIO_027,Interacao genica e epistasia ancoradas no node de genetica avancada.
+Biologia,334,BIO_030,Teorias evolucionistas ancoradas no node de teorias evolutivas.
+Biologia,376,BIO_033,Introducao a microbiologia ancorada no primeiro node de microbiologia geral.
+Biologia,380,BIO_032,Taxionomia I ancorada no node de taxonomia e sistematica.
+Biologia,381,BIO_032,Taxionomia II ancorada no node de taxonomia e sistematica.
+Biologia,393,BIO_054,Angiospermas ancoradas no node especifico de frutos e sementes.
+Biologia,395,BIO_054,Frutos e pseudofrutos ancorados no node de angiospermas frutos e sementes.
+Biologia,399,BIO_033,Doencas bacterianas ancoradas no node de virus e bacterias.
+Biologia,401,BIO_052,Protozoarios e doencas protozooticas ancorados no node de protozoarios e algas.
+Biologia,417,BIO_036,Gimnospermas e angiospermas ancoradas no node de angiospermas e reproducao vegetal.
+Biologia,419,BIO_035,Introducao a botanica ancorada no node de grupos vegetais.
+Biologia,436,BIO_056,Fitormonios ancorados no node especifico de transpiracao e fitormonios.
+Biologia,438,BIO_056,Transpiracao vegetal ancorada no node especifico de transpiracao e fitormonios.
+Biologia,441,BIO_039,Platelmintos ancorados no node de invertebrados basicos.
+Biologia,458,BIO_040,Aracnideos ancorados no node de invertebrados complexos.
+Biologia,459,BIO_040,Arthropoda ancorado no node de invertebrados complexos.
+Biologia,461,BIO_039,Introducao a zoologia ancorada no primeiro node de zoologia de invertebrados.
+Biologia,463,BIO_039,Nematoda ancorado no node de invertebrados basicos.
+Biologia,464,BIO_039,Platyhelminthes ancorado no node de invertebrados basicos.
+Biologia,480,BIO_040,Crustaceos ancorados no node de invertebrados complexos.
+Biologia,481,BIO_040,Equinodermos ancorados no node de invertebrados complexos por compatibilidade operacional.
+Biologia,485,BIO_040,Insetos ancorados no node de invertebrados complexos.
+Biologia,508,BIO_042,Introducao a ecologia ancorada no node de entrada da ecologia.
+Biologia,554,BIO_045,Desequilibrios ecologicos ancorados no node de poluicao e impactos ambientais.
+Biologia,556,BIO_066,Humanidade e meio ambiente ancorados no node de sociedade sustentabilidade e crise ambiental.
+Gramática,75,GRA_003,Classes do nome amplas ancoradas no primeiro node das classes nominais.
+Gramática,158,GRA_005,Classes do verbo amplas ancoradas no primeiro node verbal.
+Gramática,300,GRA_008,Regencia e crase amplas ancoradas no node de entrada da sintaxe normativa.
+História Geral,76,HGE_018,Fenicios hebreus e persas ancorados no node de Egito Mesopotamia e povos orientais.
+História Geral,388,HGE_011,Subject legado amplo ancorado no primeiro node do eixo de revolucoes burguesas.
+Geografia,137,GEO_012,Hidrografia ampla da agua ancorada no node de ciclo da agua e bacias.
+Geografia,177,GEO_008,Aquecimento global ancorado no node de elementos do clima e fenomenos atmosfericos.
+Geografia,178,GEO_008,Historico de meio ambiente ancorado no node base de clima e fenomenos atmosfericos.
+Geografia,199,GEO_027,Desmatamento ancorado no node de dominios morfoclimaticos do Brasil.
+Geografia,200,GEO_017,Questao do lixo ancorada no node de urbanizacao e problemas urbanos.
+Geografia,298,GEO_016,Composicao da populacao brasileira ancorada no node de populacao e indicadores.
+Geografia,344,GEO_018,Extrativismo vegetal e mineral ancorado no node de geografia agraria.
+Geografia,345,GEO_018,Producao agricola e pecuaria ancorada no node de geografia agraria.
+Geografia,366,GEO_019,Industria no Brasil ancorada no node de industria e energia.
+Geografia,385,GEO_028,Transportes no Brasil ancorados no node de transportes e circulacao.
+Geografia,386,GEO_028,Transportes gerais ancorados no node de transportes e circulacao.
+Geografia,428,GEO_020,Comercio externo do Brasil ancorado no node de capitalismo e globalizacao.
+Geografia,493,GEO_022,Europa aspectos fisicos ancorados no node amplo de espacos mundiais.
+Geografia,494,GEO_022,Europa demografia ancorada no node amplo de espacos mundiais.
+Geografia,495,GEO_022,Europa economia ancorada no node amplo de espacos mundiais.
+Geografia,517,GEO_022,Russia e CEI ancoradas no node amplo de espacos mundiais.
+Geografia,518,GEO_022,Africa aspectos fisicos ancorados no node amplo de espacos mundiais.
+Geografia,519,GEO_022,Africa historico demografia economia e geopolitica ancorados no node amplo de espacos mundiais.
+Geografia,541,GEO_022,China ancorada no node amplo de espacos mundiais.
+Geografia,542,GEO_022,Japao India e Tigres Asiaticos ancorados no node amplo de espacos mundiais.
+Geografia,561,GEO_022,Oceania e regioes polares ancoradas no node amplo de espacos mundiais.
+Geografia,562,GEO_022,Oriente Medio amplo ancorado no node de espacos mundiais.
+Geografia,563,GEO_021,Questao Israel Palestina ancorada no node de geopolitica e conflitos.
+Filosofia/Sociologia,172,FIL_005,Subject moderno misto ancorado no node de formacao do Estado moderno.
+Filosofia/Sociologia,195,FIL_006,Descartes ancorado no node de racionalismo moderno.
+Filosofia/Sociologia,196,FIL_018,Pascal e Locke ancorados no node de empirismo moderno por compatibilidade operacional.
+Filosofia/Sociologia,218,FIL_018,Berkeley e Hume ancorados no node de empirismo moderno.
+Filosofia/Sociologia,219,FIL_006,Espinoza e Leibniz ancorados no node de racionalismo moderno.
+Filosofia/Sociologia,382,FIL_025,Outros temas de filosofia contemporanea ancorados no node final da trilha contemporanea.
+Interpretação de texto,204,INT_005,Tipos e generos textuais amplos ancorados no node central de genero discursivo.
+Física,248,PHY_027,Hidrodinamica ampla ancorada no primeiro node de fluidos em movimento.
+História do Brasil,275,HBR_010,Segundo Imperio amplo ancorado no node de politica interna do Segundo Reinado.
+História do Brasil,302,HBR_011,Segundo Reinado tardio ancorado no node de crise do Imperio e proclamacao da Republica.
+Química,354,CHEM_032,Topico amplo de tampao e Kps ancorado no primeiro node de equilibrio ionico especial.
+Química,373,CHEM_033,Pilha ampla ancorada no node de entrada da eletroquimica.
+Química,550,CHEM_047,Quimica ambiental ampla ancorada no node de poluentes e impactos ambientais.
+Química,551,CHEM_048,Agua ampla ancorada no node de propriedades e papel da agua.
+Literatura,524,LIT_017,Contemporaneidade ampla ancorada no primeiro node da trilha contemporanea.
