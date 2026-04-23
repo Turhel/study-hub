@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Callable
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -138,6 +139,237 @@ def _copy_table_by_id[T](
         updated += 1
 
     return created, updated
+
+
+def _payload_without_id(row: Any) -> dict[str, Any]:
+    payload = row.model_dump()
+    payload.pop("id", None)
+    return payload
+
+
+def _sync_append_only_by_key[T](
+    source_session: Session,
+    target_session: Session,
+    model_cls: type[T],
+    key_builder: Callable[[Any], tuple[Any, ...]],
+    payload_builder: Callable[[Any], dict[str, Any]] | None = None,
+) -> tuple[int, int, dict[int, int]]:
+    source_rows = source_session.exec(select(model_cls).order_by(model_cls.id)).all()
+    target_rows = target_session.exec(select(model_cls)).all()
+    target_by_key = {key_builder(row): row for row in target_rows}
+
+    created = 0
+    matched = 0
+    id_map: dict[int, int] = {}
+
+    for source_row in source_rows:
+        key = key_builder(source_row)
+        existing = target_by_key.get(key)
+        if existing is not None:
+            if source_row.id is not None and existing.id is not None:
+                id_map[int(source_row.id)] = int(existing.id)
+            matched += 1
+            continue
+
+        payload = (payload_builder or _payload_without_id)(source_row)
+        new_row = model_cls(**payload)
+        target_session.add(new_row)
+        target_session.flush()
+        target_session.refresh(new_row)
+        target_by_key[key] = new_row
+        if source_row.id is not None and new_row.id is not None:
+            id_map[int(source_row.id)] = int(new_row.id)
+        created += 1
+
+    return created, matched, id_map
+
+
+def _build_payload_with_fk_map(
+    row: Any,
+    field_maps: dict[str, dict[int, int]],
+) -> dict[str, Any]:
+    payload = _payload_without_id(row)
+    for field_name, id_map in field_maps.items():
+        field_value = payload.get(field_name)
+        if field_value is None:
+            continue
+        payload[field_name] = id_map.get(int(field_value), int(field_value))
+    return payload
+
+
+def _qa_key(row: QuestionAttempt) -> tuple[Any, ...]:
+    return (
+        row.data.isoformat(),
+        row.source or "",
+        row.disciplina,
+        row.block_id or 0,
+        row.subject_id or 0,
+        row.dificuldade_banco,
+        row.dificuldade_pessoal or "",
+        row.acertou,
+        row.tempo_segundos if row.tempo_segundos is not None else -1,
+        row.confianca if row.confianca is not None else -1,
+        row.tipo_erro or "",
+        row.observacoes or "",
+    )
+
+
+def _review_key(row: Review) -> tuple[Any, ...]:
+    return (
+        row.subject_id or 0,
+        row.block_id or 0,
+        row.ultima_data.isoformat() if row.ultima_data else "",
+        row.proxima_data.isoformat(),
+        row.status,
+        row.resultado or "",
+        row.intervalo_dias,
+    )
+
+
+def _study_event_key(row: StudyEvent) -> tuple[Any, ...]:
+    return (
+        row.event_type,
+        row.created_at.isoformat(),
+        row.discipline or "",
+        row.strategic_discipline or "",
+        row.subarea or "",
+        row.block_id or 0,
+        row.subject_id or 0,
+        row.title,
+        row.description,
+        row.metadata_json,
+    )
+
+
+def _mock_exam_key(row: MockExam) -> tuple[Any, ...]:
+    return (
+        row.data.isoformat(),
+        row.tipo,
+        row.area,
+        row.total_questoes,
+        row.total_acertos,
+        row.facil_erros,
+        row.tempo_total_min if row.tempo_total_min is not None else -1,
+        row.observacoes or "",
+    )
+
+
+def _essay_key(row: Essay) -> tuple[Any, ...]:
+    return (
+        row.data.isoformat(),
+        row.tema,
+        row.texto or "",
+        row.c1,
+        row.c2,
+        row.c3,
+        row.c4,
+        row.c5,
+        row.total,
+        row.observacoes or "",
+    )
+
+
+def _daily_plan_key(row: DailyStudyPlan) -> tuple[Any, ...]:
+    return (
+        row.created_at.isoformat(),
+        row.total_planned_questions,
+        row.status,
+    )
+
+
+def _timer_session_key(row: TimerSession) -> tuple[Any, ...]:
+    return (
+        row.created_at.isoformat(),
+        row.discipline,
+        row.block_name,
+        row.subject_name,
+        row.mode,
+        row.planned_questions,
+        row.target_seconds_per_question,
+        row.total_elapsed_seconds,
+        row.completed_count,
+        row.skipped_count,
+        row.overtime_count,
+        row.average_seconds_completed,
+        row.difficulty_general,
+        row.volume_perceived,
+        row.notes or "",
+    )
+
+
+def _essay_submission_key(row: EssaySubmission) -> tuple[Any, ...]:
+    return (row.theme, row.essay_text, row.created_at.isoformat())
+
+
+def _essay_correction_key(
+    row: EssayCorrection,
+    submission_id_map: dict[int, int],
+) -> tuple[Any, ...]:
+    mapped_submission_id = submission_id_map.get(int(row.essay_submission_id), int(row.essay_submission_id))
+    return (
+        mapped_submission_id,
+        row.provider,
+        row.model,
+        row.prompt_name,
+        row.prompt_hash,
+        row.mode,
+        row.created_at.isoformat(),
+    )
+
+
+def _essay_study_session_key(
+    row: EssayStudySession,
+    submission_id_map: dict[int, int],
+    correction_id_map: dict[int, int],
+) -> tuple[Any, ...]:
+    mapped_submission_id = submission_id_map.get(int(row.essay_submission_id), int(row.essay_submission_id))
+    mapped_correction_id = correction_id_map.get(int(row.essay_correction_id), int(row.essay_correction_id))
+    return (
+        mapped_submission_id,
+        mapped_correction_id,
+        row.provider,
+        row.model,
+        row.prompt_name,
+        row.prompt_hash,
+        row.started_at.isoformat(),
+    )
+
+
+def _essay_study_message_key(row: EssayStudyMessage, session_id_map: dict[int, int]) -> tuple[Any, ...]:
+    mapped_session_id = session_id_map.get(int(row.session_id), int(row.session_id))
+    return (
+        mapped_session_id,
+        row.role,
+        row.content,
+        row.tokens_estimated,
+        row.created_at.isoformat(),
+    )
+
+
+def _daily_plan_item_key(row: DailyStudyPlanItem, plan_id_map: dict[int, int]) -> tuple[Any, ...]:
+    mapped_plan_id = plan_id_map.get(int(row.plan_id), int(row.plan_id))
+    return (
+        mapped_plan_id,
+        row.discipline,
+        row.block_id,
+        row.subject_id,
+        row.planned_questions,
+        row.priority_score,
+        row.primary_reason,
+        row.planned_mode,
+    )
+
+
+def _timer_session_item_key(row: TimerSessionItem, session_id_map: dict[int, int]) -> tuple[Any, ...]:
+    mapped_session_id = session_id_map.get(int(row.session_id), int(row.session_id))
+    return (
+        mapped_session_id,
+        row.question_number,
+        row.status,
+        row.elapsed_seconds,
+        row.exceeded_target,
+        row.completed_at.isoformat() if row.completed_at else "",
+    )
 
 
 def _sync_postgres_sequence(target_session: Session, table_name: str) -> None:
@@ -285,30 +517,17 @@ def bootstrap_usage_data_to_postgres(source_sqlite_path: Path) -> PostgresUsageB
         target_database_url=_masked_target_database_url(),
     )
 
-    table_models: list[tuple[str, type, tuple[str, ...]]] = [
-        ("question_attempts", QuestionAttempt, ()),
-        ("reviews", Review, ()),
+    state_table_models: list[tuple[str, type, tuple[str, ...]]] = [
         ("block_mastery", BlockMastery, ("block_id",)),
         ("block_progress", BlockProgress, ("block_id",)),
         ("subject_progress", SubjectProgress, ("subject_id",)),
         ("study_capacity", StudyCapacity, ()),
-        ("study_events", StudyEvent, ()),
-        ("daily_study_plan", DailyStudyPlan, ()),
-        ("daily_study_plan_items", DailyStudyPlanItem, ()),
-        ("timer_sessions", TimerSession, ()),
-        ("timer_session_items", TimerSessionItem, ()),
-        ("mock_exams", MockExam, ()),
-        ("essays", Essay, ()),
-        ("essay_submissions", EssaySubmission, ()),
-        ("essay_corrections", EssayCorrection, ()),
-        ("essay_study_sessions", EssayStudySession, ()),
-        ("essay_study_messages", EssayStudyMessage, ()),
     ]
 
     source_engine = create_db_engine(_sqlite_url(source_path))
 
     with Session(source_engine) as source_session, get_session() as target_session:
-        for table_name, model_cls, alternate_unique_fields in table_models:
+        for table_name, model_cls, alternate_unique_fields in state_table_models:
             created, updated = _copy_table_by_id(
                 source_session,
                 target_session,
@@ -317,9 +536,158 @@ def bootstrap_usage_data_to_postgres(source_sqlite_path: Path) -> PostgresUsageB
             )
             setattr(summary, f"{table_name}_created", created)
             setattr(summary, f"{table_name}_updated", updated)
+        target_session.flush()
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            QuestionAttempt,
+            _qa_key,
+        )
+        summary.question_attempts_created = created
+        summary.question_attempts_updated = matched
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            Review,
+            _review_key,
+        )
+        summary.reviews_created = created
+        summary.reviews_updated = matched
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            StudyEvent,
+            _study_event_key,
+        )
+        summary.study_events_created = created
+        summary.study_events_updated = matched
+
+        created, matched, plan_id_map = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            DailyStudyPlan,
+            _daily_plan_key,
+        )
+        summary.daily_study_plan_created = created
+        summary.daily_study_plan_updated = matched
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            DailyStudyPlanItem,
+            lambda row: _daily_plan_item_key(row, plan_id_map),
+            payload_builder=lambda row: _build_payload_with_fk_map(row, {"plan_id": plan_id_map}),
+        )
+        summary.daily_study_plan_items_created = created
+        summary.daily_study_plan_items_updated = matched
+
+        created, matched, session_id_map = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            TimerSession,
+            _timer_session_key,
+        )
+        summary.timer_sessions_created = created
+        summary.timer_sessions_updated = matched
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            TimerSessionItem,
+            lambda row: _timer_session_item_key(row, session_id_map),
+            payload_builder=lambda row: _build_payload_with_fk_map(row, {"session_id": session_id_map}),
+        )
+        summary.timer_session_items_created = created
+        summary.timer_session_items_updated = matched
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            MockExam,
+            _mock_exam_key,
+        )
+        summary.mock_exams_created = created
+        summary.mock_exams_updated = matched
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            Essay,
+            _essay_key,
+        )
+        summary.essays_created = created
+        summary.essays_updated = matched
+
+        created, matched, submission_id_map = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            EssaySubmission,
+            _essay_submission_key,
+        )
+        summary.essay_submissions_created = created
+        summary.essay_submissions_updated = matched
+
+        created, matched, correction_id_map = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            EssayCorrection,
+            lambda row: _essay_correction_key(row, submission_id_map),
+            payload_builder=lambda row: _build_payload_with_fk_map(
+                row,
+                {"essay_submission_id": submission_id_map},
+            ),
+        )
+        summary.essay_corrections_created = created
+        summary.essay_corrections_updated = matched
+
+        created, matched, study_session_id_map = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            EssayStudySession,
+            lambda row: _essay_study_session_key(row, submission_id_map, correction_id_map),
+            payload_builder=lambda row: _build_payload_with_fk_map(
+                row,
+                {
+                    "essay_submission_id": submission_id_map,
+                    "essay_correction_id": correction_id_map,
+                },
+            ),
+        )
+        summary.essay_study_sessions_created = created
+        summary.essay_study_sessions_updated = matched
+
+        created, matched, _ = _sync_append_only_by_key(
+            source_session,
+            target_session,
+            EssayStudyMessage,
+            lambda row: _essay_study_message_key(row, study_session_id_map),
+            payload_builder=lambda row: _build_payload_with_fk_map(row, {"session_id": study_session_id_map}),
+        )
+        summary.essay_study_messages_created = created
+        summary.essay_study_messages_updated = matched
+
         target_session.commit()
 
-        for table_name, _, _ in table_models:
+        for table_name, _, _ in state_table_models:
+            _sync_postgres_sequence(target_session, table_name)
+        for table_name in (
+            "question_attempts",
+            "reviews",
+            "study_events",
+            "daily_study_plan",
+            "daily_study_plan_items",
+            "timer_sessions",
+            "timer_session_items",
+            "mock_exams",
+            "essays",
+            "essay_submissions",
+            "essay_corrections",
+            "essay_study_sessions",
+            "essay_study_messages",
+        ):
             _sync_postgres_sequence(target_session, table_name)
         target_session.commit()
 
