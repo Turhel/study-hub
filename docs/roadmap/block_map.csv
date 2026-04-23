@@ -489,6 +489,7 @@ Interpretacao de Texto,5,INT_014,core,1
 Interpretacao de Texto,6,INT_003,core,1
 Interpretacao de Texto,7,INT_004,core,1
 Interpretacao de Texto,8,INT_004,review,1
+Interpretacao de Texto,9,INT_017,core,1
 Interpretacao de Texto,10,INT_005,core,1
 Interpretacao de Texto,11,INT_005,review,1
 Interpretacao de Texto,12,INT_015,core,1
@@ -537,6 +538,7 @@ Literatura,20,LIT_014,core,1
 Literatura,21,LIT_015,core,1
 Literatura,22,LIT_016,core,1
 Literatura,23,LIT_017,core,1
-Literatura,24,LIT_018,core,1
-Literatura,25,LIT_019,core,1
-Literatura,26,LIT_020,core,1
+Literatura,24,LIT_021,core,1
+Literatura,25,LIT_018,core,1
+Literatura,26,LIT_019,core,1
+Literatura,26,LIT_020,support,2

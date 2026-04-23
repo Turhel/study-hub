@@ -487,3 +487,5 @@ Refinamentos mais recentes em Linguagens:
 - `Gramatica` foi refinada para separar `substantivo/artigo/numeral` de `adjetivo e locucao adjetiva`
 - a morfologia verbal foi suavizada para separar `flexoes/tempos/modos` de `vozes verbais e locucoes`
 - `Regencia e crase` tambem foi quebrada para deixar `crase` como degrau proprio
+- `Interpretacao de Texto` ganhou um degrau proprio de `leitura multimodal` com foco em infografico grafico tabela e mapa
+- `Literatura` ganhou um fechamento contemporaneo mais suave, separando a entrada da prosa contemporanea de `temas e formas da prosa contemporanea` e da `poesia contemporanea`

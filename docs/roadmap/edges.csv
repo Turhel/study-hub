@@ -522,6 +522,7 @@ INT_001,INT_002,required,2,Variacao linguistica entra melhor depois da base de t
 INT_001,INT_014,required,2,Inferencia global entra melhor depois da base de tema e sentido local.
 INT_001,INT_003,recommended,1,Linguagem corporal entra melhor depois da entrada de comunicacao.
 INT_003,INT_004,required,2,Linguagem mista depende da base de linguagem nao verbal.
+INT_004,INT_017,required,2,Leitura multimodal entra melhor depois da base de formatos mistos.
 INT_002,INT_005,recommended,1,Generos textuais entram melhor depois da base de variacao e comunicacao.
 INT_014,INT_005,required,2,Leitura de genero fica mais segura depois da base inferencial.
 INT_004,INT_005,recommended,1,Generos multimodais ficam mais claros depois da linguagem mista.
@@ -535,6 +536,7 @@ INT_015,INT_016,recommended,1,Comparacao entre textos reforca a progressao argum
 INT_009,INT_010,recommended,1,Lingua e patrimonio entram mais claros depois da base de coesao e leitura textual.
 INT_010,INT_011,recommended,1,Historia da arte entra melhor depois da relacao entre lingua e cultura.
 INT_011,INT_012,required,2,A arte contemporanea entra melhor depois da base historica inicial.
+INT_017,INT_012,recommended,1,Leitura multimodal reforca a leitura de producoes artisticas contemporaneas.
 INT_012,INT_013,recommended,1,Musica brasileira entra melhor depois da leitura artistica contemporanea.
 GRA_001,GRA_002,required,2,Questoes ortograficas entram melhor depois da base de acentuacao e hifen.
 GRA_003,GRA_016,required,2,Adjetivo e locucoes entram melhor depois da base das classes nominais.
@@ -571,14 +573,17 @@ LIT_013,LIT_015,required,2,Segunda fase da prosa entra melhor depois da primeira
 LIT_014,LIT_016,recommended,1,Terceira fase entra melhor depois da segunda fase poetica.
 LIT_015,LIT_016,recommended,1,Terceira fase entra melhor depois da segunda fase em prosa.
 LIT_016,LIT_017,required,2,Prosa contemporanea entra melhor depois da trilha modernista.
-LIT_017,LIT_018,required,2,Contemporaneidade entra melhor depois da prosa contemporanea.
-LIT_018,LIT_019,recommended,1,Hoje em dia entra melhor depois da base de contemporaneidade.
+LIT_017,LIT_021,required,2,Temas e formas da prosa contemporanea entram melhor depois da entrada da prosa contemporanea.
+LIT_017,LIT_018,recommended,1,Poesia contemporanea entra melhor depois da entrada da contemporaneidade.
+LIT_021,LIT_019,recommended,1,Circulacao contemporanea fica mais clara depois da base da prosa atual.
+LIT_018,LIT_019,recommended,1,Circulacao atual entra melhor depois da base de poesia contemporanea.
 LIT_016,LIT_020,recommended,1,Literatura portuguesa entra mais organizada depois da base historico-literaria brasileira.
 GRA_015,INT_009,cross_support,1,Coesao gramatical reforca a leitura de coesao e coerencia textual.
 GRA_015,INT_016,cross_support,1,Coesao gramatical reforca a progressao argumentativa e a coerencia global.
 GRA_006,INT_007,cross_support,1,Classes relacionais ajudam a ler intertextualidade e articulacao discursiva.
 GRA_014,INT_001,cross_support,1,Pontuacao reforca a leitura estrutural do texto verbal.
 GRA_018,INT_010,cross_support,1,Crase e regencia reforcam leituras de norma e patrimonio linguistico.
+INT_017,INT_015,cross_support,1,Leitura de infograficos e tabelas reforca comparacao entre textos e apoio.
 INT_006,LIT_008,cross_support,1,Figuras de linguagem ajudam a leitura do romantismo e da linguagem literaria.
 INT_008,LIT_014,cross_support,1,Texto poetico reforca a leitura da poesia modernista.
 INT_011,LIT_012,cross_support,1,Historia da arte ajuda a ler as vanguardas europeias.
