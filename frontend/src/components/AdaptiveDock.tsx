@@ -4,8 +4,8 @@ import { Link, useLocation } from "react-router-dom";
 const SHOW_DISTANCE_FROM_BOTTOM = 132;
 
 const dockItems = [
-  { label: "Hoje", shortLabel: "Hoje", to: "/" },
-  { label: "Timer", shortLabel: "Timer", to: "/timer" },
+  { label: "Hoje", shortLabel: "Hoje", to: "/", icon: "today" },
+  { label: "Timer", shortLabel: "Timer", to: "/timer", icon: "timer" },
 ];
 
 export default function AdaptiveDock() {
@@ -45,7 +45,9 @@ export default function AdaptiveDock() {
               className={`adaptive-dock-item ${isActive ? "adaptive-dock-item-active" : ""}`}
               title={item.label}
             >
-              <span className="adaptive-dock-dot" aria-hidden="true" />
+              <span className={`adaptive-dock-icon adaptive-dock-icon-${item.icon}`} aria-hidden="true">
+                <span />
+              </span>
               <span>{item.shortLabel}</span>
             </Link>
           );

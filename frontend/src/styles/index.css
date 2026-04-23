@@ -193,12 +193,94 @@ body {
   color: #7ddc9a;
 }
 
-.adaptive-dock-dot {
-  width: 0.52rem;
-  height: 0.52rem;
+.adaptive-dock-icon {
+  display: inline-grid;
+  position: relative;
+  place-items: center;
+  width: 1.38rem;
+  height: 1.38rem;
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
+.adaptive-dock-icon span,
+.adaptive-dock-icon::before,
+.adaptive-dock-icon::after {
+  content: "";
+  display: block;
+  position: absolute;
+}
+
+.adaptive-dock-icon-today {
   border: 2px solid currentColor;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.72),
+    0 0.32rem 0 rgba(0, 0, 0, 0.24) inset;
+}
+
+.adaptive-dock-icon-today::before {
+  top: 0.2rem;
+  left: 0.18rem;
+  width: 0.72rem;
+  height: 0.16rem;
   background: currentColor;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.68);
+  box-shadow:
+    0 0.34rem 0 currentColor,
+    0 0.68rem 0 currentColor;
+}
+
+.adaptive-dock-icon-today::after {
+  right: 0.14rem;
+  bottom: 0.18rem;
+  width: 0.34rem;
+  height: 0.58rem;
+  border-right: 0.16rem solid currentColor;
+  border-bottom: 0.16rem solid currentColor;
+}
+
+.adaptive-dock-icon-today span {
+  top: -0.24rem;
+  left: 0.18rem;
+  width: 0.18rem;
+  height: 0.34rem;
+  background: currentColor;
+  box-shadow: 0.62rem 0 0 currentColor;
+}
+
+.adaptive-dock-icon-timer {
+  border: 2px solid currentColor;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.72),
+    0 0 0 0.16rem rgba(0, 0, 0, 0.18) inset;
+}
+
+.adaptive-dock-icon-timer::before {
+  top: -0.28rem;
+  left: 50%;
+  width: 0.42rem;
+  height: 0.18rem;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.adaptive-dock-icon-timer::after {
+  top: 0.32rem;
+  left: 0.58rem;
+  width: 0.16rem;
+  height: 0.5rem;
+  background: currentColor;
+  box-shadow: 0.24rem 0.34rem 0 currentColor;
+}
+
+.adaptive-dock-icon-timer span {
+  top: 0.16rem;
+  left: 0.16rem;
+  right: 0.16rem;
+  bottom: 0.16rem;
+  border: 0.14rem solid currentColor;
+  background: transparent;
 }
 
 @media (max-width: 520px) {
