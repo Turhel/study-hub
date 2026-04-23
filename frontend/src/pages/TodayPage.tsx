@@ -132,7 +132,8 @@ function HeroStudyCard({
 }
 
 function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
-  const visibleDays = 84;
+  const visibleWeeks = 12;
+  const visibleDays = visibleWeeks * 7;
   const countsByDay = useMemo(() => {
     return activity.reduce<Record<string, number>>((acc, item) => {
       const parsed = new Date(item.created_at);
@@ -156,33 +157,89 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
   }, [countsByDay]);
 
   const activeDays = days.filter((day) => day.count > 0).length;
+  const weeks = useMemo(() => {
+    return Array.from({ length: visibleWeeks }, (_, weekIndex) => {
+      const start = weekIndex * 7;
+      return days.slice(start, start + 7);
+    });
+  }, [days]);
+  const monthLabels = useMemo(() => {
+    const seen = new Set<string>();
+    return weeks.map((week) => {
+      const firstDay = week[0];
+      if (!firstDay) {
+        return "";
+      }
+
+      const month = new Date(`${firstDay.key}T00:00:00`).toLocaleDateString("pt-BR", { month: "short" });
+      if (seen.has(month)) {
+        return "";
+      }
+      seen.add(month);
+      return month.replace(".", "");
+    });
+  }, [weeks]);
 
   return (
     <section className="app-card lg:col-span-8">
       <CardHeader eyebrow="01" title="Ritmo de estudo" value={`${activeDays} dias ativos`} />
 
-      <div className="mt-6 grid grid-cols-12 gap-1.5 sm:grid-cols-[repeat(21,minmax(0,1fr))]">
-        {days.map((day) => {
-          const level =
-            day.count === 0
-              ? "bg-slate-800"
-              : day.count === 1
-                ? "bg-emerald-900"
-                : day.count === 2
-                  ? "bg-emerald-600"
-                  : "bg-emerald-400";
+      <div className="mt-6 overflow-x-auto pb-1">
+        <div className="min-w-[620px]">
+          <div className="ml-8 grid grid-cols-12 gap-1.5 text-[11px] text-slate-500">
+            {monthLabels.map((label, index) => (
+              <span key={`${label}-${index}`} className="h-4 truncate">
+                {label}
+              </span>
+            ))}
+          </div>
 
-          return <div key={day.key} className={`aspect-square rounded border border-black/20 ${level}`} title={day.key} />;
-        })}
+          <div className="mt-1 grid grid-cols-[1.55rem_1fr] gap-2">
+            <div className="grid grid-rows-7 gap-1.5 text-[10px] leading-3 text-slate-500">
+              <span />
+              <span>Seg</span>
+              <span />
+              <span>Qua</span>
+              <span />
+              <span>Sex</span>
+              <span />
+            </div>
+
+            <div className="grid grid-cols-12 gap-1.5">
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className="grid grid-rows-7 gap-1.5">
+                  {week.map((day) => {
+                    const level =
+                      day.count === 0
+                        ? "bg-slate-800/90"
+                        : day.count === 1
+                          ? "bg-emerald-950"
+                          : day.count === 2
+                            ? "bg-emerald-700"
+                            : "bg-emerald-400";
+
+                    return (
+                      <div
+                        key={day.key}
+                        className={`h-3 w-3 rounded-[3px] border border-black/20 ${level}`}
+                        title={`${day.key}: ${day.count} atividade${day.count === 1 ? "" : "s"}`}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mt-5 flex items-center justify-between text-xs text-slate-500">
         <span>Menos</span>
         <div className="flex gap-1">
-          <span className="h-3 w-3 rounded bg-slate-800" />
-          <span className="h-3 w-3 rounded bg-emerald-900" />
-          <span className="h-3 w-3 rounded bg-emerald-600" />
-          <span className="h-3 w-3 rounded bg-emerald-400" />
+          <span className="h-3 w-3 rounded-[3px] bg-slate-800" />
+          <span className="h-3 w-3 rounded-[3px] bg-emerald-950" />
+          <span className="h-3 w-3 rounded-[3px] bg-emerald-700" />
+          <span className="h-3 w-3 rounded-[3px] bg-emerald-400" />
         </div>
         <span>Mais</span>
       </div>
@@ -309,6 +366,7 @@ function PomodoroWidget() {
   const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
   const remainingSeconds = String(seconds % 60).padStart(2, "0");
   const progress = ((25 * 60 - seconds) / (25 * 60)) * 100;
+  const tickMarks = Array.from({ length: 12 }, (_, index) => index);
 
   return (
     <section className="app-card lg:col-span-4">
@@ -316,9 +374,15 @@ function PomodoroWidget() {
 
       <div className="mt-6 grid gap-6 sm:grid-cols-[140px_1fr] sm:items-center lg:grid-cols-1 xl:grid-cols-[140px_1fr]">
         <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
-          <span className="text-2xl font-bold text-white">
-            {minutes}:{remainingSeconds}
-          </span>
+          {tickMarks.map((tick) => (
+            <span key={tick} className="pomodoro-tick" style={{ transform: `rotate(${tick * 30}deg)` }} />
+          ))}
+          <div className="pomodoro-face">
+            <span className="pomodoro-hand" style={{ transform: `rotate(${progress * 3.6}deg)` }} />
+            <span className="text-2xl font-bold text-white">
+              {minutes}:{remainingSeconds}
+            </span>
+          </div>
         </div>
 
         <div>

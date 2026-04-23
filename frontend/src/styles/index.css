@@ -192,17 +192,95 @@ body {
 
 .pomodoro-ring {
   display: grid;
+  position: relative;
   place-items: center;
   width: 8.75rem;
   height: 8.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 999px;
   background:
     conic-gradient(#38bdf8 var(--pomodoro-progress, 0%), rgba(255, 255, 255, 0.08) 0),
     #07101a;
   box-shadow:
-    0 0 0 10px rgba(2, 6, 23, 0.42) inset,
-    0 18px 40px rgba(0, 0, 0, 0.2);
+    0 0 0 0.55rem rgba(2, 6, 23, 0.88) inset,
+    0 0 0 0.72rem rgba(56, 189, 248, 0.1),
+    0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.pomodoro-ring::before {
+  content: "";
+  position: absolute;
+  top: -0.62rem;
+  width: 1.8rem;
+  height: 0.72rem;
+  border-radius: 999px 999px 0 0;
+  background: #1e293b;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+.pomodoro-ring::after {
+  content: "";
+  position: absolute;
+  top: 0.45rem;
+  right: 1rem;
+  width: 0.7rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: #334155;
+  transform: rotate(42deg);
+}
+
+.pomodoro-face {
+  display: grid;
+  position: relative;
+  place-items: center;
+  width: 6.4rem;
+  height: 6.4rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 0 24px rgba(56, 189, 248, 0.18) inset;
+}
+
+.pomodoro-hand {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.18rem;
+  height: 2.15rem;
+  border-radius: 999px;
+  background: #38bdf8;
+  transform-origin: 50% 0;
+}
+
+.pomodoro-hand::after {
+  content: "";
+  position: absolute;
+  top: -0.24rem;
+  left: 50%;
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  transform: translateX(-50%);
+}
+
+.pomodoro-tick {
+  position: absolute;
+  width: 0.08rem;
+  height: 100%;
+}
+
+.pomodoro-tick::before {
+  content: "";
+  display: block;
+  width: 0.08rem;
+  height: 0.52rem;
+  margin: 0.66rem auto 0;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.55);
 }
 
 @media (max-width: 900px) {
