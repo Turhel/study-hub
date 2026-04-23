@@ -501,3 +501,8 @@ Refinamentos mais recentes em Natureza:
 - a camada final de ecologia foi refinada para separar `biomas` de `biociclos e distribuicao ecologica`
 - `Quimica` foi ajustada para separar `dispersoes e coloides` de `solubilidade e classificacao das solucoes`
 - a trilha de equilibrio ionico tambem foi suavizada para separar `efeito tampao` de `Kps e solubilidade em equilibrio`
+
+Leitura honesta do estado atual do roadmap:
+
+- os nos marcados como `grande` foram resolvidos nesta fase
+- o que sobra agora e refinamento opcional de conteudo, nao mais um gargalo de granularidade no metadado principal
