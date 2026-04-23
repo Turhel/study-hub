@@ -23,6 +23,7 @@ Hoje o repositorio usa CSV como fonte oficial do sistema:
 - `edges.csv`
 - `block_map.csv`
 - `rules.csv`
+- `subject_node_overrides.csv` como camada opcional de override manual do mapeamento `subject -> roadmap_node`
 
 A planilha versionada em `docs/enem_blocos_organizados.xlsx` deve ser usada como referencia operacional permanente para revisar cobertura de blocos, assuntos e conteudos. Os CSVs continuam sendo a fonte principal consumida pelo backend.
 
@@ -127,6 +128,27 @@ Colunas:
 - `rule_key`
 - `rule_value`
 - `notes`
+
+### `subject_node_overrides.csv`
+
+Camada opcional e manual para corrigir casos especificos do mapeamento entre `subjects` do banco e `nodes` do roadmap sem alterar os CSVs pedagogicos principais.
+
+Colunas:
+
+- `discipline`
+- `subject_id`
+- `roadmap_node_id`
+- `notes`
+
+Regras:
+
+- se houver override valido, ele tem precedencia total sobre a heuristica automatica
+- o `subject_id` precisa existir no banco
+- o `roadmap_node_id` precisa existir no roadmap importado
+- disciplina do `subject` e do `node` precisam ser compativeis
+- overrides invalidos devem gerar erro claro no backend
+
+Use essa camada para casos ambigüos ou muito especificos em que a decisao humana e melhor que uma inferencia conservadora.
 
 ## Como Importar
 

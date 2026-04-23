@@ -51,6 +51,9 @@ class StudyPlanCandidate:
     planned_mode: str
     roadmap_node_id: str | None = None
     roadmap_mapped: bool = False
+    roadmap_mapping_source: str | None = None
+    roadmap_mapping_confidence: float | None = None
+    roadmap_mapping_reason: str | None = None
     roadmap_status: str | None = None
     roadmap_reason: str | None = None
 
@@ -144,19 +147,18 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
                 planned_mode=row.planned_mode,
                 roadmap_node_id=subject_state.roadmap_node_id if subject_state is not None else None,
                 roadmap_mapped=subject_state.mapped if subject_state is not None else False,
+                roadmap_mapping_source=subject_state.mapping_source if subject_state is not None else None,
+                roadmap_mapping_confidence=subject_state.mapping_confidence if subject_state is not None else None,
+                roadmap_mapping_reason=subject_state.mapping_reason if subject_state is not None else None,
                 roadmap_status=(
                     subject_state.status
                     if subject_state is not None and subject_state.status is not None
                     else (roadmap_block.status if roadmap_block is not None else None)
                 ),
                 roadmap_reason=(
-                    f"{subject_state.reason} {roadmap_block.reason}".strip()
-                    if subject_state is not None and not subject_state.mapped and roadmap_block is not None
-                    else (
-                        subject_state.reason
-                        if subject_state is not None
-                        else (roadmap_block.reason if roadmap_block is not None else None)
-                    )
+                    subject_state.reason
+                    if subject_state is not None
+                    else (roadmap_block.reason if roadmap_block is not None else None)
                 ),
             )
         )
@@ -307,6 +309,9 @@ def _eligible_candidates(
             subject_state = roadmap_overview.subject_states.get(subject.id)
             roadmap_node_id = subject_state.roadmap_node_id if subject_state is not None else None
             roadmap_mapped = subject_state.mapped if subject_state is not None else False
+            roadmap_mapping_source = subject_state.mapping_source if subject_state is not None else None
+            roadmap_mapping_confidence = subject_state.mapping_confidence if subject_state is not None else None
+            roadmap_mapping_reason = subject_state.mapping_reason if subject_state is not None else None
             roadmap_status = roadmap_block.status if roadmap_block is not None else None
             roadmap_reason = roadmap_block.reason if roadmap_block is not None else None
             if subject_state is not None and subject_state.mapped:
@@ -316,12 +321,6 @@ def _eligible_candidates(
                     continue
                 raw_score *= subject_state.priority_factor
                 priority_score = round(min(raw_score / 2.15, 0.99), 2)
-            elif subject_state is not None and not subject_state.mapped:
-                roadmap_reason = (
-                    f"{subject_state.reason} {roadmap_block.reason}".strip()
-                    if roadmap_block is not None and roadmap_block.reason
-                    else subject_state.reason
-                )
             if roadmap_block is not None:
                 raw_score *= roadmap_block.priority_factor
                 priority_score = round(min(raw_score / 2.15, 0.99), 2)
@@ -329,12 +328,10 @@ def _eligible_candidates(
                     reason = f"{reason}. {roadmap_reason}"
             elif roadmap_reason:
                 reason = f"{reason}. {roadmap_reason}"
-            if (
-                subject_state is not None
-                and subject_state.reason
-                and (subject_state.mapped or roadmap_reason != subject_state.reason)
-            ):
+            if subject_state is not None and subject_state.mapped and subject_state.reason:
                 reason = f"{reason}. {subject_state.reason}"
+            elif subject_state is not None and not subject_state.mapped and subject_state.mapping_reason:
+                reason = f"{reason}. {subject_state.mapping_reason}"
             planned_mode = block_planned_mode(progress.status)
             normalized = normalize_discipline(subject.disciplina)
             if progress.status == BLOCK_STATUS_READY_TO_ADVANCE:
@@ -358,6 +355,9 @@ def _eligible_candidates(
                     planned_mode=planned_mode,
                     roadmap_node_id=roadmap_node_id,
                     roadmap_mapped=roadmap_mapped,
+                    roadmap_mapping_source=roadmap_mapping_source,
+                    roadmap_mapping_confidence=roadmap_mapping_confidence,
+                    roadmap_mapping_reason=roadmap_mapping_reason,
                     roadmap_status=roadmap_status,
                     roadmap_reason=roadmap_reason,
                 )

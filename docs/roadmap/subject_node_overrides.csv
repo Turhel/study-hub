@@ -1,0 +1,18 @@
+discipline,subject_id,roadmap_node_id,notes
+Filosofia/Sociologia,6,FIL_001,Entrada ampla de filosofia antiga mapeada manualmente para surgimento da filosofia e pre-socraticos.
+Filosofia/Sociologia,28,FIL_001,Subject isolado de pre-socraticos consolidado manualmente no node de origem da filosofia.
+Filosofia/Sociologia,46,FIL_002,Correspondencia direta com o recorte de Socrates e os Sofistas.
+Filosofia/Sociologia,68,FIL_017,Aristoteles aparece como parte do node Platao e Aristoteles.
+Filosofia/Sociologia,69,FIL_017,Platao aparece como parte do node Platao e Aristoteles.
+Filosofia/Sociologia,91,FIL_003,Helenismo tratado no node combinado Helenismo e Santo Agostinho.
+Filosofia/Sociologia,133,FIL_004,Tomás de Aquino corresponde diretamente ao recorte medieval.
+Filosofia/Sociologia,153,FIL_005,Maquiavel entra no node de estado moderno.
+Filosofia/Sociologia,246,FIL_008,Kant isolado mapeado manualmente para o node especifico.
+Filosofia/Sociologia,266,FIL_022,Hegel e Marx correspondem diretamente ao node especifico.
+Filosofia/Sociologia,267,FIL_019,Iluminismo e contratualismo correspondem diretamente ao node especifico.
+Biologia,42,BIO_007,Teste de DNA fica consolidado no node de engenharia genetica e testes geneticos.
+Biologia,59,BIO_007,Celulas-tronco ficam agrupadas no node de engenharia genetica desta v1.
+Biologia,61,BIO_007,Terapia genica e transgenico ficam agrupados no node de engenharia genetica.
+Biologia,62,BIO_007,Teste de paternidade fica consolidado no node de testes geneticos.
+Geografia,226,GEO_016,IDH entra no node de indicadores sociais e leitura socioeconomica.
+Geografia,250,GEO_016,PEA entra no node de indicadores sociais e leitura socioeconomica.

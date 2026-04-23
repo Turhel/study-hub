@@ -97,6 +97,9 @@ class StudyPlanItem(BaseModel):
     planned_mode: str
     roadmap_node_id: str | None = None
     roadmap_mapped: bool = False
+    roadmap_mapping_source: Literal["override", "heuristic", "unmapped"] | None = None
+    roadmap_mapping_confidence: float | None = None
+    roadmap_mapping_reason: str | None = None
     roadmap_status: Literal[
         "entry",
         "available",

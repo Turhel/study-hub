@@ -75,6 +75,10 @@ class GuidedRoadmapSubjectState:
     subject_id: int
     mapped: bool
     roadmap_node_id: str | None
+    mapping_source: str
+    mapping_confidence: float
+    mapping_reason: str
+    relevant_candidate_count: int
     status: RoadmapNodeStatus | None
     reason: str
     expected_contacts_min: int | None
@@ -451,8 +455,12 @@ def _build_subject_states(
                 subject_id=subject_id,
                 mapped=False,
                 roadmap_node_id=None,
+                mapping_source=mapping.mapping_source,
+                mapping_confidence=mapping.confidence_score,
+                mapping_reason=mapping.reason,
+                relevant_candidate_count=mapping.relevant_candidate_count,
                 status=None,
-                reason=mapping.reason,
+                reason="Subject sem node mapeado com confianca; mantido por fallback operacional do bloco.",
                 expected_contacts_min=None,
                 attempts_count=attempts_count,
                 recent_accuracy=recent_accuracy,
@@ -492,6 +500,10 @@ def _build_subject_states(
             subject_id=subject_id,
             mapped=True,
             roadmap_node_id=mapping.roadmap_node_id,
+            mapping_source=mapping.mapping_source,
+            mapping_confidence=mapping.confidence_score,
+            mapping_reason=mapping.reason,
+            relevant_candidate_count=mapping.relevant_candidate_count,
             status=base_status,
             reason=base_reason,
             expected_contacts_min=node.expected_contacts_min if node is not None else None,
