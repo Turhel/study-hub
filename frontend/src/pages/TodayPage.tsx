@@ -219,7 +219,7 @@ function PerformanceWidget({ performance }: { performance: SubjectPerformance[] 
   });
 
   return (
-    <section className="bento-card p-5 lg:col-span-4">
+    <section className="bento-card p-5 lg:col-span-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="pixel-font text-sm font-bold uppercase text-focus-400">Desempenho por materia</p>
@@ -310,7 +310,7 @@ function PomodoroWidget() {
   const progress = ((25 * 60 - seconds) / (25 * 60)) * 100;
 
   return (
-    <section className="bento-card p-5 lg:col-span-2">
+    <section className="bento-card p-5 lg:col-span-6">
       <p className="pixel-font text-sm font-bold uppercase text-ember-400">Pomodoro teste</p>
       <div className="mt-7 grid place-items-center">
         <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
@@ -570,8 +570,8 @@ export default function TodayPage() {
           onRegister={setRegisteringItem}
         />
         <ConsistencyWidget activity={recentActivity} />
-        <PerformanceWidget performance={performance} />
         <PomodoroWidget />
+        <PerformanceWidget performance={performance} />
       </motion.div>
 
       {registeringItem ? (
