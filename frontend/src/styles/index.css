@@ -31,14 +31,15 @@ body {
 .app-sidebar {
   position: fixed;
   z-index: 20;
-  top: 1.25rem;
-  bottom: 1.25rem;
-  left: 1.25rem;
+  top: 0;
+  bottom: 0;
+  left: 0;
   width: 15rem;
   border: 1px solid rgba(120, 104, 180, 0.12);
-  border-radius: 32px;
+  border-left: 0;
+  border-radius: 0 32px 32px 0;
   background: rgba(255, 255, 255, 0.64);
-  padding: 1.05rem;
+  padding: 1.25rem 1.05rem;
   box-shadow:
     0 24px 70px rgba(90, 80, 180, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -114,7 +115,7 @@ body {
 
 .app-content {
   min-height: 100vh;
-  padding-left: 17rem;
+  padding-left: 15rem;
 }
 
 .app-page-header {
@@ -487,6 +488,8 @@ body {
     position: static;
     width: auto;
     margin: 1rem;
+    border-left: 1px solid rgba(120, 104, 180, 0.12);
+    border-radius: 32px;
   }
 
   .app-content {
