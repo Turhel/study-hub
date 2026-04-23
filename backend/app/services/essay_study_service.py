@@ -15,15 +15,25 @@ from app.llm.tasks import (
     estimate_tokens,
     run_chat_messages,
 )
-from app.models import EssayStudyMessage, EssayStudySession
+from app.models import EssayStudyMessage, EssayStudySession, EssaySubmission
 from app.schemas import (
     EssayStudyMessageResponse,
     EssayStudySessionCloseResponse,
     EssayStudySessionListItem,
     EssayStudySessionResponse,
 )
-from app.services.essay_service import EssayCorrectionError, get_submission_for_correction, get_essay_correction
+from app.services.essay_service import (
+    EssayCorrectionError,
+    get_essay_correction,
+    get_submission_for_correction,
+)
 from app.settings import get_env_int
+
+
+ACTIVE_STATUS = "active"
+CLOSED_STATUS = "closed"
+TOKEN_LIMIT_REACHED_STATUS = "token_limit_reached"
+FINAL_STATUSES = {CLOSED_STATUS, TOKEN_LIMIT_REACHED_STATUS}
 
 
 class EssayStudyError(ValueError):
@@ -68,6 +78,33 @@ def _study_token_limit() -> int:
     return get_env_int("STUDY_HUB_LLM_ESSAY_STUDY_TOKEN_LIMIT", 60000, minimum=1000)
 
 
+def _get_study_session_or_raise(db: Session, session_id: int) -> EssayStudySession:
+    study_session = db.get(EssayStudySession, session_id)
+    if study_session is None:
+        raise EssayStudyError("Sessao de estudo de redacao nao encontrada.")
+    return study_session
+
+
+def _get_messages(db: Session, session_id: int) -> list[EssayStudyMessage]:
+    return list(
+        db.exec(
+            select(EssayStudyMessage)
+            .where(EssayStudyMessage.session_id == session_id)
+            .order_by(EssayStudyMessage.created_at.asc(), EssayStudyMessage.id.asc())
+        )
+    )
+
+
+def _token_usage(messages: list[EssayStudyMessage]) -> tuple[int, int, int]:
+    tokens_input = sum(item.tokens_estimated for item in messages if item.role in {"system", "user"})
+    tokens_output = sum(item.tokens_estimated for item in messages if item.role == "assistant")
+    return tokens_input, tokens_output, tokens_input + tokens_output
+
+
+def _can_accept_messages(study_session: EssayStudySession) -> bool:
+    return study_session.status == ACTIVE_STATUS
+
+
 def _to_message_response(message: EssayStudyMessage) -> EssayStudyMessageResponse:
     return EssayStudyMessageResponse(
         id=message.id or 0,
@@ -79,8 +116,7 @@ def _to_message_response(message: EssayStudyMessage) -> EssayStudyMessageRespons
 
 
 def _to_session_response(session: EssayStudySession, messages: list[EssayStudyMessage]) -> EssayStudySessionResponse:
-    tokens_input = sum(item.tokens_estimated for item in messages if item.role in {"system", "user"})
-    tokens_output = sum(item.tokens_estimated for item in messages if item.role == "assistant")
+    tokens_input, tokens_output, tokens_total = _token_usage(messages)
     return EssayStudySessionResponse(
         id=session.id or 0,
         essay_submission_id=session.essay_submission_id,
@@ -92,10 +128,35 @@ def _to_session_response(session: EssayStudySession, messages: list[EssayStudyMe
         tokens_input=tokens_input,
         tokens_output=tokens_output,
         status=session.status,  # type: ignore[arg-type]
-        tokens_total=session.tokens_total,
+        tokens_total=tokens_total,
+        token_limit=_study_token_limit(),
+        can_accept_messages=_can_accept_messages(session),
+        messages_count=len(messages),
         started_at=session.started_at.isoformat(),
         ended_at=session.ended_at.isoformat() if session.ended_at else None,
         messages=[_to_message_response(item) for item in messages],
+    )
+
+
+def _to_session_list_item(session: EssayStudySession, messages: list[EssayStudyMessage]) -> EssayStudySessionListItem:
+    tokens_input, tokens_output, tokens_total = _token_usage(messages)
+    return EssayStudySessionListItem(
+        id=session.id or 0,
+        essay_submission_id=session.essay_submission_id,
+        essay_correction_id=session.essay_correction_id,
+        provider=session.provider,
+        model=session.model,
+        prompt_name=session.prompt_name,
+        prompt_hash=session.prompt_hash,
+        status=session.status,  # type: ignore[arg-type]
+        tokens_input=tokens_input,
+        tokens_output=tokens_output,
+        tokens_total=tokens_total,
+        token_limit=_study_token_limit(),
+        can_accept_messages=_can_accept_messages(session),
+        messages_count=len(messages),
+        started_at=session.started_at.isoformat(),
+        ended_at=session.ended_at.isoformat() if session.ended_at else None,
     )
 
 
@@ -141,12 +202,9 @@ def _append_message(
 
 
 def _refresh_session_tokens(db: Session, study_session: EssayStudySession) -> EssayStudySession:
-    messages = list(
-        db.exec(
-            select(EssayStudyMessage).where(EssayStudyMessage.session_id == study_session.id).order_by(EssayStudyMessage.created_at.asc())
-        )
-    )
-    study_session.tokens_total = sum(item.tokens_estimated for item in messages)
+    messages = _get_messages(db, study_session.id or 0)
+    _, _, tokens_total = _token_usage(messages)
+    study_session.tokens_total = tokens_total
     db.add(study_session)
     db.commit()
     db.refresh(study_session)
@@ -154,14 +212,35 @@ def _refresh_session_tokens(db: Session, study_session: EssayStudySession) -> Es
 
 
 def _ensure_active_session(study_session: EssayStudySession) -> None:
-    if study_session.status == "token_limit_reached":
+    if study_session.status == TOKEN_LIMIT_REACHED_STATUS:
         raise EssayStudyTokenLimitError("A sessao de estudo ja atingiu o limite de tokens e nao pode continuar.")
-    if study_session.status == "closed":
+    if study_session.status == CLOSED_STATUS:
         raise EssayStudyError("A sessao de estudo ja foi encerrada.")
+    if study_session.status != ACTIVE_STATUS:
+        raise EssayStudyError(f"Status invalido para sessao de estudo: {study_session.status}.")
 
 
 def _mark_token_limit_reached(db: Session, study_session: EssayStudySession) -> EssayStudySession:
-    study_session.status = "token_limit_reached"
+    study_session.status = TOKEN_LIMIT_REACHED_STATUS
+    study_session.ended_at = study_session.ended_at or datetime.utcnow()
+    db.add(study_session)
+    db.commit()
+    db.refresh(study_session)
+    return study_session
+
+
+def _close_session(db: Session, study_session: EssayStudySession) -> EssayStudySession:
+    if study_session.status in FINAL_STATUSES:
+        if study_session.ended_at is None:
+            study_session.ended_at = datetime.utcnow()
+            db.add(study_session)
+            db.commit()
+            db.refresh(study_session)
+        return study_session
+    if study_session.status != ACTIVE_STATUS:
+        raise EssayStudyError(f"Status invalido para sessao de estudo: {study_session.status}.")
+
+    study_session.status = CLOSED_STATUS
     study_session.ended_at = datetime.utcnow()
     db.add(study_session)
     db.commit()
@@ -173,7 +252,11 @@ def create_study_session(essay_correction_id: int, session: Session | None = Non
     own_session = session is None
     db = session or get_session()
     try:
-        submission, correction = get_submission_for_correction(essay_correction_id, db)
+        try:
+            submission, correction = get_submission_for_correction(essay_correction_id, db)
+        except EssayCorrectionError as exc:
+            raise EssayStudyError(str(exc)) from exc
+
         try:
             prompt = load_prompt_file("essay_study")
         except PromptLoadError as exc:
@@ -186,7 +269,7 @@ def create_study_session(essay_correction_id: int, session: Session | None = Non
             model=correction.model,
             prompt_name=prompt.name,
             prompt_hash=prompt.sha256,
-            status="active",
+            status=ACTIVE_STATUS,
             tokens_total=0,
         )
         db.add(study_session)
@@ -200,11 +283,7 @@ def create_study_session(essay_correction_id: int, session: Session | None = Non
         if study_session.tokens_total >= _study_token_limit():
             study_session = _mark_token_limit_reached(db, study_session)
 
-        messages = list(
-            db.exec(
-                select(EssayStudyMessage).where(EssayStudyMessage.session_id == study_session.id).order_by(EssayStudyMessage.created_at.asc())
-            )
-        )
+        messages = _get_messages(db, study_session.id or 0)
         return _to_session_response(study_session, messages)
     finally:
         if own_session:
@@ -215,25 +294,26 @@ def get_study_session(session_id: int, session: Session | None = None) -> EssayS
     own_session = session is None
     db = session or get_session()
     try:
-        study_session = db.get(EssayStudySession, session_id)
-        if study_session is None:
-            raise EssayStudyError("Sessao de estudo de redacao nao encontrada.")
-
-        messages = list(
-            db.exec(
-                select(EssayStudyMessage).where(EssayStudyMessage.session_id == session_id).order_by(EssayStudyMessage.created_at.asc())
-            )
-        )
+        study_session = _get_study_session_or_raise(db, session_id)
+        messages = _get_messages(db, session_id)
+        if study_session.tokens_total != _token_usage(messages)[2]:
+            study_session = _refresh_session_tokens(db, study_session)
         return _to_session_response(study_session, messages)
     finally:
         if own_session:
             db.close()
 
 
-def list_study_sessions_for_submission(submission_id: int, session: Session | None = None) -> list[EssayStudySessionListItem]:
+def list_study_sessions_for_submission(
+    submission_id: int,
+    session: Session | None = None,
+) -> list[EssayStudySessionListItem]:
     own_session = session is None
     db = session or get_session()
     try:
+        if db.get(EssaySubmission, submission_id) is None:
+            raise EssayStudyError("Submissao de redacao nao encontrada.")
+
         study_sessions = list(
             db.exec(
                 select(EssayStudySession)
@@ -242,15 +322,7 @@ def list_study_sessions_for_submission(submission_id: int, session: Session | No
             )
         )
         return [
-            EssayStudySessionListItem(
-                id=item.id or 0,
-                essay_submission_id=item.essay_submission_id,
-                essay_correction_id=item.essay_correction_id,
-                status=item.status,  # type: ignore[arg-type]
-                tokens_total=item.tokens_total,
-                started_at=item.started_at.isoformat(),
-                ended_at=item.ended_at.isoformat() if item.ended_at else None,
-            )
+            _to_session_list_item(item, _get_messages(db, item.id or 0))
             for item in study_sessions
         ]
     finally:
@@ -262,9 +334,7 @@ def create_study_message(session_id: int, content: str, session: Session | None 
     own_session = session is None
     db = session or get_session()
     try:
-        study_session = db.get(EssayStudySession, session_id)
-        if study_session is None:
-            raise EssayStudyError("Sessao de estudo de redacao nao encontrada.")
+        study_session = _get_study_session_or_raise(db, session_id)
         _ensure_active_session(study_session)
 
         user_content = content.strip()
@@ -275,18 +345,10 @@ def create_study_message(session_id: int, content: str, session: Session | None 
         study_session = _refresh_session_tokens(db, study_session)
         if study_session.tokens_total >= _study_token_limit():
             study_session = _mark_token_limit_reached(db, study_session)
-            messages = list(
-                db.exec(
-                    select(EssayStudyMessage).where(EssayStudyMessage.session_id == session_id).order_by(EssayStudyMessage.created_at.asc())
-                )
-            )
+            messages = _get_messages(db, session_id)
             return _to_session_response(study_session, messages)
 
-        history = list(
-            db.exec(
-                select(EssayStudyMessage).where(EssayStudyMessage.session_id == session_id).order_by(EssayStudyMessage.created_at.asc())
-            )
-        )
+        history = _get_messages(db, session_id)
         llm_messages = [LMStudioMessage(role=item.role, content=item.content) for item in history]
         if estimate_messages_tokens(llm_messages) >= _study_token_limit():
             study_session = _mark_token_limit_reached(db, study_session)
@@ -312,11 +374,7 @@ def create_study_message(session_id: int, content: str, session: Session | None 
         if study_session.tokens_total >= _study_token_limit():
             study_session = _mark_token_limit_reached(db, study_session)
 
-        messages = list(
-            db.exec(
-                select(EssayStudyMessage).where(EssayStudyMessage.session_id == session_id).order_by(EssayStudyMessage.created_at.asc())
-            )
-        )
+        messages = _get_messages(db, session_id)
         return _to_session_response(study_session, messages)
     finally:
         if own_session:
@@ -327,20 +385,8 @@ def close_study_session(session_id: int, session: Session | None = None) -> Essa
     own_session = session is None
     db = session or get_session()
     try:
-        study_session = db.get(EssayStudySession, session_id)
-        if study_session is None:
-            raise EssayStudyError("Sessao de estudo de redacao nao encontrada.")
-        if study_session.status == "active":
-            study_session.status = "closed"
-            study_session.ended_at = datetime.utcnow()
-            db.add(study_session)
-            db.commit()
-            db.refresh(study_session)
-        elif study_session.ended_at is None:
-            study_session.ended_at = datetime.utcnow()
-            db.add(study_session)
-            db.commit()
-            db.refresh(study_session)
+        study_session = _get_study_session_or_raise(db, session_id)
+        study_session = _close_session(db, study_session)
 
         return EssayStudySessionCloseResponse(
             id=study_session.id or 0,

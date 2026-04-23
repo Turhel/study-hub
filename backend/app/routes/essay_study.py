@@ -41,7 +41,9 @@ def create_study_session_route(payload: EssayStudySessionCreateRequest) -> Essay
     except EssayStudyTokenLimitError as exc:
         raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": str(exc)}) from exc
     except EssayStudyError as exc:
-        raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
+        status_code = 404 if "nao encontrada" in str(exc).lower() else 400
+        code = "essay_correction_not_found" if status_code == 404 else "invalid_request"
+        raise HTTPException(status_code=status_code, detail={"code": code, "message": str(exc)}) from exc
     except EssayStudyProviderError as exc:
         raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": str(exc)}) from exc
 
@@ -77,6 +79,8 @@ def create_study_message_route(session_id: int, payload: EssayStudyMessageCreate
 def close_study_session_route(session_id: int) -> EssayStudySessionCloseResponse:
     try:
         return close_study_session(session_id)
+    except EssayStudyTokenLimitError as exc:
+        raise HTTPException(status_code=exc.status_code, detail={"code": exc.error_code, "message": str(exc)}) from exc
     except EssayStudyError as exc:
         status_code = 404 if "nao encontrada" in str(exc).lower() else 400
         code = "essay_study_session_not_found" if status_code == 404 else "invalid_request"
@@ -92,7 +96,10 @@ def get_study_session_route(session_id: int) -> EssayStudySessionResponse:
     try:
         return get_study_session(session_id)
     except EssayStudyError as exc:
-        raise HTTPException(status_code=404, detail={"code": "essay_study_session_not_found", "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "essay_study_session_not_found", "message": str(exc)},
+        ) from exc
 
 
 @router.get(
@@ -101,4 +108,10 @@ def get_study_session_route(session_id: int) -> EssayStudySessionResponse:
     responses={404: {"model": ApiErrorResponse}},
 )
 def list_study_sessions_for_submission_route(submission_id: int) -> list[EssayStudySessionListItem]:
-    return list_study_sessions_for_submission(submission_id)
+    try:
+        return list_study_sessions_for_submission(submission_id)
+    except EssayStudyError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "essay_submission_not_found", "message": str(exc)},
+        ) from exc
