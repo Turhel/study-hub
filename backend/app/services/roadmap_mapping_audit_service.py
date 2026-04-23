@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import re
-import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 
 from sqlmodel import Session, select
 
@@ -19,41 +18,16 @@ from app.schemas import (
     RoadmapMappingSubjectAuditItem,
     RoadmapMappingSubjectBrief,
 )
-from app.services.roadmap_query_service import RoadmapQueryError, normalize_discipline
+from app.services.roadmap_query_service import RoadmapQueryError
+from app.services.roadmap_subject_mapping_service import (
+    SubjectRoadmapMappingDiagnostic,
+    build_subject_roadmap_mapping_diagnostics,
+    normalize_mapping_discipline,
+    summarize_subject_roadmap_mapping,
+)
 
 
 EXAMPLE_LIMIT = 20
-MAPPED_SCORE_THRESHOLD = 0.55
-AMBIGUOUS_SCORE_THRESHOLD = 0.35
-AMBIGUOUS_SCORE_GAP = 0.12
-STOPWORDS = {
-    "a",
-    "as",
-    "ao",
-    "aos",
-    "da",
-    "das",
-    "de",
-    "do",
-    "dos",
-    "e",
-    "em",
-    "na",
-    "nas",
-    "no",
-    "nos",
-    "o",
-    "os",
-    "para",
-    "por",
-    "com",
-    "sem",
-    "basica",
-    "basico",
-    "geral",
-    "introducao",
-    "principais",
-}
 
 
 @dataclass(frozen=True)
@@ -62,22 +36,46 @@ class SubjectAudit:
     discipline_key: str
 
 
+def _discipline_lookup_key(value: str | None) -> str:
+    return normalize_mapping_discipline(value or "").replace(" ", "")
+
+
+def _resolve_discipline_key(requested: str | None, available_keys: set[str]) -> str | None:
+    if requested is None:
+        return None
+    direct = _discipline_lookup_key(requested)
+    if direct in available_keys:
+        return direct
+    best_match: str | None = None
+    best_score = 0.0
+    for candidate in available_keys:
+        score = SequenceMatcher(None, direct, candidate).ratio()
+        if score > best_score:
+            best_score = score
+            best_match = candidate
+    if best_match is not None and best_score >= 0.8:
+        return best_match
+    return direct
+
+
 def get_mapping_coverage(session: Session | None = None) -> RoadmapMappingCoverageResponse:
     own_session = session is None
     db = session or get_session()
     try:
-        audits, _ = _build_audit(db)
+        audits, _, diagnostics = _build_audit(db)
         summaries = _discipline_summaries(audits)
-        total = len(audits)
-        mapped = sum(1 for audit in audits if audit.item.status == "mapped")
-        unmapped = sum(1 for audit in audits if audit.item.status == "unmapped")
+        mapping_summary = summarize_subject_roadmap_mapping(
+            {subject_id: diagnostic.mapping for subject_id, diagnostic in diagnostics.items()}
+        )
         ambiguous = sum(1 for audit in audits if audit.item.status == "ambiguous")
         return RoadmapMappingCoverageResponse(
-            total_subjects=total,
-            mapped_subjects=mapped,
-            unmapped_subjects=unmapped,
+            total_subjects=mapping_summary.total_subjects,
+            mapped_subjects=mapping_summary.mapped_subjects,
+            override_mapped_subjects=mapping_summary.override_mapped_subjects,
+            heuristic_mapped_subjects=mapping_summary.heuristic_mapped_subjects,
+            unmapped_subjects=mapping_summary.unmapped_subjects,
             ambiguous_subjects=ambiguous,
-            coverage_percent=_percent(mapped, total),
+            coverage_percent=_percent(mapping_summary.mapped_subjects, mapping_summary.total_subjects),
             disciplines=summaries,
         )
     finally:
@@ -92,23 +90,23 @@ def get_mapping_gaps(
     own_session = session is None
     db = session or get_session()
     try:
-        audits, nodes = _build_audit(db)
-        discipline_key = normalize_discipline(discipline) if discipline else None
+        audits, nodes, _ = _build_audit(db)
+        available_keys = {audit.discipline_key for audit in audits}
+        discipline_key = _resolve_discipline_key(discipline, available_keys) if discipline else None
         filtered_audits = [
             audit
             for audit in audits
             if discipline_key is None or audit.discipline_key == discipline_key
         ]
         mapped_node_ids = {
-            candidate.node.node_id
+            audit.item.mapped_node_id
             for audit in filtered_audits
-            if audit.item.status in {"mapped", "ambiguous"}
-            for candidate in audit.item.best_candidates
+            if audit.item.mapped_node_id
         }
         filtered_nodes = [
             node
             for node in nodes
-            if discipline_key is None or normalize_discipline(node.disciplina) == discipline_key
+            if discipline_key is None or _discipline_lookup_key(node.disciplina) == discipline_key
         ]
         return RoadmapMappingGapsResponse(
             discipline=discipline,
@@ -134,24 +132,30 @@ def get_mapping_discipline(
     own_session = session is None
     db = session or get_session()
     try:
-        audits, _ = _build_audit(db)
-        wanted = normalize_discipline(discipline)
+        audits, _, diagnostics = _build_audit(db)
+        wanted = _resolve_discipline_key(discipline, {audit.discipline_key for audit in audits})
         filtered = [audit for audit in audits if audit.discipline_key == wanted]
         if not filtered:
             raise RoadmapQueryError("Disciplina sem subjects para auditoria de mapeamento.")
 
-        total = len(filtered)
-        mapped = [audit.item for audit in filtered if audit.item.status == "mapped"]
-        unmapped = [audit.item for audit in filtered if audit.item.status == "unmapped"]
+        filtered_diagnostics = {
+            audit.item.subject.subject_id: diagnostics[audit.item.subject.subject_id].mapping
+            for audit in filtered
+        }
+        summary = summarize_subject_roadmap_mapping(filtered_diagnostics)
         ambiguous = [audit.item for audit in filtered if audit.item.status == "ambiguous"]
         canonical_discipline = filtered[0].item.subject.discipline
+        mapped = [audit.item for audit in filtered if audit.item.status == "mapped"]
+        unmapped = [audit.item for audit in filtered if audit.item.status == "unmapped"]
         return RoadmapMappingDisciplineResponse(
             discipline=canonical_discipline,
-            total_subjects=total,
-            mapped_subjects=len(mapped),
-            unmapped_subjects=len(unmapped),
+            total_subjects=summary.total_subjects,
+            mapped_subjects=summary.mapped_subjects,
+            override_mapped_subjects=summary.override_mapped_subjects,
+            heuristic_mapped_subjects=summary.heuristic_mapped_subjects,
+            unmapped_subjects=summary.unmapped_subjects,
             ambiguous_subjects=len(ambiguous),
-            coverage_percent=_percent(len(mapped), total),
+            coverage_percent=_percent(summary.mapped_subjects, summary.total_subjects),
             mapped_examples=mapped[:EXAMPLE_LIMIT],
             unmapped_examples=unmapped[:EXAMPLE_LIMIT],
             ambiguous_examples=ambiguous[:EXAMPLE_LIMIT],
@@ -161,71 +165,80 @@ def get_mapping_discipline(
             db.close()
 
 
-def _build_audit(db: Session) -> tuple[list[SubjectAudit], list[RoadmapNode]]:
+def _build_audit(
+    db: Session,
+) -> tuple[list[SubjectAudit], list[RoadmapNode], dict[int, SubjectRoadmapMappingDiagnostic]]:
     subject_query = select(Subject).where(Subject.ativo == True).order_by(Subject.disciplina, Subject.id)  # noqa: E712
     node_query = select(RoadmapNode).where(RoadmapNode.ativo == True).order_by(RoadmapNode.node_id)  # noqa: E712
     subjects = list(db.exec(subject_query))
     nodes = list(db.exec(node_query))
-    nodes_by_discipline: dict[str, list[RoadmapNode]] = defaultdict(list)
-    for node in nodes:
-        nodes_by_discipline[normalize_discipline(node.disciplina)].append(node)
-
+    diagnostics = build_subject_roadmap_mapping_diagnostics(db)
     audits = [
         SubjectAudit(
-            item=_audit_subject(subject, nodes_by_discipline.get(normalize_discipline(subject.disciplina), [])),
-            discipline_key=normalize_discipline(subject.disciplina),
+            item=_audit_subject(subject, diagnostics.get(subject.id or 0)),
+            discipline_key=_discipline_lookup_key(subject.disciplina),
         )
         for subject in subjects
+        if subject.id is not None
     ]
-    return audits, nodes
+    return audits, nodes, diagnostics
 
 
-def _audit_subject(subject: Subject, candidate_nodes: list[RoadmapNode]) -> RoadmapMappingSubjectAuditItem:
-    scored_candidates = [
-        candidate
-        for candidate in (_score_candidate(subject, node) for node in candidate_nodes)
-        if candidate.score >= AMBIGUOUS_SCORE_THRESHOLD
-    ]
-    scored_candidates.sort(key=lambda item: (-item.score, item.node.node_id))
-    status = _status_for_candidates(scored_candidates)
+def _audit_subject(
+    subject: Subject,
+    diagnostic: SubjectRoadmapMappingDiagnostic | None,
+) -> RoadmapMappingSubjectAuditItem:
+    if diagnostic is None:
+        return RoadmapMappingSubjectAuditItem(
+            subject=_subject_brief(subject),
+            status="unmapped",
+            mapping_source="unmapped",
+            mapping_confidence=0.0,
+            mapping_reason="Subject sem diagnostico de mapeamento.",
+            relevant_candidate_count=0,
+            mapped_node_id=None,
+            best_candidates=[],
+        )
+
+    mapping = diagnostic.mapping
+    status = _status_from_mapping(mapping.reason, mapping.mapped)
     return RoadmapMappingSubjectAuditItem(
         subject=_subject_brief(subject),
         status=status,
-        best_candidates=scored_candidates[:5],
+        mapping_source=mapping.mapping_source,
+        mapping_confidence=round(mapping.confidence_score, 2),
+        mapping_reason=mapping.reason,
+        relevant_candidate_count=mapping.relevant_candidate_count,
+        mapped_node_id=mapping.roadmap_node_id,
+        best_candidates=[
+            RoadmapMappingCandidate(
+                node=RoadmapMappingNodeBrief(
+                    node_id=candidate.roadmap_node_id,
+                    discipline=candidate.discipline,
+                    subject_area=candidate.subject_area,
+                    content=candidate.content,
+                    subunit=candidate.subunit,
+                    label=_node_label_from_parts(
+                        candidate.subject_area,
+                        candidate.content,
+                        candidate.subunit,
+                    ),
+                ),
+                score=candidate.score,
+                matched_terms=list(candidate.matched_terms),
+            )
+            for candidate in diagnostic.candidates
+        ],
     )
 
 
-def _status_for_candidates(candidates: list[RoadmapMappingCandidate]) -> str:
-    if not candidates:
-        return "unmapped"
-    best = candidates[0].score
-    if best < MAPPED_SCORE_THRESHOLD:
+def _status_from_mapping(reason: str, mapped: bool) -> str:
+    if mapped:
+        return "mapped"
+    normalized_reason = reason.casefold()
+    if "ambigu" in normalized_reason:
         return "ambiguous"
-    has_close_second_match = (
-        len(candidates) > 1
-        and candidates[1].score >= MAPPED_SCORE_THRESHOLD
-        and best - candidates[1].score <= AMBIGUOUS_SCORE_GAP
-    )
-    if has_close_second_match:
-        return "ambiguous"
-    return "mapped"
-
-
-def _score_candidate(subject: Subject, node: RoadmapNode) -> RoadmapMappingCandidate:
-    subject_terms = _terms(_subject_label(subject))
-    node_terms = _terms(_node_label(node))
-    matched_terms = sorted(subject_terms & node_terms)
-    if not subject_terms:
-        score = 0.0
-    else:
-        score = len(matched_terms) / len(subject_terms)
-    if _normalize_text(_subject_label(subject)) in _normalize_text(_node_label(node)):
-        score = max(score, 0.9)
-    return RoadmapMappingCandidate(
-        node=_node_brief(node),
-        score=round(score, 3),
-        matched_terms=matched_terms,
-    )
+    return "unmapped"
 
 
 def _discipline_summaries(audits: list[SubjectAudit]) -> list[RoadmapMappingDisciplineSummary]:
@@ -236,20 +249,24 @@ def _discipline_summaries(audits: list[SubjectAudit]) -> list[RoadmapMappingDisc
     summaries: list[RoadmapMappingDisciplineSummary] = []
     for discipline, items in grouped.items():
         total = len(items)
-        mapped = sum(1 for item in items if item.item.status == "mapped")
-        ambiguous = sum(1 for item in items if item.item.status == "ambiguous")
+        mapped = [item for item in items if item.item.status == "mapped"]
+        override_mapped = sum(1 for item in mapped if item.item.mapping_source == "override")
+        heuristic_mapped = sum(1 for item in mapped if item.item.mapping_source == "heuristic")
         unmapped = sum(1 for item in items if item.item.status == "unmapped")
+        ambiguous = sum(1 for item in items if item.item.status == "ambiguous")
         summaries.append(
             RoadmapMappingDisciplineSummary(
                 discipline=discipline,
                 total_subjects=total,
-                mapped_subjects=mapped,
+                mapped_subjects=len(mapped),
+                override_mapped_subjects=override_mapped,
+                heuristic_mapped_subjects=heuristic_mapped,
                 unmapped_subjects=unmapped,
                 ambiguous_subjects=ambiguous,
-                coverage_percent=_percent(mapped, total),
+                coverage_percent=_percent(len(mapped), total),
             )
         )
-    return sorted(summaries, key=lambda item: normalize_discipline(item.discipline))
+    return sorted(summaries, key=lambda item: normalize_mapping_discipline(item.discipline))
 
 
 def _subject_brief(subject: Subject) -> RoadmapMappingSubjectBrief:
@@ -258,7 +275,7 @@ def _subject_brief(subject: Subject) -> RoadmapMappingSubjectBrief:
         discipline=subject.disciplina,
         subject=subject.assunto,
         subsubject=subject.subassunto,
-        label=_subject_label(subject),
+        label=" - ".join(part for part in [subject.assunto, subject.subassunto] if part),
     )
 
 
@@ -269,32 +286,12 @@ def _node_brief(node: RoadmapNode) -> RoadmapMappingNodeBrief:
         subject_area=node.materia,
         content=node.conteudo,
         subunit=node.subunidade,
-        label=_node_label(node),
+        label=_node_label_from_parts(node.materia, node.conteudo, node.subunidade),
     )
 
 
-def _subject_label(subject: Subject) -> str:
-    parts = [subject.assunto, subject.subassunto]
-    return " - ".join(part for part in parts if part)
-
-
-def _node_label(node: RoadmapNode) -> str:
-    parts = [node.materia, node.conteudo, node.subunidade]
-    return " - ".join(part for part in parts if part)
-
-
-def _terms(value: str) -> set[str]:
-    return {
-        part
-        for part in _normalize_text(value).split()
-        if len(part) >= 3 and part not in STOPWORDS
-    }
-
-
-def _normalize_text(value: str) -> str:
-    normalized = unicodedata.normalize("NFKD", value.strip())
-    ascii_only = "".join(char for char in normalized if not unicodedata.combining(char))
-    return re.sub(r"[^a-z0-9]+", " ", ascii_only.casefold()).strip()
+def _node_label_from_parts(subject_area: str, content: str, subunit: str | None) -> str:
+    return " - ".join(part for part in [subject_area, content, subunit] if part)
 
 
 def _percent(value: int, total: int) -> float:

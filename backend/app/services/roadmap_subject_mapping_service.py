@@ -137,6 +137,23 @@ class SubjectRoadmapMappingSummary:
 
 
 @dataclass(frozen=True)
+class SubjectRoadmapMappingCandidateDetail:
+    roadmap_node_id: str
+    discipline: str
+    subject_area: str
+    content: str
+    subunit: str | None
+    score: float
+    matched_terms: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SubjectRoadmapMappingDiagnostic:
+    mapping: SubjectRoadmapMapping
+    candidates: tuple[SubjectRoadmapMappingCandidateDetail, ...]
+
+
+@dataclass(frozen=True)
 class _PreparedNode:
     node: RoadmapNode
     discipline_key: str
@@ -356,6 +373,24 @@ def _score_mapping(subject: Subject, candidate: _PreparedNode) -> tuple[float, s
     return score, ", ".join(reasons) or "sem sinal forte"
 
 
+def _candidate_matched_terms(subject: Subject, candidate: _PreparedNode) -> tuple[str, ...]:
+    subject_tokens = _tokenize(" ".join(part for part in [subject.assunto, subject.subassunto] if part))
+    matched = sorted(subject_tokens & candidate.full_tokens)
+    return tuple(matched)
+
+
+def _candidate_detail(subject: Subject, candidate: _PreparedNode, score: float) -> SubjectRoadmapMappingCandidateDetail:
+    return SubjectRoadmapMappingCandidateDetail(
+        roadmap_node_id=candidate.node.node_id,
+        discipline=candidate.node.disciplina,
+        subject_area=candidate.node.materia,
+        content=candidate.node.conteudo,
+        subunit=candidate.node.subunidade,
+        score=round(score, 2),
+        matched_terms=_candidate_matched_terms(subject, candidate),
+    )
+
+
 def _build_unmapped(
     subject: Subject,
     confidence_score: float,
@@ -374,15 +409,15 @@ def _build_unmapped(
     )
 
 
-def build_subject_roadmap_mapping(
+def build_subject_roadmap_mapping_diagnostics(
     session: Session,
     discipline_filter: str | None = None,
-) -> dict[int, SubjectRoadmapMapping]:
+) -> dict[int, SubjectRoadmapMappingDiagnostic]:
     subjects = session.exec(select(Subject).where(Subject.ativo == True)).all()  # noqa: E712
     prepared_nodes = _prepare_nodes(session, discipline_filter=discipline_filter)
     overrides = _load_overrides(session)
     wanted = normalize_mapping_discipline(discipline_filter) if discipline_filter else None
-    result: dict[int, SubjectRoadmapMapping] = {}
+    result: dict[int, SubjectRoadmapMappingDiagnostic] = {}
 
     for subject in subjects:
         if subject.id is None:
@@ -393,7 +428,15 @@ def build_subject_roadmap_mapping(
 
         override = overrides.get(subject.id)
         if override is not None:
-            result[subject.id] = SubjectRoadmapMapping(
+            override_node = next(
+                (
+                    candidate.node
+                    for candidate in prepared_nodes.get(discipline_key, [])
+                    if candidate.node.node_id == override.roadmap_node_id
+                ),
+                None,
+            )
+            mapping = SubjectRoadmapMapping(
                 subject_id=subject.id,
                 discipline=subject.disciplina,
                 roadmap_node_id=override.roadmap_node_id,
@@ -402,6 +445,23 @@ def build_subject_roadmap_mapping(
                 confidence_score=999.0,
                 reason=f"Mapeado por override manual. {override.notes}".strip(),
                 relevant_candidate_count=1,
+            )
+            candidates_detail = ()
+            if override_node is not None:
+                candidates_detail = (
+                    SubjectRoadmapMappingCandidateDetail(
+                        roadmap_node_id=override_node.node_id,
+                        discipline=override_node.disciplina,
+                        subject_area=override_node.materia,
+                        content=override_node.conteudo,
+                        subunit=override_node.subunidade,
+                        score=999.0,
+                        matched_terms=(),
+                    ),
+                )
+            result[subject.id] = SubjectRoadmapMappingDiagnostic(
+                mapping=mapping,
+                candidates=candidates_detail,
             )
             continue
 
@@ -414,13 +474,19 @@ def build_subject_roadmap_mapping(
             if score > 0:
                 ranked.append((score, reason, candidate))
         ranked.sort(key=lambda item: (-item[0], item[2].node.node_id))
+        candidate_details = tuple(
+            _candidate_detail(subject, candidate, score) for score, _, candidate in ranked[:5]
+        )
 
         if not ranked:
-            result[subject.id] = _build_unmapped(
-                subject,
-                confidence_score=0.0,
-                reason="Sem correspondencia forte entre assunto/subassunto e node do roadmap.",
-                relevant_candidate_count=0,
+            result[subject.id] = SubjectRoadmapMappingDiagnostic(
+                mapping=_build_unmapped(
+                    subject,
+                    confidence_score=0.0,
+                    reason="Sem correspondencia forte entre assunto/subassunto e node do roadmap.",
+                    relevant_candidate_count=0,
+                ),
+                candidates=(),
             )
             continue
 
@@ -429,20 +495,26 @@ def build_subject_roadmap_mapping(
         relevant_candidate_count = sum(1 for score, _, _ in ranked if score >= max(70.0, top_score - 15.0))
 
         if top_score < 100.0:
-            result[subject.id] = _build_unmapped(
-                subject,
-                confidence_score=top_score,
-                reason="Correspondencia insuficiente para mapear com confianca.",
-                relevant_candidate_count=relevant_candidate_count,
+            result[subject.id] = SubjectRoadmapMappingDiagnostic(
+                mapping=_build_unmapped(
+                    subject,
+                    confidence_score=top_score,
+                    reason="Correspondencia insuficiente para mapear com confianca.",
+                    relevant_candidate_count=relevant_candidate_count,
+                ),
+                candidates=candidate_details,
             )
             continue
 
         if second_score and top_score - second_score < 12.0:
-            result[subject.id] = _build_unmapped(
-                subject,
-                confidence_score=top_score,
-                reason="Mapeamento ambiguo entre multiplos nodes do roadmap.",
-                relevant_candidate_count=relevant_candidate_count,
+            result[subject.id] = SubjectRoadmapMappingDiagnostic(
+                mapping=_build_unmapped(
+                    subject,
+                    confidence_score=top_score,
+                    reason="Mapeamento ambiguo entre multiplos nodes do roadmap.",
+                    relevant_candidate_count=relevant_candidate_count,
+                ),
+                candidates=candidate_details,
             )
             continue
 
@@ -461,26 +533,40 @@ def build_subject_roadmap_mapping(
             and top_candidate.subunidade_norm not in {assunto_norm, subassunto_norm}
             and top_candidate.conteudo_norm not in {assunto_norm, subassunto_norm}
         ):
-            result[subject.id] = _build_unmapped(
-                subject,
-                confidence_score=top_score,
-                reason="Mapeamento amplo demais para um unico subnode; mantido como ambiguo.",
-                relevant_candidate_count=broad_bucket_match_count,
+            result[subject.id] = SubjectRoadmapMappingDiagnostic(
+                mapping=_build_unmapped(
+                    subject,
+                    confidence_score=top_score,
+                    reason="Mapeamento amplo demais para um unico subnode; mantido como ambiguo.",
+                    relevant_candidate_count=broad_bucket_match_count,
+                ),
+                candidates=candidate_details,
             )
             continue
 
-        result[subject.id] = SubjectRoadmapMapping(
-            subject_id=subject.id,
-            discipline=subject.disciplina,
-            roadmap_node_id=top_candidate.node.node_id,
-            mapped=True,
-            mapping_source="heuristic",
-            confidence_score=round(top_score, 2),
-            reason=f"Mapeado por heuristica v2: {top_reason}.",
-            relevant_candidate_count=relevant_candidate_count,
+        result[subject.id] = SubjectRoadmapMappingDiagnostic(
+            mapping=SubjectRoadmapMapping(
+                subject_id=subject.id,
+                discipline=subject.disciplina,
+                roadmap_node_id=top_candidate.node.node_id,
+                mapped=True,
+                mapping_source="heuristic",
+                confidence_score=round(top_score, 2),
+                reason=f"Mapeado por heuristica v2: {top_reason}.",
+                relevant_candidate_count=relevant_candidate_count,
+            ),
+            candidates=candidate_details,
         )
 
     return result
+
+
+def build_subject_roadmap_mapping(
+    session: Session,
+    discipline_filter: str | None = None,
+) -> dict[int, SubjectRoadmapMapping]:
+    diagnostics = build_subject_roadmap_mapping_diagnostics(session, discipline_filter=discipline_filter)
+    return {subject_id: diagnostic.mapping for subject_id, diagnostic in diagnostics.items()}
 
 
 def summarize_subject_roadmap_mapping(mapping: dict[int, SubjectRoadmapMapping]) -> SubjectRoadmapMappingSummary:

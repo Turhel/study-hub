@@ -569,6 +569,11 @@ class RoadmapMappingCandidate(BaseModel):
 class RoadmapMappingSubjectAuditItem(BaseModel):
     subject: RoadmapMappingSubjectBrief
     status: Literal["mapped", "unmapped", "ambiguous"]
+    mapping_source: Literal["override", "heuristic", "unmapped"] | None = None
+    mapping_confidence: float | None = None
+    mapping_reason: str | None = None
+    relevant_candidate_count: int = 0
+    mapped_node_id: str | None = None
     best_candidates: list[RoadmapMappingCandidate] = Field(default_factory=list)
 
 
@@ -576,6 +581,8 @@ class RoadmapMappingDisciplineSummary(BaseModel):
     discipline: str
     total_subjects: int
     mapped_subjects: int
+    override_mapped_subjects: int = 0
+    heuristic_mapped_subjects: int = 0
     unmapped_subjects: int
     ambiguous_subjects: int
     coverage_percent: float
@@ -584,6 +591,8 @@ class RoadmapMappingDisciplineSummary(BaseModel):
 class RoadmapMappingCoverageResponse(BaseModel):
     total_subjects: int
     mapped_subjects: int
+    override_mapped_subjects: int = 0
+    heuristic_mapped_subjects: int = 0
     unmapped_subjects: int
     ambiguous_subjects: int
     coverage_percent: float
@@ -601,6 +610,8 @@ class RoadmapMappingDisciplineResponse(BaseModel):
     discipline: str
     total_subjects: int
     mapped_subjects: int
+    override_mapped_subjects: int = 0
+    heuristic_mapped_subjects: int = 0
     unmapped_subjects: int
     ambiguous_subjects: int
     coverage_percent: float
