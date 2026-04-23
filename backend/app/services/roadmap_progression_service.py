@@ -12,7 +12,8 @@ from app.core.rules import (
     BLOCK_STATUS_TRANSITION,
     block_is_focus_status,
 )
-from app.models import Block, BlockProgress, RoadmapBlockMap, RoadmapEdge, RoadmapNode
+from app.models import Block, BlockProgress, QuestionAttempt, RoadmapBlockMap, RoadmapEdge, RoadmapNode
+from app.services.roadmap_subject_mapping_service import build_subject_roadmap_mapping
 from app.services.roadmap_query_service import normalize_discipline
 
 
@@ -66,6 +67,20 @@ class GuidedRoadmapOverview:
     node_states: dict[str, GuidedRoadmapNodeState]
     block_eligibility: dict[int, GuidedRoadmapBlockEligibility]
     discipline_summaries: dict[str, GuidedRoadmapDisciplineSummary]
+    subject_states: dict[int, "GuidedRoadmapSubjectState"]
+
+
+@dataclass(frozen=True)
+class GuidedRoadmapSubjectState:
+    subject_id: int
+    mapped: bool
+    roadmap_node_id: str | None
+    status: RoadmapNodeStatus | None
+    reason: str
+    expected_contacts_min: int | None
+    attempts_count: int
+    recent_accuracy: float | None
+    priority_factor: float
 
 
 HARD_RELATION_TYPES = {"required", "cross_required"}
@@ -379,6 +394,115 @@ def _discipline_summaries(
     }
 
 
+def _attempts_by_subject(session: Session) -> dict[int, list[QuestionAttempt]]:
+    attempts = session.exec(
+        select(QuestionAttempt)
+        .where(QuestionAttempt.subject_id.is_not(None))
+        .order_by(QuestionAttempt.data.desc(), QuestionAttempt.id.desc())
+    ).all()
+    grouped: dict[int, list[QuestionAttempt]] = {}
+    for attempt in attempts:
+        if attempt.subject_id is None:
+            continue
+        grouped.setdefault(attempt.subject_id, []).append(attempt)
+    return grouped
+
+
+def _contact_heuristic(
+    attempts_count: int,
+    recent_accuracy: float | None,
+    expected_contacts_min: int | None,
+) -> tuple[float, str]:
+    if expected_contacts_min is None or expected_contacts_min <= 0:
+        return 1.0, "Node sem meta minima explicita de contatos."
+    if attempts_count == 0:
+        return 1.03, "Primeiro contato guiado com node liberado pelo roadmap."
+    if attempts_count >= expected_contacts_min:
+        if recent_accuracy is not None and recent_accuracy < 0.55:
+            return 1.06, "Contatos minimos atingidos, mas desempenho recente ainda pede reforco."
+        return 1.0, "Contatos minimos do node ja alcancados."
+    if recent_accuracy is not None and recent_accuracy >= 0.85 and attempts_count >= 2:
+        return 1.02, "Desempenho recente forte flexibilizou os contatos minimos esperados."
+    if recent_accuracy is not None and recent_accuracy < 0.55:
+        return 1.1, "Abaixo dos contatos minimos e com desempenho fraco; node segue em consolidacao guiada."
+    return 1.05, "Abaixo dos contatos minimos esperados; node segue em consolidacao guiada."
+
+
+def _build_subject_states(
+    session: Session,
+    nodes: dict[str, RoadmapNode],
+    node_states: dict[str, GuidedRoadmapNodeState],
+    reviewable_node_ids: set[str],
+) -> dict[int, GuidedRoadmapSubjectState]:
+    mapping_by_subject = build_subject_roadmap_mapping(session)
+    attempts_by_subject = _attempts_by_subject(session)
+    states: dict[int, GuidedRoadmapSubjectState] = {}
+
+    for subject_id, mapping in mapping_by_subject.items():
+        attempts = attempts_by_subject.get(subject_id, [])
+        attempts_count = len(attempts)
+        recent_attempts = attempts[:8]
+        recent_accuracy = None
+        if recent_attempts:
+            recent_accuracy = sum(1 for attempt in recent_attempts if attempt.acertou) / len(recent_attempts)
+
+        if not mapping.mapped or mapping.roadmap_node_id is None:
+            states[subject_id] = GuidedRoadmapSubjectState(
+                subject_id=subject_id,
+                mapped=False,
+                roadmap_node_id=None,
+                status=None,
+                reason=mapping.reason,
+                expected_contacts_min=None,
+                attempts_count=attempts_count,
+                recent_accuracy=recent_accuracy,
+                priority_factor=1.0,
+            )
+            continue
+
+        node = nodes.get(mapping.roadmap_node_id)
+        base_status: RoadmapNodeStatus | None = None
+        base_reason = mapping.reason
+        if mapping.roadmap_node_id in reviewable_node_ids:
+            base_status = "reviewable"
+            base_reason = "Node mapeado esta em faixa reviewable na trilha atual."
+        else:
+            state = node_states.get(mapping.roadmap_node_id)
+            if state is not None:
+                base_status = state.status
+                if state.status == "entry":
+                    base_reason = "Node mapeado entrou como ponto de entrada no roadmap."
+                elif state.status == "available":
+                    base_reason = "Node mapeado esta liberado com prerequisitos obrigatorios satisfeitos."
+                elif state.status == "blocked_required":
+                    base_reason = "Node mapeado ainda esta bloqueado por dependencia obrigatoria."
+                elif state.status == "blocked_cross_required":
+                    base_reason = "Node mapeado ainda esta bloqueado por dependencia cruzada obrigatoria."
+
+        priority_factor = 1.0
+        if base_status in {"entry", "available", "reviewable"}:
+            priority_factor, heuristic_reason = _contact_heuristic(
+                attempts_count=attempts_count,
+                recent_accuracy=recent_accuracy,
+                expected_contacts_min=node.expected_contacts_min if node is not None else None,
+            )
+            base_reason = f"{base_reason} {heuristic_reason}".strip()
+
+        states[subject_id] = GuidedRoadmapSubjectState(
+            subject_id=subject_id,
+            mapped=True,
+            roadmap_node_id=mapping.roadmap_node_id,
+            status=base_status,
+            reason=base_reason,
+            expected_contacts_min=node.expected_contacts_min if node is not None else None,
+            attempts_count=attempts_count,
+            recent_accuracy=recent_accuracy,
+            priority_factor=priority_factor,
+        )
+
+    return states
+
+
 def build_guided_roadmap_overview(
     session: Session,
     block_progress_by_id: dict[int, BlockProgress],
@@ -401,11 +525,13 @@ def build_guided_roadmap_overview(
         block_lookup=block_lookup,
     )
     summaries = _discipline_summaries(nodes, node_states, reviewable_node_ids)
+    subject_states = _build_subject_states(session, nodes, node_states, reviewable_node_ids)
 
     return GuidedRoadmapOverview(
         node_states=node_states,
         block_eligibility=eligibility,
         discipline_summaries=summaries,
+        subject_states=subject_states,
     )
 
 
