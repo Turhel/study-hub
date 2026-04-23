@@ -180,7 +180,8 @@ CHEM_019,CHEM_020,recommended,1,Reacoes inorganicas aproveitam a leitura de oxid
 CHEM_001,CHEM_021,recommended,1,Grandezas quimicas ajudam o calculo de formulas.
 CHEM_021,CHEM_002,required,2,Fatores de calculo estequiometrico entram melhor depois do calculo de formulas.
 CHEM_010,CHEM_022,recommended,1,Solucoes entram melhor depois da leitura de materia e misturas.
-CHEM_022,CHEM_003,required,2,Unidades de concentracao entram melhor depois da base de solucoes e dispersoes.
+CHEM_022,CHEM_059,required,2,Solubilidade e classificacao entram melhor depois da base de dispersoes e coloides.
+CHEM_059,CHEM_003,required,2,Unidades de concentracao entram melhor depois da base de solucoes e classificacao.
 CHEM_003,CHEM_023,required,2,Misturas de solucoes dependem da leitura de concentracao.
 CHEM_004,CHEM_023,recommended,1,Misturas de solucoes conversam com diluicao.
 CHEM_020,CHEM_024,recommended,1,Leitura de reacoes ajuda a entrada na termoquimica.
@@ -196,8 +197,10 @@ CHEM_029,CHEM_030,recommended,1,Le Chatelier ajuda a ler meios ionicos em equili
 CHEM_030,CHEM_056,required,2,pH e meio acido-base dependem da base de ionizacao e dissociacao.
 CHEM_056,CHEM_031,recommended,1,Hidrolise entra melhor depois da leitura de pH e meio acido-base.
 CHEM_030,CHEM_031,required,2,Hidrolise depende da base de equilibrio ionico.
-CHEM_056,CHEM_032,recommended,1,Tampao e Kps entram mais suaves depois da leitura de pH e meio acido-base.
-CHEM_030,CHEM_032,required,2,Tampao e Kps dependem da base de equilibrio ionico.
+CHEM_056,CHEM_032,recommended,1,Tampao entra mais suave depois da leitura de pH e meio acido-base.
+CHEM_056,CHEM_060,recommended,1,Kps entra mais suave depois da leitura de pH e meio acido-base.
+CHEM_030,CHEM_032,required,2,Tampao depende da base de equilibrio ionico.
+CHEM_030,CHEM_060,required,2,Kps depende da base de equilibrio ionico.
 CHEM_006,CHEM_033,recommended,1,Pilha entra melhor depois da leitura de nox.
 CHEM_008,CHEM_033,required,2,Pilha depende da intuicao de oxidacao e reducao.
 CHEM_033,CHEM_057,required,2,Potencial de pilha entra melhor depois da base de pilhas e espontaneidade redox.
@@ -218,8 +221,8 @@ CHEM_037,CHEM_054,recommended,1,Reatividade organica entra melhor depois da base
 CHEM_036,CHEM_043,recommended,1,Isomeria plana entra melhor depois da base estrutural de cadeias.
 CHEM_043,CHEM_044,required,2,Estereoisomeria entra melhor depois da isomeria plana.
 CHEM_005,CHEM_045,recommended,2,Leis dos gases refinam o no amplo de gases.
-CHEM_022,CHEM_047,recommended,1,Quimica ambiental entra melhor depois da leitura de solucoes e dispersoes.
-CHEM_022,CHEM_048,recommended,1,Agua entra melhor depois da base de solucoes e misturas.
+CHEM_059,CHEM_047,recommended,1,Quimica ambiental entra melhor depois da leitura de solucoes e classificacao.
+CHEM_059,CHEM_048,recommended,1,Agua entra melhor depois da base de solucoes e misturas.
 CHEM_048,CHEM_058,required,2,Tratamento da agua depende da base de propriedades e papel ambiental da agua.
 CHEM_037,CHEM_049,required,2,Reacoes organicas dependem da base de funcoes organicas.
 CHEM_038,CHEM_049,recommended,1,Hidrocarbonetos reforcam varias reacoes organicas classicas.
@@ -343,7 +346,8 @@ BIO_057,BIO_007,recommended,1,Engenharia genetica entra melhor depois da base de
 BIO_002,BIO_008,recommended,1,Citologia entra melhor depois da base bioquimica celular.
 BIO_008,BIO_009,required,2,Membrana e transporte dependem da entrada citologica.
 BIO_009,BIO_010,required,2,Transporte ativo complementa a base de membrana.
-BIO_008,BIO_011,required,2,Organelas e microscopia dependem da entrada citologica.
+BIO_008,BIO_011,required,2,Organelas dependem da entrada citologica.
+BIO_011,BIO_062,required,2,Microscopia entra melhor depois da base de citoplasma e organelas.
 BIO_011,BIO_012,recommended,1,Respiracao celular entra melhor depois da leitura de organelas.
 BIO_012,BIO_061,required,2,Fermentacao entra melhor depois da base de producao de ATP e metabolismo energetico.
 BIO_011,BIO_013,recommended,1,Fotossintese entra melhor depois da leitura de organelas e cloroplastos.
@@ -352,6 +356,7 @@ BIO_014,BIO_015,required,2,Ciclo celular e mitose dependem de nucleo cromossomos
 BIO_015,BIO_058,required,2,Meiose entra melhor depois da base de ciclo celular e mitose.
 BIO_058,BIO_016,required,2,Alteracoes cromossomicas dependem da base de meiose e variabilidade genetica.
 BIO_058,BIO_017,recommended,1,Reproducao humana entra melhor depois da base de meiose.
+BIO_017,BIO_063,required,2,Sistemas reprodutores entram melhor depois da base de gametogenese e fecundacao.
 BIO_017,BIO_018,required,2,Embriologia depende da reproducao e fecundacao.
 BIO_018,BIO_019,recommended,1,Histologia entra melhor depois da base de desenvolvimento embrionario.
 BIO_019,BIO_020,required,2,Tecidos especializados dependem da base histologica.
@@ -364,17 +369,19 @@ BIO_020,BIO_023,recommended,1,Sistema digestorio entra melhor depois dos tecidos
 BIO_023,BIO_060,required,2,Imunologia e saude entram melhor depois da base de manutencao e digestao.
 BIO_058,BIO_024,recommended,1,Genetica mendeliana entra melhor depois da base de meiose.
 BIO_024,BIO_025,required,2,Segunda lei depende da primeira base mendeliana.
-BIO_025,BIO_049,required,2,Heredogramas e probabilidades entram melhor depois da segunda lei.
-BIO_049,BIO_026,required,2,Grupos sanguineos e herancas especiais entram melhor depois da base de heredogramas e probabilidades.
+BIO_025,BIO_049,required,2,Heredogramas entram melhor depois da segunda lei.
+BIO_049,BIO_067,required,2,Probabilidades em cruzamentos entram melhor depois da leitura de heredogramas.
+BIO_067,BIO_026,required,2,Grupos sanguineos e herancas especiais entram melhor depois da base de heredogramas e probabilidades.
 BIO_026,BIO_027,recommended,1,Interacao genica entra melhor depois das herancas especiais.
-BIO_049,BIO_028,recommended,1,Hardy-Weinberg entra melhor depois da base quantitativa de heredogramas e probabilidades.
+BIO_067,BIO_028,recommended,1,Hardy-Weinberg entra melhor depois da base quantitativa de heredogramas e probabilidades.
 BIO_029,BIO_030,required,2,Teorias evolutivas entram melhor depois da origem da vida.
 BIO_030,BIO_031,required,2,Especiacao e evolucao humana dependem da base evolucionista.
 BIO_031,BIO_032,recommended,1,Taxonomia entra mais organizada depois da base evolutiva.
 BIO_032,BIO_033,recommended,1,Microbiologia entra melhor depois da organizacao dos seres vivos.
-BIO_033,BIO_052,recommended,1,Protozoarios e algas entram melhor depois da entrada microbiologica.
+BIO_033,BIO_064,required,2,Organizacao bacteriana entra melhor depois da entrada por virus e bacterias.
+BIO_064,BIO_052,recommended,1,Protozoarios e algas entram melhor depois da base microbiologica.
 BIO_052,BIO_053,recommended,1,Fungos entram melhor depois da base dos demais microorganismos e protistas.
-BIO_033,BIO_034,required,2,Protistas fungos e doencas complementam a entrada microbiologica.
+BIO_064,BIO_034,required,2,Protistas fungos e doencas complementam a entrada microbiologica.
 BIO_032,BIO_035,recommended,1,Botanica entra melhor depois da visao geral dos reinos.
 BIO_035,BIO_036,required,2,Angiospermas e reproducao dependem da base dos grupos vegetais.
 BIO_036,BIO_054,recommended,1,Frutos e sementes entram melhor depois da base reprodutiva das angiospermas.
@@ -387,11 +394,14 @@ BIO_039,BIO_040,required,2,Invertebrados complexos entram melhor depois dos grup
 BIO_040,BIO_041,required,2,Cordados iniciais entram melhor depois da progressao zoologica inicial.
 BIO_041,BIO_048,required,2,Tetrapodes entram melhor depois da base dos cordados iniciais.
 BIO_032,BIO_042,recommended,1,Ecologia entra mais organizada depois da classificacao da biodiversidade.
-BIO_042,BIO_043,required,2,Ciclos e piramides dependem dos fundamentos de ecologia.
+BIO_042,BIO_065,required,2,Fluxo de energia entra melhor depois da introducao a ecologia.
+BIO_065,BIO_043,required,2,Ciclos e piramides dependem dos fundamentos troficos de ecologia.
 BIO_043,BIO_050,required,2,Relacoes ecologicas entram melhor depois da base de processos ecologicos.
 BIO_050,BIO_044,required,2,Dinamica ecologica entra melhor depois da leitura das relacoes entre seres vivos.
-BIO_044,BIO_051,required,2,Biomas e biociclos entram melhor depois da base de dinamica ecologica.
-BIO_051,BIO_045,required,2,Ambiente e sociedade dependem da base ecologica aplicada e da leitura dos biomas.
+BIO_044,BIO_051,required,2,Biomas entram melhor depois da base de dinamica ecologica.
+BIO_051,BIO_068,required,2,Biociclos entram melhor depois da leitura dos biomas.
+BIO_068,BIO_045,recommended,1,Impactos ambientais entram melhor depois da base de biociclos e distribuicao ecologica.
+BIO_045,BIO_066,required,2,Sustentabilidade e crise ambiental entram melhor depois da base de poluicao e impactos.
 CHEM_002,BIO_002,cross_support,1,Grandezas quimicas ajudam a leitura de constituintes celulares.
 CHEM_003,BIO_002,cross_support,1,Solucoes ajudam a interpretar agua e sais no meio biologico.
 CHEM_014,BIO_003,cross_support,1,Ligacoes quimicas ajudam a leitura estrutural de biomoleculas.

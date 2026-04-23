@@ -455,8 +455,8 @@ Refinamentos mais recentes em Humanas:
 
 Leitura honesta desta rodada:
 
-- Humanas continua em fase de lapidacao, mas ja deixou de ser so cobertura ampla
-- o maior ganho mais recente veio em Historia Geral e Filosofia/Sociologia, reduzindo quase todo o restante dos nos largos de Humanas
+- Humanas esta fechada para a fase atual como base pedagogica do roadmap
+- o que sobra em Humanas agora e ajuste fino opcional, nao falta estrutural
 
 ## Roadmap Atual de Linguagens
 
@@ -475,8 +475,8 @@ Decisoes desta versao:
 
 Leitura honesta do estado atual:
 
-- Linguagens entra agora em uma primeira versao robusta de cobertura
-- ainda deve existir espaco para lapidacao fina futura, principalmente em Interpretacao de Texto e Literatura modernista
+- Linguagens ja saiu da base inicial e entrou em uma versao bem utilizavel do roadmap
+- ainda pode receber lapidacao fina futura, mas ja esta coerente e executavel para a fase atual
 - a estrutura ja ficou boa o suficiente para servir como base pedagogica editavel do projeto
 
 Refinamentos mais recentes em Linguagens:
@@ -489,3 +489,15 @@ Refinamentos mais recentes em Linguagens:
 - `Regencia e crase` tambem foi quebrada para deixar `crase` como degrau proprio
 - `Interpretacao de Texto` ganhou um degrau proprio de `leitura multimodal` com foco em infografico grafico tabela e mapa
 - `Literatura` ganhou um fechamento contemporaneo mais suave, separando a entrada da prosa contemporanea de `temas e formas da prosa contemporanea` e da `poesia contemporanea`
+
+Refinamentos mais recentes em Natureza:
+
+- `Biologia` foi refinada de novo para separar `citoplasma e organelas` de `microscopia e observacao celular`
+- a reproducao humana foi suavizada para separar `gametogenese e fecundacao` de `sistemas reprodutores humanos`
+- a microbiologia foi refinada para separar `virus e bacterias` de `procariontes e organizacao bacteriana`
+- a entrada da ecologia foi suavizada para separar `introducao e niveis de organizacao` de `fluxo de energia cadeia e teia alimentar`
+- a ecologia aplicada foi refinada para separar `poluicao e impactos ambientais` de `sociedade sustentabilidade e crise ambiental`
+- a genetica mendeliana foi refinada para separar `leitura de heredogramas` de `probabilidades em cruzamentos geneticos`
+- a camada final de ecologia foi refinada para separar `biomas` de `biociclos e distribuicao ecologica`
+- `Quimica` foi ajustada para separar `dispersoes e coloides` de `solubilidade e classificacao das solucoes`
+- a trilha de equilibrio ionico tambem foi suavizada para separar `efeito tampao` de `Kps e solubilidade em equilibrio`
