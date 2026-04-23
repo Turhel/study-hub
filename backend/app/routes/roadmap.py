@@ -10,6 +10,9 @@ from app.schemas import (
     RoadmapDependentNodeResponse,
     RoadmapDryRunResponse,
     RoadmapEdgeResponse,
+    RoadmapMappingCoverageResponse,
+    RoadmapMappingDisciplineResponse,
+    RoadmapMappingGapsResponse,
     RoadmapNodeExplainResponse,
     RoadmapNodeResponse,
     RoadmapSummaryResponse,
@@ -20,6 +23,11 @@ from app.services.roadmap_explain_service import (
     explain_roadmap_node,
     get_roadmap_discipline_entry_paths,
     get_roadmap_node_dependents,
+)
+from app.services.roadmap_mapping_audit_service import (
+    get_mapping_coverage,
+    get_mapping_discipline,
+    get_mapping_gaps,
 )
 from app.services.roadmap_query_service import (
     RoadmapQueryError,
@@ -48,6 +56,31 @@ def get_roadmap_summary_route() -> RoadmapSummaryResponse:
 @router.get("/dry-run", response_model=RoadmapDryRunResponse)
 def get_roadmap_dry_run_route() -> RoadmapDryRunResponse:
     return get_roadmap_dry_run()
+
+
+@router.get("/mapping/coverage", response_model=RoadmapMappingCoverageResponse)
+def get_roadmap_mapping_coverage_route() -> RoadmapMappingCoverageResponse:
+    return get_mapping_coverage()
+
+
+@router.get("/mapping/gaps", response_model=RoadmapMappingGapsResponse)
+def get_roadmap_mapping_gaps_route(discipline: str | None = None) -> RoadmapMappingGapsResponse:
+    return get_mapping_gaps(discipline=discipline)
+
+
+@router.get(
+    "/mapping/discipline/{discipline}",
+    response_model=RoadmapMappingDisciplineResponse,
+    responses={404: {"model": ApiErrorResponse}},
+)
+def get_roadmap_mapping_discipline_route(discipline: str) -> RoadmapMappingDisciplineResponse:
+    try:
+        return get_mapping_discipline(discipline)
+    except RoadmapQueryError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "roadmap_mapping_discipline_not_found", "message": str(exc)},
+        ) from exc
 
 
 @router.get(

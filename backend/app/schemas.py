@@ -536,3 +536,69 @@ class RoadmapDisciplineEntryPathsResponse(BaseModel):
     nodes_without_required_dependencies: list[RoadmapNodeBrief]
     suggested_paths: list[RoadmapEntryPathItem]
     node_depths: list[RoadmapNodeDepthItem]
+
+
+class RoadmapMappingSubjectBrief(BaseModel):
+    subject_id: int
+    discipline: str
+    subject: str
+    subsubject: str | None = None
+    label: str
+
+
+class RoadmapMappingNodeBrief(BaseModel):
+    node_id: str
+    discipline: str
+    subject_area: str
+    content: str
+    subunit: str | None = None
+    label: str
+
+
+class RoadmapMappingCandidate(BaseModel):
+    node: RoadmapMappingNodeBrief
+    score: float
+    matched_terms: list[str] = Field(default_factory=list)
+
+
+class RoadmapMappingSubjectAuditItem(BaseModel):
+    subject: RoadmapMappingSubjectBrief
+    status: Literal["mapped", "unmapped", "ambiguous"]
+    best_candidates: list[RoadmapMappingCandidate] = Field(default_factory=list)
+
+
+class RoadmapMappingDisciplineSummary(BaseModel):
+    discipline: str
+    total_subjects: int
+    mapped_subjects: int
+    unmapped_subjects: int
+    ambiguous_subjects: int
+    coverage_percent: float
+
+
+class RoadmapMappingCoverageResponse(BaseModel):
+    total_subjects: int
+    mapped_subjects: int
+    unmapped_subjects: int
+    ambiguous_subjects: int
+    coverage_percent: float
+    disciplines: list[RoadmapMappingDisciplineSummary]
+
+
+class RoadmapMappingGapsResponse(BaseModel):
+    discipline: str | None = None
+    unmapped_subjects: list[RoadmapMappingSubjectAuditItem]
+    roadmap_nodes_without_subject: list[RoadmapMappingNodeBrief]
+    ambiguous_subjects: list[RoadmapMappingSubjectAuditItem]
+
+
+class RoadmapMappingDisciplineResponse(BaseModel):
+    discipline: str
+    total_subjects: int
+    mapped_subjects: int
+    unmapped_subjects: int
+    ambiguous_subjects: int
+    coverage_percent: float
+    mapped_examples: list[RoadmapMappingSubjectAuditItem]
+    unmapped_examples: list[RoadmapMappingSubjectAuditItem]
+    ambiguous_examples: list[RoadmapMappingSubjectAuditItem]
