@@ -54,11 +54,13 @@ DATABASE_URL=postgresql+psycopg://postgres:SUASENHA@db.seu-projeto.supabase.co:5
 STUDY_HUB_DB_ECHO=false
 ```
 
-Nesta fase:
+Estado atual desta integracao:
 
-- nao ha migracao de dados reais do SQLite para o Postgres
-- o SQLite continua existindo como fallback de desenvolvimento
-- nao ha integracao com auth/storage do Supabase
+- o backend pode operar normalmente em SQLite ou Postgres
+- o Postgres/Supabase ja foi validado com schema, leitura e escrita reais
+- existe bootstrap estrutural e de uso a partir do SQLite local
+- o SQLite continua existindo como fallback de desenvolvimento e como fonte de bootstrap
+- ainda nao ha integracao com auth/storage do Supabase
 
 ### Carga estrutural inicial no Postgres
 

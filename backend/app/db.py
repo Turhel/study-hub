@@ -5,6 +5,7 @@ from sqlalchemy.engine import Engine
 
 from app.db_migrations.runner import run_migrations
 from app.settings import (
+    get_database_backend_label,
     get_database_url,
     get_db_echo,
     get_default_sqlite_db_path,
@@ -38,3 +39,17 @@ def init_db() -> None:
 
 def get_session() -> Session:
     return Session(engine)
+
+
+def get_database_backend() -> str:
+    return get_database_backend_label(DATABASE_URL)
+
+
+def get_database_target_display() -> str:
+    if is_sqlite_database_url(DATABASE_URL):
+        return str(DB_PATH)
+    rendered = str(engine.url)
+    password = engine.url.password or ""
+    if password:
+        rendered = rendered.replace(password, "***")
+    return rendered
