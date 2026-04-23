@@ -8,6 +8,7 @@ from app.models import Block, QuestionAttempt, Subject
 from app.schemas import QuestionAttemptBulkCreate, QuestionAttemptBulkCreateResponse
 from app.services.mastery_service import recalculate_block_mastery
 from app.services.review_service import upsert_review_from_attempt
+from app.services.study_event_service import record_study_event
 
 
 VALID_DIFFICULTIES = {"facil", "media", "dificil"}
@@ -45,6 +46,12 @@ def _impact_message(status: str | None, score: float | None) -> str:
     if score is not None and score >= 0.55:
         return "Bom progresso no pre-requisito central."
     return "Bloco avancou, mas ainda nao foi aprovado."
+
+
+def _subject_label(subject: Subject) -> str:
+    if subject.subassunto:
+        return f"{subject.assunto} - {subject.subassunto}"
+    return subject.assunto
 
 
 def register_question_attempts_bulk(
@@ -92,6 +99,30 @@ def register_question_attempts_bulk(
 
     mastery = recalculate_block_mastery(session, payload.block_id)
     review = upsert_review_from_attempt(session, created_attempts[-1])
+    subject_name = _subject_label(subject)
+    correct_count = payload.correct_count
+    record_study_event(
+        session,
+        event_type="question_attempt_bulk",
+        title=f"Questoes registradas em {payload.discipline}",
+        description=f"{payload.quantity} tentativas registradas em {block.nome} - {subject_name}.",
+        discipline=payload.discipline,
+        block_id=payload.block_id,
+        subject_id=payload.subject_id,
+        metadata={
+            "created_attempts": len(created_attempts),
+            "correct_count": correct_count,
+            "incorrect_count": payload.quantity - correct_count,
+            "attempt_date": attempt_date.isoformat(),
+            "difficulty_bank": difficulty_bank,
+            "difficulty_personal": difficulty_personal,
+            "source": payload.source,
+            "mastery_status": mastery.status,
+            "mastery_score": mastery.score_domino,
+            "next_review_date": review.proxima_data.isoformat() if review is not None else None,
+            "attempt_ids": [attempt.id for attempt in created_attempts],
+        },
+    )
     session.commit()
     session.refresh(mastery)
 

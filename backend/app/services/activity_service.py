@@ -7,9 +7,19 @@ from typing import Any
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from app.models import Block, BlockProgress, DailyStudyPlan, DailyStudyPlanItem, QuestionAttempt, Review, Subject
+from app.models import (
+    Block,
+    BlockProgress,
+    DailyStudyPlan,
+    DailyStudyPlanItem,
+    QuestionAttempt,
+    Review,
+    StudyEvent,
+    Subject,
+)
 from app.schemas import ActivityItem, ActivityTodayResponse
 from app.services.discipline_normalization_service import normalize_discipline
+from app.services.study_event_service import list_recent_study_events, study_event_to_activity_item
 
 
 def _subject_label(subject: Subject | None, subject_id: int | None) -> str:
@@ -144,7 +154,10 @@ def _daily_plan_activities(session: Session, row_limit: int = 30) -> list[Activi
                 activity_type="daily_plan_generated",
                 created_at=plan.created_at,
                 title="Plano diario gerado",
-                description=f"Plano diario gerado com {plan.total_planned_questions} questoes em {int(focus_count or 0)} focos.",
+                description=(
+                    f"Plano diario gerado com {plan.total_planned_questions} questoes "
+                    f"em {int(focus_count or 0)} focos."
+                ),
                 metadata={
                     "plan_id": plan.id,
                     "status": plan.status,
@@ -190,37 +203,99 @@ def _block_decision_activities(session: Session, row_limit: int = 100) -> list[A
     return items
 
 
+def _dedupe_key(item: ActivityItem) -> tuple[str, str, int | None, int | None]:
+    event_date = item.created_at[:10]
+    return (item.type, event_date, item.block_id, item.subject_id)
+
+
+def _merge_prefer_real_events(
+    real_items: list[ActivityItem],
+    inferred_items: list[ActivityItem],
+) -> list[ActivityItem]:
+    seen = {_dedupe_key(item) for item in real_items}
+    merged = list(real_items)
+    for item in inferred_items:
+        if _dedupe_key(item) in seen:
+            continue
+        merged.append(item)
+        seen.add(_dedupe_key(item))
+    return merged
+
+
 def get_recent_activity(session: Session, limit: int = 30) -> list[ActivityItem]:
     bounded_limit = max(1, min(limit, 100))
-    items = [
+    real_items = list_recent_study_events(session, limit=bounded_limit)
+    inferred_items = [
         *_question_attempt_activities(session),
         *_review_activities(session),
         *_daily_plan_activities(session),
         *_block_decision_activities(session),
     ]
+    items = _merge_prefer_real_events(real_items, inferred_items)
     return sorted(items, key=lambda item: item.created_at, reverse=True)[:bounded_limit]
+
+
+def _events_created_today(session: Session, today: date) -> list[StudyEvent]:
+    start = datetime.combine(today, time.min)
+    end = datetime.combine(today, time.max)
+    return session.exec(
+        select(StudyEvent)
+        .where(StudyEvent.created_at >= start)
+        .where(StudyEvent.created_at <= end)
+        .order_by(StudyEvent.created_at.desc(), StudyEvent.id.desc())
+    ).all()
+
+
+def _event_metadata_int(event: StudyEvent, key: str, default: int = 0) -> int:
+    activity = study_event_to_activity_item(event)
+    value = activity.metadata.get(key, default)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def get_today_activity_summary(session: Session) -> ActivityTodayResponse:
     today = date.today()
+    events_today = _events_created_today(session, today)
+    question_events = [event for event in events_today if event.event_type == "question_attempt_bulk"]
+    review_events = [event for event in events_today if event.event_type == "review_upsert"]
+    decision_events = [event for event in events_today if event.event_type == "block_progress_decision"]
+
     attempts = session.exec(select(QuestionAttempt).where(QuestionAttempt.data == today)).all()
-    studied_subject_ids = sorted({attempt.subject_id for attempt in attempts if attempt.subject_id is not None})
-    impacted_block_ids = sorted({attempt.block_id for attempt in attempts if attempt.block_id is not None})
-    reviews_generated_today = int(
+    attempt_subject_ids = {attempt.subject_id for attempt in attempts if attempt.subject_id is not None}
+    attempt_block_ids = {attempt.block_id for attempt in attempts if attempt.block_id is not None}
+    event_subject_ids = {event.subject_id for event in question_events if event.subject_id is not None}
+    event_block_ids = {event.block_id for event in events_today if event.block_id is not None}
+    studied_subject_ids = sorted(
+        event_subject_ids | attempt_subject_ids
+    )
+    impacted_block_ids = sorted(event_block_ids | attempt_block_ids)
+    if question_events:
+        question_attempts_registered = sum(
+            _event_metadata_int(event, "created_attempts", 1)
+            for event in question_events
+        )
+    else:
+        question_attempts_registered = len(attempts)
+
+    inferred_reviews_today = int(
         session.exec(select(func.count(Review.id)).where(Review.ultima_data == today)).one() or 0
     )
+    reviews_generated_today = len(review_events) if review_events else inferred_reviews_today
     decisions_today = [
         progress
         for progress in session.exec(select(BlockProgress).where(BlockProgress.user_decision != "continue_current"))
         if _decision_date(progress) == today
     ]
+    progression_decisions_today = len(decision_events) if decision_events else len(decisions_today)
     return ActivityTodayResponse(
         date=today.isoformat(),
-        question_attempts_registered=len(attempts),
+        question_attempts_registered=question_attempts_registered,
         subjects_studied_today=len(studied_subject_ids),
         blocks_impacted_today=len(impacted_block_ids),
         reviews_generated_today=reviews_generated_today,
-        progression_decisions_today=len(decisions_today),
+        progression_decisions_today=progression_decisions_today,
         studied_subject_ids=studied_subject_ids,
         impacted_block_ids=impacted_block_ids,
     )

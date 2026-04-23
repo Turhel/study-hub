@@ -18,6 +18,7 @@ from app.core.rules import (
 from app.models import Block, BlockProgress
 from app.schemas import BlockProgressDecisionRequest, BlockProgressDecisionResponse
 from app.services.progression_service import sync_progression
+from app.services.study_event_service import record_study_event
 
 
 class BlockDecisionError(ValueError):
@@ -84,12 +85,29 @@ def save_block_progress_decision(
     relevant_next_block = next_block
     if saved_decision == BLOCK_DECISION_ADVANCE_NEXT and next_block is not None:
         relevant_next_block = next_block
+    next_block_id = relevant_next_block.id if relevant_next_block and relevant_next_block.id is not None else None
+
+    record_study_event(
+        session,
+        event_type="block_progress_decision",
+        title=f"Decisao de progressao em {block.nome}",
+        description=f"Decisao salva: {saved_decision}. Status atual do bloco: {updated_progress.status}.",
+        discipline=block.disciplina,
+        block_id=payload.block_id,
+        metadata={
+            "user_decision": saved_decision,
+            "current_status": updated_progress.status,
+            "next_block_id": next_block_id,
+            "progress_id": updated_progress.id,
+        },
+    )
+    session.commit()
 
     return BlockProgressDecisionResponse(
         discipline=block.disciplina,
         block_id=payload.block_id,
         saved_decision=saved_decision,
         current_status=updated_progress.status,
-        next_block_id=relevant_next_block.id if relevant_next_block and relevant_next_block.id is not None else None,
+        next_block_id=next_block_id,
         message=_message_for_decision(saved_decision),
     )
