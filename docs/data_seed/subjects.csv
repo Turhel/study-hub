@@ -1,0 +1,573 @@
+id,disciplina,assunto,subassunto,competencia,habilidade,prioridade_enem,ativo
+1,Biologia,Bioquímica,Constituintes Inorgânicos da Célula,,,3,True
+2,Biologia,Bioquímica,Glicídios,,,3,True
+3,Biologia,Introdução à Biologia,Características Gerais dos Seres Vivos,,,3,True
+4,Biologia,Introdução à Biologia,Método Científico,,,3,True
+5,Biologia,Introdução à Biologia,Níveis de Organização,,,3,True
+6,Filosofia/Sociologia,Filosofia Antiga,Surgimento da Filosofia,,,3,True
+7,Física,Cinemática,Introdução à Cinemática,,,3,True
+8,Física,Cinemática,Movimento Uniforme,,,3,True
+9,Geografia,Astronomia e Cartografia,Movimentos da Terra,,,3,True
+10,Geografia,Astronomia e Cartografia,Orientações e Coordenadas Geográficas,,,3,True
+11,Gramática,Ortografia,Acentuação e Hífen,,,3,True
+12,História Geral,Antiguidade Oriental,Pré-História,,,3,True
+13,História do Brasil,Brasil Colonial,Chegada Portuguesa,,,3,True
+14,História do Brasil,Brasil Colonial,Povos indígenas,,,3,True
+15,Interpretação de texto,Teoria da Comunicação,Texto Verbal: Análise e Estrutura,,,3,True
+16,Literatura,Introdução à Literatura,Introdução à Literatura,,,3,True
+17,Matemática,Matemática Básica,As quatro operações,,,3,True
+18,Matemática,Matemática Básica,Múltiplos e Divisores,,,3,True
+19,Química,Química Básica,Análise Imediata,,,3,True
+20,Química,Química Básica,"Matérias, Substâncias e Misturas",,,3,True
+21,Biologia,Bioquímica,Carboidratos,,,3,True
+22,Biologia,Bioquímica,Enzimas,,,3,True
+23,Biologia,Bioquímica,Lipídios,,,3,True
+24,Biologia,Bioquímica,Proteínas,,,3,True
+25,Biologia,Bioquímica,Sais Minerais,,,3,True
+26,Biologia,Bioquímica,Vitaminas,,,3,True
+27,Biologia,Bioquímica,Água,,,3,True
+28,Filosofia/Sociologia,Filosofia Antiga,Pré-Socráticos,,,3,True
+29,Física,Cinemática,Movimento Uniformemente Variado,,,3,True
+30,Física,Cinemática,Vetores,,,3,True
+31,Geografia,Astronomia e Cartografia,Cartografia - Escala,,,3,True
+32,Geografia,Astronomia e Cartografia,Projeções Cartográficas,,,3,True
+33,Gramática,Ortografia,Questões Ortográficas,,,3,True
+34,História Geral,Antiguidade Oriental,Mesopotâmia,,,3,True
+35,História do Brasil,Brasil Colonial,Capitanias Hereditárias e Invasão Francesa,,,3,True
+36,Matemática,Matemática Básica,Potenciação e Radiciação,,,3,True
+37,Matemática,Matemática Básica,Sistema de Numeração e Métrico Decimal,,,3,True
+38,Química,Átomo,Desenvolvimento Histórico,,,3,True
+39,Química,Átomo,Modelo Atual,,,3,True
+40,Biologia,Biologia Molecular e Engenharia Genética,Código Genético,,,3,True
+41,Biologia,Biologia Molecular e Engenharia Genética,Engenharia Genética,,,3,True
+42,Biologia,Biologia Molecular e Engenharia Genética,Teste de DNA,,,3,True
+43,Biologia,Biologia Molecular e Engenharia Genética,Ácidos Nucleicos - DNA e Replicação,,,3,True
+44,Biologia,Biologia Molecular e Engenharia Genética,Ácidos Nucleicos - Transcrição e RNA,,,3,True
+45,Biologia,Bioquímica,Ácidos Nucleicos,,,3,True
+46,Filosofia/Sociologia,Filosofia Antiga,Sócrates e os Sofistas,,,3,True
+47,Física,Cinemática,Movimento Circular e Uniforme,,,3,True
+48,Física,Cinemática,Movimentos Verticais,,,3,True
+49,Geografia,Astronomia e Cartografia,Fusos Horários e Posição Geográfica do Brasil,,,3,True
+50,Geografia,Astronomia e Cartografia,Mapas Temáticos e Sensoriamento Remoto,,,3,True
+51,História Geral,Antiguidade Oriental,Egito,,,3,True
+52,História do Brasil,Brasil Colonial,Açúcar e Escravidão,,,3,True
+53,Interpretação de texto,Teoria da Comunicação,Níveis e Variações da Linguagem,,,3,True
+54,Literatura,Gêneros Narrativos,Gêneros Narrativos,,,3,True
+55,Matemática,Matemática Básica,Fatoração e Produtos Notáveis,,,3,True
+56,Matemática,Matemática Básica,Razão e Proporção,,,3,True
+57,Química,Tabela Periódica,Tabela Periódica,,,3,True
+58,Biologia,Biologia Molecular e Engenharia Genética,Clonagem,,,3,True
+59,Biologia,Biologia Molecular e Engenharia Genética,Células-tronco,,,3,True
+60,Biologia,Biologia Molecular e Engenharia Genética,Síntese Proteica,,,3,True
+61,Biologia,Biologia Molecular e Engenharia Genética,Terapia Gênica e Transgênico,,,3,True
+62,Biologia,Biologia Molecular e Engenharia Genética,Teste de Paternidade,,,3,True
+63,Biologia,Citologia,Citoplasma I,,,3,True
+64,Biologia,Citologia,Citoplasma II,,,3,True
+65,Biologia,Citologia,Introdução à Citologia,,,3,True
+66,Biologia,Citologia,Membrana Plasmática - Estrutura,,,3,True
+67,Biologia,Citologia,Membrana Plasmática - Função,,,3,True
+68,Filosofia/Sociologia,Filosofia Antiga,Aristóteles,,,3,True
+69,Filosofia/Sociologia,Filosofia Antiga,Platão,,,3,True
+70,Física,Cinemática,Lançamento Horizontal,,,3,True
+71,Física,Cinemática,Lançamento Oblíquo,,,3,True
+72,Geografia,Atmosfera,Camadas da Atmosfera e Fatores do Clima,,,3,True
+73,Geografia,Atmosfera,Elementos do Clima,,,3,True
+74,Geografia,Atmosfera,Fenômenos Atmosféricos,,,3,True
+75,Gramática,Classes do Nome,Classes do Nome,,,3,True
+76,História Geral,Antiguidade Oriental,"Fenícios, Hebreus e Persas",,,3,True
+77,História do Brasil,Brasil Colonial,União Ibérica e Invasões Holandesas,,,3,True
+78,Literatura,Elementos da Narrativa,Elementos da Narrativa,,,3,True
+79,Matemática,Matemática Básica,Divisão Proporcional,,,3,True
+80,Matemática,Matemática Básica,Escalas,,,3,True
+81,Química,Ligações Químicas,Ligações,,,3,True
+82,Biologia,Bioenergética,Fatores que Influenciam a Fotossíntese,,,3,True
+83,Biologia,Bioenergética,Fermentação,,,3,True
+84,Biologia,Bioenergética,Fotossíntese,,,3,True
+85,Biologia,Bioenergética,Respiração Aeróbica,,,3,True
+86,Biologia,Citologia,Citologia e Microscopia,,,3,True
+87,Biologia,Citologia,Células Animais e Células Vegetais,,,3,True
+88,Biologia,Citologia,Células Procarióticas e Células Eucarióticas,,,3,True
+89,Biologia,Citologia,Membrana Plasmática,,,3,True
+90,Biologia,Citologia,Transporte Passivo,,,3,True
+91,Filosofia/Sociologia,Filosofia Antiga,Helenismo,,,3,True
+92,Física,Dinâmica,Leis de Newton,,,3,True
+93,Física,Dinâmica,Roldanas,,,3,True
+94,Geografia,Atmosfera,Climas do Brasil,,,3,True
+95,Geografia,Atmosfera,Massas de Ar do Brasil,,,3,True
+96,Geografia,Atmosfera,Tipos Climáticos e Climogramas,,,3,True
+97,História do Brasil,Brasil Colonial,Expansão Territorial,,,3,True
+98,Matemática,Matemática Básica,Porcentagem,,,3,True
+99,Matemática,Matemática Básica,Regra de Três,,,3,True
+100,Química,Ligações Químicas,Forças Intermoleculares,,,3,True
+101,Química,Ligações Químicas,"Geometria, Hibridação e Polaridade",,,3,True
+102,Biologia,Citologia,Bomba de Sódio e Potássio,,,3,True
+103,Biologia,Citologia,Envoltórios Externos à Membrana Plasmática,,,3,True
+104,Biologia,Citologia,Organelas e Estruturas Citoplasmáticas,,,3,True
+105,Biologia,Citologia,Transporte Ativo por Vesículas,,,3,True
+106,Biologia,Núcleo e Divisão Celular,Cariótipo,,,3,True
+107,Biologia,Núcleo e Divisão Celular,Ciclo Celular e Câncer,,,3,True
+108,Biologia,Núcleo e Divisão Celular,Células-Tronco e Clonagem,,,3,True
+109,Biologia,Núcleo e Divisão Celular,Meiose,,,3,True
+110,Biologia,Núcleo e Divisão Celular,Mitose,,,3,True
+111,Biologia,Núcleo e Divisão Celular,Núcleo,,,3,True
+112,Filosofia/Sociologia,Filosofia Medieval,Santo Agostinho e Patrística,,,3,True
+113,Física,Dinâmica,Força Elástica,,,3,True
+114,Física,Dinâmica,Sistema de Blocos,,,3,True
+115,Geografia,Geologia,Eras Geológicas e Agentes Endógenos,,,3,True
+116,Geografia,Geologia,Estrutura Interna da Terra,,,3,True
+117,Geografia,Geologia,Geologia e Relevo do Brasil,,,3,True
+118,Geografia,Geologia,"Intemperismo, Solo, Erosão e Ciclo das Rochas",,,3,True
+119,Gramática,Classes do Nome,Pronome,,,3,True
+120,História Geral,Antiguidade Clássica,Grécia,,,3,True
+121,História do Brasil,Brasil Colonial,Mineração e Período Pombalino,,,3,True
+122,Interpretação de texto,Linguagem Verbal e Linguagem Não Verbal,Linguagem Corporal,,,3,True
+123,Literatura,Conceito de Escola Literária,Conceito de Escola Literária,,,3,True
+124,Matemática,Matemática Básica,Equação do Primeiro Grau,,,3,True
+125,Matemática,Matemática Básica,Equação do Segundo Grau,,,3,True
+126,Química,"Nox, Oxidação e Redução",Cálculo de Nox,,,3,True
+127,Biologia,Bioenergética,Quimiossíntese,,,3,True
+128,Biologia,Bioenergética,Respiração Celular,,,3,True
+129,Biologia,Reprodução Humana,Ciclos Ovarianos,,,3,True
+130,Biologia,Reprodução Humana,Fecundação,,,3,True
+131,Biologia,Reprodução Humana,Gametogênese,,,3,True
+132,Biologia,Reprodução Humana,Sistemas Reprodutores Humanos,,,3,True
+133,Filosofia/Sociologia,Filosofia Medieval,Tomás de Aquino,,,3,True
+134,Física,Dinâmica,Força Centrípeta,,,3,True
+135,Física,Dinâmica,Força de Atrito,,,3,True
+136,Física,Dinâmica,Plano Inclinado,,,3,True
+137,Geografia,Hidrografia,"Distribuição, Consumo e Ciclo da Água",,,3,True
+138,Geografia,Hidrografia,Hidrografia do Brasil,,,3,True
+139,Geografia,Hidrografia,"Oceanos, Mares e Bacias Hidrográficas",,,3,True
+140,História Geral,Antiguidade Clássica,Roma,,,3,True
+141,História do Brasil,Brasil Colonial,Revolvas Nativistas,,,3,True
+142,Interpretação de texto,Linguagem Verbal e Linguagem Não Verbal,Linguagem Mista,,,3,True
+143,Matemática,Conjuntos,Conjuntos,,,3,True
+144,Química,"Nox, Oxidação e Redução",Balanceamento de Equações,,,3,True
+145,Química,"Nox, Oxidação e Redução",Oxidação e Redução,,,3,True
+146,Biologia,Embriologia Animal,Anexos Embrionários,,,3,True
+147,Biologia,Embriologia Animal,Embriologia Humana,,,3,True
+148,Biologia,Embriologia Animal,Embriologia do Anfioxo,,,3,True
+149,Biologia,Embriologia Animal,Introdução à Embriologia,,,3,True
+150,Biologia,Núcleo e Divisão Celular,Alterações Cromossômicas,,,3,True
+151,Biologia,Núcleo e Divisão Celular,Interfase e Mitose,,,3,True
+152,Biologia,Núcleo e Divisão Celular,"Núcleo e Relação entre Cromossomos, Gene e DNA",,,3,True
+153,Filosofia/Sociologia,Filosofia Moderna,Maquiavel,,,3,True
+154,Física,Dinâmica,Quantidade de Movimento e Impulso,,,3,True
+155,Física,Dinâmica,Trabalho e Energia,,,3,True
+156,Geografia,Biosfera,Biomas Mundiais,,,3,True
+157,Geografia,Biosfera,Domínios Morfoclimáticos do Brasil,,,3,True
+158,Gramática,Classes do Verbo,Classes do Verbo,,,3,True
+159,História do Brasil,Brasil Colonial,Revoltas Emancipacionistas,,,3,True
+160,Literatura,Quinhentismo,Quinhentismo,,,3,True
+161,Matemática,Progressões,Progressões,,,3,True
+162,Química,Funções Inorgânicas,"Conceitos de Ácido, Base e Estudo dos Ácidos",,,3,True
+163,Química,Funções Inorgânicas,Estudo das Bases e dos Sais,,,3,True
+164,Biologia,Embriologia,Embriologia,,,3,True
+165,Biologia,Embriologia,Ovos e Clivagem,,,3,True
+166,Biologia,Histologia Animal,Pele,,,3,True
+167,Biologia,Histologia Animal,Tecidos Conjuntivos,,,3,True
+168,Biologia,Histologia Animal,Tecidos Epiteliais,,,3,True
+169,Biologia,Histologia Animal,Tecidos Sanguíneo,,,3,True
+170,Biologia,Reprodução Humana,Reprodução Humana,,,3,True
+171,Biologia,Reprodução Humana,Reprodução e Desenvolvimento,,,3,True
+172,Filosofia/Sociologia,Filosofia Moderna,"Bodin, Bossuet, Bacon e Montaigne",,,3,True
+173,Filosofia/Sociologia,Filosofia Moderna,Hobbes,,,3,True
+174,Física,Análise Dimensional,Análise Dimensional,,,3,True
+175,Física,Gravitação,Lei da Gravitação,,,3,True
+176,Física,Gravitação,Leis de Kepler,,,3,True
+177,Geografia,Meio Ambiente,Aquecimento Global,,,3,True
+178,Geografia,Meio Ambiente,Histórico,,,3,True
+179,Geografia,Meio Ambiente,Problemas Urbanos,,,3,True
+180,História Geral,Idade Média,Impérios Bizantino e Islâmico,,,3,True
+181,História do Brasil,Brasil Colonial,Período Joanino e Independência,,,3,True
+182,Literatura,Barroco,Barroco,,,3,True
+183,Matemática,Geometria Plana,Fundamentos de Geometria Plana e Polígonos,,,3,True
+184,Matemática,Geometria Plana,Triângulos,,,3,True
+185,Química,Funções Inorgânicas,Estudo dos Óxidos,,,3,True
+186,Química,Funções Inorgânicas,Reações Inorgânicas,,,3,True
+187,Biologia,Histologia Animal,A Pele Humana,,,3,True
+188,Biologia,Histologia Animal,Sistema Imune,,,3,True
+189,Biologia,Histologia Animal,Tecido Adiposo,,,3,True
+190,Biologia,Histologia Animal,Tecido Conjuntivo Propriamente Dito,,,3,True
+191,Biologia,Histologia Animal,Tecido Epitelial,,,3,True
+192,Biologia,Histologia Animal,Tecido Muscular,,,3,True
+193,Biologia,Histologia Animal,Tecido Nervoso,,,3,True
+194,Biologia,Histologia Animal,Tecidos Cartilaginoso e Ósseo,,,3,True
+195,Filosofia/Sociologia,Filosofia Moderna,Descartes,,,3,True
+196,Filosofia/Sociologia,Filosofia Moderna,Pascal e Locke,,,3,True
+197,Física,Estática,Corpo Extenso,,,3,True
+198,Física,Estática,Ponto Material,,,3,True
+199,Geografia,Meio Ambiente,Desmatamento,,,3,True
+200,Geografia,Meio Ambiente,Questão do Lixo,,,3,True
+201,Gramática,Classes Relacionais,Classes Relacionais,,,3,True
+202,História Geral,Idade Média,Alta Idade Média,,,3,True
+203,História do Brasil,Brasil Império,Primeiro Reinado,,,3,True
+204,Interpretação de texto,Tipos e Gêneros Textuais,Tipos e Gêneros Textuais,,,3,True
+205,Matemática,Geometria Plana,Circunferência e Círculo,,,3,True
+206,Matemática,Geometria Plana,Quadriláteros,,,3,True
+207,Matemática,Geometria Plana,Triângulos Quaisquer e Teorema de Tales,,,3,True
+208,Química,Estequiometria,Cálculo de Fórmulas,,,3,True
+209,Química,Estequiometria,Fatores de Cálculo Estequiométrico,,,3,True
+210,Química,Estequiometria,Grandezas Químicas,,,3,True
+211,Biologia,Fisiologia Animal,Sistema Endócrino I,,,3,True
+212,Biologia,Fisiologia Animal,Sistema Endócrino II,,,3,True
+213,Biologia,Fisiologia Animal,Sistema Nervoso,,,3,True
+214,Biologia,Fisiologia Animal,Sistema Sensorial,,,3,True
+215,Biologia,Histologia Animal,Tecido Cartilaginoso e Ósseo,,,3,True
+216,Biologia,Histologia Animal,Tecido Hematopoiético e Sanguíneo,,,3,True
+217,Biologia,Impulso Nervoso e Sinapses,Impulso Nervoso e Sinapses,,,3,True
+218,Filosofia/Sociologia,Filosofia Moderna,Berkeley e Hume,,,3,True
+219,Filosofia/Sociologia,Filosofia Moderna,Espinoza e Leibniz,,,3,True
+220,Física,Hidrostática,Densidade,,,3,True
+221,Física,Hidrostática,Pressão,,,3,True
+222,Física,Hidrostática,Princípio de Arquimedes,,,3,True
+223,Física,Hidrostática,Princípio de Pascal,,,3,True
+224,Geografia,Demografia,Crescimento Populacional e Transição Demográfica,,,3,True
+225,Geografia,Demografia,Estrutura e Pirâmides Etárias,,,3,True
+226,Geografia,Demografia,IDH - Índice de Desenvolvimento Humano,,,3,True
+227,Geografia,Demografia,População Absoluta e Relativa,,,3,True
+228,Geografia,Demografia,População Economicamente Ativa,,,3,True
+229,Geografia,Demografia,Teorias Demográficas,,,3,True
+230,História Geral,Idade Média,Baixa Idade Média,,,3,True
+231,História do Brasil,Brasil Império,Regência,,,3,True
+232,Literatura,Arcadismo,Arcadismo,,,3,True
+233,Matemática,Geometria Espacial,Poliedros,,,3,True
+234,Matemática,Geometria Espacial,"Prisma, Paralelepípedo e Cubo",,,3,True
+235,Química,Soluções,"Dispersões, Coloides, Solubilidade e Classificação das Soluções",,,3,True
+236,Química,Soluções,Unidades de Concentração e Densidade,,,3,True
+237,Biologia,Fisiologia Animal,Drogas,,,3,True
+238,Biologia,Fisiologia Animal,Sistema Circulatório,,,3,True
+239,Biologia,Fisiologia Animal,Sistema Circulatório I,,,3,True
+240,Biologia,Fisiologia Animal,Sistema Circulatório II,,,3,True
+241,Biologia,Fisiologia Animal,Sistema Digestório,,,3,True
+242,Biologia,Fisiologia Animal,Sistema Excretor,,,3,True
+243,Biologia,Fisiologia Animal,Sistema Respiratório,,,3,True
+244,Biologia,Fisiologia Animal,Sistema Respiratório I,,,3,True
+245,Biologia,Fisiologia Animal,Sistema Respiratório II,,,3,True
+246,Filosofia/Sociologia,Filosofia Moderna,Kant,,,3,True
+247,Filosofia/Sociologia,Filosofia Moderna,Revolução Científica,,,3,True
+248,Física,Hidrodinâmica,Hidrodinâmica,,,3,True
+249,Geografia,Demografia,Brasil - Estrutura Etária,,,3,True
+250,Geografia,Demografia,Brasil - População Economicamente Ativa,,,3,True
+251,Geografia,Demografia,Crescimento Vegetativo,,,3,True
+252,Gramática,Colocação Pronominal,Colocação Pronominal,,,3,True
+253,História Geral,Idade Moderna,Renascimento,,,3,True
+254,História do Brasil,Brasil Império,Segundo Reinado - Política interna e economia,,,3,True
+255,Matemática,Geometria Espacial,Cilindro,,,3,True
+256,Matemática,Geometria Espacial,Pirâmide,,,3,True
+257,Química,Soluções,Diluição de Soluções,,,3,True
+258,Química,Soluções,Misturas de Soluções,,,3,True
+259,Biologia,Fisiologia Animal,Imunologia e Saúde,,,3,True
+260,Biologia,Fisiologia Animal,Sentidos,,,3,True
+261,Biologia,Fisiologia Animal,Sistema Digestório I,,,3,True
+262,Biologia,Fisiologia Animal,Sistema Digestório II,,,3,True
+263,Biologia,Fisiologia Animal,Sistema Endócrino,,,3,True
+264,Biologia,Fisiologia Animal,Sistema Excretório I,,,3,True
+265,Biologia,Fisiologia Animal,Sistema Excretório II,,,3,True
+266,Filosofia/Sociologia,Filosofia Moderna,Hegel e Marx,,,3,True
+267,Filosofia/Sociologia,Filosofia Moderna,Iluminismo e Contratualismo,,,3,True
+268,Filosofia/Sociologia,Filosofia Moderna,"Positivismo, Utilitarismo e Pragmatismo",,,3,True
+269,Física,Termologia,Escalas Termométricas,,,3,True
+270,Física,Termologia,Fundamentos da Termologia,,,3,True
+271,Geografia,Demografia,Brasil - Migrações Externas - Imigração,,,3,True
+272,Geografia,Demografia,Indicadores Sociais,,,3,True
+273,Geografia,Demografia,Migrações e Migrações Internacionais,,,3,True
+274,História Geral,Idade Moderna,Reformas Religiosas,,,3,True
+275,História do Brasil,Brasil Império,Segundo Império,,,3,True
+276,Interpretação de texto,Estilística: Figuras de Linguagem,Estilística: Figuras de Linguagem,,,3,True
+277,Literatura,Romantismo,Romantismo,,,3,True
+278,Matemática,Geometria Espacial,Cone,,,3,True
+279,Matemática,Geometria Espacial,Esfera,,,3,True
+280,Matemática,Geometria Espacial,Sólidos Semelhantes e Troncos,,,3,True
+281,Química,Termoquímica,Classificação e Leitura das Reações,,,3,True
+282,Química,Termoquímica,Entalpia das Reações,,,3,True
+283,Química,Termoquímica,Entropia e Energia Livre de Gibbs,,,3,True
+284,Biologia,Genética,Erros Inato,,,3,True
+285,Biologia,Genética,Genealogias e Probabilidades,,,3,True
+286,Biologia,Genética,Grupos Sanguíneos,,,3,True
+287,Biologia,Genética,Heredrograma,,,3,True
+288,Biologia,Genética,Introdução à Genética,,,3,True
+289,Biologia,Genética,Introdução à Genética e 1ª Lei de Mendel,,,3,True
+290,Biologia,Genética,Polialelismo e Sistema ABO,,,3,True
+291,Biologia,Genética,Probabilidades,,,3,True
+292,Biologia,Genética,Segunda Lei de Mendel,,,3,True
+293,Biologia,Genética,Sistema Rh,,,3,True
+294,Biologia,Genética,Variações da 1ª Lei de Mendel,,,3,True
+295,Filosofia/Sociologia,Filosofia Contemporânea,Schopenhauer e Nietzsche,,,3,True
+296,Física,Termologia,Calorimetria,,,3,True
+297,Física,Termologia,Dilatação,,,3,True
+298,Geografia,Demografia,Composição da População Brasileira e Questão Indígena,,,3,True
+299,Geografia,Demografia,Migrações Internas,,,3,True
+300,Gramática,Regência e Crase,Regência e Crase,,,3,True
+301,História Geral,Idade Moderna,Expansão Marítima,,,3,True
+302,História do Brasil,Brasil Império,"Segundo Reinado - Política Externa, Crise do Império e Proclamação da República",,,3,True
+303,Matemática,Estatística,Estatística Geral,,,3,True
+304,Química,Cinética,Cinética,,,3,True
+305,Biologia,Genética,2ª Lei de Mendel,,,3,True
+306,Biologia,Genética,Alterações Cromossômicas,,,3,True
+307,Biologia,Genética,Genética do Sexo,,,3,True
+308,Biologia,Genética,Hardy-Weinberg,,,3,True
+309,Biologia,Genética,"Interação Genética, Herança Complementar e Epistasia",,,3,True
+310,Biologia,Genética,Linkage,,,3,True
+311,Biologia,Genética,Pleiotropia e Interação Gênica,,,3,True
+312,Biologia,Origem da Vida,Origem e Evolução da Vida na Terra,,,3,True
+313,Filosofia/Sociologia,Filosofia Contemporânea,Arendt e Walter Benjamin,,,3,True
+314,Filosofia/Sociologia,Filosofia Contemporânea,Fenomenologia e Existencialismo,,,3,True
+315,Física,Termologia,Gases,,,3,True
+316,Física,Termologia,Termodinâmica,,,3,True
+317,Física,Termologia,Transferência de Calor,,,3,True
+318,Geografia,Urbanização,Problemas Urbanos Brasileiros,,,3,True
+319,Geografia,Urbanização,Urbanização Geral - Conceitos,,,3,True
+320,Geografia,Urbanização,Urbanização Geral - Histórico,,,3,True
+321,Geografia,Urbanização,Urbanização do Brasil,,,3,True
+322,História Geral,Idade Moderna,Mercantilismo e Absolutismo,,,3,True
+323,História do Brasil,Brasil República,República Oligárquica,,,3,True
+324,Literatura,Realismo,Realismo,,,3,True
+325,Matemática,Estatística,Interpretação de Gráficos,,,3,True
+326,Química,Equilíbrio Químico,Constante de Equilíbrio,,,3,True
+327,Química,Equilíbrio Químico,Deslocamento,,,3,True
+328,Química,Equilíbrio Químico,Equilíbrio Iônico,,,3,True
+329,Biologia,Evolução,Darwinismo,,,3,True
+330,Biologia,Evolução,Especiação,,,3,True
+331,Biologia,Evolução,Introdução à Evolução,,,3,True
+332,Biologia,Evolução,Lamarckismo,,,3,True
+333,Biologia,Evolução,Neodarwinismo,,,3,True
+334,Biologia,Evolução,Teorias Evolucionistas,,,3,True
+335,Biologia,Origem da Vida I,Origem da Vida I,,,3,True
+336,Biologia,Origem da Vida II,Origem da Vida II,,,3,True
+337,Filosofia/Sociologia,Filosofia Contemporânea,Jurgen Habermas,,,3,True
+338,Filosofia/Sociologia,Filosofia Contemporânea,Michel Foucault,,,3,True
+339,Física,Ondulatória,Fenômenos Ondulatórios,,,3,True
+340,Física,Ondulatória,Fundamentos da Ondulatória,,,3,True
+341,Física,Ondulatória,Propriedades Fisiológicas do Som,,,3,True
+342,Geografia,Geografia Agrária,Agricultura - Conceitos,,,3,True
+343,Geografia,Geografia Agrária,Estrutura Fundiária do Brasil,,,3,True
+344,Geografia,Geografia Agrária,Extrativismo Vegetal e Mineral,,,3,True
+345,Geografia,Geografia Agrária,Produção Agrícola e Pecuária,,,3,True
+346,Gramática,Termos Essenciais,Termos Essenciais,,,3,True
+347,História Geral,Idade Moderna,Colonização da América,,,3,True
+348,História do Brasil,Brasil República,"Movimentos Sociais - Canudos, Contestado, Cangaço e Revolta de Juazeiro",,,3,True
+349,Interpretação de texto,Intertextualidade e Interdiscursividade,Intertextualidade e Interdiscursividade,,,3,True
+350,Interpretação de texto,Texto Poético,Texto Poético,,,3,True
+351,Literatura,Simbolismo,Simbolismo,,,3,True
+352,Matemática,Análise Combinatória,Análise Combinatória,,,3,True
+353,Química,Equilíbrio Químico,Hidrólise,,,3,True
+354,Química,Equilíbrio Químico,Tampão e Kps,,,3,True
+355,Biologia,Evolução,Evolução Humana,,,3,True
+356,Biologia,Evolução,Fatores Promotores da Evolução,,,3,True
+357,Biologia,Evolução,Genética das Populações,,,3,True
+358,Biologia,Taxonomia,Os Cinco Reinos dos Seres Vivos,,,3,True
+359,Biologia,Taxonomia,Sistemática Filogenética,,,3,True
+360,Biologia,Taxonomia,Taxonomia,,,3,True
+361,Filosofia/Sociologia,Filosofia Contemporânea,Filosofia da Ciência,,,3,True
+362,Filosofia/Sociologia,Filosofia Contemporânea,John Rawls e Hans Jonas,,,3,True
+363,Física,Ondulatória,Cordas e Tubos Sonoros,,,3,True
+364,Física,Ondulatória,Fenômenos Sonoros,,,3,True
+365,Geografia,Fontes de Energia,Fontes de Energia,,,3,True
+366,Geografia,Indústria,Brasil,,,3,True
+367,Geografia,Indústria,Indústria Geral,,,3,True
+368,História Geral,Idade Moderna,Iluminismo e Liberalismo,,,3,True
+369,História do Brasil,Brasil República,"Movimentos Sociais - Revolta da Vacina, Revolta da Chibata, Movimento Operário",,,3,True
+370,Literatura,Pré-Modernismo,Pré-Modernismo,,,3,True
+371,Matemática,Probabilidade,Probabilidade,,,3,True
+372,Química,Eletroquímica,Eletrólise,,,3,True
+373,Química,Eletroquímica,Pilha,,,3,True
+374,Biologia,Microbiologia,Doenças Causadas por Ribovírus,,,3,True
+375,Biologia,Microbiologia,Fungos e Micoses,,,3,True
+376,Biologia,Microbiologia,Introdução à Microbiologia,,,3,True
+377,Biologia,Microbiologia,Procariontes,,,3,True
+378,Biologia,Microbiologia,"Reino Protista, Protozoários e Algas",,,3,True
+379,Biologia,Microbiologia,Vírus,,,3,True
+380,Biologia,Taxionomia I,Taxionomia I,,,3,True
+381,Biologia,Taxionomia II,Taxionomia II,,,3,True
+382,Filosofia/Sociologia,Filosofia Contemporânea,Outros temas,,,3,True
+383,Física,MHS,MHS,,,3,True
+384,Geografia,Fases do Capitalismo,Fases do Capitalismo,,,3,True
+385,Geografia,Transportes,Brasil,,,3,True
+386,Geografia,Transportes,Geral,,,3,True
+387,Gramática,Termos Integrantes,Termos Integrantes,,,3,True
+388,História Geral,Idade Moderna,Revolução Industrial e Independência dos EUA,,,3,True
+389,História do Brasil,Brasil República,Crise da República Oligárquica,,,3,True
+390,Literatura,Vanguardas Europeias,Vanguardas Europeias,,,3,True
+391,Matemática,Função Afim,Função Afim,,,3,True
+392,Química,Propriedades Coligativas,Propriedades Coligativas,,,3,True
+393,Biologia,Botânica,Angiospermas,,,3,True
+394,Biologia,Botânica,Características Gerais das Plantas e Briófitas,,,3,True
+395,Biologia,Botânica,Frutos e Pseudofrutos,,,3,True
+396,Biologia,Botânica,Gimnospermas,,,3,True
+397,Biologia,Botânica,Pteridófitas,,,3,True
+398,Biologia,Microbiologia,Bactérias,,,3,True
+399,Biologia,Microbiologia,Doenças Bacterianas,,,3,True
+400,Biologia,Microbiologia,Doenças Causadas por Desoxivírus e Retrovírus,,,3,True
+401,Biologia,Microbiologia,Protozoários e Doenças Protozoóticas,,,3,True
+402,Filosofia/Sociologia,Teoria da Sociologia,Teoria da Sociologia,,,3,True
+403,Física,Óptica,Espelhos Planos,,,3,True
+404,Física,Óptica,Fundamentos,,,3,True
+405,Geografia,Geopolítica,Nova Ordem Mundial,,,3,True
+406,Geografia,Geopolítica,Velha Ordem Mundial e ONU,,,3,True
+407,História Geral,Idade Moderna,Revolução Francesa,,,3,True
+408,História do Brasil,Brasil República,Era Vargas - Governos Provisório e Constitucional,,,3,True
+409,Interpretação de texto,Coesão e Coerência Textuais,Coesão e Coerência Textuais,,,3,True
+410,Literatura,Modernismo,Primeira Fase,,,3,True
+411,Matemática,Função Quadrática,Função Quadrática,,,3,True
+412,Química,Introdução à Química Orgânica,Cadeias Carbônicas,,,3,True
+413,Química,Introdução à Química Orgânica,Funções e Séries Orgânicas,,,3,True
+414,Biologia,Botânica,Caule,,,3,True
+415,Biologia,Botânica,Fisiologia Vegetal,,,3,True
+416,Biologia,Botânica,Folha,,,3,True
+417,Biologia,Botânica,Gimnospermas e Angiospermas,,,3,True
+418,Biologia,Botânica,Histologia Vegetal,,,3,True
+419,Biologia,Botânica,Introdução à Botânica,,,3,True
+420,Biologia,Botânica,Introdução à Reprodução Vegetal,,,3,True
+421,Biologia,Botânica,Raiz,,,3,True
+422,Biologia,Botânica,"Sementes, Frutos e Reprodução Assexuada",,,3,True
+423,Filosofia/Sociologia,Sociologia do Brasil,Sociologia do Brasil,,,3,True
+424,Física,Óptica,Espelhos Esféricos,,,3,True
+425,Física,Óptica,Lentes e Física da Visão,,,3,True
+426,Física,Óptica,Refração,,,3,True
+427,Geografia,Globalização,Blocos Econômicos,,,3,True
+428,Geografia,Globalização,Comércio Externo - Brasil,,,3,True
+429,Geografia,Globalização,Processos de Globalização,,,3,True
+430,Gramática,Termos Acessórios,Termos Acessórios,,,3,True
+431,História Geral,Idade Contemporânea,Era Napoleônica e Congresso de Viena,,,3,True
+432,História do Brasil,Brasil República,Era Vargas - Estado Novo,,,3,True
+433,Literatura,Modernismo,Segunda Fase - Poesia,,,3,True
+434,Matemática,Função Exponencial,Função Exponencial,,,3,True
+435,Química,Hidrocarbonetos,Hidrocarbonetos,,,3,True
+436,Biologia,Botânica,Fitormônios,,,3,True
+437,Biologia,Botânica,"Nutrição, Absorção e Condução Vegetal",,,3,True
+438,Biologia,Botânica,Transpiração Vegetal,,,3,True
+439,Biologia,Zoologia,Cnidários,,,3,True
+440,Biologia,Zoologia,Nematelmintos,,,3,True
+441,Biologia,Zoologia,Platelmintos,,,3,True
+442,Biologia,Zoologia,Poríferos,,,3,True
+443,Filosofia/Sociologia,Sociologia Temática,Cultura e indústria cultural,,,3,True
+444,Filosofia/Sociologia,Sociologia Temática,Desigualdades e violência,,,3,True
+445,Física,Eletrostática,Campo Elétrico,,,3,True
+446,Física,Eletrostática,Lei de Coulomb,,,3,True
+447,Física,Eletrostática,Potencial Elétrico,,,3,True
+448,Física,Eletrostática,Processos de Eletrização,,,3,True
+449,Geografia,Regionalização do Brasil,Regionalização do Brasil,,,3,True
+450,História Geral,Idade Contemporânea,"Revoluções Liberais, Guerra de Secessão e Unificações Tardias",,,3,True
+451,História do Brasil,Brasil República,"República Populista - Dutra, Vargas e JK",,,3,True
+452,Interpretação de texto,Língua e Patrimônio,Língua e Patrimônio,,,3,True
+453,Literatura,Modernismo,Segunda Fase - Prosa,,,3,True
+454,Matemática,Logaritmo,Logaritmo,,,3,True
+455,Química,Funções Nitrogenadas,Funções Nitrogenadas,,,3,True
+456,Química,Funções Oxigenadas,Funções Oxigenadas,,,3,True
+457,Biologia,Zoologia,Anelídeos,,,3,True
+458,Biologia,Zoologia,Aracnídeos,,,3,True
+459,Biologia,Zoologia,Arthropoda,,,3,True
+460,Biologia,Zoologia,Artrópodes,,,3,True
+461,Biologia,Zoologia,Introdução à Zoologia,,,3,True
+462,Biologia,Zoologia,Moluscos,,,3,True
+463,Biologia,Zoologia,Nematoda,,,3,True
+464,Biologia,Zoologia,Platyhelminthes,,,3,True
+465,Filosofia/Sociologia,Sociologia Temática,Educação,,,3,True
+466,Filosofia/Sociologia,Sociologia Temática,Movimentos sociais,,,3,True
+467,Física,Eletrostática,Capacitores,,,3,True
+468,Física,Eletrostática,Condutor Eletrizado,,,3,True
+469,Física,Eletrostática,Trabalho e Energia,,,3,True
+470,Geografia,América,América Central,,,3,True
+471,Geografia,América,América do Norte,,,3,True
+472,Geografia,América,América do Sul,,,3,True
+473,Gramática,Concordância,Concordância,,,3,True
+474,História Geral,Idade Contemporânea,Movimentos Sociais e Imperialismo,,,3,True
+475,História do Brasil,Brasil República,República Populista - Jânio e Jango,,,3,True
+476,Literatura,Modernismo,Terceira Fase,,,3,True
+477,Matemática,Matemática Comercial e Financeira,Matemática Comercial e Financeira,,,3,True
+478,Química,Outras Funções na Química Orgânica,Outras Funções na Química Orgânica,,,3,True
+479,Química,Propriedades Físicas e Químicas dos Compostos Orgânicos,Propriedades Físicas e Químicas dos Compostos Orgânicos,,,3,True
+480,Biologia,Zoologia,Crustáceos,,,3,True
+481,Biologia,Zoologia,Equinodermos,,,3,True
+482,Biologia,Zoologia,Filo Chordata I - Protocordados e Peixes,,,3,True
+483,Biologia,Zoologia,Filo Chordata II - Anfíbios e Répteis,,,3,True
+484,Biologia,Zoologia,Filo Chordata III - Aves e Mamíferos,,,3,True
+485,Biologia,Zoologia,Insetos,,,3,True
+486,Biologia,Zoologia,Introdução aos Cordados,,,3,True
+487,Biologia,Zoologia,Peixes,,,3,True
+488,Filosofia/Sociologia,Trabalho e Produção,Trabalho e Produção,,,3,True
+489,Física,Eletrodinâmica,Associação de Resistores,,,3,True
+490,Física,Eletrodinâmica,Corrente Elétrica,,,3,True
+491,Física,Eletrodinâmica,Leis de Ohm,,,3,True
+492,Física,Eletrodinâmica,Potência e Energia,,,3,True
+493,Geografia,Europa,Aspectos Físicos,,,3,True
+494,Geografia,Europa,Demografia,,,3,True
+495,Geografia,Europa,Economia,,,3,True
+496,Geografia,Europa,Geopolítica,,,3,True
+497,História Geral,Idade Contemporânea,Primeira Guerra Mundial e Revolução Russa,,,3,True
+498,História do Brasil,Brasil República,Ditadura Militar - Castelo Branco e Costa e Silva,,,3,True
+499,Interpretação de texto,História da Arte,Pré-história ao Século XIX,,,3,True
+500,Literatura,Prosa Contemporânea,Prosa Contemporânea,,,3,True
+501,Matemática,Trigonometria,Circunferência Trigonométrica,,,3,True
+502,Matemática,Trigonometria,Razões Trigonométricas,,,3,True
+503,Química,Isomeria,Constitucional ou Plana,,,3,True
+504,Química,Isomeria,Isomeria Geométrica e Isomeria Óptica,,,3,True
+505,Biologia,Ecologia,Ciclos Biogeoquímicos I,,,3,True
+506,Biologia,Ecologia,Ciclos Biogeoquímicos II,,,3,True
+507,Biologia,Ecologia,Fluxos de Energia,,,3,True
+508,Biologia,Ecologia,Introdução à Ecologia,,,3,True
+509,Biologia,Zoologia,Anfíbios,,,3,True
+510,Biologia,Zoologia,Aves,,,3,True
+511,Biologia,Zoologia,Mamíferos,,,3,True
+512,Biologia,Zoologia,Répteis,,,3,True
+513,Filosofia/Sociologia,"Poder, Estado e Cidadania","Poder, Estado e Cidadania",,,3,True
+514,Física,Eletrodinâmica,Circuitos,,,3,True
+515,Física,Eletrodinâmica,Geradores,,,3,True
+516,Física,Eletrodinâmica,Instrumentos,,,3,True
+517,Geografia,Rússia e CEI,Rússia e CEI,,,3,True
+518,Geografia,África,Aspectos Físicos,,,3,True
+519,Geografia,África,"Histórico, Demografia, Economia e Geopolítica",,,3,True
+520,Gramática,Período Composto,Período Composto,,,3,True
+521,História Geral,Idade Contemporânea,Período Entreguerras,,,3,True
+522,História do Brasil,Brasil República,"Ditadura Militar - Médici, Geisel e Figueiredo",,,3,True
+523,Interpretação de texto,História da Arte,Arte nos sécs. XX e XXI,,,3,True
+524,Literatura,Contemporaneidade,Contemporaneidade,,,3,True
+525,Matemática,Trigonometria,Equações Trigonométricas,,,3,True
+526,Matemática,Trigonometria,Funções Trigonométricas,,,3,True
+527,Química,Gases,Gases,,,3,True
+528,Química,Radioatividade,Radioatividade,,,3,True
+529,Biologia,Ecologia,Biomas Aquáticos,,,3,True
+530,Biologia,Ecologia,Cadeia e Teia Alimentar,,,3,True
+531,Biologia,Ecologia,Ciclos biogeoquímicos,,,3,True
+532,Biologia,Ecologia,Dinâmica das Populações,,,3,True
+533,Biologia,Ecologia,Pirâmides Ecológicas,,,3,True
+534,Biologia,Ecologia,Relações Ecológicas,,,3,True
+535,Biologia,Ecologia,Sucessão Ecológica,,,3,True
+536,Filosofia/Sociologia,Temas Contemporâneos,Temas Contemporâneos,,,3,True
+537,Física,Eletromagnetismo,Fontes do Campo Magnético,,,3,True
+538,Física,Eletromagnetismo,Força Magnética,,,3,True
+539,Física,Eletromagnetismo,Fundamentos,,,3,True
+540,Física,Eletromagnetismo,Indução Eletromagnética,,,3,True
+541,Geografia,China,China,,,3,True
+542,Geografia,"Japão, Índia e Tigres Asiáticos","Japão, Índia e Tigres Asiáticos",,,3,True
+543,Gramática,Pontuação,Pontuação,,,3,True
+544,História Geral,Segunda Guerra Mundial,Segunda Guerra Mundial,,,3,True
+545,História do Brasil,Brasil República,Nova República - Tancredo a Itamar Franco,,,3,True
+546,Interpretação de texto,História da Arte,Música Brasileira,,,3,True
+547,Literatura,Hoje em Dia,Hoje em Dia,,,3,True
+548,Matemática,Matrizes,Matrizes,,,3,True
+549,Matemática,Sistemas Lineares,Sistemas Lineares,,,3,True
+550,Química,Química Ambiental,Química Ambiental,,,3,True
+551,Química,Água,Água,,,3,True
+552,Biologia,Ecologia,Biociclos,,,3,True
+553,Biologia,Ecologia,Biomas Terrestres,,,3,True
+554,Biologia,Ecologia,Desequilíbrios Ecológicos,,,3,True
+555,Biologia,Ecologia,Dinâmica Populacional,,,3,True
+556,Biologia,Ecologia,Humanidade e Meio Ambiente,,,3,True
+557,Biologia,Ecologia,Poluição,,,3,True
+558,Filosofia/Sociologia,Outras Ciências Sociais,Outras Ciências Sociais,,,3,True
+559,Física,Física Moderna,Física Quântica e Efeito Fotoelétrico,,,3,True
+560,Física,Física Moderna,Teoria da Relatividade,,,3,True
+561,Geografia,Oceania e Regiões Polares,Oceania e Regiões Polares,,,3,True
+562,Geografia,Oriente Médio,"Aspectos Físicos, Demografia, Economia e Geopolítica",,,3,True
+563,Geografia,Oriente Médio,Questão Israel - Palestina,,,3,True
+564,Gramática,Coesão e Paralelismo,Coesão e Paralelismo,,,3,True
+565,História Geral,Guerra Fria,Guerra Fria,,,3,True
+566,História do Brasil,Brasil República,Nova República - FHC a Bolsonaro,,,3,True
+567,Literatura,Literatura Portuguesa,Literatura Portuguesa,,,3,True
+568,Matemática,Geometria Analítica,Circunferência,,,3,True
+569,Matemática,Geometria Analítica,Fundamentos da Geometria Analítica,,,3,True
+570,Matemática,Geometria Analítica,Reta,,,3,True
+571,Química,Reações Orgânicas,Outras Reações Importantes e Polímeros,,,3,True
+572,Química,Reações Orgânicas,Principais Reações,,,3,True
