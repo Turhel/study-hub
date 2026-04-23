@@ -8,6 +8,7 @@ import type {
   QuestionAttemptBulkPayload,
   StudyPlanItem,
   StudyPlanTodayResponse,
+  TodayItem,
 } from "../lib/types";
 
 type RegisterFormState = {
@@ -170,7 +171,7 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
   const activeDays = days.filter((day) => day.count > 0).length;
 
   return (
-    <section className="bento-card p-5 lg:col-span-6">
+    <section className="bento-card p-5 lg:col-span-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="pixel-font text-sm font-bold uppercase text-ember-400">Sua consistencia</p>
@@ -203,6 +204,38 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
           <span className="h-3 w-3 rounded-[2px] bg-focus-400" />
         </div>
         <span>Mais</span>
+      </div>
+    </section>
+  );
+}
+
+function ReviewWidget({ reviews }: { reviews: TodayItem[] }) {
+  const visibleReviews = reviews.slice(0, 3);
+
+  return (
+    <section className="bento-card p-5 lg:col-span-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="pixel-font text-sm font-bold uppercase text-ember-400">Minhas revisoes</p>
+          <p className="mt-2 text-sm text-zinc-500">{reviews.length} pendentes hoje</p>
+        </div>
+        <span className="text-sm text-zinc-500">...</span>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        {visibleReviews.length === 0 ? (
+          <p className="bento-surface p-4 text-sm leading-6 text-zinc-500">Nenhuma revisao vencida por enquanto.</p>
+        ) : (
+          visibleReviews.map((review, index) => (
+            <div key={review.id ?? `${review.title}-${index}`} className="flex items-start gap-3 text-sm">
+              <span className="mt-2 h-2 w-2 shrink-0 rounded-[2px] bg-focus-400" />
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-zinc-100">{review.title}</p>
+                {review.description ? <p className="mt-1 truncate text-zinc-500">{review.description}</p> : null}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );
@@ -310,7 +343,7 @@ function PomodoroWidget() {
   const progress = ((25 * 60 - seconds) / (25 * 60)) * 100;
 
   return (
-    <section className="bento-card p-5 lg:col-span-6">
+    <section className="bento-card p-5 lg:col-span-4">
       <p className="pixel-font text-sm font-bold uppercase text-ember-400">Pomodoro teste</p>
       <div className="mt-7 grid place-items-center">
         <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
@@ -570,8 +603,9 @@ export default function TodayPage() {
           onRegister={setRegisteringItem}
         />
         <ConsistencyWidget activity={recentActivity} />
-        <PomodoroWidget />
+        <ReviewWidget reviews={data.due_reviews} />
         <PerformanceWidget performance={performance} />
+        <PomodoroWidget />
       </motion.div>
 
       {registeringItem ? (
