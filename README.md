@@ -153,22 +153,51 @@ O sync de uso:
 - faz merge por chave de negocio em `block_progress`, `subject_progress` e `block_mastery`
 - nao apaga dados existentes no Postgres
 
+### Sync estrutural automatico no startup
+
+Quando o backend estiver rodando com `DATABASE_URL` Postgres, o default agora e:
+
+- sincronizar automaticamente a estrutura versionada do repositório no startup
+
+Isso inclui:
+
+- `docs/data_seed/*.csv`
+- `docs/roadmap/*.csv`
+
+Entao, no fluxo normal com Supabase:
+
+- o backend sobe
+- garante schema/migrations
+- sincroniza a estrutura versionada do projeto no Postgres
+
+Se quiser desligar esse comportamento:
+
+```text
+STUDY_HUB_AUTO_SYNC_STRUCTURAL_ON_STARTUP=false
+```
+
 ### Fluxo recomendado para usar Postgres como banco principal
 
 1. definir `DATABASE_URL` no `backend/.env`
-2. rodar:
+2. garantir que as seeds estruturais do repositório estejam atualizadas, se necessario:
+
+```powershell
+python -m app.export_repo_seed
+```
+
+3. para trazer tambem os dados de uso do SQLite local:
 
 ```powershell
 python -m app.bootstrap_postgres --include-usage
 ```
 
-3. subir o backend normalmente:
+4. subir o backend normalmente:
 
 ```powershell
 python -m uvicorn app.main:app --reload
 ```
 
-4. validar:
+5. validar:
 
 ```powershell
 curl http://127.0.0.1:8000/health

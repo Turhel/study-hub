@@ -15,7 +15,7 @@ from app.routes.health import router as health_router
 from app.routes.question_attempts import router as question_attempts_router
 from app.routes.roadmap import router as roadmap_router
 from app.routes.study_plan import router as study_plan_router
-from app.settings import load_env_file
+from app.settings import get_auto_sync_structural_on_startup, load_env_file
 from app.routes.today import router as today_router
 from app.routes.timer_sessions import router as timer_sessions_router
 
@@ -24,6 +24,11 @@ from app.routes.timer_sessions import router as timer_sessions_router
 async def lifespan(_: FastAPI):
     load_env_file()
     init_db()
+    if get_auto_sync_structural_on_startup():
+        from app.services.postgres_bootstrap_service import bootstrap_structural_data_to_postgres
+        from app.settings import get_default_sqlite_db_path
+
+        bootstrap_structural_data_to_postgres(get_default_sqlite_db_path())
     yield
 
 

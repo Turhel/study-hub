@@ -107,3 +107,9 @@ def get_database_backend_label(database_url: str) -> str:
     if scheme.startswith("postgresql") or scheme.startswith("postgres"):
         return "postgres"
     return scheme or "unknown"
+
+
+def get_auto_sync_structural_on_startup() -> bool:
+    database_url = get_database_url()
+    default_value = get_database_backend_label(database_url) == "postgres"
+    return get_env_bool("STUDY_HUB_AUTO_SYNC_STRUCTURAL_ON_STARTUP", default_value)
