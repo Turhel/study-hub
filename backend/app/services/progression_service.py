@@ -35,6 +35,10 @@ from app.models import (
     SubjectProgress,
 )
 from app.schemas import DisciplineBlockProgressItem, DisciplineBlockProgressSnapshotResponse
+from app.services.roadmap_progression_service import (
+    GuidedRoadmapDisciplineSummary,
+    get_discipline_guided_roadmap_summary,
+)
 
 
 def _block_has_attempts(session: Session, block_id: int) -> bool:
@@ -334,4 +338,16 @@ def get_discipline_progression_snapshot(
         saved_decision=saved_decision,
         ready_to_advance=active_status == BLOCK_STATUS_READY_TO_ADVANCE,
         message=_snapshot_message(active_status, saved_decision),
+    )
+
+
+def get_discipline_roadmap_progression_summary(
+    session: Session,
+    discipline: str,
+    block_progress_by_id: dict[int, BlockProgress] | None = None,
+) -> GuidedRoadmapDisciplineSummary:
+    return get_discipline_guided_roadmap_summary(
+        session=session,
+        discipline=discipline,
+        block_progress_by_id=block_progress_by_id,
     )

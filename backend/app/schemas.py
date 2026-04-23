@@ -95,6 +95,14 @@ class StudyPlanItem(BaseModel):
     priority_score: float
     primary_reason: str
     planned_mode: str
+    roadmap_status: Literal[
+        "entry",
+        "available",
+        "blocked_required",
+        "blocked_cross_required",
+        "reviewable",
+    ] | None = None
+    roadmap_reason: str | None = None
 
 
 class StudyPlanTodayResponse(BaseModel):

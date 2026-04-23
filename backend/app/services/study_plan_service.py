@@ -32,6 +32,7 @@ from app.schemas import StudyPlanItem, StudyPlanSummary, StudyPlanTodayResponse
 from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load
 from app.services.discipline_normalization_service import normalize_discipline
 from app.services.progression_service import sync_progression
+from app.services.roadmap_progression_service import GuidedRoadmapOverview, build_guided_roadmap_overview
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,8 @@ class StudyPlanCandidate:
     raw_score: float
     primary_reason: str
     planned_mode: str
+    roadmap_status: str | None = None
+    roadmap_reason: str | None = None
 
 
 def _subject_label(subject: Subject) -> str:
@@ -98,6 +101,8 @@ def _execution_progress(
 
 
 def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list[StudyPlanItem]:
+    block_progress, _ = sync_progression(session, today)
+    roadmap_overview = build_guided_roadmap_overview(session, block_progress)
     rows = session.exec(
         select(DailyStudyPlanItem)
         .where(DailyStudyPlanItem.plan_id == plan.id)
@@ -109,6 +114,7 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
         block = session.get(Block, row.block_id)
         subject = session.get(Subject, row.subject_id)
         normalized = normalize_discipline(subject.disciplina if subject else row.discipline)
+        roadmap_block = roadmap_overview.block_eligibility.get(row.block_id)
         completed_today, remaining_today, progress_ratio, execution_status = _execution_progress(
             session=session,
             today=today,
@@ -133,6 +139,8 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
                 priority_score=row.priority_score,
                 primary_reason=row.primary_reason,
                 planned_mode=row.planned_mode,
+                roadmap_status=roadmap_block.status if roadmap_block is not None else None,
+                roadmap_reason=roadmap_block.reason if roadmap_block is not None else None,
             )
         )
 
@@ -247,6 +255,7 @@ def _eligible_candidates(
     today: date,
     block_progress: dict[int, BlockProgress],
     subject_progress: dict[int, SubjectProgress],
+    roadmap_overview: GuidedRoadmapOverview,
 ) -> list[StudyPlanCandidate]:
     candidates: list[StudyPlanCandidate] = []
     seen_subjects: set[int] = set()
@@ -257,6 +266,9 @@ def _eligible_candidates(
             continue
         progress = block_progress.get(block.id)
         if progress is None or not block_is_focus_status(progress.status):
+            continue
+        roadmap_block = roadmap_overview.block_eligibility.get(block.id)
+        if roadmap_block is not None and not roadmap_block.guided_eligible:
             continue
 
         links = session.exec(
@@ -275,6 +287,13 @@ def _eligible_candidates(
                 continue
 
             raw_score, priority_score, reason = _candidate_score(session, today, block, subject, progress_subject)
+            roadmap_status = roadmap_block.status if roadmap_block is not None else None
+            roadmap_reason = roadmap_block.reason if roadmap_block is not None else None
+            if roadmap_block is not None:
+                raw_score *= roadmap_block.priority_factor
+                priority_score = round(min(raw_score / 2.15, 0.99), 2)
+                if roadmap_reason:
+                    reason = f"{reason}. {roadmap_reason}"
             planned_mode = block_planned_mode(progress.status)
             normalized = normalize_discipline(subject.disciplina)
             if progress.status == BLOCK_STATUS_READY_TO_ADVANCE:
@@ -296,6 +315,8 @@ def _eligible_candidates(
                     raw_score=raw_score,
                     primary_reason=reason,
                     planned_mode=planned_mode,
+                    roadmap_status=roadmap_status,
+                    roadmap_reason=roadmap_reason,
                 )
             )
 
@@ -394,7 +415,8 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
 
     capacity = get_or_create_capacity(session)
     block_progress, subject_progress = sync_progression(session, today)
-    candidates = _eligible_candidates(session, today, block_progress, subject_progress)
+    roadmap_overview = build_guided_roadmap_overview(session, block_progress)
+    candidates = _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
     if not candidates:
         return StudyPlanTodayResponse(
             summary=StudyPlanSummary(total_questions=0, focus_count=0),
