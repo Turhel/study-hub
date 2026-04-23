@@ -15,7 +15,7 @@ import type {
 } from "../lib/types";
 
 function EmptyState({ text }: { text: string }) {
-  return <p className="text-sm leading-6 text-zinc-500">{text}</p>;
+  return <p className="pixel-inset p-4 text-sm leading-6 text-zinc-500">{text}</p>;
 }
 
 function ItemList({ items, emptyText }: { items: TodayItem[]; emptyText: string }) {
@@ -26,8 +26,8 @@ function ItemList({ items, emptyText }: { items: TodayItem[]; emptyText: string 
   return (
     <div className="space-y-3">
       {items.map((item, index) => (
-        <div key={item.id ?? `${item.title}-${index}`} className="rounded-lg bg-white/[0.04] px-4 py-3">
-          <p className="font-medium text-zinc-100">{item.title}</p>
+        <div key={item.id ?? `${item.title}-${index}`} className="pixel-inset px-4 py-3">
+          <p className="pixel-font text-sm font-bold text-zinc-100">{item.title}</p>
           {item.description ? <p className="mt-1 text-sm text-zinc-500">{item.description}</p> : null}
         </div>
       ))}
@@ -38,13 +38,13 @@ function ItemList({ items, emptyText }: { items: TodayItem[]; emptyText: string 
 function StudyPlanStats({ plan }: { plan: StudyPlanTodayResponse }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <div className="rounded-lg bg-white/[0.045] px-4 py-3">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Questoes</p>
-        <p className="mt-2 text-3xl font-semibold text-zinc-50">{plan.summary.total_questions}</p>
+      <div className="pixel-inset px-4 py-3">
+        <p className="pixel-font text-xs font-bold uppercase text-zinc-500">Questoes</p>
+        <p className="pixel-font mt-3 text-3xl font-bold text-zinc-50">{plan.summary.total_questions}</p>
       </div>
-      <div className="rounded-lg bg-white/[0.045] px-4 py-3">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Focos</p>
-        <p className="mt-2 text-3xl font-semibold text-zinc-50">{plan.summary.focus_count}</p>
+      <div className="pixel-inset px-4 py-3">
+        <p className="pixel-font text-xs font-bold uppercase text-zinc-500">Focos</p>
+        <p className="pixel-font mt-3 text-3xl font-bold text-zinc-50">{plan.summary.focus_count}</p>
       </div>
     </div>
   );
@@ -105,22 +105,22 @@ function StudyPlanCard({
       : `Restam ${item.remaining_today} questoes`;
 
   return (
-    <article className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+    <article className="pixel-panel p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-focus-400">
+          <p className="pixel-font text-xs font-bold uppercase text-focus-400">
             Foco {index + 1} / {item.discipline}
           </p>
-          <h3 className="mt-2 text-lg font-semibold text-zinc-50">{item.subject_name}</h3>
+          <h3 className="mt-3 text-lg font-semibold text-zinc-50">{item.subject_name}</h3>
           <p className="mt-1 text-sm text-zinc-500">{item.block_name}</p>
         </div>
-        <div className="shrink-0 rounded-lg bg-focus-500/12 px-3 py-2 text-right">
-          <p className="text-2xl font-semibold text-focus-400">{item.planned_questions}</p>
+        <div className="pixel-inset shrink-0 px-3 py-2 text-right">
+          <p className="pixel-font text-2xl font-bold text-focus-400">{item.planned_questions}</p>
           <p className="text-[11px] text-zinc-500">questoes</p>
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg bg-black/20 p-3">
+      <div className="pixel-inset mt-4 p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-zinc-100">
@@ -137,19 +137,19 @@ function StudyPlanCard({
 
       <div className="mt-4 grid gap-2 text-sm text-zinc-400 sm:grid-cols-[1fr_auto] sm:items-end">
         <p className="leading-6">{item.primary_reason}</p>
-        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-semibold text-zinc-300">
+        <span className="pixel-badge text-zinc-300">
           {item.planned_mode}
         </span>
       </div>
       <button
-        className="mt-4 rounded-lg bg-focus-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-focus-400"
+        className="pixel-button mt-5 px-4 py-2 text-sm"
         onClick={() => onRegister(item)}
       >
         Registrar questoes
       </button>
       {feedback ? (
-        <div className="mt-4 rounded-lg border border-focus-400/25 bg-focus-500/10 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-focus-400">Registrado agora</p>
+        <div className="pixel-panel-soft mt-5 p-4">
+          <p className="pixel-font text-xs font-bold uppercase text-focus-400">Registrado agora</p>
           <div className="mt-3 grid gap-2 text-sm text-zinc-300 sm:grid-cols-3">
             <p>
               <span className="block text-xs text-zinc-500">Tentativas</span>
@@ -293,14 +293,14 @@ function RegisterQuestionsModal({
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4">
-      <form className="w-full max-w-lg rounded-lg border border-white/10 bg-ink-900 p-5 shadow-soft" onSubmit={handleSubmit}>
+      <form className="pixel-panel w-full max-w-lg p-5" onSubmit={handleSubmit}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-focus-400">Registro rapido</p>
+            <p className="pixel-font text-xs font-bold uppercase text-focus-400">Registro rapido</p>
             <h2 className="mt-2 text-xl font-semibold text-zinc-50">{item.subject_name}</h2>
             <p className="mt-1 text-sm text-zinc-500">{item.discipline} / {item.block_name}</p>
           </div>
-          <button type="button" className="text-sm text-zinc-500 transition hover:text-zinc-200" onClick={onClose}>
+          <button type="button" className="pixel-button-muted px-3 py-2 text-xs" onClick={onClose}>
             Fechar
           </button>
         </div>
@@ -309,7 +309,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Quantidade feita
             <input
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               type="number"
               min={1}
               value={form.quantity}
@@ -319,7 +319,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Acertos
             <input
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               type="number"
               min={0}
               max={form.quantity}
@@ -330,7 +330,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Fonte
             <input
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               value={form.source}
               onChange={(event) => update("source", event.target.value)}
               placeholder="Lista, livro, simulado..."
@@ -339,7 +339,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Tempo medio por questao
             <input
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               type="number"
               min={0}
               value={form.averageSeconds}
@@ -349,7 +349,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Dificuldade do banco
             <select
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               value={form.difficultyBank}
               onChange={(event) => update("difficultyBank", event.target.value as RegisterFormState["difficultyBank"])}
             >
@@ -361,7 +361,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Dificuldade pessoal
             <select
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               value={form.difficultyPersonal}
               onChange={(event) => update("difficultyPersonal", event.target.value as RegisterFormState["difficultyPersonal"])}
             >
@@ -373,7 +373,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Confianca
             <select
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               value={form.confidence}
               onChange={(event) => update("confidence", event.target.value as RegisterFormState["confidence"])}
             >
@@ -385,7 +385,7 @@ function RegisterQuestionsModal({
           <label className="text-sm text-zinc-400">
             Erro mais comum
             <input
-              className="timer-input mt-1"
+              className="pixel-input mt-1"
               value={form.errorType}
               onChange={(event) => update("errorType", event.target.value)}
               placeholder="conceito, atencao, tempo..."
@@ -396,7 +396,7 @@ function RegisterQuestionsModal({
         <label className="mt-3 block text-sm text-zinc-400">
           Observacoes
           <textarea
-            className="timer-input mt-1 min-h-20 resize-none"
+            className="pixel-input mt-1 min-h-20 resize-none"
             value={form.notes}
             onChange={(event) => update("notes", event.target.value)}
           />
@@ -406,7 +406,7 @@ function RegisterQuestionsModal({
           <p className="text-sm text-zinc-500">{message}</p>
           <button
             type="submit"
-            className="rounded-lg bg-focus-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-focus-400 disabled:opacity-60"
+            className="pixel-button px-4 py-2 text-sm"
             disabled={mutation.isPending}
           >
             {mutation.isPending ? "Salvando..." : "Salvar registro"}
@@ -449,22 +449,30 @@ export default function TodayPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-ink-950 px-5 py-8 text-zinc-100 sm:px-8 lg:px-12">
+    <main className="min-h-screen px-5 py-8 text-zinc-100 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
         <motion.header
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
-          className="mb-10"
+          className="pixel-panel-soft mb-10 p-6 sm:p-8"
         >
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-focus-400">Study Hub</p>
-          <div className="mt-4 max-w-3xl">
-            <h1 className="text-4xl font-semibold tracking-normal text-zinc-50 sm:text-5xl">
+          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Study Hub</p>
+          <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_280px] lg:items-end">
+            <div className="max-w-3xl">
+              <h1 className="pixel-font text-3xl font-bold text-zinc-50 sm:text-5xl">
               O estudo de hoje, sem ruido.
-            </h1>
-            <p className="mt-4 text-lg leading-8 text-zinc-400">
-              Um resumo limpo para decidir o proximo passo e manter o plano vivo.
-            </p>
+              </h1>
+              <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-400">
+                Um resumo limpo para decidir o proximo passo e manter o plano vivo.
+              </p>
+            </div>
+            <div className="pixel-inset p-4">
+              <p className="pixel-font text-xs font-bold uppercase text-ember-400">Status</p>
+              <p className="mt-3 text-sm leading-6 text-zinc-400">
+                Prioridade adaptativa, revisoes e execucao real em um painel unico.
+              </p>
+            </div>
           </div>
         </motion.header>
 
@@ -483,9 +491,9 @@ export default function TodayPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.14 }}
-          className="mt-8 rounded-lg border border-focus-400/30 bg-focus-500/10 p-7 shadow-soft"
+          className="pixel-panel-soft mt-8 p-7"
         >
-          <p className="text-sm font-medium uppercase tracking-[0.16em] text-focus-400">Prioridade de hoje</p>
+          <p className="pixel-font text-sm font-bold uppercase text-focus-400">Prioridade de hoje</p>
           <h2 className="mt-3 text-2xl font-semibold text-zinc-50">{data.priority.title}</h2>
           <p className="mt-3 max-w-3xl text-base leading-7 text-zinc-400">{data.priority.description}</p>
         </motion.section>
