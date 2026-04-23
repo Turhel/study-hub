@@ -519,26 +519,36 @@ GEO_017,FIL_015,cross_support,1,Urbanizacao e problemas urbanos reforcam cidadan
 HBR_014,FIL_015,cross_support,1,Era Vargas reforca Estado cidadania e formacao social brasileira.
 GEO_015,HBR_017,cross_support,1,Demografia e indicadores ajudam a leitura da Nova Republica e do Brasil recente.
 INT_001,INT_002,required,2,Variacao linguistica entra melhor depois da base de texto verbal.
+INT_001,INT_014,required,2,Inferencia global entra melhor depois da base de tema e sentido local.
 INT_001,INT_003,recommended,1,Linguagem corporal entra melhor depois da entrada de comunicacao.
 INT_003,INT_004,required,2,Linguagem mista depende da base de linguagem nao verbal.
 INT_002,INT_005,recommended,1,Generos textuais entram melhor depois da base de variacao e comunicacao.
+INT_014,INT_005,required,2,Leitura de genero fica mais segura depois da base inferencial.
 INT_004,INT_005,recommended,1,Generos multimodais ficam mais claros depois da linguagem mista.
 INT_005,INT_006,recommended,1,Figuras de linguagem entram melhor depois da base de generos.
 INT_005,INT_007,required,2,Intertextualidade entra melhor depois da base de generos textuais.
 INT_005,INT_008,recommended,1,Texto poetico entra melhor depois da base de generos.
+INT_005,INT_015,recommended,1,Leitura comparada fica mais organizada depois da base de tipos e generos.
 INT_001,INT_009,required,2,Coesao e coerencia dependem da leitura estrutural do texto verbal.
+INT_009,INT_016,required,2,Coerencia global entra melhor depois da base de mecanismos de coesao.
+INT_015,INT_016,recommended,1,Comparacao entre textos reforca a progressao argumentativa.
 INT_009,INT_010,recommended,1,Lingua e patrimonio entram mais claros depois da base de coesao e leitura textual.
 INT_010,INT_011,recommended,1,Historia da arte entra melhor depois da relacao entre lingua e cultura.
 INT_011,INT_012,required,2,A arte contemporanea entra melhor depois da base historica inicial.
 INT_012,INT_013,recommended,1,Musica brasileira entra melhor depois da leitura artistica contemporanea.
 GRA_001,GRA_002,required,2,Questoes ortograficas entram melhor depois da base de acentuacao e hifen.
+GRA_003,GRA_016,required,2,Adjetivo e locucoes entram melhor depois da base das classes nominais.
 GRA_003,GRA_004,required,2,Pronomes entram melhor depois da base das classes nominais.
 GRA_003,GRA_005,recommended,1,Classes do verbo entram melhor depois da base morfologica nominal.
+GRA_005,GRA_017,required,2,Vozes verbais e locucoes entram melhor depois da base de flexoes e modos.
 GRA_005,GRA_006,recommended,1,Classes relacionais entram melhor depois da base verbal.
 GRA_004,GRA_007,recommended,1,Colocacao pronominal depende da leitura de pronomes.
 GRA_005,GRA_008,recommended,1,Regencia entra melhor depois da base verbal.
+GRA_008,GRA_018,required,2,Crase entra melhor depois da base de regencia.
 GRA_008,GRA_009,required,2,Concordancia entra melhor depois da base sintatica normativa.
+GRA_016,GRA_010,recommended,1,A leitura das classes nominais ajuda a estrutura do periodo simples.
 GRA_003,GRA_010,recommended,1,Termos essenciais entram melhor depois da base morfologica.
+GRA_017,GRA_013,recommended,1,Vozes verbais ajudam a interpretar articulacao oracional e passiva.
 GRA_010,GRA_011,required,2,Termos integrantes entram melhor depois da leitura dos termos essenciais.
 GRA_011,GRA_012,required,2,Termos acessorios entram melhor depois da estrutura basica da oracao.
 GRA_010,GRA_013,recommended,1,Periodo composto entra melhor depois da base do periodo simples.
@@ -565,8 +575,10 @@ LIT_017,LIT_018,required,2,Contemporaneidade entra melhor depois da prosa contem
 LIT_018,LIT_019,recommended,1,Hoje em dia entra melhor depois da base de contemporaneidade.
 LIT_016,LIT_020,recommended,1,Literatura portuguesa entra mais organizada depois da base historico-literaria brasileira.
 GRA_015,INT_009,cross_support,1,Coesao gramatical reforca a leitura de coesao e coerencia textual.
+GRA_015,INT_016,cross_support,1,Coesao gramatical reforca a progressao argumentativa e a coerencia global.
 GRA_006,INT_007,cross_support,1,Classes relacionais ajudam a ler intertextualidade e articulacao discursiva.
 GRA_014,INT_001,cross_support,1,Pontuacao reforca a leitura estrutural do texto verbal.
+GRA_018,INT_010,cross_support,1,Crase e regencia reforcam leituras de norma e patrimonio linguistico.
 INT_006,LIT_008,cross_support,1,Figuras de linguagem ajudam a leitura do romantismo e da linguagem literaria.
 INT_008,LIT_014,cross_support,1,Texto poetico reforca a leitura da poesia modernista.
 INT_011,LIT_012,cross_support,1,Historia da arte ajuda a ler as vanguardas europeias.

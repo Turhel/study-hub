@@ -478,3 +478,12 @@ Leitura honesta do estado atual:
 - Linguagens entra agora em uma primeira versao robusta de cobertura
 - ainda deve existir espaco para lapidacao fina futura, principalmente em Interpretacao de Texto e Literatura modernista
 - a estrutura ja ficou boa o suficiente para servir como base pedagogica editavel do projeto
+
+Refinamentos mais recentes em Linguagens:
+
+- `Interpretacao de Texto` foi suavizada para separar `tema e inferencia local` de `inferencia global e efeitos de sentido`
+- a trilha de interpretacao tambem passou a separar `tipos e generos` de `comparacao entre textos e textos de apoio`
+- a camada final de leitura textual foi refinada para separar `mecanismos de coesao` de `coerencia e progressao argumentativa`
+- `Gramatica` foi refinada para separar `substantivo/artigo/numeral` de `adjetivo e locucao adjetiva`
+- a morfologia verbal foi suavizada para separar `flexoes/tempos/modos` de `vozes verbais e locucoes`
+- `Regencia e crase` tambem foi quebrada para deixar `crase` como degrau proprio

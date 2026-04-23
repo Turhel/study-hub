@@ -482,18 +482,22 @@ Filosofia e Sociologia,25,FIL_016,core,1
 Filosofia e Sociologia,26,FIL_016,review,1
 Interpretacao de Texto,1,INT_001,core,1
 Interpretacao de Texto,2,INT_001,review,1
+Interpretacao de Texto,2,INT_014,support,2
 Interpretacao de Texto,3,INT_002,core,1
 Interpretacao de Texto,4,INT_002,review,1
+Interpretacao de Texto,5,INT_014,core,1
 Interpretacao de Texto,6,INT_003,core,1
 Interpretacao de Texto,7,INT_004,core,1
 Interpretacao de Texto,8,INT_004,review,1
 Interpretacao de Texto,10,INT_005,core,1
 Interpretacao de Texto,11,INT_005,review,1
+Interpretacao de Texto,12,INT_015,core,1
 Interpretacao de Texto,13,INT_006,core,1
 Interpretacao de Texto,14,INT_006,review,1
 Interpretacao de Texto,16,INT_007,core,1
 Interpretacao de Texto,16,INT_008,support,2
 Interpretacao de Texto,19,INT_009,core,1
+Interpretacao de Texto,20,INT_016,core,1
 Interpretacao de Texto,21,INT_010,core,1
 Interpretacao de Texto,23,INT_011,core,1
 Interpretacao de Texto,24,INT_012,core,1
@@ -501,11 +505,14 @@ Interpretacao de Texto,25,INT_013,core,1
 Gramatica,1,GRA_001,core,1
 Gramatica,2,GRA_002,core,1
 Gramatica,4,GRA_003,core,1
+Gramatica,5,GRA_016,core,1
 Gramatica,6,GRA_004,core,1
 Gramatica,8,GRA_005,core,1
+Gramatica,9,GRA_017,core,1
 Gramatica,10,GRA_006,core,1
 Gramatica,12,GRA_007,core,1
 Gramatica,14,GRA_008,core,1
+Gramatica,15,GRA_018,core,1
 Gramatica,16,GRA_010,core,1
 Gramatica,18,GRA_011,core,1
 Gramatica,20,GRA_012,core,1
