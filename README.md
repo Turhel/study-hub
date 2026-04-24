@@ -153,6 +153,58 @@ O sync de uso:
 - faz merge por chave de negocio em `block_progress`, `subject_progress` e `block_mastery`
 - nao apaga dados existentes no Postgres
 
+### Migracao controlada de dados reais do SQLite para Postgres
+
+Para migrar os dados reais de `backend/data/study_hub.db` para o Postgres configurado em `DATABASE_URL`, use o script dedicado de migracao controlada.
+
+Antes de qualquer escrita remota, ele:
+
+- valida que o destino nao e SQLite
+- exige `--apply`
+- exige `STUDY_HUB_ALLOW_REMOTE_MIGRATION=true`
+- cria backup do SQLite local em `backend/backups/`
+
+Dry-run:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.db_tools.migrate_sqlite_to_postgres --dry-run
+```
+
+Apply real:
+
+```powershell
+$env:STUDY_HUB_ALLOW_REMOTE_MIGRATION='true'
+python -m app.db_tools.migrate_sqlite_to_postgres --apply
+```
+
+Apply real com limpeza explicita do destino:
+
+```powershell
+$env:STUDY_HUB_ALLOW_REMOTE_MIGRATION='true'
+python -m app.db_tools.migrate_sqlite_to_postgres --apply --reset-target
+```
+
+Regras importantes:
+
+- sem `--apply`, o script nao escreve no Postgres
+- sem `STUDY_HUB_ALLOW_REMOTE_MIGRATION=true`, o script aborta
+- sem `--reset-target`, o script nao apaga dados existentes
+- `schema_version` nao e copiada do SQLite
+- nao commitar `.env` nem credenciais reais
+- o backup local do SQLite nao substitui o banco original
+
+O relatorio do script mostra:
+
+- banco origem
+- banco destino com senha mascarada
+- tabelas detectadas
+- tabelas ignoradas
+- contagens antes e depois
+- tabelas migradas
+- checks de schema criticos no destino
+
 ### Sync estrutural automatico no startup
 
 Quando o backend estiver rodando com `DATABASE_URL` Postgres, o default agora e:
