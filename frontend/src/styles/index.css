@@ -553,12 +553,12 @@ textarea {
 .today-subjects-shell {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 1.4rem 0 2.5rem;
+  padding: 0.9rem 0 2.8rem;
 }
 
 .today-subjects-header {
   max-width: 52rem;
-  padding-bottom: 1.5rem;
+  padding-bottom: 1.35rem;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -591,8 +591,34 @@ textarea {
   max-width: 44rem;
   margin: 0.75rem 0 0;
   color: var(--muted-text);
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.today-visual-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.2rem;
+}
+
+.today-visual-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(112, 133, 170, 0.55);
+  border-radius: 14px;
+  background: rgba(24, 30, 41, 0.92);
+  padding: 0.74rem 1rem;
+  color: rgba(235, 241, 250, 0.88);
+  font-size: 0.92rem;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.today-visual-tab-active {
+  background: linear-gradient(180deg, #39aaf0, #2795de);
+  color: #fff;
 }
 
 .today-subjects-empty {
@@ -608,7 +634,7 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
-  margin-top: 1.75rem;
+  margin-top: 1.55rem;
 }
 
 .today-discipline-card {
@@ -627,8 +653,8 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 7.75rem;
-  padding: 1.6rem 1.45rem 1.35rem;
+  min-height: 7.9rem;
+  padding: 1.5rem 1.45rem 1.25rem;
 }
 
 .today-discipline-card h2 {
@@ -640,47 +666,88 @@ textarea {
 
 .today-discipline-card p {
   margin: 0.75rem 0 0;
-  max-width: 25rem;
+  max-width: 24rem;
   color: rgba(233, 239, 248, 0.78);
-  font-size: 1rem;
-  line-height: 1.55;
+  font-size: 0.98rem;
+  line-height: 1.5;
 }
 
 .today-discipline-icon {
   display: inline-grid;
   place-items: center;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 4.25rem;
+  height: 4.25rem;
   flex: 0 0 auto;
-  font-size: 2.6rem;
+  font-size: 2.5rem;
 }
 
 .today-discipline-card-footer {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   border-top: 1px solid rgba(112, 133, 170, 0.34);
   background: rgba(21, 31, 53, 0.88);
-  padding: 1rem 1.25rem 1.1rem;
+  padding: 0.95rem 1.25rem 1rem;
 }
 
-.today-discipline-stat {
+.today-discipline-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.today-discipline-mini-stat {
   display: grid;
-  gap: 0.12rem;
+  gap: 0.08rem;
   justify-items: start;
 }
 
-.today-discipline-stat strong {
+.today-discipline-mini-stat strong {
   color: #f8fbff;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 900;
   line-height: 1;
 }
 
-.today-discipline-stat span {
+.today-discipline-mini-stat span {
   color: rgba(206, 217, 235, 0.72);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.today-discipline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.today-discipline-icon-button,
+.today-discipline-train-button {
+  border: 1px solid rgba(112, 133, 170, 0.6);
+  border-radius: 14px;
+  font-weight: 800;
+}
+
+.today-discipline-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: rgba(24, 30, 41, 0.92);
+  color: #f3f7fc;
+  font-size: 1.15rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.today-discipline-train-button {
+  min-width: 5.8rem;
+  padding: 0.82rem 1.15rem;
+  background: linear-gradient(180deg, #39aaf0, #2795de);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 18px rgba(37, 149, 222, 0.22);
 }
 
 .today-discipline-card-languages {
@@ -731,13 +798,24 @@ textarea {
     padding-top: 0.6rem;
   }
 
+  .today-visual-tabs {
+    flex-wrap: wrap;
+  }
+
   .today-discipline-card-main {
     padding: 1.3rem 1.15rem 1.2rem;
   }
 
   .today-discipline-card-footer {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: flex-end;
+    flex-direction: column;
     padding: 0.95rem 1rem 1rem;
+  }
+
+  .today-discipline-stats,
+  .today-discipline-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

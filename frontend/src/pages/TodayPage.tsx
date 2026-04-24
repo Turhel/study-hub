@@ -12,26 +12,30 @@ type DisciplineCard = {
   plannedQuestions: number;
   completedQuestions: number;
   remainingQuestions: number;
-  topReason: string;
   icon: string;
   toneClassName: string;
 };
 
 const disciplineVisualMap: Record<string, { icon: string; toneClassName: string }> = {
   Linguagens: { icon: "📝", toneClassName: "today-discipline-card-languages" },
-  "Ciências Humanas": { icon: "🏛️", toneClassName: "today-discipline-card-humanas" },
-  Matemática: { icon: "📐", toneClassName: "today-discipline-card-math" },
-  "Ciências da Natureza": { icon: "🌿", toneClassName: "today-discipline-card-nature" },
+  "Ciencias Humanas": { icon: "🏛️", toneClassName: "today-discipline-card-humanas" },
+  Matematica: { icon: "📐", toneClassName: "today-discipline-card-math" },
+  "Ciencias da Natureza": { icon: "🌿", toneClassName: "today-discipline-card-nature" },
   Biologia: { icon: "🧬", toneClassName: "today-discipline-card-nature" },
-  Química: { icon: "🧪", toneClassName: "today-discipline-card-nature" },
-  Física: { icon: "⚡", toneClassName: "today-discipline-card-nature" },
-  Redação: { icon: "✍️", toneClassName: "today-discipline-card-writing" },
+  Quimica: { icon: "🧪", toneClassName: "today-discipline-card-nature" },
+  Fisica: { icon: "⚡", toneClassName: "today-discipline-card-nature" },
+  Redacao: { icon: "✍️", toneClassName: "today-discipline-card-writing" },
 };
+
+function normalizeDisciplineKey(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
 function buildDisciplineCards(items: StudyPlanItem[]): DisciplineCard[] {
   const grouped = items.reduce<Map<string, DisciplineCard>>((acc, item) => {
     const current = acc.get(item.discipline);
-    const visual = disciplineVisualMap[item.discipline] ?? {
+    const normalizedDiscipline = normalizeDisciplineKey(item.discipline);
+    const visual = disciplineVisualMap[normalizedDiscipline] ?? {
       icon: "📚",
       toneClassName: "today-discipline-card-default",
     };
@@ -44,7 +48,6 @@ function buildDisciplineCards(items: StudyPlanItem[]): DisciplineCard[] {
         plannedQuestions: item.planned_questions,
         completedQuestions: item.completed_today,
         remainingQuestions: item.remaining_today,
-        topReason: item.primary_reason,
         icon: visual.icon,
         toneClassName: visual.toneClassName,
       });
@@ -77,6 +80,12 @@ function summarizeSubjects(subjects: string[]): string {
   return `${subjects.slice(0, 3).join(", ")} e mais ${subjects.length - 3}`;
 }
 
+const visualTabs = [
+  { label: "Areas", icon: "📚", active: true },
+  { label: "Competencias", icon: "🎯", active: false },
+  { label: "Habilidades", icon: "🛠️", active: false },
+];
+
 export default function TodayPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["study-plan-today"],
@@ -86,7 +95,7 @@ export default function TodayPage() {
   const disciplineCards = useMemo(() => buildDisciplineCards(data?.items ?? []), [data?.items]);
 
   if (isLoading) {
-    return <main className="today-status">Carregando suas matérias de hoje...</main>;
+    return <main className="today-status">Carregando suas materias de hoje...</main>;
   }
 
   if (isError || !data) {
@@ -102,16 +111,28 @@ export default function TodayPage() {
         className="today-subjects-shell"
       >
         <div className="today-subjects-header">
-          <p className="today-subjects-kicker">Foco do dia</p>
-          <h1 className="today-subjects-title">Matérias para estudar hoje</h1>
+          <p className="today-subjects-kicker">Treinar</p>
+          <h1 className="today-subjects-title">Materias para estudar hoje</h1>
           <p className="today-subjects-copy">
-            Só o que importa agora: as áreas que entram no seu estudo de hoje, separadas em cards por matéria.
+            Treine com questoes ajustadas ao seu nivel e veja as materias que puxam o foco do dia.
           </p>
+        </div>
+
+        <div className="today-visual-tabs" aria-hidden="true">
+          {visualTabs.map((tab) => (
+            <span
+              key={tab.label}
+              className={`today-visual-tab ${tab.active ? "today-visual-tab-active" : ""}`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </span>
+          ))}
         </div>
 
         {disciplineCards.length === 0 ? (
           <section className="today-subjects-empty">
-            <p>Nenhuma matéria entrou no plano de hoje ainda.</p>
+            <p>Nenhuma materia entrou no plano de hoje ainda.</p>
           </section>
         ) : (
           <section className="today-discipline-grid">
@@ -128,17 +149,24 @@ export default function TodayPage() {
                 </div>
 
                 <div className="today-discipline-card-footer">
-                  <div className="today-discipline-stat">
-                    <strong>{card.plannedQuestions}</strong>
-                    <span>questões</span>
+                  <div className="today-discipline-stats">
+                    <div className="today-discipline-mini-stat">
+                      <strong>{card.plannedQuestions}</strong>
+                      <span>Hoje</span>
+                    </div>
+                    <div className="today-discipline-mini-stat">
+                      <strong>{card.completedQuestions}</strong>
+                      <span>Feitas</span>
+                    </div>
                   </div>
-                  <div className="today-discipline-stat">
-                    <strong>{card.blocks.length}</strong>
-                    <span>blocos</span>
-                  </div>
-                  <div className="today-discipline-stat">
-                    <strong>{card.remainingQuestions}</strong>
-                    <span>restantes</span>
+
+                  <div className="today-discipline-actions">
+                    <button type="button" className="today-discipline-icon-button" aria-label={`Ver detalhes de ${card.discipline}`}>
+                      📊
+                    </button>
+                    <button type="button" className="today-discipline-train-button">
+                      Treinar
+                    </button>
                   </div>
                 </div>
               </article>
