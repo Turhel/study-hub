@@ -10,6 +10,10 @@ Esta versão inicia a migração do MVP Streamlit para frontend e backend separa
 
 Não há autenticação, multiusuário, Docker, Ollama, correção de redação, flashcards ou dashboard completo nesta etapa.
 
+## Documentação De Contratos
+
+- contratos principais de API para consumo do frontend: `docs/api-contracts.md`
+
 ## Rodar Backend
 
 ```powershell
@@ -257,6 +261,85 @@ curl http://127.0.0.1:8000/api/roadmap/summary
 curl http://127.0.0.1:8000/api/study-plan/today
 curl http://127.0.0.1:8000/api/activity/recent
 ```
+
+### Smoke check HTTP dos endpoints principais
+
+Com o backend rodando:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.db_tools.backend_smoke_check --base-url http://127.0.0.1:8000
+```
+
+Saida JSON:
+
+```powershell
+python -m app.db_tools.backend_smoke_check --base-url http://127.0.0.1:8000 --json
+```
+
+O smoke check valida contrato minimo de endpoints como:
+
+- `/health`
+- `/api/system/capabilities`
+- `/api/roadmap/summary`
+- `/api/roadmap/validation`
+- `/api/roadmap/mapping/coverage`
+- `/api/study-plan/today`
+- `/api/activity/recent`
+- `/api/activity/today`
+
+Tambem tenta verificar:
+
+- `/api/roadmap/mapping/gaps`
+- `/api/block-progress/discipline/Matemática`
+
+Interpretacao:
+
+- `OK`: endpoint respondeu com payload coerente
+- `WARN`: endpoint respondeu, mas com situacao que merece atencao, como lista vazia
+- `ERROR`: status inesperado ou contrato minimo quebrado
+
+### Seed demo controlado para frontend/dev
+
+Existe uma ferramenta opcional para popular um dataset demo previsivel sem depender do estado real do banco.
+
+Ela foi feita para ajudar telas como:
+
+- plano diario
+- activity recent
+- activity today
+- block progress
+- tentativas de questoes
+- revisao pendente
+
+Regras importantes:
+
+- por padrao, use `--dry-run`
+- para gravar de verdade, use `--apply`
+- a aplicacao tambem exige `STUDY_HUB_ALLOW_DEMO_SEED=true`
+- o script nao apaga dados existentes
+- o script tenta evitar duplicacao detectando o marker `DEMO_SEED_FRONTEND_DEV`
+
+Dry-run:
+
+```powershell
+cd backend
+python -m app.db_tools.seed_demo_data --dry-run
+```
+
+Apply:
+
+```powershell
+$env:STUDY_HUB_ALLOW_DEMO_SEED='true'
+python -m app.db_tools.seed_demo_data --apply
+```
+
+Observacoes:
+
+- se ja houver um plano ativo do dia, o plano demo pode virar o mais recente e passar a aparecer em `/api/study-plan/today`
+- o script nao sobrescreve nem limpa dados reais automaticamente
+- para validacao segura, prefira apontar `DATABASE_URL` para uma copia local de SQLite ou um banco de dev separado
 
 Com `DATABASE_URL` presente, o backend passa a operar sobre o Postgres remoto. O SQLite continua disponivel apenas como fallback/dev e como fonte de bootstrap.
 
