@@ -10,6 +10,10 @@ Esta versão inicia a migração do MVP Streamlit para frontend e backend separa
 
 Não há autenticação, multiusuário, Docker, Ollama, correção de redação, flashcards ou dashboard completo nesta etapa.
 
+## Documentação De Contratos
+
+- contratos principais de API para consumo do frontend: `docs/api-contracts.md`
+
 ## Rodar Backend
 
 ```powershell
