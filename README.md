@@ -258,6 +258,44 @@ curl http://127.0.0.1:8000/api/study-plan/today
 curl http://127.0.0.1:8000/api/activity/recent
 ```
 
+### Smoke check HTTP dos endpoints principais
+
+Com o backend rodando:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.db_tools.backend_smoke_check --base-url http://127.0.0.1:8000
+```
+
+Saida JSON:
+
+```powershell
+python -m app.db_tools.backend_smoke_check --base-url http://127.0.0.1:8000 --json
+```
+
+O smoke check valida contrato minimo de endpoints como:
+
+- `/health`
+- `/api/system/capabilities`
+- `/api/roadmap/summary`
+- `/api/roadmap/validation`
+- `/api/roadmap/mapping/coverage`
+- `/api/study-plan/today`
+- `/api/activity/recent`
+- `/api/activity/today`
+
+Tambem tenta verificar:
+
+- `/api/roadmap/mapping/gaps`
+- `/api/block-progress/discipline/Matemática`
+
+Interpretacao:
+
+- `OK`: endpoint respondeu com payload coerente
+- `WARN`: endpoint respondeu, mas com situacao que merece atencao, como lista vazia
+- `ERROR`: status inesperado ou contrato minimo quebrado
+
 Com `DATABASE_URL` presente, o backend passa a operar sobre o Postgres remoto. O SQLite continua disponivel apenas como fallback/dev e como fonte de bootstrap.
 
 Backend:
