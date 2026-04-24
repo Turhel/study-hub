@@ -544,319 +544,43 @@ textarea {
   padding: 1.25rem 1.5rem 3rem;
 }
 
-.today-layout {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1.25rem;
-  max-width: 1120px;
-  margin: 0 auto;
-}
-
-.today-hero,
-.today-panel,
-.today-modal {
-  border: 2px solid var(--border-strong);
-  border-radius: 28px;
-  background: var(--surface-strong);
-  box-shadow: 6px 6px 0 var(--shadow-soft);
-}
-
-.today-hero {
-  position: relative;
-  grid-column: span 12;
-  overflow: hidden;
-  padding: 3.2rem 1.5rem 2rem;
-  text-align: center;
-}
-
-.today-hero::before {
-  content: "";
-  position: absolute;
-  inset: 2rem auto auto 50%;
-  width: 25rem;
-  height: 25rem;
-  border-radius: 999px;
-  background: var(--hero-glow);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-.today-hero > * {
-  position: relative;
-  z-index: 1;
-}
-
-.today-hero-ornament {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: 3.6rem;
-  height: 3.6rem;
-  border: 2px solid var(--hero-ornament-border);
-  border-radius: 18px;
-  background: var(--hero-ornament-bg);
-  box-shadow: 4px 4px 0 var(--hero-ornament-shadow);
-  font-size: 1.4rem;
-}
-
-.today-hero-ornament-left {
-  left: 8%;
-  top: 20%;
-  transform: rotate(-12deg);
-}
-
-.today-hero-ornament-top {
-  left: 50%;
-  top: 1.25rem;
-  transform: translateX(-50%);
-}
-
-.today-hero-ornament-right {
-  right: 8%;
-  top: 22%;
-  transform: rotate(12deg);
-}
-
-.today-kicker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--today-kicker-bg);
-  padding: 0.38rem 0.8rem;
-  color: var(--today-kicker-text);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.today-hero-title,
-.today-panel-title {
-  margin: 0;
-  font-family: "Fraunces", Georgia, serif;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.today-hero-title {
-  margin-top: 1rem;
-  font-size: clamp(2.4rem, 6vw, 4.7rem);
-  line-height: 0.98;
-}
-
-.today-hero-copy,
-.today-panel-copy {
-  margin: 1rem auto 0;
-  color: var(--muted-text);
-  line-height: 1.75;
-}
-
-.today-hero-copy {
-  max-width: 46rem;
-  font-size: 1rem;
-}
-
-.today-hero-points {
-  display: grid;
-  gap: 0.7rem;
-  max-width: 42rem;
-  margin: 1.5rem auto 0;
-}
-
-.today-hero-points p {
-  margin: 0;
-  border-radius: 999px;
-  background: var(--today-point-bg);
-  padding: 0.78rem 1rem;
-  color: var(--app-text);
-  font-size: 0.94rem;
-  line-height: 1.6;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
-}
-
-.today-hero-actions {
-  display: grid;
-  gap: 0.9rem;
-  justify-items: center;
-  margin-top: 1.7rem;
-}
-
-.today-hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.6rem;
-}
-
-.today-hero-meta span,
-.today-performance-pill,
-.today-chip {
-  border: 2px solid var(--today-chip-border);
-  border-radius: 999px;
-  background: var(--today-chip-bg);
-  padding: 0.45rem 0.72rem;
-  color: var(--today-chip-text);
-  font-size: 0.76rem;
-  font-weight: 800;
-  box-shadow: 2px 2px 0 var(--today-chip-shadow);
-}
-
-.today-hero-progress {
-  max-width: 32rem;
-  margin: 1.45rem auto 0;
-}
-
-.today-panel {
-  grid-column: span 4;
-  padding: 1.4rem;
-}
-
-.today-panel-wide {
-  grid-column: span 8;
-}
-
-.today-panel-title {
-  margin-top: 0.8rem;
-  font-size: clamp(1.55rem, 2.5vw, 2.2rem);
-  line-height: 1.05;
-}
-
-.today-panel-copy {
-  max-width: 36rem;
-  font-size: 0.95rem;
-}
-
-.today-focus-grid {
-  display: grid;
-  gap: 0.95rem;
-  margin-top: 1.4rem;
-}
-
-.today-focus-card,
-.today-list-row,
-.today-performance-row,
-.app-empty-state {
-  border: 2px solid var(--today-card-border);
-  border-radius: 22px;
-  background: var(--today-card-bg);
-  box-shadow: 0 10px 24px -18px var(--today-card-shadow);
-}
-
-.today-focus-card {
-  padding: 1rem;
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%);
-}
-
-.today-focus-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.today-focus-card h3 {
-  margin: 0.65rem 0 0;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 1.3rem;
-  line-height: 1.1;
-}
-
-.today-focus-card-copy {
-  margin: 0.5rem 0 0;
-  color: var(--muted-text);
-  font-size: 0.92rem;
-  line-height: 1.6;
-}
-
-.today-row-title {
-  margin: 0;
-  color: var(--app-text);
-  font-weight: 800;
-}
-
-.today-row-copy,
-.today-subtle-text,
-.today-heatmap-label,
-.today-sync-note {
-  color: var(--muted-text);
-}
-
-.today-timer-value {
-  color: var(--app-text);
-}
-
-.today-focus-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 16px;
-  background: var(--today-card-icon-bg);
-  font-size: 0.95rem;
-  font-weight: 900;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
-}
-
-.today-focus-stats,
-.today-focus-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-}
-
-.today-focus-stats {
-  margin: 1rem 0 0.75rem;
-  color: var(--muted-text);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.today-focus-footer {
-  margin-top: 0.9rem;
-}
-
-.today-focus-footer strong {
-  font-size: 0.92rem;
-}
-
-.today-list-row {
-  display: flex;
-  gap: 0.8rem;
-  padding: 0.9rem;
-  align-items: flex-start;
-}
-
-.today-list-bullet {
-  width: 0.85rem;
-  height: 0.85rem;
-  margin-top: 0.35rem;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #39aaf0, #7fca68);
-  flex: 0 0 auto;
-  box-shadow: 0 0 0 0.18rem var(--today-card-highlight);
-}
-
-.today-performance-row {
-  padding: 1rem;
-}
-
-.app-empty-state {
-  padding: 1rem;
-  color: var(--muted-text);
-  font-size: 0.92rem;
-  line-height: 1.7;
-}
-
-.today-form-label {
-  color: var(--muted-text);
-  font-size: 0.9rem;
-  line-height: 1.55;
-}
-
 .today-status {
   min-height: 100vh;
   padding: 2.5rem 1.5rem;
   color: var(--app-text);
+}
+
+.today-reset-stage {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(4rem, 10vw, 7rem) 0 2rem;
+}
+
+.today-reset-kicker {
+  margin: 0;
+  color: var(--today-kicker-text);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.today-reset-title {
+  max-width: 12ch;
+  margin: 1rem 0 0;
+  color: var(--app-text);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+}
+
+.today-reset-copy {
+  max-width: 36rem;
+  margin: 1.2rem 0 0;
+  color: var(--muted-text);
+  font-size: 1rem;
+  line-height: 1.8;
 }
 
 .app-primary-action,
