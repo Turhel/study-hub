@@ -550,37 +550,195 @@ textarea {
   color: var(--app-text);
 }
 
-.today-reset-stage {
+.today-subjects-shell {
   max-width: 1120px;
   margin: 0 auto;
-  padding: clamp(4rem, 10vw, 7rem) 0 2rem;
+  padding: 1.4rem 0 2.5rem;
 }
 
-.today-reset-kicker {
+.today-subjects-header {
+  max-width: 52rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.today-subjects-kicker {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--today-kicker-text);
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
-.today-reset-title {
+.today-subjects-kicker::before {
+  content: "🖍️";
+  font-size: 1rem;
+}
+
+.today-subjects-title {
   max-width: 12ch;
   margin: 1rem 0 0;
   color: var(--app-text);
   font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(2.8rem, 8vw, 5.5rem);
-  line-height: 0.94;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 0.98;
   letter-spacing: -0.04em;
 }
 
-.today-reset-copy {
-  max-width: 36rem;
-  margin: 1.2rem 0 0;
+.today-subjects-copy {
+  max-width: 44rem;
+  margin: 0.75rem 0 0;
   color: var(--muted-text);
   font-size: 1rem;
-  line-height: 1.8;
+  line-height: 1.7;
+}
+
+.today-subjects-empty {
+  margin-top: 1.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  padding: 1.4rem;
+  color: var(--muted-text);
+}
+
+.today-discipline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.75rem;
+}
+
+.today-discipline-card {
+  overflow: hidden;
+  border: 1px solid rgba(88, 121, 164, 0.55);
+  border-radius: 24px;
+  background: #171b23;
+  color: #f5f7fb;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 34px rgba(5, 8, 14, 0.22);
+}
+
+.today-discipline-card-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 7.75rem;
+  padding: 1.6rem 1.45rem 1.35rem;
+}
+
+.today-discipline-card h2 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(1.55rem, 2vw, 2.2rem);
+  line-height: 1.02;
+}
+
+.today-discipline-card p {
+  margin: 0.75rem 0 0;
+  max-width: 25rem;
+  color: rgba(233, 239, 248, 0.78);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.today-discipline-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  flex: 0 0 auto;
+  font-size: 2.6rem;
+}
+
+.today-discipline-card-footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  border-top: 1px solid rgba(112, 133, 170, 0.34);
+  background: rgba(21, 31, 53, 0.88);
+  padding: 1rem 1.25rem 1.1rem;
+}
+
+.today-discipline-stat {
+  display: grid;
+  gap: 0.12rem;
+  justify-items: start;
+}
+
+.today-discipline-stat strong {
+  color: #f8fbff;
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.today-discipline-stat span {
+  color: rgba(206, 217, 235, 0.72);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.today-discipline-card-languages {
+  background: linear-gradient(135deg, rgba(28, 57, 76, 0.95), rgba(23, 27, 35, 0.98));
+}
+
+.today-discipline-card-humanas {
+  background: linear-gradient(135deg, rgba(66, 38, 68, 0.95), rgba(23, 27, 35, 0.98));
+}
+
+.today-discipline-card-math {
+  background: linear-gradient(135deg, rgba(63, 51, 28, 0.95), rgba(23, 27, 35, 0.98));
+}
+
+.today-discipline-card-nature {
+  background: linear-gradient(135deg, rgba(26, 63, 50, 0.95), rgba(23, 27, 35, 0.98));
+}
+
+.today-discipline-card-writing {
+  background: linear-gradient(135deg, rgba(74, 40, 32, 0.95), rgba(23, 27, 35, 0.98));
+}
+
+.today-discipline-card-default {
+  background: linear-gradient(135deg, rgba(36, 53, 74, 0.95), rgba(23, 27, 35, 0.98));
+}
+
+:root[data-theme="light"] .today-subjects-shell {
+  padding-top: 0.8rem;
+}
+
+:root[data-theme="light"] .today-subjects-header {
+  border-bottom-color: rgba(35, 35, 35, 0.16);
+}
+
+@media (max-width: 900px) {
+  .today-discipline-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .today-page {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .today-subjects-shell {
+    padding-top: 0.6rem;
+  }
+
+  .today-discipline-card-main {
+    padding: 1.3rem 1.15rem 1.2rem;
+  }
+
+  .today-discipline-card-footer {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0.95rem 1rem 1rem;
+  }
 }
 
 .app-primary-action,
