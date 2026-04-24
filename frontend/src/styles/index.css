@@ -160,6 +160,10 @@ textarea {
   width: min(31rem, calc(100vw - 2rem));
 }
 
+.topbar-hover-panel-profile {
+  width: min(24rem, calc(100vw - 2rem));
+}
+
 .topbar-hover-group:hover .topbar-hover-panel,
 .topbar-hover-group:focus-within .topbar-hover-panel {
   opacity: 1;
@@ -329,6 +333,110 @@ textarea {
   color: rgba(243, 245, 249, 0.7);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.topbar-profile-card {
+  border: 2px solid rgba(88, 121, 164, 0.55);
+  border-radius: 28px;
+  background: #171b23;
+  color: #f5f7fb;
+  padding: 1rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 40px rgba(19, 22, 30, 0.22);
+}
+
+.topbar-profile-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topbar-profile-header h2 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.topbar-profile-header p {
+  margin: 0.7rem 0 0;
+  max-width: 14rem;
+  color: rgba(243, 245, 249, 0.78);
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.topbar-profile-avatar {
+  width: 3.4rem;
+  height: 3.4rem;
+  flex: 0 0 auto;
+}
+
+.topbar-profile-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.topbar-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.topbar-profile-meta span {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.38rem 0.65rem;
+  color: rgba(243, 245, 249, 0.88);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.topbar-profile-menu {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(93, 103, 124, 0.55);
+}
+
+.topbar-profile-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  border: 1px solid rgba(93, 103, 124, 0.45);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.85rem 0.9rem;
+  color: #f5f7fb;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
+  transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
+}
+
+.topbar-profile-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(128, 170, 255, 0.45);
+  transform: translateX(1px);
+}
+
+.topbar-profile-item-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  flex: 0 0 auto;
+}
+
+.topbar-profile-item-arrow {
+  margin-left: auto;
+  color: rgba(243, 245, 249, 0.68);
 }
 
 .app-content {

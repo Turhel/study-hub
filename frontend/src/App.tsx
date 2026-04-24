@@ -43,6 +43,12 @@ const streakDays = [
 ];
 
 const masteryItems = ["Linguagens", "Matematica", "Humanas", "Natureza"];
+const profileMenuItems = [
+  { label: "Minha conta", icon: "👤" },
+  { label: "Configuracoes", icon: "⚙️" },
+  { label: "Preferencias de estudo", icon: "🧠" },
+  { label: "Exportar progresso", icon: "📦" },
+];
 
 function FocusEmojiIcon() {
   return (
@@ -267,6 +273,17 @@ function FireEmojiIcon({ idPrefix }: { idPrefix: string }) {
   );
 }
 
+function AvatarIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="3" y="3" width="26" height="26" rx="8" fill="#1E2430" />
+      <rect x="4.5" y="4.5" width="23" height="23" rx="7" fill="none" stroke="#5D677C" strokeWidth="1.2" />
+      <circle cx="16" cy="12.4" r="4.1" fill="none" stroke="#F5F7FB" strokeWidth="1.7" />
+      <path d="M9.1 23.2c1.6-3.85 4.27-5.8 6.9-5.8 2.63 0 5.3 1.95 6.9 5.8" fill="none" stroke="#F5F7FB" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function HoverPanelButton({
   icon,
   panelClassName,
@@ -362,6 +379,42 @@ export default function App() {
                       <span>0</span>
                       <small>Estrelas</small>
                     </article>
+                  ))}
+                </div>
+              </section>
+            </HoverPanelButton>
+
+            <HoverPanelButton
+              icon={<AvatarIcon />}
+              panelClassName="topbar-hover-panel-profile"
+            >
+              <section className="topbar-profile-card">
+                <div className="topbar-profile-header">
+                  <div>
+                    <h2>Ola, Thullyo</h2>
+                    <p>Seu hub pessoal de estudo, sem ruido e sem camadas desnecessarias.</p>
+                  </div>
+                  <div className="topbar-profile-avatar" aria-hidden="true">
+                    <AvatarIcon />
+                  </div>
+                </div>
+
+                <div className="topbar-profile-meta">
+                  <span>ENEM / Medicina</span>
+                  <span>Rotina pessoal</span>
+                </div>
+
+                <div className="topbar-profile-menu">
+                  {profileMenuItems.map((item) => (
+                    <button key={item.label} type="button" className="topbar-profile-item">
+                      <span className="topbar-profile-item-icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <span>{item.label}</span>
+                      <span className="topbar-profile-item-arrow" aria-hidden="true">
+                        →
+                      </span>
+                    </button>
                   ))}
                 </div>
               </section>
