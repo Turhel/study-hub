@@ -283,13 +283,81 @@ O backend agora estah preparado para usar provider local configuravel, com padra
 - provider: `lm_studio`
 - model: `gemma-4-e4b`
 
+Agora tambem suporta perfil de maquina e capabilities diferentes por dispositivo, mesmo usando o mesmo `DATABASE_URL`.
+
 Crie `backend/.env` a partir de `backend/.env.example`:
 
 ```text
+STUDY_HUB_MACHINE_PROFILE=desktop
+STUDY_HUB_LLM_ENABLED=true
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=true
+STUDY_HUB_ESSAY_STUDY_ENABLED=true
 STUDY_HUB_LLM_PROVIDER=lm_studio
 STUDY_HUB_LLM_MODEL=gemma-4-e4b
 STUDY_HUB_LLM_BASE_URL=http://127.0.0.1:1234/v1
 STUDY_HUB_LLM_TIMEOUT_SECONDS=30
+```
+
+### Exemplo de perfil do notebook
+
+Mesmo usando o mesmo `DATABASE_URL` do desktop principal:
+
+```text
+DATABASE_URL=postgresql+psycopg://postgres:SUASENHA@db.seu-projeto.supabase.co:5432/postgres
+STUDY_HUB_MACHINE_PROFILE=notebook
+STUDY_HUB_LLM_ENABLED=false
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=false
+STUDY_HUB_ESSAY_STUDY_ENABLED=false
+STUDY_HUB_LLM_PROVIDER=lm_studio
+STUDY_HUB_LLM_MODEL=gemma-4-e4b
+```
+
+Efeito:
+
+- notebook usa o mesmo banco remoto
+- backend continua funcional
+- rotas de correcao e estudo de redacao sao recusadas antes de qualquer tentativa de conectar ao LM Studio
+
+### Exemplo de perfil do desktop principal
+
+```text
+DATABASE_URL=postgresql+psycopg://postgres:SUASENHA@db.seu-projeto.supabase.co:5432/postgres
+STUDY_HUB_MACHINE_PROFILE=desktop
+STUDY_HUB_LLM_ENABLED=true
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=true
+STUDY_HUB_ESSAY_STUDY_ENABLED=true
+STUDY_HUB_LLM_PROVIDER=lm_studio
+STUDY_HUB_LLM_MODEL=gemma-4-e4b
+STUDY_HUB_LLM_BASE_URL=http://127.0.0.1:1234/v1
+```
+
+### Endpoint de capabilities
+
+O backend agora expõe:
+
+```text
+GET /api/system/capabilities
+```
+
+Exemplo de resposta:
+
+```json
+{
+  "machine_profile": "notebook",
+  "database": {
+    "dialect": "postgres",
+    "using_remote_database": true
+  },
+  "llm": {
+    "enabled": false,
+    "provider": "lm_studio",
+    "model": "gemma-4-e4b"
+  },
+  "features": {
+    "essay_correction_enabled": false,
+    "essay_study_enabled": false
+  }
+}
 ```
 
 No LM Studio:

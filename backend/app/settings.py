@@ -113,3 +113,34 @@ def get_auto_sync_structural_on_startup() -> bool:
     database_url = get_database_url()
     default_value = get_database_backend_label(database_url) == "postgres"
     return get_env_bool("STUDY_HUB_AUTO_SYNC_STRUCTURAL_ON_STARTUP", default_value)
+
+
+def get_machine_profile() -> str:
+    profile = get_env_str("STUDY_HUB_MACHINE_PROFILE", "local").casefold()
+    return profile or "local"
+
+
+def get_llm_enabled() -> bool:
+    profile = get_machine_profile()
+    default_value = profile != "notebook"
+    return get_env_bool("STUDY_HUB_LLM_ENABLED", default_value)
+
+
+def get_essay_correction_enabled() -> bool:
+    return get_env_bool("STUDY_HUB_ESSAY_CORRECTION_ENABLED", get_llm_enabled())
+
+
+def get_essay_study_enabled() -> bool:
+    return get_env_bool("STUDY_HUB_ESSAY_STUDY_ENABLED", get_llm_enabled())
+
+
+def get_llm_provider_name() -> str:
+    from app.llm.config import DEFAULT_PROVIDER
+
+    return get_env_str("STUDY_HUB_LLM_PROVIDER", DEFAULT_PROVIDER).lower()
+
+
+def get_llm_model_name() -> str:
+    from app.llm.config import DEFAULT_MODEL
+
+    return get_env_str("STUDY_HUB_LLM_MODEL", DEFAULT_MODEL)
