@@ -86,71 +86,203 @@ function groupPerformance(plan: StudyPlanTodayResponse | undefined): SubjectPerf
     .slice(0, 5);
 }
 
-function HeroStudyCard({
+function buildHeroPoints({
   focus,
-  isLoading,
-  fallbackTitle,
-  fallbackDescription,
+  dueReviews,
+  forgottenSubjects,
+  totalQuestions,
+}: {
+  focus: StudyPlanItem | undefined;
+  dueReviews: number;
+  forgottenSubjects: number;
+  totalQuestions: number;
+}): string[] {
+  const points = [
+    focus
+      ? `Hoje o bloco principal eh ${focus.block_name.toLowerCase()} em ${focus.discipline.toLowerCase()}.`
+      : "Seu proximo passo aparece aqui assim que houver um foco priorizado.",
+    dueReviews > 0
+      ? `${dueReviews} revis${dueReviews === 1 ? "ao" : "oes"} vencida${dueReviews === 1 ? "" : "s"} pedem manutencao.`
+      : "Nenhuma revisao vencida esta competindo com o foco principal agora.",
+    totalQuestions > 0
+      ? `${totalQuestions} questoes planejadas no dia para manter carga segura e executavel.`
+      : "A carga diaria ainda vai crescer conforme voce registrar execucao real.",
+  ];
+
+  if (forgottenSubjects > 0) {
+    points.push(`${forgottenSubjects} assunto${forgottenSubjects === 1 ? "" : "s"} sem contato recente entram no radar.`);
+  }
+
+  return points.slice(0, 4);
+}
+
+function HeroSection({
+  focus,
+  priorityTitle,
+  priorityDescription,
+  totalQuestions,
+  focusCount,
+  dueReviews,
+  forgottenSubjects,
   onRegister,
 }: {
   focus: StudyPlanItem | undefined;
-  isLoading: boolean;
-  fallbackTitle: string;
-  fallbackDescription: string;
+  priorityTitle: string;
+  priorityDescription: string;
+  totalQuestions: number;
+  focusCount: number;
+  dueReviews: number;
+  forgottenSubjects: number;
   onRegister: (item: StudyPlanItem) => void;
 }) {
-  const title = focus ? focus.subject_name : isLoading ? "Carregando plano..." : fallbackTitle;
-  const description = focus ? `${focus.block_name} / ${focus.discipline}` : fallbackDescription;
   const progress = focus ? clampPercent(focus.progress_ratio * 100) : 0;
-  const remaining = focus ? Math.max(focus.remaining_today, 0) : 0;
+  const heroPoints = buildHeroPoints({
+    focus,
+    dueReviews,
+    forgottenSubjects,
+    totalQuestions,
+  });
 
   return (
-    <section className="app-hero lg:col-span-12">
-      <div className="min-w-0">
-        <p className="study-kicker">Sessao principal</p>
-        <h1 className="mt-3 max-w-4xl text-4xl font-black leading-[0.95] text-slate-950 sm:text-6xl">
-          {focus ? title : fallbackTitle}
-        </h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-700">
-          {focus ? `Voce parou em ${description}. Comece por esse bloco e registre o resultado quando terminar.` : fallbackDescription}
-        </p>
+    <section className="today-hero">
+      <div className="today-hero-ornament today-hero-ornament-left" aria-hidden="true">
+        <span>📚</span>
+      </div>
+      <div className="today-hero-ornament today-hero-ornament-top" aria-hidden="true">
+        <span>🧪</span>
+      </div>
+      <div className="today-hero-ornament today-hero-ornament-right" aria-hidden="true">
+        <span>🧠</span>
+      </div>
 
-        <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
-          <HeroStat label="Area" value={focus?.discipline ?? "Hoje"} />
-          <HeroStat label="Meta leve" value={focus ? `${focus.planned_questions} questoes` : "A definir"} />
-          <HeroStat label="Faltam" value={focus ? `${remaining} questoes` : "A definir"} />
+      <p className="today-kicker">Foco do dia</p>
+      <h1 className="today-hero-title">O estudo de hoje, sem ruido.</h1>
+      <p className="today-hero-copy">
+        {focus
+          ? `Comece por ${focus.subject_name} e avance no bloco ${focus.block_name}. O plano continua leve, mas orientado pela trilha.`
+          : `${priorityTitle}. ${priorityDescription}`}
+      </p>
+
+      <div className="today-hero-points">
+        {heroPoints.map((point) => (
+          <p key={point}>{point}</p>
+        ))}
+      </div>
+
+      <div className="today-hero-actions">
+        <button className="app-primary-action app-primary-action-blue" disabled={!focus} onClick={() => focus && onRegister(focus)}>
+          {focus ? "Comecar sessao principal" : "Aguardando foco"}
+        </button>
+        <div className="today-hero-meta">
+          <span>{focusCount} focos ativos</span>
+          <span>{dueReviews} revisoes</span>
+          <span>{Math.max(forgottenSubjects, 0)} lacunas</span>
         </div>
       </div>
 
-      <div className="hero-action-card">
-        <div className="clay-study-object" aria-hidden="true">
-          <span className="clay-book clay-book-a" />
-          <span className="clay-book clay-book-b" />
-          <span className="clay-sphere" />
+      <div className="today-hero-progress">
+        <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
+          <span>{focus ? `${focus.completed_today}/${focus.planned_questions} questoes feitas` : "Sem execucao registrada hoje"}</span>
+          <span>{progress}%</span>
         </div>
-        <button className="app-primary-action" disabled={!focus} onClick={() => focus && onRegister(focus)}>
-          Comecar agora
-        </button>
-        <div>
-          <div className="flex items-center justify-between text-sm text-slate-600">
-            <span>{focus ? `${focus.completed_today}/${focus.planned_questions} feitas hoje` : "Sem progresso"}</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="app-progress mt-2">
-            <div className="app-progress-fill" style={{ width: `${progress}%` }} />
-          </div>
+        <div className="app-progress mt-2">
+          <div className="app-progress-fill" style={{ width: `${progress}%` }} />
         </div>
       </div>
     </section>
   );
 }
 
-function HeroStat({ label, value }: { label: string; value: string }) {
+function FocusBoard({
+  focus,
+  items,
+  onRegister,
+}: {
+  focus: StudyPlanItem | undefined;
+  items: StudyPlanItem[];
+  onRegister: (item: StudyPlanItem) => void;
+}) {
+  const visibleItems = items.slice(0, 4);
+
   return (
-    <div className="app-hero-stat">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
+    <section className="today-panel today-panel-wide">
+      <PanelHeader
+        eyebrow="Sessao principal"
+        title={focus ? focus.subject_name : "Plano em construcao"}
+        description={focus ? `${focus.discipline} / ${focus.block_name}` : "Registre questoes para o sistema calibrar seu proximo passo."}
+      />
+
+      <div className="today-focus-grid">
+        {visibleItems.length === 0 ? (
+          <p className="app-empty-state">
+            Ainda nao ha blocos no plano de hoje. Assim que houver dados suficientes, esta area passa a mostrar o proximo degrau da trilha.
+          </p>
+        ) : (
+          visibleItems.map((item) => {
+            const progress = clampPercent(item.progress_ratio * 100);
+
+            return (
+              <article key={`${item.subject_id}-${item.block_id}`} className="today-focus-card">
+                <div className="today-focus-card-head">
+                  <div>
+                    <p className="today-chip">{item.discipline}</p>
+                    <h3>{item.subject_name}</h3>
+                    <p className="today-focus-card-copy">{item.primary_reason}</p>
+                  </div>
+                  <span className="today-focus-icon">{item === focus ? "✦" : "•"}</span>
+                </div>
+
+                <div className="today-focus-stats">
+                  <span>{item.block_name}</span>
+                  <span>{item.remaining_today} restantes</span>
+                </div>
+
+                <div className="app-progress">
+                  <div className="app-progress-fill" style={{ width: `${progress}%` }} />
+                </div>
+
+                <div className="today-focus-footer">
+                  <strong>{item.planned_questions} questoes</strong>
+                  <button className="app-secondary-action app-outline-action" onClick={() => onRegister(item)}>
+                    Registrar
+                  </button>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ReviewWidget({ reviews, riskBlocks }: { reviews: TodayItem[]; riskBlocks: TodayItem[] }) {
+  const visibleItems = [...reviews, ...riskBlocks].slice(0, 4);
+
+  return (
+    <section className="today-panel">
+      <PanelHeader
+        eyebrow="Memoria"
+        title="Nao deixe a trilha apagar"
+        description="Revisoes vencidas e blocos em risco aparecem aqui antes de virarem atrito."
+      />
+
+      <div className="mt-5 space-y-3">
+        {visibleItems.length === 0 ? (
+          <p className="app-empty-state">Nenhuma revisao vencida ou bloco em risco no momento.</p>
+        ) : (
+          visibleItems.map((item, index) => (
+            <div key={item.id ?? `${item.title}-${index}`} className="today-list-row">
+              <span className="today-list-bullet" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-extrabold text-slate-900">{item.title}</p>
+                {item.description ? <p className="mt-1 text-sm text-slate-600">{item.description}</p> : null}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -204,10 +336,14 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
   }, [weeks]);
 
   return (
-    <section className="app-card app-card-mint lg:col-span-8">
-      <CardHeader eyebrow="Constancia" title="Dias em que voce apareceu" value={`${activeDays} dias`} />
+    <section className="today-panel today-panel-wide">
+      <PanelHeader
+        eyebrow="Constancia"
+        title="Dias em que voce apareceu"
+        description="Sem cronograma rigido. So visibilidade honesta da frequencia recente."
+      />
 
-      <div className="mt-7 overflow-x-auto pb-1">
+      <div className="mt-6 overflow-x-auto pb-1">
         <div className="min-w-[620px]">
           <div className="ml-8 grid grid-cols-12 gap-1.5 text-[11px] text-slate-500">
             {monthLabels.map((label, index) => (
@@ -257,108 +393,55 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
       </div>
 
       <div className="mt-5 flex items-center justify-between text-xs text-slate-500">
-        <span>Menos</span>
+        <span>{activeDays} dias ativos</span>
         <div className="flex gap-1">
           <span className="heatmap-legend-cell heatmap-level-0" />
           <span className="heatmap-legend-cell heatmap-level-1" />
           <span className="heatmap-legend-cell heatmap-level-2" />
           <span className="heatmap-legend-cell heatmap-level-3" />
         </div>
-        <span>Mais</span>
-      </div>
-    </section>
-  );
-}
-
-function ReviewWidget({ reviews }: { reviews: TodayItem[] }) {
-  const visibleReviews = reviews.slice(0, 3);
-
-  return (
-    <section className="app-card app-card-lilac lg:col-span-4">
-      <CardHeader eyebrow="Memoria" title="Revisoes que pedem atencao" value={`${reviews.length} hoje`} />
-
-      <div className="mt-6 space-y-3">
-        {visibleReviews.length === 0 ? (
-          <p className="app-empty-state">Nada vencido agora. Bom momento para avancar no foco principal.</p>
-        ) : (
-          visibleReviews.map((review, index) => (
-            <div key={review.id ?? `${review.title}-${index}`} className="app-list-row">
-              <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-violet-500" />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-950">{review.title}</p>
-                {review.description ? <p className="mt-1 truncate text-sm text-slate-500">{review.description}</p> : null}
-              </div>
-            </div>
-          ))
-        )}
+        <span>mais intensidade</span>
       </div>
     </section>
   );
 }
 
 function PerformanceWidget({ performance }: { performance: SubjectPerformance[] }) {
-  const radarItems = performance.length > 0 ? performance : [{ discipline: "Sem dados", planned: 0, completed: 0, accuracy: 0, difficulty: 0 }];
-  const center = 82;
-  const radius = 58;
-  const points = radarItems.map((item, index) => {
-    const angle = (Math.PI * 2 * index) / radarItems.length - Math.PI / 2;
-    const value = Math.max(item.accuracy, item.difficulty) / 100;
-    return `${center + Math.cos(angle) * radius * value},${center + Math.sin(angle) * radius * value}`;
-  });
-
   return (
-    <section className="app-card app-card-blue lg:col-span-8">
-      <CardHeader eyebrow="Leitura do dia" title="Como os focos estao distribuidos" value="Objetivas" />
+    <section className="today-panel">
+      <PanelHeader
+        eyebrow="Distribuicao"
+        title="Onde o dia esta mais pesado"
+        description="A trilha segue priorizando sem deixar o estudo virar explosao de carga."
+      />
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[180px_1fr]">
-        <svg className="mx-auto h-44 w-44 overflow-visible" viewBox="0 0 164 164" role="img" aria-label="Radar de desempenho">
-          {[0.33, 0.66, 1].map((scale) => (
-            <circle key={scale} cx={center} cy={center} r={radius * scale} fill="none" stroke="rgba(15,23,42,0.14)" />
-          ))}
-          {radarItems.map((_, index) => {
-            const angle = (Math.PI * 2 * index) / radarItems.length - Math.PI / 2;
-            return (
-              <line
-                key={index}
-                x1={center}
-                y1={center}
-                x2={center + Math.cos(angle) * radius}
-                y2={center + Math.sin(angle) * radius}
-                stroke="rgba(15,23,42,0.12)"
-              />
-            );
-          })}
-          <polygon points={points.join(" ")} fill="rgba(124, 88, 255, 0.2)" stroke="#7c58ff" strokeWidth="2" />
-        </svg>
-
-        <div className="space-y-4">
-          <div className="flex gap-4 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-rose-400" />Dificuldade</span>
-            <span className="inline-flex items-center gap-2"><span className="h-2 w-4 rounded-full bg-violet-500" />Acuracia</span>
-          </div>
-          {performance.length === 0 ? (
-            <p className="app-empty-state">Quando houver focos no plano, esta area mostra onde a sessao de hoje esta mais pesada.</p>
-          ) : (
-            performance.map((item) => (
-              <div key={item.discipline}>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase text-slate-700">{item.discipline}</p>
+      <div className="mt-5 space-y-4">
+        {performance.length === 0 ? (
+          <p className="app-empty-state">Quando houver focos no plano, esta area mostra onde a sessao de hoje esta mais concentrada.</p>
+        ) : (
+          performance.map((item) => (
+            <div key={item.discipline} className="today-performance-row">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-extrabold text-slate-900">{item.discipline}</p>
                   <p className="text-xs text-slate-500">
-                    {item.completed}/{item.planned}
+                    {item.completed}/{item.planned} feitas
                   </p>
                 </div>
-                <div className="mt-2 grid gap-2">
-                  <div className="h-2 overflow-hidden rounded-full bg-white/60">
-                    <div className="h-full rounded-full bg-rose-400" style={{ width: `${item.difficulty}%` }} />
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-white/60">
-                    <div className="h-full rounded-full bg-violet-500" style={{ width: `${clampPercent(item.accuracy)}%` }} />
-                  </div>
+                <span className="today-performance-pill">{item.difficulty}% peso</span>
+              </div>
+
+              <div className="mt-3 grid gap-2">
+                <div className="app-progress">
+                  <div className="app-progress-fill" style={{ width: `${item.difficulty}%` }} />
+                </div>
+                <div className="app-progress app-progress-muted">
+                  <div className="app-progress-fill app-progress-fill-secondary" style={{ width: `${clampPercent(item.accuracy)}%` }} />
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );
@@ -392,10 +475,14 @@ function PomodoroWidget() {
   const tickMarks = Array.from({ length: 12 }, (_, index) => index);
 
   return (
-    <section className="app-card app-card-yellow lg:col-span-4">
-      <CardHeader eyebrow="Ritual" title="Bloco de foco" value={isRunning ? "rodando" : "25 min"} />
+    <section className="today-panel">
+      <PanelHeader
+        eyebrow="Ritmo"
+        title="Bloco curto de aquecimento"
+        description="Use um ciclo breve antes de registrar o resultado da sessao principal."
+      />
 
-      <div className="mt-7 grid gap-6 sm:grid-cols-[150px_1fr] sm:items-center lg:grid-cols-1 xl:grid-cols-[150px_1fr]">
+      <div className="mt-6 grid gap-6 sm:grid-cols-[150px_1fr] sm:items-center">
         <div className="pomodoro-ring" style={{ "--pomodoro-progress": `${progress}%` } as CSSProperties}>
           {tickMarks.map((tick) => (
             <span key={tick} className="pomodoro-tick" style={{ transform: `rotate(${tick * 30}deg)` }} />
@@ -409,12 +496,12 @@ function PomodoroWidget() {
         </div>
 
         <div>
-          <p className="text-sm text-slate-700">Um bloco curto para entrar no ritmo antes de revisar o resultado.</p>
-          <button className="app-primary-action mt-4 w-full" onClick={() => setIsRunning((current) => !current)}>
-            {isRunning ? "Pausar" : "Iniciar foco"}
+          <p className="text-sm leading-6 text-slate-600">Timer compacto, sem virar dashboard. O objetivo aqui eh entrar em fluxo com carga segura.</p>
+          <button className="app-primary-action app-primary-action-blue mt-4 w-full" onClick={() => setIsRunning((current) => !current)}>
+            {isRunning ? "Pausar bloco" : "Iniciar bloco"}
           </button>
           <button
-            className="app-secondary-action mt-3 w-full"
+            className="app-secondary-action app-outline-action mt-3 w-full"
             onClick={() => {
               setIsRunning(false);
               setSeconds(25 * 60);
@@ -428,14 +515,20 @@ function PomodoroWidget() {
   );
 }
 
-function CardHeader({ eyebrow, title, value }: { eyebrow: string; title: string; value: string }) {
+function PanelHeader({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-xs font-bold text-slate-500">{eyebrow}</p>
-        <h2 className="mt-1 text-xl font-black leading-tight text-slate-950">{title}</h2>
-      </div>
-      <span className="rounded-full bg-white/55 px-3 py-1 text-xs font-bold text-slate-600">{value}</span>
+    <div>
+      <p className="today-kicker">{eyebrow}</p>
+      <h2 className="today-panel-title">{title}</h2>
+      <p className="today-panel-copy">{description}</p>
     </div>
   );
 }
@@ -507,15 +600,17 @@ function RegisterQuestionsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-      <form className="app-card w-full max-w-lg" onSubmit={handleSubmit}>
+    <div className="today-modal-backdrop">
+      <form className="today-modal" onSubmit={handleSubmit}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-violet-500">Registro da sessao</p>
-            <h2 className="mt-2 text-xl font-black text-slate-950">{item.subject_name}</h2>
-            <p className="mt-1 text-sm text-slate-500">{item.discipline} / {item.block_name}</p>
+            <p className="today-kicker">Registro da sessao</p>
+            <h2 className="today-panel-title mt-3">{item.subject_name}</h2>
+            <p className="today-panel-copy">
+              {item.discipline} / {item.block_name}
+            </p>
           </div>
-          <button type="button" className="app-secondary-action px-3 py-2 text-xs" onClick={onClose}>
+          <button type="button" className="app-secondary-action app-outline-action px-3 py-2 text-xs" onClick={onClose}>
             Fechar
           </button>
         </div>
@@ -574,7 +669,7 @@ function RegisterQuestionsModal({
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <p className="text-sm text-slate-500">{message}</p>
-          <button type="submit" className="app-primary-action px-4 py-2 text-sm" disabled={mutation.isPending}>
+          <button type="submit" className="app-primary-action app-primary-action-blue px-4 py-2 text-sm" disabled={mutation.isPending}>
             {mutation.isPending ? "Salvando..." : "Salvar registro"}
           </button>
         </div>
@@ -610,39 +705,33 @@ export default function TodayPage() {
   }
 
   return (
-    <main className="px-5 py-8 text-slate-950 sm:px-8 lg:px-12">
+    <main className="today-page">
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: "easeOut" }}
-        className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-12"
+        className="today-layout"
       >
-        <header className="app-page-header lg:col-span-12">
-          <div>
-            <p className="text-sm font-bold text-violet-500">Hoje</p>
-            <h1 className="mt-1 text-4xl font-black leading-none text-slate-950 sm:text-5xl">Sua mesa de estudo</h1>
-          </div>
-          <div className="app-page-header-stats">
-            <span>{studyPlan?.summary.focus_count ?? 0} focos</span>
-            <span>{studyPlan?.summary.total_questions ?? 0} questoes</span>
-            <span>{data.metrics.due_reviews} revisoes</span>
-          </div>
-        </header>
-
-        <HeroStudyCard
+        <HeroSection
           focus={focus}
-          isLoading={isStudyPlanLoading}
-          fallbackTitle={data.priority.title}
-          fallbackDescription={data.priority.description}
+          priorityTitle={data.priority.title}
+          priorityDescription={data.priority.description}
+          totalQuestions={studyPlan?.summary.total_questions ?? 0}
+          focusCount={studyPlan?.summary.focus_count ?? 0}
+          dueReviews={data.metrics.due_reviews}
+          forgottenSubjects={data.metrics.forgotten_subjects}
           onRegister={setRegisteringItem}
         />
+
+        <FocusBoard focus={focus} items={studyPlan?.items ?? []} onRegister={setRegisteringItem} />
+        <ReviewWidget reviews={data.due_reviews} riskBlocks={data.risk_blocks} />
         <ConsistencyWidget activity={recentActivity} />
-        <ReviewWidget reviews={data.due_reviews} />
         <PerformanceWidget performance={performance} />
         <PomodoroWidget />
       </motion.div>
 
       {registeringItem ? <RegisterQuestionsModal item={registeringItem} onClose={() => setRegisteringItem(null)} /> : null}
+      {isStudyPlanLoading ? <p className="mt-4 text-center text-sm text-slate-500">Atualizando plano de hoje...</p> : null}
     </main>
   );
 }

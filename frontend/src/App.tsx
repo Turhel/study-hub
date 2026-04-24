@@ -1,56 +1,45 @@
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
-import TodayPage from "./pages/TodayPage";
 import TimerPage from "./pages/TimerPage";
+import TodayPage from "./pages/TodayPage";
 
 const navigationItems = [
-  { label: "Foco do dia", path: "/", marker: "D" },
-  { label: "Timer", path: "/timer", marker: "T" },
+  { label: "Foco do dia", path: "/" },
+  { label: "Timer", path: "/timer" },
 ];
 
-const futureItems = [
-  { label: "Trilha", marker: "R" },
-  { label: "Revisoes", marker: "V" },
-  { label: "Redacao", marker: "E" },
-];
+const futureItems = ["Trilha", "Revisoes", "Redacao"];
 
 export default function App() {
   return (
     <div className="app-shell">
-      <aside className="app-sidebar">
-        <div className="app-sidebar-brand">
-          <span className="app-brand-mark">SH</span>
-          <div className="app-sidebar-brand-copy">
-            <p className="text-sm font-bold text-slate-950">Study Hub</p>
-            <p className="text-xs text-slate-500">Rotina de estudo</p>
+      <header className="app-topbar">
+        <div className="app-brand">
+          <span className="app-brand-badge">SH</span>
+          <div>
+            <p className="app-brand-title">Study Hub</p>
+            <p className="app-brand-subtitle">Hub pessoal para estudo com menos ruido.</p>
           </div>
         </div>
 
-        <nav className="mt-8 space-y-1">
+        <nav className="app-topbar-nav" aria-label="Principal">
           {navigationItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) => `app-nav-link ${isActive ? "app-nav-link-active" : ""}`}
+              className={({ isActive }) => `app-topbar-link ${isActive ? "app-topbar-link-active" : ""}`}
             >
-              <span>{item.marker}</span>
-              <span className="app-nav-label">{item.label}</span>
+              {item.label}
             </NavLink>
           ))}
-        </nav>
 
-        <div className="mt-8 border-t border-slate-950/10 pt-6">
-          <p className="app-sidebar-section-label mb-3 text-xs font-semibold uppercase text-slate-400">Em breve</p>
-          <div className="space-y-1">
-            {futureItems.map((item) => (
-              <span key={item.label} className="app-nav-link app-nav-link-disabled">
-                <span>{item.marker}</span>
-                <span className="app-nav-label">{item.label}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      </aside>
+          {futureItems.map((item) => (
+            <span key={item} className="app-topbar-link app-topbar-link-muted">
+              {item}
+            </span>
+          ))}
+        </nav>
+      </header>
 
       <div className="app-content">
         <Routes>
