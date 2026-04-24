@@ -285,6 +285,7 @@ O smoke check valida contrato minimo de endpoints como:
 - `/api/roadmap/summary`
 - `/api/roadmap/validation`
 - `/api/roadmap/mapping/coverage`
+- `/api/study-guide/preferences`
 - `/api/study-plan/today`
 - `/api/free-study/catalog`
 - `/api/activity/recent`
@@ -358,6 +359,9 @@ GET /api/today
 GET /api/roadmap/validation
 GET /api/roadmap/summary
 GET /api/roadmap/discipline/{discipline}/summary
+GET /api/study-guide/preferences
+PUT /api/study-guide/preferences
+POST /api/study-plan/today/recalculate
 GET /api/free-study/catalog
 GET /api/free-study/subjects/{subject_id}/context
 ```

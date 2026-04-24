@@ -115,6 +115,24 @@ class StudyPlanTodayResponse(BaseModel):
     items: list[StudyPlanItem]
 
 
+class StudyGuidePreferences(BaseModel):
+    daily_minutes: int = Field(ge=15, le=360)
+    intensity: Literal["leve", "normal", "forte"]
+    max_focus_count: int = Field(ge=1, le=5)
+    max_questions: int = Field(ge=1, le=80)
+    include_reviews: bool
+    include_new_content: bool
+
+
+class StudyGuidePreferencesResponse(StudyGuidePreferences):
+    updated_at: str
+
+
+class StudyPlanRecalculateResponse(BaseModel):
+    replaced_plan_id: int | None = None
+    plan: StudyPlanTodayResponse
+
+
 class QuestionAttemptBulkCreate(BaseModel):
     date: str | None = None
     discipline: str

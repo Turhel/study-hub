@@ -148,6 +148,12 @@ class StudyCapacity(SQLModel, table=True):
     recent_fatigue_score: float = Field(default=0.25, ge=0.0, le=1.0)
     recent_completion_rate: float = Field(default=0.70, ge=0.0, le=1.0)
     recent_overtime_rate: float = Field(default=0.20, ge=0.0, le=1.0)
+    daily_minutes: int = Field(default=90, ge=15, le=360)
+    intensity: str = Field(default="normal", index=True)
+    max_focus_count: int = Field(default=3, ge=1, le=5)
+    max_questions: int = Field(default=35, ge=1, le=80)
+    include_reviews: bool = Field(default=True)
+    include_new_content: bool = Field(default=True)
     updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
 

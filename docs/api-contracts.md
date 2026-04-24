@@ -192,6 +192,104 @@ Isso pode acontecer se a base estiver vazia, se ainda nao houver plano diario ge
 - o frontend deve tolerar `items=[]`
 - `roadmap_*` pode vir parcialmente nulo se algum item nao estiver mapeado
 - `execution_status` hoje usa `nao_iniciado`, `em_andamento` ou `concluido`
+- a carga do plano considera as preferencias atuais de `/api/study-guide/preferences`
+
+## GET `/api/study-guide/preferences`
+
+**Objetivo**
+
+Retornar as preferencias de capacidade do guia de estudos usadas para limitar carga e quantidade de focos do plano diario.
+
+**Exemplo de resposta**
+
+```json
+{
+  "daily_minutes": 90,
+  "intensity": "normal",
+  "max_focus_count": 3,
+  "max_questions": 35,
+  "include_reviews": true,
+  "include_new_content": true,
+  "updated_at": "2026-04-24T22:59:57.062187"
+}
+```
+
+**Campos importantes**
+
+- `daily_minutes`: tempo disponivel pretendido, entre 15 e 360
+- `intensity`: `leve`, `normal` ou `forte`
+- `max_focus_count`: teto de focos novos no plano
+- `max_questions`: teto de questoes sugeridas
+- `include_reviews`: reserva parte da carga para revisoes quando ativo
+- `include_new_content`: permite ou nao focos novos no plano diario
+
+## PUT `/api/study-guide/preferences`
+
+**Objetivo**
+
+Atualizar as preferencias do guia de estudos. A atualizacao nao recalcula automaticamente o plano ja existente; para isso use `/api/study-plan/today/recalculate`.
+
+**Exemplo de request**
+
+```json
+{
+  "daily_minutes": 45,
+  "intensity": "leve",
+  "max_focus_count": 1,
+  "max_questions": 10,
+  "include_reviews": true,
+  "include_new_content": true
+}
+```
+
+**Exemplo de resposta**
+
+```json
+{
+  "daily_minutes": 45,
+  "intensity": "leve",
+  "max_focus_count": 1,
+  "max_questions": 10,
+  "include_reviews": true,
+  "include_new_content": true,
+  "updated_at": "2026-04-24T22:59:57.062187"
+}
+```
+
+**Observacoes de integracao**
+
+- intensidade `leve` reduz a carga
+- intensidade `forte` permite carga maior, ainda com teto conservador
+- `daily_minutes` limita a estimativa de questoes por tempo
+- `include_reviews=true` reserva carga para revisoes, mas nao transforma revisoes em focos novos
+
+## POST `/api/study-plan/today/recalculate`
+
+**Objetivo**
+
+Substituir explicitamente o plano ativo do dia por um novo plano calculado com as preferencias atuais.
+
+**Exemplo de resposta**
+
+```json
+{
+  "replaced_plan_id": 5,
+  "plan": {
+    "summary": {
+      "total_questions": 31,
+      "focus_count": 3
+    },
+    "items": []
+  }
+}
+```
+
+**Observacoes de integracao**
+
+- o plano ativo anterior do mesmo dia recebe status `replaced`
+- planos antigos nao sao apagados
+- o recalc registra evento `daily_plan_generated` com metadata `recalculated=true`
+- se `include_new_content=false`, o recalc pode retornar plano vazio, sem criar foco novo
 
 ## GET `/api/activity/recent`
 
@@ -1011,6 +1109,7 @@ Enviar uma nova mensagem para a sessao de estudo assistido.
   - `GET /api/roadmap/summary`
   - `GET /api/roadmap/validation`
   - `GET /api/roadmap/mapping/coverage`
+  - `GET /api/study-guide/preferences`
   - `GET /api/study-plan/today`
   - `GET /api/free-study/catalog`
   - `GET /api/activity/recent`

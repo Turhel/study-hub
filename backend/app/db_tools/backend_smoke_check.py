@@ -120,6 +120,24 @@ def _check_study_plan_today(payload: Any, result: CheckResult) -> None:
             result.errors.append(f"Campo obrigatorio ausente no primeiro item de study-plan: {field_name}")
 
 
+def _check_study_guide_preferences(payload: Any, result: CheckResult) -> None:
+    daily_minutes = _require(payload, ["daily_minutes"], result.errors)
+    intensity = _require(payload, ["intensity"], result.errors)
+    max_focus_count = _require(payload, ["max_focus_count"], result.errors)
+    max_questions = _require(payload, ["max_questions"], result.errors)
+    _require(payload, ["include_reviews"], result.errors)
+    _require(payload, ["include_new_content"], result.errors)
+
+    if isinstance(daily_minutes, int) and not 15 <= daily_minutes <= 360:
+        result.errors.append("daily_minutes fora do intervalo esperado")
+    if intensity not in {"leve", "normal", "forte"}:
+        result.errors.append("intensity deveria ser leve, normal ou forte")
+    if isinstance(max_focus_count, int) and not 1 <= max_focus_count <= 5:
+        result.errors.append("max_focus_count fora do intervalo esperado")
+    if isinstance(max_questions, int) and not 1 <= max_questions <= 80:
+        result.errors.append("max_questions fora do intervalo esperado")
+
+
 def _check_free_study_catalog(payload: Any, result: CheckResult) -> None:
     disciplines = _require(payload, ["disciplines"], result.errors)
     if disciplines is None or not isinstance(disciplines, list):
@@ -184,6 +202,7 @@ CHECKS: list[tuple[str, Any]] = [
     ("/api/roadmap/summary", _check_roadmap_summary),
     ("/api/roadmap/validation", _check_roadmap_validation),
     ("/api/roadmap/mapping/coverage", _check_roadmap_mapping_coverage),
+    ("/api/study-guide/preferences", _check_study_guide_preferences),
     ("/api/study-plan/today", _check_study_plan_today),
     ("/api/free-study/catalog", _check_free_study_catalog),
     ("/api/activity/recent", _check_activity_recent),

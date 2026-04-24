@@ -28,11 +28,12 @@ from app.models import (
     Subject,
     SubjectProgress,
 )
-from app.schemas import StudyPlanItem, StudyPlanSummary, StudyPlanTodayResponse
+from app.schemas import StudyPlanItem, StudyPlanRecalculateResponse, StudyPlanSummary, StudyPlanTodayResponse
 from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load
 from app.services.discipline_normalization_service import normalize_discipline
 from app.services.progression_service import sync_progression
 from app.services.roadmap_progression_service import GuidedRoadmapOverview, build_guided_roadmap_overview
+from app.services.study_event_service import record_study_event
 
 
 @dataclass(frozen=True)
@@ -397,10 +398,16 @@ def _question_distribution(total_questions: int, focus_count: int) -> list[int]:
     if focus_count <= 0:
         return []
     if focus_count == 1:
-        return [min(total_questions, 14)]
+        return [total_questions]
     if focus_count == 2:
         first = min(round(total_questions * 0.60), 14)
         return [first, total_questions - first]
+    if focus_count > 3:
+        base = max(1, total_questions // focus_count)
+        counts = [base for _ in range(focus_count)]
+        for index in range(total_questions - (base * focus_count)):
+            counts[index] += 1
+        return counts
 
     first = min(round(total_questions * 0.46), 14)
     second = min(round(total_questions * 0.31), 11)
@@ -410,6 +417,19 @@ def _question_distribution(total_questions: int, focus_count: int) -> list[int]:
         first = max(8, first - missing)
         third = total_questions - first - second
     return [first, second, third]
+
+
+def _focus_count_for_load(total_questions: int, candidate_count: int, max_focus_count: int) -> int:
+    if total_questions <= 0 or candidate_count <= 0:
+        return 0
+    natural_focus_count = 1
+    if total_questions >= 18:
+        natural_focus_count = 2
+    if total_questions >= 28:
+        natural_focus_count = 3
+    if total_questions >= 38:
+        natural_focus_count = 4
+    return min(natural_focus_count, max_focus_count, candidate_count)
 
 
 def _create_plan(
@@ -457,6 +477,11 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
             )
 
     capacity = get_or_create_capacity(session)
+    if not capacity.include_new_content:
+        return StudyPlanTodayResponse(
+            summary=StudyPlanSummary(total_questions=0, focus_count=0),
+            items=[],
+        )
     block_progress, subject_progress = sync_progression(session, today)
     roadmap_overview = build_guided_roadmap_overview(session, block_progress)
     candidates = _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
@@ -467,7 +492,7 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
         )
 
     total_questions = safe_daily_question_load(capacity)
-    focus_count = min(3 if total_questions >= 26 else 2, len(candidates))
+    focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
     selected = _select_candidates(candidates, focus_count)
     question_counts = _question_distribution(total_questions, len(selected))
     plan = _create_plan(session, selected, question_counts)
@@ -475,4 +500,36 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
     return StudyPlanTodayResponse(
         summary=StudyPlanSummary(total_questions=plan.total_planned_questions, focus_count=len(selected)),
         items=_items_for_plan(session, plan, today),
+    )
+
+
+def recalculate_today_study_plan(session: Session) -> StudyPlanRecalculateResponse:
+    today = date.today()
+    existing_plan = _latest_active_plan(session, today)
+    replaced_plan_id = existing_plan.id if existing_plan is not None else None
+    if existing_plan is not None:
+        existing_plan.status = "replaced"
+        session.add(existing_plan)
+        session.commit()
+
+    plan_response = get_today_study_plan(session)
+    record_study_event(
+        session,
+        event_type="daily_plan_generated",
+        title="Plano diario recalculado",
+        description=(
+            f"Plano diario recalculado com {plan_response.summary.total_questions} questoes "
+            f"em {plan_response.summary.focus_count} focos."
+        ),
+        metadata={
+            "recalculated": True,
+            "replaced_plan_id": replaced_plan_id,
+            "total_planned_questions": plan_response.summary.total_questions,
+            "focus_count": plan_response.summary.focus_count,
+        },
+    )
+    session.commit()
+    return StudyPlanRecalculateResponse(
+        replaced_plan_id=replaced_plan_id,
+        plan=plan_response,
     )
