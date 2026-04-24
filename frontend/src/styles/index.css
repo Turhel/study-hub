@@ -8,17 +8,54 @@
   color-scheme: light;
   font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
   background: #f8f3e8;
+  --app-bg: #f8f3e8;
+  --app-bg-glow: rgba(255, 237, 170, 0.7);
+  --app-bg-accent: rgba(166, 211, 255, 0.2);
+  --app-text: #1d2433;
+  --surface: #fffdf8;
+  --surface-strong: rgba(255, 253, 248, 0.96);
+  --surface-soft: rgba(255, 255, 255, 0.74);
+  --border-strong: #232323;
+  --border-soft: rgba(35, 35, 35, 0.1);
+  --shadow-soft: rgba(34, 34, 34, 0.12);
+  --muted-text: #596173;
+  --chip-bg: #fffdf8;
+  --card-dark: #171b23;
+  --card-dark-border: rgba(88, 121, 164, 0.55);
+  --card-dark-text: #f5f7fb;
+  --card-dark-muted: rgba(243, 245, 249, 0.78);
+}
+
+:root[data-theme="dark"] {
+  background: #11141b;
+  --app-bg: #11141b;
+  --app-bg-glow: rgba(64, 124, 255, 0.16);
+  --app-bg-accent: rgba(255, 191, 71, 0.08);
+  --app-text: #eef2f8;
+  --surface: #171b23;
+  --surface-strong: rgba(23, 27, 35, 0.96);
+  --surface-soft: rgba(23, 27, 35, 0.92);
+  --border-strong: #5d677c;
+  --border-soft: rgba(93, 103, 124, 0.45);
+  --shadow-soft: rgba(0, 0, 0, 0.34);
+  --muted-text: #b7c1d4;
+  --chip-bg: #171b23;
+  --card-dark: #171b23;
+  --card-dark-border: rgba(88, 121, 164, 0.55);
+  --card-dark-text: #f5f7fb;
+  --card-dark-muted: rgba(243, 245, 249, 0.78);
 }
 
 body {
   margin: 0;
   min-width: 300px;
   background:
-    radial-gradient(circle at top, rgba(255, 237, 170, 0.7), transparent 24rem),
-    radial-gradient(circle at 20% 10%, rgba(166, 211, 255, 0.2), transparent 18rem),
-    #f8f3e8;
-  color: #1d2433;
+    radial-gradient(circle at top, var(--app-bg-glow), transparent 24rem),
+    radial-gradient(circle at 20% 10%, var(--app-bg-accent), transparent 18rem),
+    var(--app-bg);
+  color: var(--app-text);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  transition: background 180ms ease, color 180ms ease;
 }
 
 * {
@@ -34,7 +71,7 @@ textarea {
 
 .app-shell {
   min-height: 100vh;
-  color: #1d2433;
+  color: var(--app-text);
 }
 
 .app-topbar {
@@ -64,15 +101,15 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
-  border: 2px solid #232323;
+  border: 2px solid var(--border-strong);
   border-radius: 18px;
-  background: #fffdf8;
+  background: var(--surface);
   padding: 0.82rem 1rem;
-  color: #232323;
+  color: var(--app-text);
   font-size: 0.9rem;
   font-weight: 800;
   text-decoration: none;
-  box-shadow: 3px 3px 0 rgba(34, 34, 34, 0.14);
+  box-shadow: 3px 3px 0 var(--shadow-soft);
   transition: transform 150ms ease, background 150ms ease;
 }
 
@@ -172,12 +209,12 @@ textarea {
 }
 
 .topbar-stat-card {
-  border: 2px solid rgba(88, 121, 164, 0.55);
+  border: 2px solid var(--card-dark-border);
   border-radius: 28px;
   background:
     linear-gradient(180deg, rgba(74, 48, 26, 0.9), rgba(25, 29, 39, 0.98) 45%),
-    #171b23;
-  color: #f5f7fb;
+    var(--card-dark);
+  color: var(--card-dark-text);
   padding: 1rem;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -336,10 +373,10 @@ textarea {
 }
 
 .topbar-profile-card {
-  border: 2px solid rgba(88, 121, 164, 0.55);
+  border: 2px solid var(--card-dark-border);
   border-radius: 28px;
-  background: #171b23;
-  color: #f5f7fb;
+  background: var(--card-dark);
+  color: var(--card-dark-text);
   padding: 1rem;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -458,10 +495,10 @@ textarea {
 .today-hero,
 .today-panel,
 .today-modal {
-  border: 2px solid #232323;
+  border: 2px solid var(--border-strong);
   border-radius: 28px;
-  background: rgba(255, 253, 248, 0.96);
-  box-shadow: 6px 6px 0 rgba(34, 34, 34, 0.12);
+  background: var(--surface-strong);
+  box-shadow: 6px 6px 0 var(--shadow-soft);
 }
 
 .today-hero {
@@ -549,7 +586,7 @@ textarea {
 .today-hero-copy,
 .today-panel-copy {
   margin: 1rem auto 0;
-  color: #596173;
+  color: var(--muted-text);
   line-height: 1.75;
 }
 
@@ -568,9 +605,9 @@ textarea {
 .today-hero-points p {
   margin: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.65);
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
   padding: 0.78rem 1rem;
-  color: #364050;
+  color: var(--app-text);
   font-size: 0.94rem;
   line-height: 1.6;
 }
@@ -636,9 +673,9 @@ textarea {
 .today-list-row,
 .today-performance-row,
 .app-empty-state {
-  border: 2px solid rgba(35, 35, 35, 0.1);
+  border: 2px solid var(--border-soft);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.74);
+  background: var(--surface-soft);
 }
 
 .today-focus-card {
@@ -661,7 +698,7 @@ textarea {
 
 .today-focus-card-copy {
   margin: 0.5rem 0 0;
-  color: #5d6473;
+  color: var(--muted-text);
   font-size: 0.92rem;
   line-height: 1.6;
 }
@@ -687,7 +724,7 @@ textarea {
 
 .today-focus-stats {
   margin: 1rem 0 0.75rem;
-  color: #5d6473;
+  color: var(--muted-text);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -721,14 +758,14 @@ textarea {
 
 .app-empty-state {
   padding: 1rem;
-  color: #596173;
+  color: var(--muted-text);
   font-size: 0.92rem;
   line-height: 1.7;
 }
 
 .app-primary-action,
 .app-secondary-action {
-  border: 2px solid #232323;
+  border: 2px solid var(--border-strong);
   border-radius: 16px;
   padding: 0.92rem 1.2rem;
   font-size: 0.92rem;
@@ -739,7 +776,7 @@ textarea {
 .app-primary-action {
   background: #ffe680;
   color: #1c2230;
-  box-shadow: 4px 4px 0 rgba(34, 34, 34, 0.14);
+  box-shadow: 4px 4px 0 var(--shadow-soft);
 }
 
 .app-primary-action:hover,
@@ -764,18 +801,18 @@ textarea {
 
 .app-secondary-action,
 .app-outline-action {
-  background: #fffdf8;
-  color: #1c2230;
-  box-shadow: 3px 3px 0 rgba(34, 34, 34, 0.1);
+  background: var(--surface);
+  color: var(--app-text);
+  box-shadow: 3px 3px 0 var(--shadow-soft);
 }
 
 .app-input {
   width: 100%;
-  border: 2px solid rgba(35, 35, 35, 0.16);
+  border: 2px solid var(--border-soft);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
   padding: 0.72rem 0.84rem;
-  color: #0f172a;
+  color: var(--app-text);
   font-size: 0.9rem;
   outline: none;
   transition: border-color 150ms ease, background 150ms ease;
@@ -789,7 +826,7 @@ textarea {
   height: 0.68rem;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(35, 35, 35, 0.1);
+  background: var(--border-soft);
 }
 
 .app-progress-muted {
