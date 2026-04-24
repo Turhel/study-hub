@@ -115,14 +115,6 @@ export default function TodayPage() {
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="today-subjects-shell"
       >
-        <div className="today-subjects-header">
-          <p className="today-subjects-kicker">Treinar</p>
-          <h1 className="today-subjects-title">Materias para estudar hoje</h1>
-          <p className="today-subjects-copy">
-            Treine com questoes ajustadas ao seu nivel e veja as materias que puxam o foco do dia.
-          </p>
-        </div>
-
         <div className="today-visual-tabs" aria-hidden="true">
           {visualTabs.map((tab) => (
             <span
