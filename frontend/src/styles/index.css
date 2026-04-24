@@ -20,10 +20,23 @@
   --shadow-soft: rgba(34, 34, 34, 0.12);
   --muted-text: #596173;
   --chip-bg: #fffdf8;
-  --card-dark: #171b23;
-  --card-dark-border: rgba(88, 121, 164, 0.55);
-  --card-dark-text: #f5f7fb;
-  --card-dark-muted: rgba(243, 245, 249, 0.78);
+  --overlay-card: #fffaf0;
+  --overlay-card-border: rgba(86, 62, 43, 0.42);
+  --overlay-card-text: #2c241e;
+  --overlay-card-muted: rgba(56, 44, 36, 0.78);
+  --overlay-card-shadow: rgba(35, 28, 22, 0.18);
+  --overlay-card-head-border: rgba(210, 122, 44, 0.7);
+  --overlay-card-head-bg: linear-gradient(180deg, rgba(123, 77, 37, 0.94), rgba(88, 54, 28, 0.88));
+  --overlay-card-head-text: #ffb84f;
+  --overlay-card-head-muted: rgba(255, 247, 239, 0.92);
+  --overlay-chip-bg: rgba(255, 255, 255, 0.7);
+  --overlay-chip-border: rgba(86, 62, 43, 0.22);
+  --overlay-chip-text: #544436;
+  --overlay-chip-muted: rgba(84, 68, 54, 0.74);
+  --overlay-divider: rgba(86, 62, 43, 0.18);
+  --overlay-button-bg: rgba(255, 255, 255, 0.5);
+  --overlay-button-hover: rgba(255, 255, 255, 0.78);
+  --overlay-button-border: rgba(86, 62, 43, 0.18);
 }
 
 :root[data-theme="dark"] {
@@ -40,10 +53,23 @@
   --shadow-soft: rgba(0, 0, 0, 0.34);
   --muted-text: #b7c1d4;
   --chip-bg: #171b23;
-  --card-dark: #171b23;
-  --card-dark-border: rgba(88, 121, 164, 0.55);
-  --card-dark-text: #f5f7fb;
-  --card-dark-muted: rgba(243, 245, 249, 0.78);
+  --overlay-card: #171b23;
+  --overlay-card-border: rgba(88, 121, 164, 0.55);
+  --overlay-card-text: #f5f7fb;
+  --overlay-card-muted: rgba(243, 245, 249, 0.78);
+  --overlay-card-shadow: rgba(19, 22, 30, 0.22);
+  --overlay-card-head-border: rgba(246, 136, 54, 0.4);
+  --overlay-card-head-bg: linear-gradient(180deg, rgba(106, 67, 33, 0.58), rgba(58, 35, 18, 0.18));
+  --overlay-card-head-text: #ffb84f;
+  --overlay-card-head-muted: rgba(243, 245, 249, 0.88);
+  --overlay-chip-bg: rgba(22, 26, 34, 0.55);
+  --overlay-chip-border: rgba(246, 136, 54, 0.4);
+  --overlay-chip-text: #f5f7fb;
+  --overlay-chip-muted: rgba(243, 245, 249, 0.7);
+  --overlay-divider: rgba(93, 103, 124, 0.55);
+  --overlay-button-bg: rgba(255, 255, 255, 0.03);
+  --overlay-button-hover: rgba(255, 255, 255, 0.08);
+  --overlay-button-border: rgba(93, 103, 124, 0.45);
 }
 
 body {
@@ -209,16 +235,14 @@ textarea {
 }
 
 .topbar-stat-card {
-  border: 2px solid var(--card-dark-border);
+  border: 2px solid var(--overlay-card-border);
   border-radius: 28px;
-  background:
-    linear-gradient(180deg, rgba(74, 48, 26, 0.9), rgba(25, 29, 39, 0.98) 45%),
-    var(--card-dark);
-  color: var(--card-dark-text);
+  background: var(--overlay-card);
+  color: var(--overlay-card-text);
   padding: 1rem;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 18px 40px rgba(19, 22, 30, 0.22);
+    0 18px 40px var(--overlay-card-shadow);
 }
 
 .topbar-stat-card-head {
@@ -226,9 +250,9 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid rgba(246, 136, 54, 0.4);
+  border: 1px solid var(--overlay-card-head-border);
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(106, 67, 33, 0.58), rgba(58, 35, 18, 0.18));
+  background: var(--overlay-card-head-bg);
   padding: 1rem;
 }
 
@@ -237,13 +261,13 @@ textarea {
   font-family: "Fraunces", Georgia, serif;
   font-size: 1.95rem;
   line-height: 0.95;
-  color: #ffb84f;
+  color: var(--overlay-card-head-text);
 }
 
 .topbar-stat-card-head p {
   margin: 0.75rem 0 0;
   max-width: 17rem;
-  color: rgba(243, 245, 249, 0.88);
+  color: var(--overlay-card-head-muted);
   font-size: 0.95rem;
   line-height: 1.55;
 }
@@ -285,7 +309,7 @@ textarea {
 }
 
 .topbar-streak-day span {
-  color: rgba(243, 245, 249, 0.8);
+  color: var(--overlay-card-muted);
   font-size: 0.86rem;
   font-weight: 800;
 }
@@ -294,9 +318,9 @@ textarea {
   display: block;
   width: 2.2rem;
   height: 2.2rem;
-  border: 2px solid rgba(141, 168, 208, 0.55);
+  border: 2px solid color-mix(in srgb, var(--overlay-card-text) 18%, transparent);
   border-radius: 10px;
-  background: rgba(77, 92, 120, 0.16);
+  background: var(--overlay-chip-bg);
 }
 
 .topbar-streak-day i::before,
@@ -313,7 +337,7 @@ textarea {
   inset: 50% auto auto 50%;
   width: 1rem;
   height: 0.12rem;
-  background: rgba(188, 198, 216, 0.8);
+  background: color-mix(in srgb, var(--overlay-card-text) 50%, white 10%);
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
@@ -321,7 +345,7 @@ textarea {
   inset: 50% auto auto 50%;
   width: 1rem;
   height: 0.12rem;
-  background: rgba(188, 198, 216, 0.8);
+  background: color-mix(in srgb, var(--overlay-card-text) 50%, white 10%);
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
@@ -347,14 +371,14 @@ textarea {
   display: grid;
   justify-items: center;
   gap: 0.25rem;
-  border: 1px solid rgba(246, 136, 54, 0.4);
+  border: 1px solid var(--overlay-chip-border);
   border-radius: 22px;
-  background: rgba(22, 26, 34, 0.55);
+  background: var(--overlay-chip-bg);
   padding: 0.95rem 0.75rem;
 }
 
 .topbar-mastery-item strong {
-  color: #f5f7fb;
+  color: var(--overlay-chip-text);
   font-size: 0.98rem;
   font-weight: 800;
 }
@@ -367,20 +391,20 @@ textarea {
 }
 
 .topbar-mastery-item small {
-  color: rgba(243, 245, 249, 0.7);
+  color: var(--overlay-chip-muted);
   font-size: 0.82rem;
   font-weight: 700;
 }
 
 .topbar-profile-card {
-  border: 2px solid var(--card-dark-border);
+  border: 2px solid var(--overlay-card-border);
   border-radius: 28px;
-  background: var(--card-dark);
-  color: var(--card-dark-text);
+  background: var(--overlay-card);
+  color: var(--overlay-card-text);
   padding: 1rem;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 18px 40px rgba(19, 22, 30, 0.22);
+    0 18px 40px var(--overlay-card-shadow);
 }
 
 .topbar-profile-header {
@@ -400,7 +424,7 @@ textarea {
 .topbar-profile-header p {
   margin: 0.7rem 0 0;
   max-width: 14rem;
-  color: rgba(243, 245, 249, 0.78);
+  color: var(--overlay-card-muted);
   font-size: 0.93rem;
   line-height: 1.55;
 }
@@ -424,11 +448,11 @@ textarea {
 }
 
 .topbar-profile-meta span {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--overlay-chip-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--overlay-chip-bg);
   padding: 0.38rem 0.65rem;
-  color: rgba(243, 245, 249, 0.88);
+  color: var(--overlay-chip-text);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -438,7 +462,7 @@ textarea {
   gap: 0.35rem;
   margin-top: 1rem;
   padding-top: 0.9rem;
-  border-top: 1px solid rgba(93, 103, 124, 0.55);
+  border-top: 1px solid var(--overlay-divider);
 }
 
 .topbar-profile-item {
@@ -446,11 +470,11 @@ textarea {
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  border: 1px solid rgba(93, 103, 124, 0.45);
+  border: 1px solid var(--overlay-button-border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--overlay-button-bg);
   padding: 0.85rem 0.9rem;
-  color: #f5f7fb;
+  color: var(--overlay-card-text);
   font-size: 0.95rem;
   font-weight: 700;
   text-align: left;
@@ -458,7 +482,7 @@ textarea {
 }
 
 .topbar-profile-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--overlay-button-hover);
   border-color: rgba(128, 170, 255, 0.45);
   transform: translateX(1px);
 }
@@ -473,7 +497,7 @@ textarea {
 
 .topbar-profile-item-arrow {
   margin-left: auto;
-  color: rgba(243, 245, 249, 0.68);
+  color: var(--overlay-card-muted);
 }
 
 .app-content {
