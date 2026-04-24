@@ -34,6 +34,9 @@ describe("App smoke", () => {
           items: [],
         });
       }
+      if (url.includes("/api/activity/recent")) {
+        return mockJsonResponse([]);
+      }
       throw new Error(`Unexpected fetch URL: ${url}`);
     });
 
