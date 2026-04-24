@@ -8,65 +8,27 @@ const navigationItems = [
   {
     label: "Foco do dia",
     path: "/",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" fill="#EEF7FF" />
-        <circle cx="12" cy="12" r="5.8" fill="#8ED0FF" />
-        <circle cx="12" cy="12" r="3.2" fill="#3AA0FF" />
-        <circle cx="12" cy="12" r="1.4" fill="#FFCF59" />
-        <path d="M17.55 4.2l.6 1.8 1.9.05-1.5 1.15.54 1.8-1.52-1.06-1.57 1.06.56-1.8-1.5-1.15 1.88-.05.61-1.8z" fill="#FFB648" />
-      </svg>
-    ),
+    icon: <FocusEmojiIcon />,
   },
   {
     label: "Timer",
     path: "/timer",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="8.1" y="2.8" width="7.8" height="2.6" rx="1.3" fill="#584D65" />
-        <circle cx="12" cy="13" r="7.7" fill="#EAF6FF" />
-        <circle cx="12" cy="13" r="6.1" fill="#FFFFFF" />
-        <path d="M12 6.6a6.4 6.4 0 106.4 6.4h-1.6A4.8 4.8 0 1112 8.2V6.6z" fill="#66C3FF" />
-        <path d="M12.8 9.2v3.45l2.62 1.52-.78 1.3-3.34-1.94V9.2h1.52z" fill="#FFB648" />
-        <circle cx="12" cy="13" r="1.1" fill="#584D65" />
-      </svg>
-    ),
+    icon: <TimerEmojiIcon />,
   },
 ];
 
 const futureItems = [
   {
     label: "Aprender",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5.2 6.1A2.1 2.1 0 017.3 4h3.7v14H7.35A2.15 2.15 0 015.2 15.85V6.1z" fill="#59C86B" />
-        <path d="M12.95 4h3.75a2.1 2.1 0 012.1 2.1v9.75A2.15 2.15 0 0116.65 18h-3.7V4z" fill="#3AA0FF" />
-        <path d="M7.1 6.35h2.6v1.2H7.1zm0 2.15h2.6v1.2H7.1zm7.15-2.15h2.65v1.2h-2.65zm0 2.15h2.65v1.2h-2.65z" fill="#FFFFFF" />
-        <path d="M11 5.1h1.95V18H11z" fill="#FFCF59" />
-      </svg>
-    ),
+    icon: <BooksEmojiIcon />,
   },
   {
     label: "Revisoes",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="8.5" fill="#F3EEFF" />
-        <path d="M12 5.15a6.85 6.85 0 015.86 10.4l1.52.9-.76 1.3-1.56-.9A6.85 6.85 0 1112 5.15z" fill="#9A72FF" />
-        <path d="M6.9 11.6L4.5 9.3l.95-.95 1.45 1.4V6.4H8.3v4.6c0 .33-.27.6-.6.6H6.9zm10.2.8h-1.4V17.6h-1.4v-4.6c0-.33.27-.6.6-.6h.75l2.45 2.35-.98.95-1.42-1.35z" fill="#FFB648" />
-      </svg>
-    ),
+    icon: <ReviewEmojiIcon />,
   },
   {
     label: "Redacao",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="4.7" y="3.7" width="10.6" height="14.8" rx="2.4" fill="#EAF6FF" />
-        <path d="M7.1 7.6h5.8V9H7.1zm0 2.9h5.8v1.4H7.1zm0 2.9h3.9v1.4H7.1z" fill="#58B8FF" />
-        <path d="M14.6 7.05l3.35 3.35-5.95 5.95H8.65V13l5.95-5.95z" fill="#FF8A34" />
-        <path d="M17.25 4.95a1.52 1.52 0 012.15 2.15l-.82.82-2.16-2.16.83-.81z" fill="#FFCF59" />
-        <path d="M9.25 16.35l1.78-.32-1.46-1.46-.32 1.78z" fill="#584D65" />
-      </svg>
-    ),
+    icon: <MemoEmojiIcon />,
   },
 ];
 
@@ -81,6 +43,74 @@ const streakDays = [
 ];
 
 const masteryItems = ["Linguagens", "Matematica", "Humanas", "Natureza"];
+
+function FocusEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="11.5" fill="#EEF8FF" />
+      <circle cx="16" cy="16" r="8" fill="#7CC8FF" />
+      <circle cx="16" cy="16" r="4.8" fill="#2F9BFF" />
+      <circle cx="16" cy="16" r="2.2" fill="#FFCF59" />
+      <path d="M23.8 6.2l.85 2.53 2.66.07-2.1 1.61.77 2.53-2.15-1.5-2.2 1.5.78-2.53-2.1-1.6 2.64-.08.85-2.53z" fill="#FF9F43" />
+    </svg>
+  );
+}
+
+function TimerEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="10.8" y="3.8" width="10.4" height="3.4" rx="1.7" fill="#5C516A" />
+      <rect x="21.5" y="5.4" width="2.3" height="4.3" rx="1.15" transform="rotate(40 21.5 5.4)" fill="#7CC8FF" />
+      <circle cx="16" cy="17.5" r="10.3" fill="#EAF7FF" />
+      <circle cx="16" cy="17.5" r="8.1" fill="#FFFFFF" />
+      <path d="M16 8.8a8.7 8.7 0 018.7 8.7h-2.1a6.6 6.6 0 10-1.93 4.67l1.48 1.48A8.7 8.7 0 1116 8.8z" fill="#5AB8FF" />
+      <path d="M16.9 12v4.66l3.55 2.06-1.06 1.77-4.53-2.63V12h2.04z" fill="#FFB648" />
+      <circle cx="16" cy="17.5" r="1.35" fill="#5C516A" />
+    </svg>
+  );
+}
+
+function BooksEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="4.8" y="8.2" width="8.3" height="18" rx="2.4" fill="#4CCB63" />
+      <rect x="11.4" y="6.2" width="8.7" height="20" rx="2.5" fill="#FFCF59" />
+      <rect x="18.4" y="7.2" width="8.8" height="19" rx="2.5" fill="#3AA0FF" />
+      <path d="M6.8 11.3h4.2v1.45H6.8zm0 3.1h4.2v1.45H6.8zm6.4-4h5.2v1.45h-5.2zm0 3.1h5.2v1.45h-5.2zm7.2-1.2h4.8v1.45h-4.8zm0 3.1h4.8v1.45h-4.8z" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function ReviewEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="11.5" fill="#F3EEFF" />
+      <path d="M16 7.7a8.3 8.3 0 017.12 12.58l2.15 1.25-1.07 1.83-2.2-1.27A8.3 8.3 0 1116 7.7z" fill="#9672FF" />
+      <path d="M10.1 11.9L7 9l1.35-1.34 1.98 1.92V5.75h1.98v6.15c0 .44-.36.8-.8.8H10.1zm11.77 1.1h-1.98v5.02H17.9v-6.15c0-.44.35-.8.8-.8h1.06l3.34 3.2-1.23 1.34-2-1.9z" fill="#FFB648" />
+    </svg>
+  );
+}
+
+function MemoEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="6" y="4.6" width="14.1" height="19.6" rx="2.8" fill="#EAF6FF" />
+      <path d="M9.2 9.6h7.7v1.7H9.2zm0 3.9h7.7v1.7H9.2zm0 3.9h5.2v1.7H9.2z" fill="#58B8FF" />
+      <path d="M19.35 9.1l4.45 4.45-7.54 7.54h-4.45v-4.45l7.54-7.54z" fill="#FF8A34" />
+      <path d="M22.82 6.32a2.02 2.02 0 012.86 2.86l-1.1 1.1-2.86-2.86 1.1-1.1z" fill="#FFCF59" />
+      <path d="M12.65 20.1l2.37-.44-1.93-1.93-.44 2.37z" fill="#5C516A" />
+    </svg>
+  );
+}
+
+function StarEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M16 3.35l3.42 6.92 7.64 1.1-5.53 5.4 1.3 7.62L16 20.56l-6.83 3.83 1.3-7.62-5.53-5.4 7.64-1.1L16 3.35z" fill="#FFD452" />
+      <path d="M16 7.55l1.63 3.31 3.67.53-2.65 2.59.63 3.65L16 15.79l-3.28 1.84.63-3.65-2.65-2.59 3.67-.53L16 7.55z" fill="#FF9D32" />
+    </svg>
+  );
+}
 
 function FireEmojiIcon({ idPrefix }: { idPrefix: string }) {
   return (
@@ -311,12 +341,7 @@ export default function App() {
             </HoverPanelButton>
 
             <HoverPanelButton
-              icon={
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 2.5l2.56 5.18 5.72.83-4.14 4.04.98 5.7L12 15.44l-5.12 2.7.98-5.7-4.14-4.04 5.72-.83L12 2.5z" fill="#FFCF59" />
-                  <path d="M12 6.5l1.22 2.46 2.73.4-1.98 1.93.47 2.72L12 12.73l-2.44 1.28.47-2.72-1.98-1.93 2.73-.4L12 6.5z" fill="#FF8A34" />
-                </svg>
-              }
+              icon={<StarEmojiIcon />}
               panelClassName="topbar-hover-panel-wide"
             >
               <section className="topbar-stat-card">
@@ -326,9 +351,7 @@ export default function App() {
                     <p>Cada estrela representa uma questao que voce acertou.</p>
                   </div>
                   <div className="topbar-stat-icon topbar-stat-icon-star" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M12 2l3 6.6 7 .8-5.2 4.9 1.5 7-6.3-3.6-6.3 3.6 1.5-7L2 9.4l7-.8L12 2z" />
-                    </svg>
+                    <StarEmojiIcon />
                   </div>
                 </div>
 
