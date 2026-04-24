@@ -767,6 +767,23 @@ textarea {
   line-height: 1.6;
 }
 
+.today-row-title {
+  margin: 0;
+  color: var(--app-text);
+  font-weight: 800;
+}
+
+.today-row-copy,
+.today-subtle-text,
+.today-heatmap-label,
+.today-sync-note {
+  color: var(--muted-text);
+}
+
+.today-timer-value {
+  color: var(--app-text);
+}
+
 .today-focus-icon {
   display: inline-grid;
   place-items: center;
@@ -828,6 +845,18 @@ textarea {
   color: var(--muted-text);
   font-size: 0.92rem;
   line-height: 1.7;
+}
+
+.today-form-label {
+  color: var(--muted-text);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.today-status {
+  min-height: 100vh;
+  padding: 2.5rem 1.5rem;
+  color: var(--app-text);
 }
 
 .app-primary-action,

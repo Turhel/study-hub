@@ -181,7 +181,7 @@ function HeroSection({
       </div>
 
       <div className="today-hero-progress">
-        <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
+        <div className="today-subtle-text flex items-center justify-between gap-3 text-sm">
           <span>{focus ? `${focus.completed_today}/${focus.planned_questions} questoes feitas` : "Sem execucao registrada hoje"}</span>
           <span>{progress}%</span>
         </div>
@@ -275,8 +275,8 @@ function ReviewWidget({ reviews, riskBlocks }: { reviews: TodayItem[]; riskBlock
             <div key={item.id ?? `${item.title}-${index}`} className="today-list-row">
               <span className="today-list-bullet" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold text-slate-900">{item.title}</p>
-                {item.description ? <p className="mt-1 text-sm text-slate-600">{item.description}</p> : null}
+                <p className="today-row-title truncate text-sm">{item.title}</p>
+                {item.description ? <p className="today-row-copy mt-1 text-sm">{item.description}</p> : null}
               </div>
             </div>
           ))
@@ -345,7 +345,7 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
 
       <div className="mt-6 overflow-x-auto pb-1">
         <div className="min-w-[620px]">
-          <div className="ml-8 grid grid-cols-12 gap-1.5 text-[11px] text-slate-500">
+          <div className="today-heatmap-label ml-8 grid grid-cols-12 gap-1.5 text-[11px]">
             {monthLabels.map((label, index) => (
               <span key={`${label}-${index}`} className="h-4 truncate">
                 {label}
@@ -354,7 +354,7 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
           </div>
 
           <div className="mt-1 grid grid-cols-[1.55rem_1fr] gap-2">
-            <div className="grid grid-rows-7 gap-1.5 text-[10px] leading-3 text-slate-500">
+            <div className="today-heatmap-label grid grid-rows-7 gap-1.5 text-[10px] leading-3">
               <span />
               <span>Seg</span>
               <span />
@@ -392,7 +392,7 @@ function ConsistencyWidget({ activity }: { activity: ActivityItem[] }) {
         </div>
       </div>
 
-      <div className="mt-5 flex items-center justify-between text-xs text-slate-500">
+      <div className="today-heatmap-label mt-5 flex items-center justify-between text-xs">
         <span>{activeDays} dias ativos</span>
         <div className="flex gap-1">
           <span className="heatmap-legend-cell heatmap-level-0" />
@@ -423,8 +423,8 @@ function PerformanceWidget({ performance }: { performance: SubjectPerformance[] 
             <div key={item.discipline} className="today-performance-row">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-extrabold text-slate-900">{item.discipline}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="today-row-title text-sm">{item.discipline}</p>
+                  <p className="today-row-copy text-xs">
                     {item.completed}/{item.planned} feitas
                   </p>
                 </div>
@@ -489,14 +489,14 @@ function PomodoroWidget() {
           ))}
           <div className="pomodoro-face">
             <span className="pomodoro-hand" style={{ transform: `rotate(${progress * 3.6}deg)` }} />
-            <span className="text-2xl font-black text-slate-950">
+            <span className="today-timer-value text-2xl font-black">
               {minutes}:{remainingSeconds}
             </span>
           </div>
         </div>
 
         <div>
-          <p className="text-sm leading-6 text-slate-600">Timer compacto, sem virar dashboard. O objetivo aqui eh entrar em fluxo com carga segura.</p>
+          <p className="today-row-copy text-sm leading-6">Timer compacto, sem virar dashboard. O objetivo aqui eh entrar em fluxo com carga segura.</p>
           <button className="app-primary-action app-primary-action-blue mt-4 w-full" onClick={() => setIsRunning((current) => !current)}>
             {isRunning ? "Pausar bloco" : "Iniciar bloco"}
           </button>
@@ -616,23 +616,23 @@ function RegisterQuestionsModal({
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Questoes feitas
             <input className="app-input mt-1" type="number" min={1} value={form.quantity} onChange={(event) => update("quantity", Number(event.target.value))} />
           </label>
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Acertos
             <input className="app-input mt-1" type="number" min={0} max={form.quantity} value={form.correctCount} onChange={(event) => update("correctCount", Number(event.target.value))} />
           </label>
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Fonte
             <input className="app-input mt-1" value={form.source} onChange={(event) => update("source", event.target.value)} placeholder="Lista, livro, simulado..." />
           </label>
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Ritmo medio por questao
             <input className="app-input mt-1" type="number" min={0} value={form.averageSeconds} onChange={(event) => update("averageSeconds", Number(event.target.value))} />
           </label>
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Dificuldade do banco
             <select className="app-input mt-1" value={form.difficultyBank} onChange={(event) => update("difficultyBank", event.target.value as RegisterFormState["difficultyBank"])}>
               <option value="facil">Facil</option>
@@ -640,7 +640,7 @@ function RegisterQuestionsModal({
               <option value="dificil">Dificil</option>
             </select>
           </label>
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Dificuldade pessoal
             <select className="app-input mt-1" value={form.difficultyPersonal} onChange={(event) => update("difficultyPersonal", event.target.value as RegisterFormState["difficultyPersonal"])}>
               <option value="facil">Facil</option>
@@ -648,7 +648,7 @@ function RegisterQuestionsModal({
               <option value="dificil">Dificil</option>
             </select>
           </label>
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Confianca
             <select className="app-input mt-1" value={form.confidence} onChange={(event) => update("confidence", event.target.value as RegisterFormState["confidence"])}>
               <option value="baixa">Baixa</option>
@@ -656,19 +656,19 @@ function RegisterQuestionsModal({
               <option value="alta">Alta</option>
             </select>
           </label>
-          <label className="text-sm text-slate-600">
+          <label className="today-form-label">
             Principal tropeco
             <input className="app-input mt-1" value={form.errorType} onChange={(event) => update("errorType", event.target.value)} placeholder="conceito, atencao, tempo..." />
           </label>
         </div>
 
-        <label className="mt-3 block text-sm text-slate-600">
+        <label className="today-form-label mt-3 block">
           Observacoes
           <textarea className="app-input mt-1 min-h-20 resize-none" value={form.notes} onChange={(event) => update("notes", event.target.value)} />
         </label>
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-500">{message}</p>
+          <p className="today-row-copy text-sm">{message}</p>
           <button type="submit" className="app-primary-action app-primary-action-blue px-4 py-2 text-sm" disabled={mutation.isPending}>
             {mutation.isPending ? "Salvando..." : "Salvar registro"}
           </button>
@@ -697,11 +697,11 @@ export default function TodayPage() {
   const focus = studyPlan?.items[0];
 
   if (isLoading) {
-    return <main className="min-h-screen px-6 py-10 text-slate-950">Carregando seu foco de hoje...</main>;
+    return <main className="today-status">Carregando seu foco de hoje...</main>;
   }
 
   if (isError || !data) {
-    return <main className="min-h-screen px-6 py-10 text-slate-950">Nao foi possivel conectar ao backend.</main>;
+    return <main className="today-status">Nao foi possivel conectar ao backend.</main>;
   }
 
   return (
@@ -731,7 +731,7 @@ export default function TodayPage() {
       </motion.div>
 
       {registeringItem ? <RegisterQuestionsModal item={registeringItem} onClose={() => setRegisteringItem(null)} /> : null}
-      {isStudyPlanLoading ? <p className="mt-4 text-center text-sm text-slate-500">Atualizando plano de hoje...</p> : null}
+      {isStudyPlanLoading ? <p className="today-sync-note mt-4 text-center text-sm">Atualizando plano de hoje...</p> : null}
     </main>
   );
 }
