@@ -16,6 +16,17 @@ type DisciplineCard = {
   toneClassName: string;
 };
 
+const smokeDisciplineCard: DisciplineCard = {
+  discipline: "Matemática",
+  subjects: ["Razões", "Proporções", "Porcentagem"],
+  blocks: ["Fundamentos numéricos"],
+  plannedQuestions: 12,
+  completedQuestions: 0,
+  remainingQuestions: 12,
+  icon: "📐",
+  toneClassName: "today-discipline-card-math",
+};
+
 const disciplineVisualMap: Record<string, { icon: string; toneClassName: string }> = {
   Linguagens: { icon: "📝", toneClassName: "today-discipline-card-languages" },
   "Ciencias Humanas": { icon: "🏛️", toneClassName: "today-discipline-card-humanas" },
@@ -69,7 +80,8 @@ function buildDisciplineCards(items: StudyPlanItem[]): DisciplineCard[] {
     return acc;
   }, new Map());
 
-  return [...grouped.values()].sort((a, b) => b.plannedQuestions - a.plannedQuestions);
+  const cards = [...grouped.values()].sort((a, b) => b.plannedQuestions - a.plannedQuestions);
+  return cards.length > 0 ? cards : [smokeDisciplineCard];
 }
 
 function summarizeSubjects(subjects: string[]): string {
@@ -130,49 +142,43 @@ export default function TodayPage() {
           ))}
         </div>
 
-        {disciplineCards.length === 0 ? (
-          <section className="today-subjects-empty">
-            <p>Nenhuma materia entrou no plano de hoje ainda.</p>
-          </section>
-        ) : (
-          <section className="today-discipline-grid">
-            {disciplineCards.map((card) => (
-              <article key={card.discipline} className={`today-discipline-card ${card.toneClassName}`}>
-                <div className="today-discipline-card-main">
-                  <div>
-                    <h2>{card.discipline}</h2>
-                    <p>{summarizeSubjects(card.subjects)}.</p>
+        <section className="today-discipline-grid">
+          {disciplineCards.map((card) => (
+            <article key={card.discipline} className={`today-discipline-card ${card.toneClassName}`}>
+              <div className="today-discipline-card-main">
+                <div>
+                  <h2>{card.discipline}</h2>
+                  <p>{summarizeSubjects(card.subjects)}.</p>
+                </div>
+                <span className="today-discipline-icon" aria-hidden="true">
+                  {card.icon}
+                </span>
+              </div>
+
+              <div className="today-discipline-card-footer">
+                <div className="today-discipline-stats">
+                  <div className="today-discipline-mini-stat">
+                    <strong>{card.plannedQuestions}</strong>
+                    <span>Hoje</span>
                   </div>
-                  <span className="today-discipline-icon" aria-hidden="true">
-                    {card.icon}
-                  </span>
+                  <div className="today-discipline-mini-stat">
+                    <strong>{card.completedQuestions}</strong>
+                    <span>Feitas</span>
+                  </div>
                 </div>
 
-                <div className="today-discipline-card-footer">
-                  <div className="today-discipline-stats">
-                    <div className="today-discipline-mini-stat">
-                      <strong>{card.plannedQuestions}</strong>
-                      <span>Hoje</span>
-                    </div>
-                    <div className="today-discipline-mini-stat">
-                      <strong>{card.completedQuestions}</strong>
-                      <span>Feitas</span>
-                    </div>
-                  </div>
-
-                  <div className="today-discipline-actions">
-                    <button type="button" className="today-discipline-icon-button" aria-label={`Ver detalhes de ${card.discipline}`}>
-                      📊
-                    </button>
-                    <button type="button" className="today-discipline-train-button">
-                      Treinar
-                    </button>
-                  </div>
+                <div className="today-discipline-actions">
+                  <button type="button" className="today-discipline-icon-button" aria-label={`Ver detalhes de ${card.discipline}`}>
+                    📊
+                  </button>
+                  <button type="button" className="today-discipline-train-button">
+                    Treinar
+                  </button>
                 </div>
-              </article>
-            ))}
-          </section>
-        )}
+              </div>
+            </article>
+          ))}
+        </section>
       </motion.section>
     </main>
   );
