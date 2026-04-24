@@ -8,21 +8,17 @@ import type { StudyPlanItem } from "../lib/types";
 type DisciplineCard = {
   discipline: string;
   subjects: string[];
-  blocks: string[];
   plannedQuestions: number;
   completedQuestions: number;
-  remainingQuestions: number;
   icon: string;
   toneClassName: string;
 };
 
 const smokeDisciplineCard: DisciplineCard = {
   discipline: "Matemática",
-  subjects: ["Razões", "Proporções", "Porcentagem"],
-  blocks: ["Fundamentos numéricos"],
+  subjects: ["Matemática aplicada à realidade"],
   plannedQuestions: 12,
   completedQuestions: 0,
-  remainingQuestions: 12,
   icon: "📐",
   toneClassName: "today-discipline-card-math",
 };
@@ -37,6 +33,12 @@ const disciplineVisualMap: Record<string, { icon: string; toneClassName: string 
   Fisica: { icon: "⚡", toneClassName: "today-discipline-card-nature" },
   Redacao: { icon: "✍️", toneClassName: "today-discipline-card-writing" },
 };
+
+const visualTabs = [
+  { label: "Areas", icon: "📚", active: true },
+  { label: "Competencias", icon: "🎯", active: false },
+  { label: "Habilidades", icon: "🛠️", active: false },
+];
 
 function normalizeDisciplineKey(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -55,10 +57,8 @@ function buildDisciplineCards(items: StudyPlanItem[]): DisciplineCard[] {
       acc.set(item.discipline, {
         discipline: item.discipline,
         subjects: [item.subject_name],
-        blocks: [item.block_name],
         plannedQuestions: item.planned_questions,
         completedQuestions: item.completed_today,
-        remainingQuestions: item.remaining_today,
         icon: visual.icon,
         toneClassName: visual.toneClassName,
       });
@@ -69,13 +69,8 @@ function buildDisciplineCards(items: StudyPlanItem[]): DisciplineCard[] {
       current.subjects.push(item.subject_name);
     }
 
-    if (!current.blocks.includes(item.block_name)) {
-      current.blocks.push(item.block_name);
-    }
-
     current.plannedQuestions += item.planned_questions;
     current.completedQuestions += item.completed_today;
-    current.remainingQuestions += item.remaining_today;
     acc.set(item.discipline, current);
     return acc;
   }, new Map());
@@ -85,18 +80,16 @@ function buildDisciplineCards(items: StudyPlanItem[]): DisciplineCard[] {
 }
 
 function summarizeSubjects(subjects: string[]): string {
+  if (subjects.length === 1) {
+    return subjects[0];
+  }
+
   if (subjects.length <= 3) {
     return subjects.join(", ");
   }
 
   return `${subjects.slice(0, 3).join(", ")} e mais ${subjects.length - 3}`;
 }
-
-const visualTabs = [
-  { label: "Areas", icon: "📚", active: true },
-  { label: "Competencias", icon: "🎯", active: false },
-  { label: "Habilidades", icon: "🛠️", active: false },
-];
 
 export default function TodayPage() {
   const { data, isLoading, isError } = useQuery({
@@ -156,20 +149,26 @@ export default function TodayPage() {
               </div>
 
               <div className="today-discipline-card-footer">
-                <div className="today-discipline-stats">
-                  <div className="today-discipline-mini-stat">
-                    <strong>{card.plannedQuestions}</strong>
-                    <span>Hoje</span>
+                <div className="today-discipline-footer-meta">
+                  <div className="today-score-chip" aria-hidden="true">
+                    <span className="today-score-pill" />
+                    <span className="today-score-info">i</span>
                   </div>
-                  <div className="today-discipline-mini-stat">
-                    <strong>{card.completedQuestions}</strong>
-                    <span>Feitas</span>
-                  </div>
+                  <span>Sua nota</span>
+                </div>
+
+                <div className="today-discipline-footer-count">
+                  <strong>{card.completedQuestions}</strong>
+                  <span>Feitas</span>
                 </div>
 
                 <div className="today-discipline-actions">
                   <button type="button" className="today-discipline-icon-button" aria-label={`Ver detalhes de ${card.discipline}`}>
-                    📊
+                    <span className="today-discipline-chart" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
                   </button>
                   <button type="button" className="today-discipline-train-button">
                     Treinar

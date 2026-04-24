@@ -688,32 +688,58 @@ textarea {
   gap: 1rem;
   border-top: 1px solid rgba(112, 133, 170, 0.34);
   background: rgba(21, 31, 53, 0.88);
-  padding: 0.95rem 1.25rem 1rem;
+  padding: 0.9rem 1.25rem 0.95rem;
 }
 
-.today-discipline-stats {
-  display: flex;
-  align-items: center;
-  gap: 1.1rem;
-}
-
-.today-discipline-mini-stat {
+.today-discipline-footer-meta {
   display: grid;
-  gap: 0.08rem;
+  gap: 0.32rem;
   justify-items: start;
 }
 
-.today-discipline-mini-stat strong {
-  color: #f8fbff;
-  font-size: 1.5rem;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.today-discipline-mini-stat span {
+.today-discipline-footer-meta span,
+.today-discipline-footer-count span {
   color: rgba(206, 217, 235, 0.72);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.today-score-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.today-score-pill {
+  width: 2.45rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5a6b80, #4d5d73);
+}
+
+.today-score-info {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f2734;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.today-discipline-footer-count {
+  display: grid;
+  gap: 0.14rem;
+  justify-items: start;
+}
+
+.today-discipline-footer-count strong {
+  color: #f8fbff;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 0.95;
 }
 
 .today-discipline-actions {
@@ -725,29 +751,57 @@ textarea {
 .today-discipline-icon-button,
 .today-discipline-train-button {
   border: 1px solid rgba(112, 133, 170, 0.6);
-  border-radius: 14px;
+  border-radius: 15px;
   font-weight: 800;
 }
 
 .today-discipline-icon-button {
   display: inline-grid;
   place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 3rem;
+  height: 3rem;
   background: rgba(24, 30, 41, 0.92);
   color: #f3f7fc;
   font-size: 1.15rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 .today-discipline-train-button {
-  min-width: 5.8rem;
-  padding: 0.82rem 1.15rem;
+  min-width: 6.75rem;
+  padding: 0.9rem 1.25rem;
   background: linear-gradient(180deg, #39aaf0, #2795de);
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 6px 18px rgba(37, 149, 222, 0.22);
+}
+
+.today-discipline-chart {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.15rem;
+  height: 1rem;
+}
+
+.today-discipline-chart i {
+  display: block;
+  width: 0.22rem;
+  border-radius: 999px;
+  background: rgba(240, 246, 255, 0.95);
+}
+
+.today-discipline-chart i:nth-child(1) {
+  height: 0.45rem;
+}
+
+.today-discipline-chart i:nth-child(2) {
+  height: 0.75rem;
+}
+
+.today-discipline-chart i:nth-child(3) {
+  height: 1rem;
 }
 
 .today-discipline-card-languages {
@@ -812,10 +866,15 @@ textarea {
     padding: 0.95rem 1rem 1rem;
   }
 
-  .today-discipline-stats,
+  .today-discipline-footer-meta,
+  .today-discipline-footer-count,
   .today-discipline-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .today-discipline-card-footer {
+    align-items: stretch;
   }
 }
 
