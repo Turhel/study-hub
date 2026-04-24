@@ -5,6 +5,7 @@ import pkgutil
 from datetime import datetime
 from types import ModuleType
 
+from sqlalchemy import inspect
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
@@ -19,11 +20,8 @@ class MigrationError(RuntimeError):
 
 
 def _schema_version_table_exists(engine: Engine) -> bool:
-    with engine.connect() as connection:
-        result = connection.execute(
-            text("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'schema_version'")
-        ).first()
-        return result is not None
+    inspector = inspect(engine)
+    return "schema_version" in inspector.get_table_names()
 
 
 def _current_version(engine: Engine) -> int:

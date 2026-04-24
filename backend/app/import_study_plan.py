@@ -9,7 +9,7 @@ from typing import Any
 import pandas as pd
 from sqlmodel import Session, select
 
-from app.db import DB_PATH, engine, init_db
+from app.db import engine, get_database_backend, get_database_target_display, init_db
 from app.models import Block, BlockSubject, Subject
 
 
@@ -131,7 +131,7 @@ def import_study_plan(path: Path) -> None:
 
     init_db()
     sheets = pd.read_excel(path, sheet_name=None)
-    print("Banco oficial:", DB_PATH)
+    print(f"Banco alvo ({get_database_backend()}):", get_database_target_display())
     print("Abas encontradas:", ", ".join(sheets.keys()))
 
     sheet_name = best_sheet_name(sheets)

@@ -5,7 +5,7 @@ Monorepo local para um hub de estudos ENEM/Medicina.
 Esta versão inicia a migração do MVP Streamlit para frontend e backend separados:
 
 - `frontend/`: Vite + React + TypeScript + Tailwind CSS
-- `backend/`: FastAPI + Pydantic + SQLModel + SQLite
+- `backend/`: FastAPI + Pydantic + SQLModel + SQLite/Postgres
 - `legacy_streamlit/`: código Streamlit preservado para migração gradual
 
 Não há autenticação, multiusuário, Docker, Ollama, correção de redação, flashcards ou dashboard completo nesta etapa.
@@ -19,6 +19,194 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
+
+Por padrao, sem `DATABASE_URL`, o backend usa SQLite local em `backend/data/study_hub.db`.
+
+## Banco De Dados: SQLite Ou Postgres
+
+O backend agora suporta os dois modos:
+
+- sem `DATABASE_URL`: SQLite local
+- com `DATABASE_URL=postgresql+psycopg://...`: Postgres
+
+O fluxo de schema continua o mesmo:
+
+- `init_db()`
+- `SQLModel.metadata.create_all(...)`
+- `run_migrations(engine)`
+
+### Exemplo `.env` com SQLite
+
+```text
+STUDY_HUB_DB_ECHO=false
+```
+
+Sem `DATABASE_URL`, o backend usa:
+
+```text
+backend/data/study_hub.db
+```
+
+### Exemplo `.env` com Supabase/Postgres
+
+```text
+DATABASE_URL=postgresql+psycopg://postgres:SUASENHA@db.seu-projeto.supabase.co:5432/postgres
+STUDY_HUB_DB_ECHO=false
+```
+
+Estado atual desta integracao:
+
+- o backend pode operar normalmente em SQLite ou Postgres
+- o Postgres/Supabase ja foi validado com schema, leitura e escrita reais
+- existe bootstrap estrutural e de uso a partir do SQLite local
+- o SQLite continua existindo como fallback de desenvolvimento e como fonte de bootstrap
+- ainda nao ha integracao com auth/storage do Supabase
+
+### Carga estrutural inicial no Postgres
+
+Depois de validar a conexao com Supabase/Postgres, voce pode carregar apenas os dados estruturais.
+
+Esses dados agora ficam versionados no repositório em:
+
+- `docs/data_seed/subjects.csv`
+- `docs/data_seed/blocks.csv`
+- `docs/data_seed/block_subjects.csv`
+- `docs/roadmap/*.csv`
+
+Ou seja:
+
+- o repositório vira a fonte de verdade da estrutura pedagógica e operacional
+- o Supabase/Postgres fica focado em dados operacionais
+- o SQLite pode continuar como fallback/offline e também como fonte de sync de uso
+
+Os dados estruturais carregados no Postgres são:
+
+- `subjects`
+- `blocks`
+- `block_subjects`
+- `roadmap_nodes`
+- `roadmap_edges`
+- `roadmap_block_map`
+- `roadmap_rules`
+
+Sem migrar ainda os dados de uso, como:
+
+- `question_attempts`
+- `reviews`
+- `study_events`
+- `daily_study_plan`
+- `timer_sessions`
+
+Com `DATABASE_URL` apontando para o Postgres remoto:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.bootstrap_postgres
+```
+
+Se quiser informar outro SQLite de origem:
+
+```powershell
+python -m app.bootstrap_postgres --source-sqlite "D:\.dev\.repo\study-hub\backend\data\study_hub.db"
+```
+
+Esse passo preserva os IDs de `subjects`, `blocks` e `block_subjects`, para manter o mapeamento do roadmap consistente no Postgres.
+
+Se voce quiser atualizar os CSVs estruturais versionados a partir do SQLite local:
+
+```powershell
+python -m app.export_repo_seed
+```
+
+O bootstrap estrutural do Postgres usa os CSVs versionados do repositório como fonte principal. Portanto, ele continua funcionando mesmo que o SQLite local nao esteja disponivel.
+
+### Sincronizar tambem os dados de uso
+
+Quando quiser levar para o Postgres o que ja existe no SQLite local em:
+
+- `block_progress`
+- `subject_progress`
+- `study_capacity`
+- `daily_study_plan`
+- `daily_study_plan_items`
+- `essay_submissions`
+- `essay_corrections`
+- `essay_study_sessions`
+- `essay_study_messages`
+
+use:
+
+```powershell
+python -m app.bootstrap_postgres --include-usage
+```
+
+Se a estrutura ja estiver carregada e voce quiser sincronizar apenas uso:
+
+```powershell
+python -m app.bootstrap_postgres --usage-only
+```
+
+O sync de uso:
+
+- preserva os IDs quando isso faz sentido
+- faz merge por chave de negocio em `block_progress`, `subject_progress` e `block_mastery`
+- nao apaga dados existentes no Postgres
+
+### Sync estrutural automatico no startup
+
+Quando o backend estiver rodando com `DATABASE_URL` Postgres, o default agora e:
+
+- sincronizar automaticamente a estrutura versionada do repositório no startup
+
+Isso inclui:
+
+- `docs/data_seed/*.csv`
+- `docs/roadmap/*.csv`
+
+Entao, no fluxo normal com Supabase:
+
+- o backend sobe
+- garante schema/migrations
+- sincroniza a estrutura versionada do projeto no Postgres
+
+Se quiser desligar esse comportamento:
+
+```text
+STUDY_HUB_AUTO_SYNC_STRUCTURAL_ON_STARTUP=false
+```
+
+### Fluxo recomendado para usar Postgres como banco principal
+
+1. definir `DATABASE_URL` no `backend/.env`
+2. garantir que as seeds estruturais do repositório estejam atualizadas, se necessario:
+
+```powershell
+python -m app.export_repo_seed
+```
+
+3. para trazer tambem os dados de uso do SQLite local:
+
+```powershell
+python -m app.bootstrap_postgres --include-usage
+```
+
+4. subir o backend normalmente:
+
+```powershell
+python -m uvicorn app.main:app --reload
+```
+
+5. validar:
+
+```powershell
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/api/roadmap/summary
+curl http://127.0.0.1:8000/api/study-plan/today
+curl http://127.0.0.1:8000/api/activity/recent
+```
+
+Com `DATABASE_URL` presente, o backend passa a operar sobre o Postgres remoto. O SQLite continua disponivel apenas como fallback/dev e como fonte de bootstrap.
 
 Backend:
 
@@ -96,7 +284,7 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## Dados Do Today
 
-O banco oficial do backend é sempre:
+Sem `DATABASE_URL`, o banco local oficial do backend é:
 
 ```text
 backend/data/study_hub.db

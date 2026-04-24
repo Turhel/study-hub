@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "build": "npm --prefix frontend run build",
+    "check": "npm run check:frontend && npm run check:backend",
+    "check:frontend": "npm --prefix frontend run typecheck && npm --prefix frontend run test",
+    "check:backend": "cd backend && python -m pytest",
+    "check:backend:install": "python -m pip install -r backend/requirements.txt",
     "dev": "concurrently -k -n backend,frontend -c cyan,green \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Set-Location backend; if (!(Test-Path .\\.venv\\Scripts\\python.exe)) { python -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt }; .\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload\"",
     "dev:frontend": "npm --prefix frontend run dev -- --host 127.0.0.1 --port 5173 --strictPort",

@@ -283,18 +283,18 @@ def _load_overrides(session: Session) -> dict[int, _OverrideItem]:
             except ValueError as exc:
                 raise ValueError(f"Override invalido na linha {row_index}: subject_id nao e inteiro.") from exc
 
+            subject = subjects.get(subject_id)
+            if subject is None:
+                # Em bancos novos/parciais, ignoramos overrides para subjects ainda nao importados.
+                continue
+
             roadmap_node_id = (row.get("roadmap_node_id") or "").strip()
+            subject_discipline = normalize_mapping_discipline(subject.disciplina)
+            override_discipline = normalize_mapping_discipline(row.get("discipline") or "")
             if roadmap_node_id not in nodes:
                 raise ValueError(
                     f"Override invalido na linha {row_index}: roadmap_node_id '{roadmap_node_id}' nao existe."
                 )
-
-            subject = subjects.get(subject_id)
-            if subject is None:
-                raise ValueError(f"Override invalido na linha {row_index}: subject_id {subject_id} nao existe.")
-
-            subject_discipline = normalize_mapping_discipline(subject.disciplina)
-            override_discipline = normalize_mapping_discipline(row.get("discipline") or "")
             node_discipline = normalize_mapping_discipline(nodes[roadmap_node_id].disciplina)
             if override_discipline and override_discipline != subject_discipline:
                 raise ValueError(
