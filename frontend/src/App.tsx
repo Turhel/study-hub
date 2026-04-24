@@ -77,21 +77,18 @@ const streakDays = [
 const masteryItems = ["Linguagens", "Matematica", "Humanas", "Natureza"];
 
 function HoverPanelButton({
-  label,
   icon,
   panelClassName,
   children,
 }: {
-  label: string;
   icon: ReactNode;
   panelClassName?: string;
   children: ReactNode;
 }) {
   return (
     <div className="topbar-hover-group">
-      <button type="button" className="app-topbar-link topbar-hover-trigger" aria-haspopup="true">
-        <span className="app-topbar-link-icon">{icon}</span>
-        <span>{label}</span>
+      <button type="button" className="topbar-hover-icon" aria-haspopup="true">
+        <span className="topbar-hover-icon-glyph">{icon}</span>
       </button>
       <div className={`topbar-hover-panel ${panelClassName ?? ""}`.trim()}>{children}</div>
     </div>
@@ -125,7 +122,6 @@ export default function App() {
 
           <div className="app-topbar-actions">
             <HoverPanelButton
-              label="Ofensiva"
               icon={
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M13.2 2.2s1.3 2.43.2 4.4c-.5.9-.48 1.88.04 2.74 1.58-.53 2.78-1.98 2.92-3.79 2.49 1.83 4.14 4.5 4.14 7.53 0 4.82-3.47 8.22-8.38 8.22C7.31 21.3 4 17.95 4 13.57c0-3.02 1.61-5.75 4.15-7.78.08 1.5.82 2.93 2 3.7.2-1.7 1.06-3.35 2.68-5.13.9-.99.37-2.16.37-2.16z" fill="#FF8A34" />
@@ -159,7 +155,6 @@ export default function App() {
             </HoverPanelButton>
 
             <HoverPanelButton
-              label="Estrelas"
               icon={
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 2.5l2.56 5.18 5.72.83-4.14 4.04.98 5.7L12 15.44l-5.12 2.7.98-5.7-4.14-4.04 5.72-.83L12 2.5z" fill="#FFCF59" />
