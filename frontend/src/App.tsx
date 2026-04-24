@@ -10,9 +10,11 @@ const navigationItems = [
     path: "/",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" fill="#E8F2FF" />
-        <path d="M12 4.5l2.2 4.46 4.92.72-3.56 3.47.84 4.9L12 15.7l-4.4 2.35.84-4.9-3.56-3.47 4.92-.72L12 4.5z" fill="#3AA0FF" />
-        <path d="M12 7.25l1.2 2.42 2.68.39-1.94 1.89.46 2.67L12 13.33l-2.4 1.29.46-2.67-1.94-1.89 2.68-.39L12 7.25z" fill="#7ED957" />
+        <circle cx="12" cy="12" r="9" fill="#EEF7FF" />
+        <circle cx="12" cy="12" r="5.8" fill="#8ED0FF" />
+        <circle cx="12" cy="12" r="3.2" fill="#3AA0FF" />
+        <circle cx="12" cy="12" r="1.4" fill="#FFCF59" />
+        <path d="M17.55 4.2l.6 1.8 1.9.05-1.5 1.15.54 1.8-1.52-1.06-1.57 1.06.56-1.8-1.5-1.15 1.88-.05.61-1.8z" fill="#FFB648" />
       </svg>
     ),
   },
@@ -21,10 +23,12 @@ const navigationItems = [
     path: "/timer",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="7.5" y="2.5" width="9" height="3" rx="1.5" fill="#2C2C2C" />
-        <circle cx="12" cy="13" r="7.5" fill="#EAF6FF" />
-        <path d="M12 6a7 7 0 100 14 7 7 0 000-14zm0 1.8a5.2 5.2 0 11-.01 10.4A5.2 5.2 0 0112 7.8z" fill="#3AA0FF" />
-        <path d="M12.9 9.2v3.27l2.45 1.4-.75 1.31-3.2-1.84V9.2h1.5z" fill="#FFB648" />
+        <rect x="8.1" y="2.8" width="7.8" height="2.6" rx="1.3" fill="#584D65" />
+        <circle cx="12" cy="13" r="7.7" fill="#EAF6FF" />
+        <circle cx="12" cy="13" r="6.1" fill="#FFFFFF" />
+        <path d="M12 6.6a6.4 6.4 0 106.4 6.4h-1.6A4.8 4.8 0 1112 8.2V6.6z" fill="#66C3FF" />
+        <path d="M12.8 9.2v3.45l2.62 1.52-.78 1.3-3.34-1.94V9.2h1.52z" fill="#FFB648" />
+        <circle cx="12" cy="13" r="1.1" fill="#584D65" />
       </svg>
     ),
   },
@@ -35,9 +39,10 @@ const futureItems = [
     label: "Aprender",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 4l7.5 3.6L12 11.2 4.5 7.6 12 4z" fill="#57C84D" />
-        <path d="M6 9.4L12 12l6-2.6V16L12 19 6 16V9.4z" fill="#3AA0FF" />
-        <path d="M12 12l6-2.6V16L12 19v-7z" fill="#228BE6" />
+        <path d="M5.2 6.1A2.1 2.1 0 017.3 4h3.7v14H7.35A2.15 2.15 0 015.2 15.85V6.1z" fill="#59C86B" />
+        <path d="M12.95 4h3.75a2.1 2.1 0 012.1 2.1v9.75A2.15 2.15 0 0116.65 18h-3.7V4z" fill="#3AA0FF" />
+        <path d="M7.1 6.35h2.6v1.2H7.1zm0 2.15h2.6v1.2H7.1zm7.15-2.15h2.65v1.2h-2.65zm0 2.15h2.65v1.2h-2.65z" fill="#FFFFFF" />
+        <path d="M11 5.1h1.95V18H11z" fill="#FFCF59" />
       </svg>
     ),
   },
@@ -45,9 +50,9 @@ const futureItems = [
     label: "Revisoes",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5.2a6.8 6.8 0 015.9 10.18l1.73 1-.74 1.28-1.73-1A6.8 6.8 0 1112 5.2z" fill="#EAF6FF" />
-        <path d="M12 6.7a5.3 5.3 0 105.3 5.3h1.5A6.8 6.8 0 1112 5.2v1.5z" fill="#8F63FF" />
-        <path d="M12.75 8.25v3.44l2.55 1.53-.77 1.28-3.28-1.96V8.25h1.5z" fill="#FFB648" />
+        <circle cx="12" cy="12" r="8.5" fill="#F3EEFF" />
+        <path d="M12 5.15a6.85 6.85 0 015.86 10.4l1.52.9-.76 1.3-1.56-.9A6.85 6.85 0 1112 5.15z" fill="#9A72FF" />
+        <path d="M6.9 11.6L4.5 9.3l.95-.95 1.45 1.4V6.4H8.3v4.6c0 .33-.27.6-.6.6H6.9zm10.2.8h-1.4V17.6h-1.4v-4.6c0-.33.27-.6.6-.6h.75l2.45 2.35-.98.95-1.42-1.35z" fill="#FFB648" />
       </svg>
     ),
   },
@@ -55,10 +60,11 @@ const futureItems = [
     label: "Redacao",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="5" y="4" width="10" height="14" rx="2" fill="#EAF6FF" />
-        <path d="M7.2 8h5.6v1.4H7.2V8zm0 3h5.6v1.4H7.2V11zm0 3h3.6v1.4H7.2V14z" fill="#3AA0FF" />
-        <path d="M14.3 7.1l3.6 3.6-5.7 5.7H8.6v-3.6l5.7-5.7z" fill="#FF8A34" />
-        <path d="M17.1 4.9a1.6 1.6 0 012.26 2.26l-.8.8-2.26-2.26.8-.8z" fill="#FFCF59" />
+        <rect x="4.7" y="3.7" width="10.6" height="14.8" rx="2.4" fill="#EAF6FF" />
+        <path d="M7.1 7.6h5.8V9H7.1zm0 2.9h5.8v1.4H7.1zm0 2.9h3.9v1.4H7.1z" fill="#58B8FF" />
+        <path d="M14.6 7.05l3.35 3.35-5.95 5.95H8.65V13l5.95-5.95z" fill="#FF8A34" />
+        <path d="M17.25 4.95a1.52 1.52 0 012.15 2.15l-.82.82-2.16-2.16.83-.81z" fill="#FFCF59" />
+        <path d="M9.25 16.35l1.78-.32-1.46-1.46-.32 1.78z" fill="#584D65" />
       </svg>
     ),
   },
