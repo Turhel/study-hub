@@ -1228,18 +1228,30 @@ textarea {
 
 @media (max-width: 960px) {
   .app-topbar-row {
-    flex-direction: column;
-    align-items: stretch;
+    align-items: center;
+    gap: 0.65rem;
   }
 
   .app-topbar-nav {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
     justify-content: flex-start;
-    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-topbar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-topbar-link {
+    flex: 0 0 auto;
   }
 
   .app-topbar-actions {
-    width: 100%;
-    flex-wrap: wrap;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
   }
 
   .topbar-hover-panel,
@@ -1286,7 +1298,7 @@ textarea {
 
   .app-topbar-actions,
   .app-topbar-nav {
-    width: 100%;
+    width: auto;
   }
 
   .topbar-hover-panel,
@@ -1310,12 +1322,12 @@ textarea {
   }
 
   .app-topbar-nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    max-width: calc(100vw - 7.2rem);
   }
 
   .app-topbar-link {
-    width: 100%;
+    max-width: 8.5rem;
   }
 }
 
