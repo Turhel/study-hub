@@ -24,8 +24,14 @@ const smokeDisciplineCard: DisciplineCard = {
 };
 
 const disciplineVisualMap: Record<string, { icon: string; toneClassName: string }> = {
+  "Linguagens e Códigos": { icon: "📝", toneClassName: "today-discipline-card-languages" },
   Linguagens: { icon: "📝", toneClassName: "today-discipline-card-languages" },
   "Ciencias Humanas": { icon: "🏛️", toneClassName: "today-discipline-card-humanas" },
+  Geografia: { icon: "🌍", toneClassName: "today-discipline-card-humanas" },
+  Historia: { icon: "📜", toneClassName: "today-discipline-card-humanas" },
+  Sociologia: { icon: "👥", toneClassName: "today-discipline-card-humanas" },
+  Filosofia: { icon: "🤔", toneClassName: "today-discipline-card-humanas" },
+  "Matemática e suas Tecnologias": { icon: "📐", toneClassName: "today-discipline-card-math" },
   Matematica: { icon: "📐", toneClassName: "today-discipline-card-math" },
   "Ciencias da Natureza": { icon: "🌿", toneClassName: "today-discipline-card-nature" },
   Biologia: { icon: "🧬", toneClassName: "today-discipline-card-nature" },
