@@ -585,7 +585,7 @@ textarea {
 }
 
 .today-subjects-shell {
-  max-width: 1120px;
+  max-width: 880px;
   margin: 0 auto;
   padding: 0.65rem 0 2.4rem;
 }
@@ -633,6 +633,7 @@ textarea {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.45rem;
   margin-top: 0.8rem;
 }
@@ -667,10 +668,10 @@ textarea {
 
 .today-discipline-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 24rem));
   justify-content: center;
   gap: 0.9rem;
-  width: min(100%, 56rem);
+  width: min(100%, 50rem);
   margin: 1rem auto 0;
 }
 
