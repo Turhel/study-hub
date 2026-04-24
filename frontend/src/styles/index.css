@@ -181,6 +181,7 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  min-width: 0;
 }
 
 .app-topbar-nav {
@@ -189,6 +190,7 @@ textarea {
   gap: 0.45rem;
   flex-wrap: wrap;
   justify-content: flex-start;
+  min-width: 0;
 }
 
 .app-topbar-link {
@@ -630,6 +632,7 @@ textarea {
 .today-visual-tabs {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.45rem;
   margin-top: 0.8rem;
 }
@@ -664,10 +667,10 @@ textarea {
 
 .today-discipline-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(18rem, 26rem));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   justify-content: center;
   gap: 0.9rem;
-  width: min(100%, 54rem);
+  width: min(100%, 56rem);
   margin: 1rem auto 0;
 }
 
@@ -690,6 +693,10 @@ textarea {
   padding: 1rem 1rem 0.9rem;
 }
 
+.today-discipline-card-main > div {
+  min-width: 0;
+}
+
 .today-discipline-card h2 {
   margin: 0;
   font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
@@ -697,6 +704,7 @@ textarea {
   font-weight: 800;
   line-height: 1.18;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .today-discipline-card p {
@@ -705,6 +713,7 @@ textarea {
   color: var(--discipline-card-copy);
   font-size: 0.84rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .today-discipline-icon {
@@ -780,7 +789,9 @@ textarea {
 .today-discipline-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.45rem;
+  min-width: 0;
 }
 
 .today-discipline-icon-button,
@@ -895,12 +906,6 @@ textarea {
   background: linear-gradient(135deg, #eef3fb, #f8f5ee);
 }
 
-@media (max-width: 900px) {
-  .today-discipline-grid {
-    grid-template-columns: minmax(0, 26rem);
-  }
-}
-
 @media (max-width: 720px) {
   .today-page {
     padding-right: 1rem;
@@ -909,10 +914,6 @@ textarea {
 
   .today-subjects-shell {
     padding-top: 0.4rem;
-  }
-
-  .today-visual-tabs {
-    flex-wrap: wrap;
   }
 
   .today-discipline-card-main {
@@ -934,6 +935,69 @@ textarea {
 
   .today-discipline-card-footer {
     align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-topbar {
+    padding: 0.75rem 0.75rem 0;
+  }
+
+  .app-topbar-row {
+    gap: 0.7rem;
+  }
+
+  .app-topbar-nav {
+    gap: 0.35rem;
+  }
+
+  .app-topbar-link {
+    flex: 1 1 calc(50% - 0.35rem);
+    justify-content: center;
+    padding: 0.5rem 0.55rem;
+    font-size: 0.78rem;
+  }
+
+  .app-topbar-link-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .app-topbar-actions {
+    justify-content: center;
+  }
+
+  .today-visual-tab {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 0.5rem;
+    font-size: 0.76rem;
+  }
+
+  .today-discipline-grid {
+    gap: 0.75rem;
+  }
+
+  .today-discipline-card-main {
+    gap: 0.65rem;
+  }
+
+  .today-discipline-icon {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1.22rem;
+  }
+
+  .today-discipline-actions {
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .today-discipline-train-button {
+    width: 100%;
+    min-width: 0;
   }
 }
 
@@ -1212,6 +1276,12 @@ textarea {
   .app-topbar-actions,
   .app-topbar-nav {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .today-page {
+    padding: 0.8rem 0.75rem 2rem;
   }
 }
 
