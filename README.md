@@ -300,6 +300,47 @@ Interpretacao:
 - `WARN`: endpoint respondeu, mas com situacao que merece atencao, como lista vazia
 - `ERROR`: status inesperado ou contrato minimo quebrado
 
+### Seed demo controlado para frontend/dev
+
+Existe uma ferramenta opcional para popular um dataset demo previsivel sem depender do estado real do banco.
+
+Ela foi feita para ajudar telas como:
+
+- plano diario
+- activity recent
+- activity today
+- block progress
+- tentativas de questoes
+- revisao pendente
+
+Regras importantes:
+
+- por padrao, use `--dry-run`
+- para gravar de verdade, use `--apply`
+- a aplicacao tambem exige `STUDY_HUB_ALLOW_DEMO_SEED=true`
+- o script nao apaga dados existentes
+- o script tenta evitar duplicacao detectando o marker `DEMO_SEED_FRONTEND_DEV`
+
+Dry-run:
+
+```powershell
+cd backend
+python -m app.db_tools.seed_demo_data --dry-run
+```
+
+Apply:
+
+```powershell
+$env:STUDY_HUB_ALLOW_DEMO_SEED='true'
+python -m app.db_tools.seed_demo_data --apply
+```
+
+Observacoes:
+
+- se ja houver um plano ativo do dia, o plano demo pode virar o mais recente e passar a aparecer em `/api/study-plan/today`
+- o script nao sobrescreve nem limpa dados reais automaticamente
+- para validacao segura, prefira apontar `DATABASE_URL` para uma copia local de SQLite ou um banco de dev separado
+
 Com `DATABASE_URL` presente, o backend passa a operar sobre o Postgres remoto. O SQLite continua disponivel apenas como fallback/dev e como fonte de bootstrap.
 
 Backend:
