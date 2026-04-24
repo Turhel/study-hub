@@ -11,6 +11,7 @@ from app.routes.activity import router as activity_router
 from app.routes.block_progress import router as block_progress_router
 from app.routes.essay import router as essay_router
 from app.routes.essay_study import router as essay_study_router
+from app.routes.free_study import router as free_study_router
 from app.routes.health import router as health_router
 from app.routes.question_attempts import router as question_attempts_router
 from app.routes.roadmap import router as roadmap_router
@@ -54,3 +55,4 @@ app.include_router(essay_study_router)
 app.include_router(block_progress_router)
 app.include_router(roadmap_router)
 app.include_router(activity_router)
+app.include_router(free_study_router)

@@ -129,6 +129,7 @@ class QuestionAttemptBulkCreate(BaseModel):
     confidence: str | None = None
     error_type: str | None = None
     notes: str | None = None
+    study_mode: Literal["guided", "free"] = "guided"
 
 
 class QuestionAttemptBulkCreateResponse(BaseModel):
@@ -360,6 +361,78 @@ class ActivityTodayResponse(BaseModel):
     progression_decisions_today: int
     studied_subject_ids: list[int]
     impacted_block_ids: list[int]
+
+
+class FreeStudyRoadmapNodeBrief(BaseModel):
+    node_id: str
+    discipline: str
+    subject_area: str
+    content: str
+    subunit: str | None = None
+    relation_type: Literal["required", "recommended", "cross_required", "cross_support"] | None = None
+    strength: float | None = None
+    notes: str | None = None
+
+
+class FreeStudySubjectCatalogItem(BaseModel):
+    subject_id: int
+    subject_name: str
+    block_id: int | None = None
+    block_name: str | None = None
+    roadmap_node_id: str | None = None
+    roadmap_mapped: bool
+    roadmap_status: Literal[
+        "entry",
+        "available",
+        "blocked_required",
+        "blocked_cross_required",
+        "reviewable",
+    ] | None = None
+    free_study_allowed: bool
+    warning_level: Literal["none", "low", "medium", "high"]
+    warning_message: str | None = None
+
+
+class FreeStudyCatalogSubarea(BaseModel):
+    subarea: str
+    subjects: list[FreeStudySubjectCatalogItem]
+
+
+class FreeStudyCatalogDiscipline(BaseModel):
+    discipline: str
+    strategic_discipline: str
+    subareas: list[FreeStudyCatalogSubarea]
+
+
+class FreeStudyCatalogResponse(BaseModel):
+    disciplines: list[FreeStudyCatalogDiscipline]
+
+
+class FreeStudySubjectContextResponse(BaseModel):
+    subject_id: int
+    subject_name: str
+    discipline: str
+    strategic_discipline: str | None = None
+    subarea: str | None = None
+    block_id: int | None = None
+    block_name: str | None = None
+    roadmap_node_id: str | None = None
+    roadmap_mapped: bool
+    free_study_allowed: bool
+    guided_status: Literal[
+        "entry",
+        "available",
+        "blocked_required",
+        "blocked_cross_required",
+        "reviewable",
+        "unmapped",
+    ]
+    warning_level: Literal["none", "low", "medium", "high"]
+    warning_message: str | None = None
+    direct_prerequisites: list[FreeStudyRoadmapNodeBrief]
+    missing_required_nodes: list[FreeStudyRoadmapNodeBrief]
+    missing_cross_required_nodes: list[FreeStudyRoadmapNodeBrief]
+    missing_recommended_nodes: list[FreeStudyRoadmapNodeBrief]
 
 
 class BlockProgressDecisionRequest(BaseModel):

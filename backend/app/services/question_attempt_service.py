@@ -6,6 +6,7 @@ from sqlmodel import Session
 
 from app.models import Block, QuestionAttempt, Subject
 from app.schemas import QuestionAttemptBulkCreate, QuestionAttemptBulkCreateResponse
+from app.services.free_study_service import get_free_study_subject_context
 from app.services.mastery_service import recalculate_block_mastery
 from app.services.review_service import upsert_review_from_attempt
 from app.services.study_event_service import record_study_event
@@ -101,15 +102,28 @@ def register_question_attempts_bulk(
     review = upsert_review_from_attempt(session, created_attempts[-1])
     subject_name = _subject_label(subject)
     correct_count = payload.correct_count
+    metadata_extra = {"study_mode": payload.study_mode}
+    event_title = f"Questoes registradas em {payload.discipline}"
+    if payload.study_mode == "free":
+        free_context = get_free_study_subject_context(session, payload.subject_id)
+        metadata_extra.update(
+            {
+                "roadmap_node_id": free_context.roadmap_node_id,
+                "warning_level": free_context.warning_level,
+            }
+        )
+        event_title = f"Questoes livres registradas em {payload.discipline}"
+
     record_study_event(
         session,
         event_type="question_attempt_bulk",
-        title=f"Questoes registradas em {payload.discipline}",
+        title=event_title,
         description=f"{payload.quantity} tentativas registradas em {block.nome} - {subject_name}.",
         discipline=payload.discipline,
         block_id=payload.block_id,
         subject_id=payload.subject_id,
         metadata={
+            **metadata_extra,
             "created_attempts": len(created_attempts),
             "correct_count": correct_count,
             "incorrect_count": payload.quantity - correct_count,

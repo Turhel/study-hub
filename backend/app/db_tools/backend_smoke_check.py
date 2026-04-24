@@ -120,6 +120,36 @@ def _check_study_plan_today(payload: Any, result: CheckResult) -> None:
             result.errors.append(f"Campo obrigatorio ausente no primeiro item de study-plan: {field_name}")
 
 
+def _check_free_study_catalog(payload: Any, result: CheckResult) -> None:
+    disciplines = _require(payload, ["disciplines"], result.errors)
+    if disciplines is None or not isinstance(disciplines, list):
+        return
+    if not disciplines:
+        result.warnings.append("/api/free-study/catalog vazio")
+        return
+
+    first_discipline = disciplines[0]
+    if not isinstance(first_discipline, dict):
+        result.errors.append("Primeira disciplina do catalogo deveria ser objeto")
+        return
+    subareas = first_discipline.get("subareas")
+    if not isinstance(subareas, list) or not subareas:
+        result.warnings.append("Primeira disciplina do catalogo sem subareas")
+        return
+    subjects = subareas[0].get("subjects") if isinstance(subareas[0], dict) else None
+    if not isinstance(subjects, list) or not subjects:
+        result.warnings.append("Primeira subarea do catalogo sem subjects")
+        return
+    first_subject = subjects[0]
+    if not isinstance(first_subject, dict):
+        result.errors.append("Primeiro subject do catalogo deveria ser objeto")
+        return
+    if "subject_id" not in first_subject:
+        result.errors.append("Campo obrigatorio ausente no primeiro subject do catalogo: subject_id")
+    if first_subject.get("free_study_allowed") is not True:
+        result.errors.append("free_study_allowed deveria ser true no primeiro subject do catalogo")
+
+
 def _check_activity_recent(payload: Any, result: CheckResult) -> None:
     if not isinstance(payload, list):
         result.errors.append("Payload de /api/activity/recent deveria ser lista")
@@ -155,6 +185,7 @@ CHECKS: list[tuple[str, Any]] = [
     ("/api/roadmap/validation", _check_roadmap_validation),
     ("/api/roadmap/mapping/coverage", _check_roadmap_mapping_coverage),
     ("/api/study-plan/today", _check_study_plan_today),
+    ("/api/free-study/catalog", _check_free_study_catalog),
     ("/api/activity/recent", _check_activity_recent),
     ("/api/activity/today", _check_activity_today),
     ("/api/roadmap/mapping/gaps", _check_roadmap_mapping_gaps),

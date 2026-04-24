@@ -603,6 +603,134 @@ Retornar o snapshot de progressao por disciplina, com bloco ativo, proximo bloco
 - o cliente deve URL-encode corretamente o path
 - `message` e importante para UX; nao tratar apenas como campo secundario
 
+## GET `/api/free-study/catalog`
+
+**Objetivo**
+
+Retornar o catalogo de conteudos estudaveis no Modo Livre, agrupado por disciplina e subarea, sem bloquear assuntos por roadmap.
+
+**Quando o frontend deve usar**
+
+- na entrada do Modo Livre
+- para permitir busca/navegacao por conteudo fora do plano guiado
+- antes de abrir o contexto detalhado de um subject
+
+**Exemplo de resposta**
+
+```json
+{
+  "disciplines": [
+    {
+      "discipline": "Matematica",
+      "strategic_discipline": "Matematica",
+      "subareas": [
+        {
+          "subarea": "Matematica Basica",
+          "subjects": [
+            {
+              "subject_id": 17,
+              "subject_name": "Matematica Basica - As quatro operacoes",
+              "block_id": 10,
+              "block_name": "Bloco 1",
+              "roadmap_node_id": "MATH_001",
+              "roadmap_mapped": true,
+              "roadmap_status": "entry",
+              "free_study_allowed": true,
+              "warning_level": "none",
+              "warning_message": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Campos importantes**
+
+- `disciplines`
+- `subareas`
+- `subjects[].subject_id`
+- `subjects[].free_study_allowed`: sempre `true` no Modo Livre
+- `subjects[].warning_level`: `none`, `low`, `medium` ou `high`
+
+**Estados vazios esperados**
+
+```json
+{
+  "disciplines": []
+}
+```
+
+Isso pode acontecer em base sem subjects ativos.
+
+**Observacoes de integracao**
+
+- o Modo Livre avisa, mas nao bloqueia
+- `roadmap_status` reflete o status do modo guiado quando houver mapeamento suficiente
+- subjects sem mapeamento confiavel continuam aparecendo, com aviso pedagogico leve
+
+## GET `/api/free-study/subjects/{subject_id}/context`
+
+**Objetivo**
+
+Retornar o contexto pedagogico de um subject no Modo Livre, incluindo pre-requisitos diretos e pendencias por tipo de relacao.
+
+**Quando o frontend deve usar**
+
+- ao abrir detalhes de um conteudo livre
+- antes de registrar estudo livre se quiser mostrar aviso contextual
+
+**Exemplo de resposta**
+
+```json
+{
+  "subject_id": 44,
+  "subject_name": "Geometria Espacial - Prismas",
+  "discipline": "Matematica",
+  "strategic_discipline": "Matematica",
+  "subarea": "Geometria Espacial",
+  "block_id": 22,
+  "block_name": "Bloco 4",
+  "roadmap_node_id": "MATH_088",
+  "roadmap_mapped": true,
+  "free_study_allowed": true,
+  "guided_status": "blocked_required",
+  "warning_level": "high",
+  "warning_message": "Este conteudo pode ser estudado no modo livre, mas ainda possui pre-requisitos obrigatorios pendentes no roadmap.",
+  "direct_prerequisites": [],
+  "missing_required_nodes": [],
+  "missing_cross_required_nodes": [],
+  "missing_recommended_nodes": []
+}
+```
+
+**Campos importantes**
+
+- `free_study_allowed`: sempre `true`
+- `guided_status`: status equivalente no modo guiado, ou `unmapped`
+- `missing_required_nodes`
+- `missing_cross_required_nodes`
+- `missing_recommended_nodes`
+- `warning_level` e `warning_message`
+
+**Erros comuns**
+
+- `404` se o subject nao existir ou estiver inativo:
+
+```json
+{
+  "detail": "Assunto nao encontrado."
+}
+```
+
+**Observacoes de integracao**
+
+- pendencias `required` e `cross_required` geram aviso alto
+- pendencias `recommended` e `cross_support` geram aviso medio
+- o endpoint nao altera progresso nem dados reais
+
 ## POST `/api/question-attempts/bulk`
 
 **Objetivo**
@@ -630,7 +758,8 @@ Registrar um lote resumido de questoes resolvidas para um mesmo assunto/bloco.
   "elapsed_seconds": 1800,
   "confidence": "media",
   "error_type": "distracao",
-  "notes": "Errei mais em divisibilidade."
+  "notes": "Errei mais em divisibilidade.",
+  "study_mode": "guided"
 }
 ```
 
@@ -656,6 +785,7 @@ Registrar um lote resumido de questoes resolvidas para um mesmo assunto/bloco.
   - `subject_id`
   - `quantity`
   - `correct_count`
+  - `study_mode`: opcional; aceita `guided` ou `free`, default `guided`
 - response:
   - `created_attempts`
   - `mastery_status`
@@ -681,6 +811,52 @@ Registrar um lote resumido de questoes resolvidas para um mesmo assunto/bloco.
 
 - esta rota nao usa hoje o mesmo formato estruturado de erro das rotas mais novas
 - o frontend deve tolerar `detail` como string aqui
+- quando `study_mode="free"`, o evento registrado no journal recebe metadata com `study_mode`, `roadmap_node_id` e `warning_level`
+
+## POST `/api/free-study/question-attempts/bulk`
+
+**Objetivo**
+
+Wrapper do Modo Livre para registrar questoes reaproveitando o mesmo fluxo de `/api/question-attempts/bulk`.
+
+**Exemplo de request**
+
+```json
+{
+  "date": "2026-04-24",
+  "discipline": "Matematica",
+  "block_id": 22,
+  "subject_id": 44,
+  "source": "lista livre",
+  "quantity": 8,
+  "correct_count": 5,
+  "difficulty_bank": "media",
+  "difficulty_personal": "media",
+  "elapsed_seconds": 1200,
+  "confidence": "media",
+  "error_type": "conceito",
+  "notes": "Estudo fora do plano guiado."
+}
+```
+
+**Exemplo de metadata criada no journal**
+
+```json
+{
+  "study_mode": "free",
+  "roadmap_node_id": "MATH_088",
+  "warning_level": "high",
+  "created_attempts": 8,
+  "correct_count": 5,
+  "incorrect_count": 3
+}
+```
+
+**Observacoes de integracao**
+
+- o wrapper força `study_mode="free"` internamente
+- mastery, review e activity seguem o mesmo servico existente de registro de tentativas
+- o Modo Livre nao cria sistema paralelo de progresso
 
 ## POST `/api/block-progress/decision`
 
@@ -836,6 +1012,7 @@ Enviar uma nova mensagem para a sessao de estudo assistido.
   - `GET /api/roadmap/validation`
   - `GET /api/roadmap/mapping/coverage`
   - `GET /api/study-plan/today`
+  - `GET /api/free-study/catalog`
   - `GET /api/activity/recent`
   - `GET /api/activity/today`
   - `GET /api/roadmap/mapping/gaps`
