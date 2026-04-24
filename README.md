@@ -153,6 +153,58 @@ O sync de uso:
 - faz merge por chave de negocio em `block_progress`, `subject_progress` e `block_mastery`
 - nao apaga dados existentes no Postgres
 
+### Migracao controlada de dados reais do SQLite para Postgres
+
+Para migrar os dados reais de `backend/data/study_hub.db` para o Postgres configurado em `DATABASE_URL`, use o script dedicado de migracao controlada.
+
+Antes de qualquer escrita remota, ele:
+
+- valida que o destino nao e SQLite
+- exige `--apply`
+- exige `STUDY_HUB_ALLOW_REMOTE_MIGRATION=true`
+- cria backup do SQLite local em `backend/backups/`
+
+Dry-run:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.db_tools.migrate_sqlite_to_postgres --dry-run
+```
+
+Apply real:
+
+```powershell
+$env:STUDY_HUB_ALLOW_REMOTE_MIGRATION='true'
+python -m app.db_tools.migrate_sqlite_to_postgres --apply
+```
+
+Apply real com limpeza explicita do destino:
+
+```powershell
+$env:STUDY_HUB_ALLOW_REMOTE_MIGRATION='true'
+python -m app.db_tools.migrate_sqlite_to_postgres --apply --reset-target
+```
+
+Regras importantes:
+
+- sem `--apply`, o script nao escreve no Postgres
+- sem `STUDY_HUB_ALLOW_REMOTE_MIGRATION=true`, o script aborta
+- sem `--reset-target`, o script nao apaga dados existentes
+- `schema_version` nao e copiada do SQLite
+- nao commitar `.env` nem credenciais reais
+- o backup local do SQLite nao substitui o banco original
+
+O relatorio do script mostra:
+
+- banco origem
+- banco destino com senha mascarada
+- tabelas detectadas
+- tabelas ignoradas
+- contagens antes e depois
+- tabelas migradas
+- checks de schema criticos no destino
+
 ### Sync estrutural automatico no startup
 
 Quando o backend estiver rodando com `DATABASE_URL` Postgres, o default agora e:
@@ -231,13 +283,81 @@ O backend agora estah preparado para usar provider local configuravel, com padra
 - provider: `lm_studio`
 - model: `gemma-4-e4b`
 
+Agora tambem suporta perfil de maquina e capabilities diferentes por dispositivo, mesmo usando o mesmo `DATABASE_URL`.
+
 Crie `backend/.env` a partir de `backend/.env.example`:
 
 ```text
+STUDY_HUB_MACHINE_PROFILE=desktop
+STUDY_HUB_LLM_ENABLED=true
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=true
+STUDY_HUB_ESSAY_STUDY_ENABLED=true
 STUDY_HUB_LLM_PROVIDER=lm_studio
 STUDY_HUB_LLM_MODEL=gemma-4-e4b
 STUDY_HUB_LLM_BASE_URL=http://127.0.0.1:1234/v1
 STUDY_HUB_LLM_TIMEOUT_SECONDS=30
+```
+
+### Exemplo de perfil do notebook
+
+Mesmo usando o mesmo `DATABASE_URL` do desktop principal:
+
+```text
+DATABASE_URL=postgresql+psycopg://postgres:SUASENHA@db.seu-projeto.supabase.co:5432/postgres
+STUDY_HUB_MACHINE_PROFILE=notebook
+STUDY_HUB_LLM_ENABLED=false
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=false
+STUDY_HUB_ESSAY_STUDY_ENABLED=false
+STUDY_HUB_LLM_PROVIDER=lm_studio
+STUDY_HUB_LLM_MODEL=gemma-4-e4b
+```
+
+Efeito:
+
+- notebook usa o mesmo banco remoto
+- backend continua funcional
+- rotas de correcao e estudo de redacao sao recusadas antes de qualquer tentativa de conectar ao LM Studio
+
+### Exemplo de perfil do desktop principal
+
+```text
+DATABASE_URL=postgresql+psycopg://postgres:SUASENHA@db.seu-projeto.supabase.co:5432/postgres
+STUDY_HUB_MACHINE_PROFILE=desktop
+STUDY_HUB_LLM_ENABLED=true
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=true
+STUDY_HUB_ESSAY_STUDY_ENABLED=true
+STUDY_HUB_LLM_PROVIDER=lm_studio
+STUDY_HUB_LLM_MODEL=gemma-4-e4b
+STUDY_HUB_LLM_BASE_URL=http://127.0.0.1:1234/v1
+```
+
+### Endpoint de capabilities
+
+O backend agora expõe:
+
+```text
+GET /api/system/capabilities
+```
+
+Exemplo de resposta:
+
+```json
+{
+  "machine_profile": "notebook",
+  "database": {
+    "dialect": "postgres",
+    "using_remote_database": true
+  },
+  "llm": {
+    "enabled": false,
+    "provider": "lm_studio",
+    "model": "gemma-4-e4b"
+  },
+  "features": {
+    "essay_correction_enabled": false,
+    "essay_study_enabled": false
+  }
+}
 ```
 
 No LM Studio:

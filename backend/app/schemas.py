@@ -315,6 +315,29 @@ class ApiErrorResponse(BaseModel):
     detail: ApiErrorDetail
 
 
+class SystemCapabilitiesDatabase(BaseModel):
+    dialect: str
+    using_remote_database: bool
+
+
+class SystemCapabilitiesLLM(BaseModel):
+    enabled: bool
+    provider: str
+    model: str
+
+
+class SystemCapabilitiesFeatures(BaseModel):
+    essay_correction_enabled: bool
+    essay_study_enabled: bool
+
+
+class SystemCapabilitiesResponse(BaseModel):
+    machine_profile: str
+    database: SystemCapabilitiesDatabase
+    llm: SystemCapabilitiesLLM
+    features: SystemCapabilitiesFeatures
+
+
 class ActivityItem(BaseModel):
     type: Literal["question_attempt_bulk", "review_upsert", "daily_plan_generated", "block_progress_decision"]
     created_at: str

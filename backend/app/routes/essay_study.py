@@ -10,6 +10,7 @@ from app.schemas import (
     EssayStudySessionListItem,
     EssayStudySessionResponse,
 )
+from app.settings import get_essay_study_enabled, get_llm_enabled
 from app.services.essay_study_service import (
     EssayStudyError,
     EssayStudyProviderError,
@@ -25,6 +26,31 @@ from app.services.essay_study_service import (
 router = APIRouter(prefix="/api/essay")
 
 
+def _ensure_essay_study_enabled() -> None:
+    if not get_llm_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "llm_disabled",
+                "message": (
+                    "LLM desabilitado nesta maquina. Estudo assistido de redacao indisponivel aqui. "
+                    "Use um profile com LLM habilitado, como o desktop principal."
+                ),
+            },
+        )
+    if not get_essay_study_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "essay_study_disabled",
+                "message": (
+                    "Estudo assistido de redacao desabilitado nesta maquina por feature flag. "
+                    "Nenhuma tentativa de chamar o provider local sera feita."
+                ),
+            },
+        )
+
+
 @router.post(
     "/study-sessions",
     response_model=EssayStudySessionResponse,
@@ -36,6 +62,7 @@ router = APIRouter(prefix="/api/essay")
     },
 )
 def create_study_session_route(payload: EssayStudySessionCreateRequest) -> EssayStudySessionResponse:
+    _ensure_essay_study_enabled()
     try:
         return create_study_session(payload.essay_correction_id)
     except EssayStudyTokenLimitError as exc:
@@ -59,6 +86,7 @@ def create_study_session_route(payload: EssayStudySessionCreateRequest) -> Essay
     },
 )
 def create_study_message_route(session_id: int, payload: EssayStudyMessageCreateRequest) -> EssayStudySessionResponse:
+    _ensure_essay_study_enabled()
     try:
         return create_study_message(session_id, payload.content)
     except EssayStudyTokenLimitError as exc:

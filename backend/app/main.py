@@ -15,6 +15,7 @@ from app.routes.health import router as health_router
 from app.routes.question_attempts import router as question_attempts_router
 from app.routes.roadmap import router as roadmap_router
 from app.routes.study_plan import router as study_plan_router
+from app.routes.system import router as system_router
 from app.settings import get_auto_sync_structural_on_startup, load_env_file
 from app.routes.today import router as today_router
 from app.routes.timer_sessions import router as timer_sessions_router
@@ -47,6 +48,7 @@ app.include_router(today_router)
 app.include_router(study_plan_router)
 app.include_router(question_attempts_router)
 app.include_router(timer_sessions_router)
+app.include_router(system_router)
 app.include_router(essay_router)
 app.include_router(essay_study_router)
 app.include_router(block_progress_router)

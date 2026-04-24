@@ -9,6 +9,7 @@ from app.schemas import (
     EssayCorrectionResponse,
     EssayCorrectionStoredResponse,
 )
+from app.settings import get_essay_correction_enabled, get_llm_enabled
 from app.services.essay_service import (
     EssayCorrectionError,
     EssayCorrectionProviderError,
@@ -22,6 +23,31 @@ from app.services.essay_service import (
 router = APIRouter(prefix="/api/essay")
 
 
+def _ensure_essay_correction_enabled() -> None:
+    if not get_llm_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "llm_disabled",
+                "message": (
+                    "LLM desabilitado nesta maquina. Correcao de redacao indisponivel aqui. "
+                    "Use um profile com LLM habilitado, como o desktop principal."
+                ),
+            },
+        )
+    if not get_essay_correction_enabled():
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "essay_correction_disabled",
+                "message": (
+                    "Correcao de redacao desabilitada nesta maquina por feature flag. "
+                    "Isso evita tentar conectar ao provider local quando ele nao existe."
+                ),
+            },
+        )
+
+
 @router.post(
     "/correct",
     response_model=EssayCorrectionResponse,
@@ -33,6 +59,7 @@ router = APIRouter(prefix="/api/essay")
     },
 )
 def correct_essay_route(payload: EssayCorrectionRequest) -> EssayCorrectionResponse:
+    _ensure_essay_correction_enabled()
     try:
         return correct_essay(payload)
     except EssayCorrectionTokenLimitError as exc:
@@ -57,6 +84,7 @@ def correct_essay_route(payload: EssayCorrectionRequest) -> EssayCorrectionRespo
     },
 )
 def create_essay_correction_route(payload: EssayCorrectionCreateRequest) -> EssayCorrectionStoredResponse:
+    _ensure_essay_correction_enabled()
     try:
         return create_essay_correction(payload)
     except EssayCorrectionTokenLimitError as exc:
