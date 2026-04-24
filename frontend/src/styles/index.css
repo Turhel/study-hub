@@ -37,6 +37,24 @@
   --overlay-button-bg: rgba(255, 255, 255, 0.5);
   --overlay-button-hover: rgba(255, 255, 255, 0.78);
   --overlay-button-border: rgba(86, 62, 43, 0.18);
+  --hero-glow: radial-gradient(circle, rgba(255, 225, 133, 0.62), rgba(255, 225, 133, 0.14) 50%, transparent 72%);
+  --hero-ornament-bg: #fff8ea;
+  --hero-ornament-border: rgba(35, 35, 35, 0.78);
+  --hero-ornament-shadow: rgba(34, 34, 34, 0.1);
+  --today-kicker-bg: rgba(255, 255, 255, 0.84);
+  --today-kicker-text: #3d82ba;
+  --today-chip-bg: #fffdf8;
+  --today-chip-border: rgba(35, 35, 35, 0.92);
+  --today-chip-text: #2e2a24;
+  --today-chip-shadow: rgba(34, 34, 34, 0.1);
+  --today-point-bg: rgba(255, 255, 255, 0.72);
+  --today-card-bg: rgba(255, 255, 255, 0.8);
+  --today-card-border: rgba(57, 48, 40, 0.12);
+  --today-card-shadow: rgba(72, 57, 43, 0.06);
+  --today-card-highlight: rgba(255, 208, 89, 0.18);
+  --today-card-icon-bg: linear-gradient(180deg, #ffe88f, #ffd46a);
+  --today-outline-bg: rgba(255, 253, 248, 0.92);
+  --today-outline-hover: #fff7df;
 }
 
 :root[data-theme="dark"] {
@@ -70,6 +88,24 @@
   --overlay-button-bg: rgba(255, 255, 255, 0.03);
   --overlay-button-hover: rgba(255, 255, 255, 0.08);
   --overlay-button-border: rgba(93, 103, 124, 0.45);
+  --hero-glow: radial-gradient(circle, rgba(64, 124, 255, 0.22), rgba(64, 124, 255, 0.06) 48%, transparent 72%);
+  --hero-ornament-bg: #171b23;
+  --hero-ornament-border: rgba(93, 103, 124, 0.9);
+  --hero-ornament-shadow: rgba(0, 0, 0, 0.26);
+  --today-kicker-bg: rgba(255, 255, 255, 0.06);
+  --today-kicker-text: #7ec5ff;
+  --today-chip-bg: #171b23;
+  --today-chip-border: rgba(93, 103, 124, 0.9);
+  --today-chip-text: #f1f5fb;
+  --today-chip-shadow: rgba(0, 0, 0, 0.18);
+  --today-point-bg: rgba(255, 255, 255, 0.05);
+  --today-card-bg: rgba(23, 27, 35, 0.88);
+  --today-card-border: rgba(93, 103, 124, 0.45);
+  --today-card-shadow: rgba(0, 0, 0, 0.16);
+  --today-card-highlight: rgba(255, 208, 89, 0.14);
+  --today-card-icon-bg: linear-gradient(180deg, #ffe88f, #ffcc55);
+  --today-outline-bg: rgba(23, 27, 35, 0.92);
+  --today-outline-hover: rgba(33, 38, 49, 0.98);
 }
 
 body {
@@ -540,7 +576,7 @@ textarea {
   width: 25rem;
   height: 25rem;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 237, 170, 0.58), rgba(255, 237, 170, 0.12) 52%, transparent 72%);
+  background: var(--hero-glow);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -556,10 +592,10 @@ textarea {
   place-items: center;
   width: 3.6rem;
   height: 3.6rem;
-  border: 2px solid #232323;
+  border: 2px solid var(--hero-ornament-border);
   border-radius: 18px;
-  background: #fff9ee;
-  box-shadow: 4px 4px 0 rgba(34, 34, 34, 0.1);
+  background: var(--hero-ornament-bg);
+  box-shadow: 4px 4px 0 var(--hero-ornament-shadow);
   font-size: 1.4rem;
 }
 
@@ -586,9 +622,9 @@ textarea {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
+  background: var(--today-kicker-bg);
   padding: 0.38rem 0.8rem;
-  color: #3d82ba;
+  color: var(--today-kicker-text);
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -629,11 +665,12 @@ textarea {
 .today-hero-points p {
   margin: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  background: var(--today-point-bg);
   padding: 0.78rem 1rem;
   color: var(--app-text);
   font-size: 0.94rem;
   line-height: 1.6;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .today-hero-actions {
@@ -653,13 +690,14 @@ textarea {
 .today-hero-meta span,
 .today-performance-pill,
 .today-chip {
-  border: 2px solid #232323;
+  border: 2px solid var(--today-chip-border);
   border-radius: 999px;
-  background: #fffdf8;
+  background: var(--today-chip-bg);
   padding: 0.45rem 0.72rem;
+  color: var(--today-chip-text);
   font-size: 0.76rem;
   font-weight: 800;
-  box-shadow: 2px 2px 0 rgba(34, 34, 34, 0.1);
+  box-shadow: 2px 2px 0 var(--today-chip-shadow);
 }
 
 .today-hero-progress {
@@ -697,13 +735,15 @@ textarea {
 .today-list-row,
 .today-performance-row,
 .app-empty-state {
-  border: 2px solid var(--border-soft);
+  border: 2px solid var(--today-card-border);
   border-radius: 22px;
-  background: var(--surface-soft);
+  background: var(--today-card-bg);
+  box-shadow: 0 10px 24px -18px var(--today-card-shadow);
 }
 
 .today-focus-card {
   padding: 1rem;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%);
 }
 
 .today-focus-card-head {
@@ -733,9 +773,10 @@ textarea {
   width: 2.2rem;
   height: 2.2rem;
   border-radius: 16px;
-  background: #ffe680;
+  background: var(--today-card-icon-bg);
   font-size: 0.95rem;
   font-weight: 900;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
 }
 
 .today-focus-stats,
@@ -765,6 +806,7 @@ textarea {
   display: flex;
   gap: 0.8rem;
   padding: 0.9rem;
+  align-items: flex-start;
 }
 
 .today-list-bullet {
@@ -772,8 +814,9 @@ textarea {
   height: 0.85rem;
   margin-top: 0.35rem;
   border-radius: 999px;
-  background: #39aaf0;
+  background: linear-gradient(180deg, #39aaf0, #7fca68);
   flex: 0 0 auto;
+  box-shadow: 0 0 0 0.18rem var(--today-card-highlight);
 }
 
 .today-performance-row {
@@ -825,9 +868,13 @@ textarea {
 
 .app-secondary-action,
 .app-outline-action {
-  background: var(--surface);
+  background: var(--today-outline-bg);
   color: var(--app-text);
   box-shadow: 3px 3px 0 var(--shadow-soft);
+}
+
+.app-outline-action:hover {
+  background: var(--today-outline-hover);
 }
 
 .app-input {
