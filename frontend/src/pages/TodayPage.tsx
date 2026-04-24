@@ -14,14 +14,40 @@ type DisciplineCard = {
   toneClassName: string;
 };
 
-const smokeDisciplineCard: DisciplineCard = {
-  discipline: "Matemática",
-  subjects: ["Matemática aplicada à realidade"],
-  plannedQuestions: 12,
-  completedQuestions: 0,
-  icon: "📐",
-  toneClassName: "today-discipline-card-math",
-};
+const smokeDisciplineCards: DisciplineCard[] = [
+  {
+    discipline: "Matemática",
+    subjects: ["Matemática aplicada à realidade"],
+    plannedQuestions: 12,
+    completedQuestions: 0,
+    icon: "📐",
+    toneClassName: "today-discipline-card-math",
+  },
+  {
+    discipline: "Biologia",
+    subjects: ["Ecologia", "Citologia"],
+    plannedQuestions: 8,
+    completedQuestions: 2,
+    icon: "🧬",
+    toneClassName: "today-discipline-card-nature",
+  },
+  {
+    discipline: "Linguagens",
+    subjects: ["Interpretação de texto", "Gêneros textuais"],
+    plannedQuestions: 6,
+    completedQuestions: 1,
+    icon: "📝",
+    toneClassName: "today-discipline-card-languages",
+  },
+  {
+    discipline: "Humanas",
+    subjects: ["Brasil República", "Cidadania"],
+    plannedQuestions: 7,
+    completedQuestions: 0,
+    icon: "🏛️",
+    toneClassName: "today-discipline-card-humanas",
+  },
+];
 
 const disciplineVisualMap: Record<string, { icon: string; toneClassName: string }> = {
   "Linguagens e Códigos": { icon: "📝", toneClassName: "today-discipline-card-languages" },
@@ -82,7 +108,7 @@ function buildDisciplineCards(items: StudyPlanItem[]): DisciplineCard[] {
   }, new Map());
 
   const cards = [...grouped.values()].sort((a, b) => b.plannedQuestions - a.plannedQuestions);
-  return cards.length > 0 ? cards : [smokeDisciplineCard];
+  return cards.length > 0 ? cards : smokeDisciplineCards;
 }
 
 function summarizeSubjects(subjects: string[]): string {
