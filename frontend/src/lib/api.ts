@@ -14,6 +14,21 @@ import type { TimerSessionPayload } from "./timerTypes";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+async function responseError(response: Response, fallback: string): Promise<Error> {
+  try {
+    const payload = (await response.json()) as { detail?: string | { message?: string } };
+    if (typeof payload.detail === "string") {
+      return new Error(payload.detail);
+    }
+    if (payload.detail?.message) {
+      return new Error(payload.detail.message);
+    }
+  } catch {
+    return new Error(fallback);
+  }
+  return new Error(fallback);
+}
+
 export async function getToday(): Promise<TodayResponse> {
   const response = await fetch(`${API_BASE_URL}/api/today`);
 
@@ -114,7 +129,7 @@ export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPaylo
   });
 
   if (!response.ok) {
-    throw new Error("Nao foi possivel registrar as questoes.");
+    throw await responseError(response, "Nao foi possivel registrar as questoes.");
   }
 
   return response.json() as Promise<QuestionAttemptBulkResponse>;

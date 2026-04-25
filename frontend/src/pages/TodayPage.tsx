@@ -126,6 +126,23 @@ function buildAttemptPayload(item: StudyPlanItem, form: AttemptForm): QuestionAt
   };
 }
 
+function attemptValidationMessage(form: AttemptForm): string | null {
+  if (!Number.isFinite(form.quantity) || form.quantity <= 0) {
+    return "Informe uma quantidade maior que zero.";
+  }
+  if (!Number.isFinite(form.correct_count) || form.correct_count < 0) {
+    return "Acertos nao pode ser negativo.";
+  }
+  if (form.correct_count > form.quantity) {
+    return "Acertos nao pode ser maior que a quantidade.";
+  }
+  const elapsed = Number(form.elapsed_seconds);
+  if (form.elapsed_seconds.trim() && (!Number.isFinite(elapsed) || elapsed < 0)) {
+    return "Tempo total deve ser zero ou maior.";
+  }
+  return null;
+}
+
 function PreferenceNumberInput({
   label,
   value,
@@ -269,6 +286,7 @@ export default function TodayPage() {
   const hasPlanItems = planItems.length > 0;
   const capabilities = capabilitiesQuery.data;
   const activityToday = activityTodayQuery.data;
+  const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
 
   const backendOffline = planQuery.isError && capabilitiesQuery.isError && preferencesQuery.isError;
   const focusCards = useMemo(
@@ -299,6 +317,11 @@ export default function TodayPage() {
     }
     const quantity = Math.max(1, Number(attemptForm.quantity) || 1);
     const correct = Math.min(Math.max(0, Number(attemptForm.correct_count) || 0), quantity);
+    const validationMessage = attemptValidationMessage({ ...attemptForm, quantity, correct_count: correct });
+    if (validationMessage) {
+      setFeedback(validationMessage);
+      return;
+    }
     registerAttemptsMutation.mutate({
       item: selectedItem,
       form: { ...attemptForm, quantity, correct_count: correct },
@@ -580,8 +603,8 @@ export default function TodayPage() {
                 onChange={(value) =>
                   setAttemptForm((current) => ({
                     ...current,
-                    quantity: value,
-                    correct_count: Math.min(current.correct_count, value),
+                    quantity: Math.max(1, value || 1),
+                    correct_count: Math.min(current.correct_count, Math.max(1, value || 1)),
                   }))
                 }
               />
@@ -688,6 +711,8 @@ export default function TodayPage() {
               />
             </label>
 
+            {attemptError ? <p className="today-form-error">{attemptError}</p> : null}
+
             <div className="today-action-row">
               <button type="button" className="app-secondary-action" onClick={() => setSelectedItem(null)}>
                 Cancelar
@@ -695,7 +720,7 @@ export default function TodayPage() {
               <button
                 type="button"
                 className="app-primary-action app-primary-action-blue"
-                disabled={registerAttemptsMutation.isPending}
+                disabled={registerAttemptsMutation.isPending || Boolean(attemptError)}
                 onClick={submitAttempt}
               >
                 {registerAttemptsMutation.isPending ? "Registrando..." : "Salvar questoes"}
