@@ -271,6 +271,7 @@ export default function TodayPage() {
       setAttemptForm(defaultAttemptForm);
       setFeedback(
         [
+          `${data.created_attempts} questoes registradas`,
           data.impact_message,
           data.mastery_status ? `Dominio: ${data.mastery_status}` : null,
           data.mastery_score !== null && data.mastery_score !== undefined ? `Score: ${data.mastery_score.toFixed(2)}` : null,
@@ -318,16 +319,14 @@ export default function TodayPage() {
     if (!selectedItem) {
       return;
     }
-    const quantity = Math.max(1, Number(attemptForm.quantity) || 1);
-    const correct = Math.min(Math.max(0, Number(attemptForm.correct_count) || 0), quantity);
-    const validationMessage = attemptValidationMessage({ ...attemptForm, quantity, correct_count: correct });
+    const validationMessage = attemptValidationMessage(attemptForm);
     if (validationMessage) {
       setFeedback(validationMessage);
       return;
     }
     registerAttemptsMutation.mutate({
       item: selectedItem,
-      form: { ...attemptForm, quantity, correct_count: correct },
+      form: attemptForm,
     });
   }
 
@@ -606,8 +605,7 @@ export default function TodayPage() {
                 onChange={(value) =>
                   setAttemptForm((current) => ({
                     ...current,
-                    quantity: Math.max(1, value || 1),
-                    correct_count: Math.min(current.correct_count, Math.max(1, value || 1)),
+                    quantity: value,
                   }))
                 }
               />
@@ -619,7 +617,7 @@ export default function TodayPage() {
                 onChange={(value) =>
                   setAttemptForm((current) => ({
                     ...current,
-                    correct_count: Math.min(Math.max(value, 0), current.quantity),
+                    correct_count: value,
                   }))
                 }
               />
