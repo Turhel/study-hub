@@ -236,6 +236,9 @@ export default function TodayPage() {
       queryClient.invalidateQueries({ queryKey: ["study-plan-today"] }),
       queryClient.invalidateQueries({ queryKey: ["activity-today"] }),
       queryClient.invalidateQueries({ queryKey: ["activity-recent"] }),
+      queryClient.invalidateQueries({ queryKey: ["gamification-summary"] }),
+      queryClient.invalidateQueries({ queryKey: ["stats-overview"] }),
+      queryClient.invalidateQueries({ queryKey: ["stats-discipline"] }),
     ]);
   };
 

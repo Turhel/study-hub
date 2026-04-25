@@ -1,8 +1,11 @@
 import type {
   ActivityTodayResponse,
   ActivityItem,
+  GamificationSummaryResponse,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
+  StatsDisciplineResponse,
+  StatsOverviewResponse,
   StudyGuidePreferencesPayload,
   StudyGuidePreferencesResponse,
   StudyPlanRecalculateResponse,
@@ -117,6 +120,36 @@ export async function getRecentActivity(limit = 100): Promise<ActivityItem[]> {
   }
 
   return response.json() as Promise<ActivityItem[]>;
+}
+
+export async function getStatsOverview(): Promise<StatsOverviewResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/stats/overview`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar as estatisticas gerais.");
+  }
+
+  return response.json() as Promise<StatsOverviewResponse>;
+}
+
+export async function getStatsByDiscipline(discipline: string): Promise<StatsDisciplineResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/stats/discipline/${encodeURIComponent(discipline)}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar as estatisticas da disciplina.");
+  }
+
+  return response.json() as Promise<StatsDisciplineResponse>;
+}
+
+export async function getGamificationSummary(): Promise<GamificationSummaryResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/gamification/summary`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar ofensiva e maestria.");
+  }
+
+  return response.json() as Promise<GamificationSummaryResponse>;
 }
 
 export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPayload): Promise<QuestionAttemptBulkResponse> {

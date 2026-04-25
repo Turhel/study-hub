@@ -1,6 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
+import { getGamificationSummary } from "./lib/api";
+import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
 import TodayPage from "./pages/TodayPage";
 
@@ -8,6 +11,7 @@ type ThemeMode = "light" | "dark";
 
 const navigationItems = [
   { label: "Foco do dia", path: "/", icon: <FocusEmojiIcon /> },
+  { label: "Estatisticas", path: "/stats", icon: <StatsEmojiIcon /> },
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
 ];
 
@@ -17,23 +21,31 @@ const futureItems = [
   { label: "Redacao", icon: <MemoEmojiIcon /> },
 ];
 
-const streakDays = [
-  { label: "Ter", done: false },
-  { label: "Qua", done: false },
-  { label: "Qui", done: false },
-  { label: "Sex", done: true },
-  { label: "Sab", done: false },
-  { label: "Dom", done: false },
-  { label: "Seg", done: false },
-];
-
-const masteryItems = ["Linguagens", "Matematica", "Humanas", "Natureza"];
 const profileMenuItems = [
   { label: "Minha conta", icon: "👤" },
   { label: "Configuracoes", icon: "⚙️" },
   { label: "Preferencias de estudo", icon: "🧠" },
   { label: "Exportar progresso", icon: "📦" },
 ];
+
+const weekdays = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"];
+
+const weekdayLabels: Record<string, string> = {
+  seg: "Seg",
+  ter: "Ter",
+  qua: "Qua",
+  qui: "Qui",
+  sex: "Sex",
+  sab: "Sab",
+  dom: "Dom",
+};
+
+const masterySummaryItems = [
+  { label: "Questoes", key: "question_mastery_stars" },
+  { label: "Revisoes", key: "review_mastery_stars" },
+  { label: "Consistencia", key: "consistency_mastery_stars" },
+  { label: "Dominados", key: "mastered_subjects_count" },
+] as const;
 
 function FocusEmojiIcon() {
   return (
@@ -57,6 +69,17 @@ function TimerEmojiIcon() {
       <path d="M16 8.8a8.7 8.7 0 018.7 8.7h-2.1a6.6 6.6 0 10-1.93 4.67l1.48 1.48A8.7 8.7 0 1116 8.8z" fill="#5AB8FF" />
       <path d="M16.9 12v4.66l3.55 2.06-1.06 1.77-4.53-2.63V12h2.04z" fill="#FFB648" />
       <circle cx="16" cy="17.5" r="1.35" fill="#5C516A" />
+    </svg>
+  );
+}
+
+function StatsEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <rect x="4.8" y="5.2" width="22.4" height="21.6" rx="5.2" fill="#EAF7FF" />
+      <path d="M9.1 21.6h3.6v-6.9H9.1v6.9zm5.5 0h3.6V10.4h-3.6v11.2zm5.5 0h3.6v-9h-3.6v9z" fill="#39AAF0" />
+      <path d="M8.8 9.3h8.9v1.7H8.8zm0 3h5.7V14H8.8z" fill="#5C516A" opacity="0.65" />
+      <circle cx="23.6" cy="8.6" r="2.6" fill="#FFCF59" />
     </svg>
   );
 }
@@ -181,6 +204,14 @@ function HoverPanelButton({
   );
 }
 
+function formatDate(value?: string | null): string {
+  if (!value) {
+    return "Sem registro";
+  }
+
+  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
+}
+
 export default function App() {
   const [theme, setTheme] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") {
@@ -194,6 +225,19 @@ export default function App() {
 
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
+  const gamificationQuery = useQuery({
+    queryKey: ["gamification-summary"],
+    queryFn: getGamificationSummary,
+    retry: false,
+  });
+
+  const streak = gamificationQuery.data?.streak;
+  const mastery = gamificationQuery.data?.mastery;
+  const activeWeekdays = new Set(streak?.active_weekdays ?? []);
+  const streakDays = weekdays.map((day) => ({
+    label: weekdayLabels[day],
+    done: activeWeekdays.has(day),
+  }));
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -230,8 +274,14 @@ export default function App() {
               <section className="topbar-stat-card">
                 <div className="topbar-stat-card-head">
                   <div>
-                    <h2>Comece uma ofensiva</h2>
-                    <p>Responda um bloco de questoes por dia para comecar sua sequencia.</p>
+                    <h2>{streak ? `${streak.current_streak_days} dias de ofensiva` : "Ofensiva"}</h2>
+                    <p>
+                      {gamificationQuery.isError
+                        ? "Dados indisponiveis agora."
+                        : streak?.studied_today
+                          ? `Voce estudou hoje. Ultimo registro: ${formatDate(streak.last_study_date)}.`
+                          : `Registre questoes hoje para manter a sequencia. Ultimo registro: ${formatDate(streak?.last_study_date)}.`}
+                    </p>
                   </div>
                   <div className="topbar-stat-icon topbar-stat-icon-fire" aria-hidden="true">
                     <FireEmojiIcon idPrefix="fire-panel" />
@@ -246,6 +296,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+                <p className="topbar-stat-note">Maior sequencia: {streak?.longest_streak_days ?? 0} dias</p>
               </section>
             </HoverPanelButton>
 
@@ -253,8 +304,14 @@ export default function App() {
               <section className="topbar-stat-card">
                 <div className="topbar-stat-card-head">
                   <div>
-                    <h2>Ganhe sua primeira estrela</h2>
-                    <p>Cada estrela representa uma questao que voce acertou.</p>
+                    <h2>{mastery ? `${mastery.total_mastery_stars} estrelas` : "Maestria"}</h2>
+                    <p>
+                      {gamificationQuery.isError
+                        ? "Maestria indisponivel agora."
+                        : mastery && mastery.total_mastery_stars > 0
+                          ? `${mastery.mastered_subjects_count} assuntos dominados.`
+                          : "Registre questoes e revisoes para gerar suas primeiras estrelas."}
+                    </p>
                   </div>
                   <div className="topbar-stat-icon topbar-stat-icon-star" aria-hidden="true">
                     <StarEmojiIcon />
@@ -262,13 +319,23 @@ export default function App() {
                 </div>
 
                 <div className="topbar-mastery-grid">
-                  {masteryItems.map((item) => (
-                    <article key={item} className="topbar-mastery-item">
-                      <strong>{item}</strong>
-                      <span>0</span>
+                  {masterySummaryItems.map((item) => (
+                    <article key={item.label} className="topbar-mastery-item">
+                      <strong>{item.label}</strong>
+                      <span>{mastery?.[item.key] ?? 0}</span>
                       <small>Estrelas</small>
                     </article>
                   ))}
+                </div>
+                <div className="topbar-mastery-subjects">
+                  {(mastery?.top_mastery_subjects ?? []).slice(0, 3).map((subject) => (
+                    <span key={subject.subject_id}>
+                      {subject.subject_name} - {subject.stars} estrelas
+                    </span>
+                  ))}
+                  {mastery && mastery.top_mastery_subjects.length === 0 ? (
+                    <span>Nenhum assunto com maestria ainda.</span>
+                  ) : null}
                 </div>
               </section>
             </HoverPanelButton>
@@ -326,6 +393,7 @@ export default function App() {
       <div className="app-content">
         <Routes>
           <Route path="/" element={<TodayPage />} />
+          <Route path="/stats" element={<StatsPage />} />
           <Route path="/timer" element={<TimerPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

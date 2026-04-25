@@ -149,3 +149,84 @@ export type QuestionAttemptBulkResponse = {
   next_review_date: string | null;
   impact_message: string | null;
 };
+
+export type StatsDisciplineSignal = {
+  discipline: string;
+  strategic_discipline: string;
+  questions: number;
+  accuracy: number;
+};
+
+export type StatsOverviewResponse = {
+  questions_today: number;
+  questions_this_week: number;
+  questions_this_month: number;
+  accuracy_today: number;
+  accuracy_this_week: number;
+  accuracy_this_month: number;
+  avg_time_correct_questions_seconds: number | null;
+  studied_subjects_this_week: number;
+  impacted_blocks_this_week: number;
+  weak_disciplines: StatsDisciplineSignal[];
+  strong_disciplines: StatsDisciplineSignal[];
+  recent_activity_count: number;
+};
+
+export type StatsSubjectPerformance = {
+  subject_id: number;
+  subject_name: string;
+  discipline: string;
+  block_id: number | null;
+  attempts: number;
+  correct: number;
+  accuracy: number;
+  mastery_score: number | null;
+};
+
+export type StatsDisciplineResponse = {
+  discipline: string;
+  questions_this_week: number;
+  questions_this_month: number;
+  correct_count: number;
+  incorrect_count: number;
+  accuracy: number;
+  avg_time_correct_questions_seconds: number | null;
+  studied_subjects: number;
+  weak_subjects: StatsSubjectPerformance[];
+  strong_subjects: StatsSubjectPerformance[];
+  review_due_count: number;
+  blocks_in_progress: number;
+  blocks_reviewable: number;
+};
+
+export type GamificationStreakResponse = {
+  current_streak_days: number;
+  longest_streak_days: number;
+  studied_today: boolean;
+  active_weekdays: string[];
+  last_study_date: string | null;
+};
+
+export type GamificationTopMasterySubject = {
+  subject_id: number;
+  subject_name: string;
+  discipline: string;
+  stars: number;
+  question_accuracy: number;
+  attempts_count: number;
+};
+
+export type GamificationMasteryResponse = {
+  total_mastery_stars: number;
+  question_mastery_stars: number;
+  review_mastery_stars: number;
+  consistency_mastery_stars: number;
+  mastered_subjects_count: number;
+  top_mastery_subjects: GamificationTopMasterySubject[];
+  metadata: Record<string, unknown>;
+};
+
+export type GamificationSummaryResponse = {
+  streak: GamificationStreakResponse;
+  mastery: GamificationMasteryResponse;
+};
