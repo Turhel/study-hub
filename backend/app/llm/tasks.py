@@ -116,7 +116,13 @@ def _run_messages(task_name: str, messages: list[LMStudioMessage], temperature: 
         lowered = message.lower()
         if "tempo esgotado" in lowered:
             raise LLMTaskTimeoutError(message) from exc
-        if "nao foi possivel conectar" in lowered:
+        connection_markers = (
+            "nao foi possivel conectar",
+            "offline",
+            "inacessivel",
+            "encerrou a conexao",
+        )
+        if any(marker in lowered for marker in connection_markers):
             raise LLMTaskConnectionError(message) from exc
         raise LLMTaskResponseError(message) from exc
     except (LLMInvalidResponseError, LLMHttpStatusError) as exc:

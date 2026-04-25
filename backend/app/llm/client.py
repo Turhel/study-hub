@@ -64,8 +64,8 @@ class LLMHttpClient:
         except error.URLError as exc:
             reason = exc.reason
             if isinstance(reason, (TimeoutError, socket.timeout)):
-                raise LLMTimeoutError(
-                    f"Tempo esgotado ao chamar o provider LLM em {url} apos {effective_timeout:.0f}s."
+                raise LLMConnectionError(
+                    f"Nao foi possivel conectar ao provider LLM em {url} apos {effective_timeout:.0f}s: {reason}"
                 ) from exc
             if isinstance(reason, ConnectionRefusedError):
                 raise LLMConnectionError(
