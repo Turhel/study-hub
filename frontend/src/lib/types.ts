@@ -22,6 +22,7 @@ export type TodayResponse = {
   due_reviews: TodayItem[];
   risk_blocks: TodayItem[];
   forgotten_subjects: TodayItem[];
+  starting_points?: TodayItem[];
 };
 
 export type ActivityItem = {
@@ -37,6 +38,34 @@ export type ActivityItem = {
   metadata: Record<string, unknown>;
 };
 
+export type ActivityTodayResponse = {
+  date: string;
+  question_attempts_registered: number;
+  subjects_studied_today: number;
+  blocks_impacted_today: number;
+  reviews_generated_today: number;
+  progression_decisions_today: number;
+  studied_subject_ids: number[];
+  impacted_block_ids: number[];
+};
+
+export type SystemCapabilitiesResponse = {
+  machine_profile: "desktop" | "notebook" | "local" | string;
+  database: {
+    dialect: "sqlite" | "postgresql" | string;
+    using_remote_database: boolean;
+  };
+  llm: {
+    enabled: boolean;
+    provider: string;
+    model: string;
+  };
+  features: {
+    essay_correction_enabled: boolean;
+    essay_study_enabled: boolean;
+  };
+};
+
 export type StudyPlanSummary = {
   total_questions: number;
   focus_count: number;
@@ -46,6 +75,8 @@ export type StudyPlanExecutionStatus = "nao_iniciado" | "em_andamento" | "conclu
 
 export type StudyPlanItem = {
   discipline: string;
+  strategic_discipline?: string | null;
+  subarea?: string | null;
   block_id: number;
   block_name: string;
   subject_id: number;
@@ -58,11 +89,38 @@ export type StudyPlanItem = {
   priority_score: number;
   primary_reason: string;
   planned_mode: string;
+  roadmap_node_id?: string | null;
+  roadmap_mapped?: boolean;
+  roadmap_mapping_source?: "override" | "heuristic" | "unmapped" | string | null;
+  roadmap_mapping_confidence?: number | null;
+  roadmap_mapping_reason?: string | null;
+  roadmap_status?: "entry" | "available" | "blocked_required" | "blocked_cross_required" | "reviewable" | string | null;
+  roadmap_reason?: string | null;
 };
 
 export type StudyPlanTodayResponse = {
   summary: StudyPlanSummary;
   items: StudyPlanItem[];
+};
+
+export type StudyGuideIntensity = "leve" | "normal" | "forte";
+
+export type StudyGuidePreferencesPayload = {
+  daily_minutes: number;
+  intensity: StudyGuideIntensity;
+  max_focus_count: number;
+  max_questions: number;
+  include_reviews: boolean;
+  include_new_content: boolean;
+};
+
+export type StudyGuidePreferencesResponse = StudyGuidePreferencesPayload & {
+  updated_at: string;
+};
+
+export type StudyPlanRecalculateResponse = {
+  replaced_plan_id: number | null;
+  plan: StudyPlanTodayResponse;
 };
 
 export type QuestionAttemptBulkPayload = {
@@ -79,6 +137,7 @@ export type QuestionAttemptBulkPayload = {
   confidence?: "baixa" | "media" | "alta" | null;
   error_type?: string | null;
   notes?: string | null;
+  study_mode?: "guided" | "free";
 };
 
 export type QuestionAttemptBulkResponse = {
