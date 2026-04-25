@@ -524,6 +524,7 @@ def recalculate_today_study_plan(session: Session) -> StudyPlanRecalculateRespon
         metadata={
             "recalculated": True,
             "replaced_plan_id": replaced_plan_id,
+            "total_questions": plan_response.summary.total_questions,
             "total_planned_questions": plan_response.summary.total_questions,
             "focus_count": plan_response.summary.focus_count,
         },

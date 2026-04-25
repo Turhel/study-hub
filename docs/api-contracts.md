@@ -288,7 +288,7 @@ Substituir explicitamente o plano ativo do dia por um novo plano calculado com a
 
 - o plano ativo anterior do mesmo dia recebe status `replaced`
 - planos antigos nao sao apagados
-- o recalc registra evento `daily_plan_generated` com metadata `recalculated=true`
+- o recalc registra evento `daily_plan_generated` com metadata `recalculated=true`, `total_questions` e `focus_count`
 - se `include_new_content=false`, o recalc pode retornar plano vazio, sem criar foco novo
 
 ## GET `/api/activity/recent`
