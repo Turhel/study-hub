@@ -12,6 +12,7 @@ from app.routes.block_progress import router as block_progress_router
 from app.routes.essay import router as essay_router
 from app.routes.essay_study import router as essay_study_router
 from app.routes.free_study import router as free_study_router
+from app.routes.gamification import router as gamification_router
 from app.routes.health import router as health_router
 from app.routes.lessons import router as lessons_router
 from app.routes.question_attempts import router as question_attempts_router
@@ -52,6 +53,7 @@ app.include_router(today_router)
 app.include_router(study_guide_router)
 app.include_router(study_plan_router)
 app.include_router(stats_router)
+app.include_router(gamification_router)
 app.include_router(lessons_router)
 app.include_router(question_attempts_router)
 app.include_router(timer_sessions_router)

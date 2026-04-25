@@ -7,8 +7,10 @@ from datetime import date, timedelta
 from sqlmodel import Session, select
 
 from app.core.rules import STATUS_EM_RISCO, normalize_discipline_name
-from app.models import Block, BlockMastery, BlockSubject, MockExam, QuestionAttempt, Subject
+from app.models import Block, BlockMastery, BlockProgress, BlockSubject, MockExam, QuestionAttempt, Review, Subject
 from app.schemas import (
+    StatsDisciplineResponse,
+    StatsDisciplineSignal,
     StatsDisciplineDetailResponse,
     StatsDisciplineItem,
     StatsMockExamAreaAverage,
@@ -306,28 +308,54 @@ def get_stats_overview(session: Session) -> StatsOverviewResponse:
     week_start = _week_start(today)
     month_start = _month_start(today)
     attempts = _attempts(session)
-    all_stats = _attempt_stats(attempts)
     week_attempts = [attempt for attempt in attempts if attempt.data >= week_start]
     month_attempts = [attempt for attempt in attempts if attempt.data >= month_start]
     today_attempts = [attempt for attempt in attempts if attempt.data == today]
+    today_stats = _attempt_stats(today_attempts)
     week_stats = _attempt_stats(week_attempts)
     month_stats = _attempt_stats(month_attempts)
-    subject_items = _subject_performance(session, attempts)
+    discipline_items = get_stats_disciplines(session)
+    weak_disciplines = [
+        StatsDisciplineSignal(
+            discipline=item.discipline,
+            strategic_discipline=item.strategic_discipline,
+            questions=item.total_questions,
+            accuracy=item.accuracy,
+        )
+        for item in discipline_items
+        if item.total_questions >= WEAK_SUBJECT_MIN_ATTEMPTS and item.accuracy < WEAK_ACCURACY_THRESHOLD
+    ]
+    strong_disciplines = [
+        StatsDisciplineSignal(
+            discipline=item.discipline,
+            strategic_discipline=item.strategic_discipline,
+            questions=item.total_questions,
+            accuracy=item.accuracy,
+        )
+        for item in discipline_items
+        if item.total_questions >= STRONG_SUBJECT_MIN_ATTEMPTS and item.accuracy >= 0.75
+    ]
+    recent_activity_count = len(
+        [
+            attempt
+            for attempt in attempts
+            if attempt.data >= today - timedelta(days=6)
+        ]
+    )
 
     return StatsOverviewResponse(
-        total_questions_all_time=all_stats.total,
-        total_questions_today=len(today_attempts),
-        total_questions_this_week=week_stats.total,
-        total_questions_this_month=month_stats.total,
-        accuracy_all_time=_accuracy(all_stats.correct, all_stats.total),
+        questions_today=today_stats.total,
+        questions_this_week=week_stats.total,
+        questions_this_month=month_stats.total,
+        accuracy_today=_accuracy(today_stats.correct, today_stats.total),
         accuracy_this_week=_accuracy(week_stats.correct, week_stats.total),
         accuracy_this_month=_accuracy(month_stats.correct, month_stats.total),
-        average_time_correct_questions_seconds=all_stats.average_time_correct_questions_seconds,
+        avg_time_correct_questions_seconds=month_stats.average_time_correct_questions_seconds,
         studied_subjects_this_week=len({attempt.subject_id for attempt in week_attempts if attempt.subject_id is not None}),
         impacted_blocks_this_week=len({attempt.block_id for attempt in week_attempts if attempt.block_id is not None}),
-        risk_blocks_count=len(_risk_blocks(session)),
-        weak_subjects_count=len(_weak_subjects(subject_items)),
-        mock_exam_last3_by_area=_mock_exam_averages(session),
+        weak_disciplines=sorted(weak_disciplines, key=lambda item: (item.accuracy, -item.questions)),
+        strong_disciplines=sorted(strong_disciplines, key=lambda item: (-item.accuracy, -item.questions)),
+        recent_activity_count=recent_activity_count,
     )
 
 
@@ -386,6 +414,60 @@ def _empty_discipline_summary(discipline: str) -> StatsDisciplineItem:
         studied_subjects_count=0,
         weak_subjects_count=0,
         risk_blocks_count=0,
+    )
+
+
+def get_stats_discipline(session: Session, discipline: str) -> StatsDisciplineResponse:
+    today = _today()
+    week_start = _week_start(today)
+    month_start = _month_start(today)
+    attempts = [attempt for attempt in _attempts(session) if _matches_discipline(attempt.disciplina, discipline)]
+    stats = _attempt_stats(attempts)
+    week_attempts = [attempt for attempt in attempts if attempt.data >= week_start]
+    month_attempts = [attempt for attempt in attempts if attempt.data >= month_start]
+    subject_items = _subject_performance(session, attempts, discipline_filter=discipline)
+    due_reviews = session.exec(select(Review).where(Review.proxima_data <= today)).all()
+    due_reviews_for_discipline = 0
+    for review in due_reviews:
+        subject = session.get(Subject, review.subject_id) if review.subject_id is not None else None
+        block = session.get(Block, review.block_id) if review.block_id is not None else None
+        review_discipline = subject.disciplina if subject is not None else block.disciplina if block is not None else None
+        if _matches_discipline(review_discipline, discipline):
+            due_reviews_for_discipline += 1
+
+    blocks = session.exec(select(Block).order_by(Block.ordem, Block.id)).all()
+    matching_blocks = [block for block in blocks if _matches_discipline(block.disciplina, discipline)]
+    block_progress = {
+        progress.block_id: progress
+        for progress in session.exec(select(BlockProgress)).all()
+    }
+    blocks_in_progress = 0
+    blocks_reviewable = 0
+    for block in matching_blocks:
+        if block.id is None:
+            continue
+        progress = block_progress.get(block.id)
+        status = progress.status if progress is not None else block.status
+        if status in {"em_andamento", "active", "in_progress", "unlocked"}:
+            blocks_in_progress += 1
+        if status in {"reviewable", "pronto_revisao", "ready_to_review", "aprovado"}:
+            blocks_reviewable += 1
+
+    label = attempts[-1].disciplina if attempts else discipline
+    return StatsDisciplineResponse(
+        discipline=label,
+        questions_this_week=len(week_attempts),
+        questions_this_month=len(month_attempts),
+        correct_count=stats.correct,
+        incorrect_count=stats.total - stats.correct,
+        accuracy=_accuracy(stats.correct, stats.total),
+        avg_time_correct_questions_seconds=stats.average_time_correct_questions_seconds,
+        studied_subjects=len({attempt.subject_id for attempt in attempts if attempt.subject_id is not None}),
+        weak_subjects=_weak_subjects(subject_items)[:10],
+        strong_subjects=_strong_subjects(subject_items)[:10],
+        review_due_count=due_reviews_for_discipline,
+        blocks_in_progress=blocks_in_progress,
+        blocks_reviewable=blocks_reviewable,
     )
 
 

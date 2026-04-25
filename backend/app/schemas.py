@@ -389,20 +389,26 @@ class StatsMockExamAreaAverage(BaseModel):
     average_total_questions: float | None = None
 
 
+class StatsDisciplineSignal(BaseModel):
+    discipline: str
+    strategic_discipline: str
+    questions: int
+    accuracy: float
+
+
 class StatsOverviewResponse(BaseModel):
-    total_questions_all_time: int
-    total_questions_today: int
-    total_questions_this_week: int
-    total_questions_this_month: int
-    accuracy_all_time: float
+    questions_today: int
+    questions_this_week: int
+    questions_this_month: int
+    accuracy_today: float
     accuracy_this_week: float
     accuracy_this_month: float
-    average_time_correct_questions_seconds: float | None = None
+    avg_time_correct_questions_seconds: float | None = None
     studied_subjects_this_week: int
     impacted_blocks_this_week: int
-    risk_blocks_count: int
-    weak_subjects_count: int
-    mock_exam_last3_by_area: list[StatsMockExamAreaAverage] = Field(default_factory=list)
+    weak_disciplines: list[StatsDisciplineSignal] = Field(default_factory=list)
+    strong_disciplines: list[StatsDisciplineSignal] = Field(default_factory=list)
+    recent_activity_count: int
 
 
 class StatsDisciplineItem(BaseModel):
@@ -458,6 +464,22 @@ class StatsRecentAttemptsSummary(BaseModel):
     average_time_correct_questions_seconds: float | None = None
 
 
+class StatsDisciplineResponse(BaseModel):
+    discipline: str
+    questions_this_week: int
+    questions_this_month: int
+    correct_count: int
+    incorrect_count: int
+    accuracy: float
+    avg_time_correct_questions_seconds: float | None = None
+    studied_subjects: int
+    weak_subjects: list[StatsSubjectPerformance]
+    strong_subjects: list[StatsSubjectPerformance]
+    review_due_count: int
+    blocks_in_progress: int
+    blocks_reviewable: int
+
+
 class StatsDisciplineDetailResponse(BaseModel):
     summary: StatsDisciplineItem
     trend_last_7_days: StatsTrend
@@ -467,6 +489,38 @@ class StatsDisciplineDetailResponse(BaseModel):
     risk_blocks: list[StatsRiskBlock]
     recent_attempts_summary: StatsRecentAttemptsSummary
     mock_exam_last3_by_area: list[StatsMockExamAreaAverage] = Field(default_factory=list)
+
+
+class GamificationStreakResponse(BaseModel):
+    current_streak_days: int
+    longest_streak_days: int
+    studied_today: bool
+    active_weekdays: list[str]
+    last_study_date: str | None = None
+
+
+class GamificationTopMasterySubject(BaseModel):
+    subject_id: int
+    subject_name: str
+    discipline: str
+    stars: int
+    question_accuracy: float
+    attempts_count: int
+
+
+class GamificationMasteryResponse(BaseModel):
+    total_mastery_stars: int
+    question_mastery_stars: int
+    review_mastery_stars: int
+    consistency_mastery_stars: int
+    mastered_subjects_count: int
+    top_mastery_subjects: list[GamificationTopMasterySubject]
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class GamificationSummaryResponse(BaseModel):
+    streak: GamificationStreakResponse
+    mastery: GamificationMasteryResponse
 
 
 class LessonExtraLink(BaseModel):

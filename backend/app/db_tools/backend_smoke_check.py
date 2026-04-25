@@ -152,15 +152,17 @@ def _check_study_guide_preferences(payload: Any, result: CheckResult) -> None:
 
 def _check_stats_overview(payload: Any, result: CheckResult) -> None:
     required_fields = [
-        "total_questions_all_time",
-        "total_questions_today",
-        "total_questions_this_week",
-        "total_questions_this_month",
-        "accuracy_all_time",
+        "questions_today",
+        "questions_this_week",
+        "questions_this_month",
+        "accuracy_today",
         "accuracy_this_week",
         "accuracy_this_month",
-        "risk_blocks_count",
-        "weak_subjects_count",
+        "studied_subjects_this_week",
+        "impacted_blocks_this_week",
+        "weak_disciplines",
+        "strong_disciplines",
+        "recent_activity_count",
     ]
     for field_name in required_fields:
         _require(payload, [field_name], result.errors)
@@ -180,6 +182,36 @@ def _check_stats_disciplines(payload: Any, result: CheckResult) -> None:
     for field_name in ["discipline", "strategic_discipline", "total_questions", "accuracy"]:
         if field_name not in first:
             result.errors.append(f"Campo obrigatorio ausente no primeiro item de stats/disciplines: {field_name}")
+
+
+def _check_stats_discipline(payload: Any, result: CheckResult) -> None:
+    for field_name in [
+        "discipline",
+        "questions_this_week",
+        "questions_this_month",
+        "correct_count",
+        "incorrect_count",
+        "accuracy",
+        "weak_subjects",
+        "strong_subjects",
+        "review_due_count",
+        "blocks_in_progress",
+        "blocks_reviewable",
+    ]:
+        _require(payload, [field_name], result.errors)
+
+
+def _check_gamification_summary(payload: Any, result: CheckResult) -> None:
+    _require(payload, ["streak", "current_streak_days"], result.errors)
+    _require(payload, ["streak", "longest_streak_days"], result.errors)
+    _require(payload, ["streak", "studied_today"], result.errors)
+    _require(payload, ["streak", "active_weekdays"], result.errors)
+    _require(payload, ["mastery", "total_mastery_stars"], result.errors)
+    _require(payload, ["mastery", "question_mastery_stars"], result.errors)
+    _require(payload, ["mastery", "review_mastery_stars"], result.errors)
+    _require(payload, ["mastery", "consistency_mastery_stars"], result.errors)
+    _require(payload, ["mastery", "mastered_subjects_count"], result.errors)
+    _require(payload, ["mastery", "top_mastery_subjects"], result.errors)
 
 
 def _check_lesson_contents(payload: Any, result: CheckResult) -> None:
@@ -266,6 +298,8 @@ CHECKS: list[tuple[str, Any]] = [
     ("/api/study-plan/today", _check_study_plan_today),
     ("/api/stats/overview", _check_stats_overview),
     ("/api/stats/disciplines", _check_stats_disciplines),
+    ("/api/stats/discipline/Matematica", _check_stats_discipline),
+    ("/api/gamification/summary", _check_gamification_summary),
     ("/api/lessons/contents", _check_lesson_contents),
     ("/api/free-study/catalog", _check_free_study_catalog),
     ("/api/activity/recent", _check_activity_recent),

@@ -303,19 +303,25 @@ Retornar a visao geral de desempenho para a futura pagina de estatisticas.
 
 ```json
 {
-  "total_questions_all_time": 120,
-  "total_questions_today": 12,
-  "total_questions_this_week": 36,
-  "total_questions_this_month": 120,
-  "accuracy_all_time": 0.6417,
+  "questions_today": 12,
+  "questions_this_week": 36,
+  "questions_this_month": 120,
+  "accuracy_today": 0.75,
   "accuracy_this_week": 0.6667,
   "accuracy_this_month": 0.6417,
-  "average_time_correct_questions_seconds": 142.5,
+  "avg_time_correct_questions_seconds": 142.5,
   "studied_subjects_this_week": 4,
   "impacted_blocks_this_week": 3,
-  "risk_blocks_count": 2,
-  "weak_subjects_count": 5,
-  "mock_exam_last3_by_area": []
+  "weak_disciplines": [],
+  "strong_disciplines": [
+    {
+      "discipline": "Matematica",
+      "strategic_discipline": "Matematica",
+      "questions": 30,
+      "accuracy": 0.8
+    }
+  ],
+  "recent_activity_count": 8
 }
 ```
 
@@ -323,8 +329,8 @@ Retornar a visao geral de desempenho para a futura pagina de estatisticas.
 
 - taxas de acerto usam `acertos / questoes`
 - tempo medio considera apenas questoes corretas com tempo preenchido
-- se nao houver dados, contadores retornam `0`, taxas retornam `0.0` e tempo medio retorna `null`
-- `mock_exam_last3_by_area` nao e TRI; e apenas media simples dos 3 ultimos simulados por area, quando houver dados
+- se nao houver dados, contadores retornam `0`, taxas retornam `0.0`, listas retornam `[]` e tempo medio retorna `null`
+- `recent_activity_count` v1 conta tentativas recentes registradas nos ultimos 7 dias
 
 ## GET `/api/stats/disciplines`
 
@@ -362,52 +368,81 @@ Retornar estatisticas agregadas por disciplina, com disciplina estrategica norma
 
 **Objetivo**
 
-Retornar detalhe de uma disciplina ou area estrategica, incluindo tendencias, assuntos fracos/fortes, blocos em risco e resumo recente.
+Retornar agregados da disciplina ou area estrategica, aceitando variacoes com e sem acento no path.
 
-**Exemplo parcial de resposta**
+**Exemplo de resposta**
 
 ```json
 {
-  "summary": {
-    "discipline": "Matematica",
-    "strategic_discipline": "Matematica",
-    "total_questions": 20,
-    "correct_questions": 14,
-    "accuracy": 0.7,
-    "questions_this_week": 20,
-    "questions_this_month": 20,
-    "average_time_correct_questions_seconds": 130.0,
-    "studied_subjects_count": 2,
-    "weak_subjects_count": 0,
-    "risk_blocks_count": 0
-  },
-  "trend_last_7_days": {
-    "period": "last_7_days",
-    "points": []
-  },
-  "trend_last_30_days": {
-    "period": "last_30_days",
-    "points": []
-  },
-  "top_weak_subjects": [],
-  "top_strongest_subjects": [],
-  "risk_blocks": [],
-  "recent_attempts_summary": {
-    "total_questions": 20,
-    "correct_questions": 14,
-    "accuracy": 0.7,
-    "average_time_correct_questions_seconds": 130.0
-  },
-  "mock_exam_last3_by_area": []
+  "discipline": "Matematica",
+  "questions_this_week": 20,
+  "questions_this_month": 20,
+  "correct_count": 14,
+  "incorrect_count": 6,
+  "accuracy": 0.7,
+  "avg_time_correct_questions_seconds": 130.0,
+  "studied_subjects": 2,
+  "weak_subjects": [],
+  "strong_subjects": [],
+  "review_due_count": 1,
+  "blocks_in_progress": 1,
+  "blocks_reviewable": 0
 }
 ```
 
 **Observacoes de integracao**
 
-- tendencias retornam pontos diarios simples; o frontend monta o grafico
 - assuntos fracos exigem pelo menos 3 tentativas e baixa taxa de acerto ou dominio baixo
-- blocos em risco usam `block_mastery.status="em_risco"` ou score de dominio abaixo do limiar conservador
-- nao ha calculo TRI real nesta etapa
+- assuntos fortes exigem pelo menos 3 tentativas e acuracia >= 75%
+- `review_due_count` considera revisoes vencidas da disciplina
+- `blocks_in_progress` e `blocks_reviewable` usam `block_progress` quando houver; caso contrario, caem para `blocks.status`
+
+## GET `/api/gamification/summary`
+
+**Objetivo**
+
+Retornar dados simples para Ofensiva e Maestria no navbar, sem criar sistema complexo de gamificacao.
+
+**Exemplo de resposta**
+
+```json
+{
+  "streak": {
+    "current_streak_days": 3,
+    "longest_streak_days": 5,
+    "studied_today": true,
+    "active_weekdays": ["seg", "ter", "qua"],
+    "last_study_date": "2026-04-24"
+  },
+  "mastery": {
+    "total_mastery_stars": 12,
+    "question_mastery_stars": 8,
+    "review_mastery_stars": 3,
+    "consistency_mastery_stars": 1,
+    "mastered_subjects_count": 4,
+    "top_mastery_subjects": [
+      {
+        "subject_id": 17,
+        "subject_name": "Matematica Basica - As quatro operacoes",
+        "discipline": "Matematica",
+        "stars": 3,
+        "question_accuracy": 0.92,
+        "attempts_count": 24
+      }
+    ],
+    "metadata": {
+      "review_mastery_rule": "0 estrelas quando nao ha ultima_data/intervalo suficiente em reviews.",
+      "consistency_mastery_rule": "1/2/3 estrelas com 3/7/14 dias distintos no mesmo subject."
+    }
+  }
+}
+```
+
+**Observacoes de integracao**
+
+- `daily_plan_generated` sozinho nao conta como estudo real para ofensiva
+- ofensiva considera tentativas, revisoes realizadas, decisoes de bloco e eventos reais de estudo
+- maestria v1 e calculada em memoria por subject; nao ha tabela nova, XP, moeda ou ranking global
 
 ## GET `/api/lessons/contents`
 
