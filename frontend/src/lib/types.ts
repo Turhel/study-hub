@@ -230,3 +230,87 @@ export type GamificationSummaryResponse = {
   streak: GamificationStreakResponse;
   mastery: GamificationMasteryResponse;
 };
+
+export type LessonExtraLink = {
+  label: string;
+  url: string;
+};
+
+export type LessonContent = {
+  id: number;
+  roadmap_node_id: string | null;
+  subject_id: number | null;
+  title: string;
+  body_markdown: string;
+  youtube_url: string | null;
+  extra_links: LessonExtraLink[];
+  notes: string | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LessonContentPayload = {
+  roadmap_node_id?: string | null;
+  subject_id?: number | null;
+  title?: string;
+  body_markdown?: string;
+  youtube_url?: string | null;
+  extra_links?: LessonExtraLink[];
+  notes?: string | null;
+  is_published?: boolean;
+};
+
+export type FreeStudyWarningLevel = "none" | "low" | "medium" | "high" | string;
+
+export type FreeStudyCatalogSubject = {
+  subject_id: number;
+  subject_name: string;
+  block_id: number;
+  block_name: string;
+  roadmap_node_id: string | null;
+  roadmap_mapped: boolean;
+  roadmap_status: string | null;
+  free_study_allowed: boolean;
+  warning_level: FreeStudyWarningLevel;
+  warning_message: string | null;
+};
+
+export type FreeStudyCatalogSubarea = {
+  subarea: string;
+  subjects: FreeStudyCatalogSubject[];
+};
+
+export type FreeStudyCatalogDiscipline = {
+  discipline: string;
+  strategic_discipline: string;
+  subareas: FreeStudyCatalogSubarea[];
+};
+
+export type FreeStudyCatalogResponse = {
+  disciplines: FreeStudyCatalogDiscipline[];
+};
+
+export type BlockProgressItem = {
+  id: number;
+  name: string;
+  status: string;
+};
+
+export type BlockProgressDecision = {
+  discipline?: string;
+  current_block_id?: number | null;
+  decision?: string;
+  note?: string | null;
+  created_at?: string;
+};
+
+export type BlockProgressDisciplineResponse = {
+  discipline: string;
+  active_block: BlockProgressItem | null;
+  next_block: BlockProgressItem | null;
+  reviewable_blocks: BlockProgressItem[];
+  saved_decision: BlockProgressDecision | null;
+  ready_to_advance: boolean;
+  message: string;
+};

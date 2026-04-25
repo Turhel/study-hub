@@ -1,7 +1,11 @@
 import type {
   ActivityTodayResponse,
   ActivityItem,
+  BlockProgressDisciplineResponse,
+  FreeStudyCatalogResponse,
   GamificationSummaryResponse,
+  LessonContent,
+  LessonContentPayload,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
   StatsDisciplineResponse,
@@ -150,6 +154,99 @@ export async function getGamificationSummary(): Promise<GamificationSummaryRespo
   }
 
   return response.json() as Promise<GamificationSummaryResponse>;
+}
+
+export async function getFreeStudyCatalog(): Promise<FreeStudyCatalogResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/free-study/catalog`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar o catalogo de aulas.");
+  }
+
+  return response.json() as Promise<FreeStudyCatalogResponse>;
+}
+
+export async function getBlockProgressByDiscipline(discipline: string): Promise<BlockProgressDisciplineResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/block-progress/discipline/${encodeURIComponent(discipline)}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar a progressao da disciplina.");
+  }
+
+  return response.json() as Promise<BlockProgressDisciplineResponse>;
+}
+
+export async function getLessonContents(publishedOnly = false): Promise<LessonContent[]> {
+  const query = publishedOnly ? "?published_only=true" : "";
+  const response = await fetch(`${API_BASE_URL}/api/lessons/contents${query}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar as aulas.");
+  }
+
+  return response.json() as Promise<LessonContent[]>;
+}
+
+export async function getLessonContentsBySubject(subjectId: number): Promise<LessonContent[]> {
+  const response = await fetch(`${API_BASE_URL}/api/lessons/by-subject/${subjectId}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar as aulas deste conteudo.");
+  }
+
+  return response.json() as Promise<LessonContent[]>;
+}
+
+export async function getLessonContentsByRoadmapNode(nodeId: string): Promise<LessonContent[]> {
+  const response = await fetch(`${API_BASE_URL}/api/lessons/by-roadmap-node/${encodeURIComponent(nodeId)}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar as aulas deste node.");
+  }
+
+  return response.json() as Promise<LessonContent[]>;
+}
+
+export async function createLessonContent(payload: LessonContentPayload): Promise<LessonContent> {
+  const response = await fetch(`${API_BASE_URL}/api/lessons/contents`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel criar a aula.");
+  }
+
+  return response.json() as Promise<LessonContent>;
+}
+
+export async function updateLessonContent(id: number, payload: LessonContentPayload): Promise<LessonContent> {
+  const response = await fetch(`${API_BASE_URL}/api/lessons/contents/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel salvar a aula.");
+  }
+
+  return response.json() as Promise<LessonContent>;
+}
+
+export async function deleteLessonContent(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/lessons/contents/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel excluir a aula.");
+  }
 }
 
 export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPayload): Promise<QuestionAttemptBulkResponse> {

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
 import { getGamificationSummary } from "./lib/api";
+import LessonsPage from "./pages/LessonsPage";
 import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
 import TodayPage from "./pages/TodayPage";
@@ -11,12 +12,12 @@ type ThemeMode = "light" | "dark";
 
 const navigationItems = [
   { label: "Foco do dia", path: "/", icon: <FocusEmojiIcon /> },
+  { label: "Aulas", path: "/lessons", icon: <BooksEmojiIcon /> },
   { label: "Estatisticas", path: "/stats", icon: <StatsEmojiIcon /> },
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
 ];
 
 const futureItems = [
-  { label: "Aprender", icon: <BooksEmojiIcon /> },
   { label: "Revisoes", icon: <ReviewEmojiIcon /> },
   { label: "Redacao", icon: <MemoEmojiIcon /> },
 ];
@@ -393,6 +394,7 @@ export default function App() {
       <div className="app-content">
         <Routes>
           <Route path="/" element={<TodayPage />} />
+          <Route path="/lessons" element={<LessonsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/timer" element={<TimerPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
