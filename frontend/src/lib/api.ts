@@ -2,6 +2,12 @@ import type {
   ActivityTodayResponse,
   ActivityItem,
   BlockProgressDisciplineResponse,
+  EssayCorrectionPayload,
+  EssayCorrectionResponse,
+  EssayCorrectionStoredResponse,
+  EssayStudySessionCloseResponse,
+  EssayStudySessionListItem,
+  EssayStudySessionResponse,
   FreeStudyCatalogResponse,
   GamificationSummaryResponse,
   LessonContent,
@@ -247,6 +253,119 @@ export async function deleteLessonContent(id: number): Promise<void> {
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel excluir a aula.");
   }
+}
+
+export async function correctEssay(payload: EssayCorrectionPayload): Promise<EssayCorrectionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/correct`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel corrigir a redacao.");
+  }
+
+  return response.json() as Promise<EssayCorrectionResponse>;
+}
+
+export async function createEssayCorrection(
+  payload: EssayCorrectionPayload,
+): Promise<EssayCorrectionStoredResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/corrections`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel salvar a correcao da redacao.");
+  }
+
+  return response.json() as Promise<EssayCorrectionStoredResponse>;
+}
+
+export async function getEssayCorrection(correctionId: number): Promise<EssayCorrectionStoredResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/corrections/${correctionId}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar a correcao.");
+  }
+
+  return response.json() as Promise<EssayCorrectionStoredResponse>;
+}
+
+export async function createEssayStudySession(essayCorrectionId: number): Promise<EssayStudySessionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ essay_correction_id: essayCorrectionId }),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel iniciar o estudo da redacao.");
+  }
+
+  return response.json() as Promise<EssayStudySessionResponse>;
+}
+
+export async function sendEssayStudyMessage(
+  sessionId: number,
+  content: string,
+): Promise<EssayStudySessionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}/messages`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel enviar a mensagem.");
+  }
+
+  return response.json() as Promise<EssayStudySessionResponse>;
+}
+
+export async function closeEssayStudySession(sessionId: number): Promise<EssayStudySessionCloseResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}/close`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel fechar a sessao de estudo.");
+  }
+
+  return response.json() as Promise<EssayStudySessionCloseResponse>;
+}
+
+export async function getEssayStudySession(sessionId: number): Promise<EssayStudySessionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar a sessao de estudo.");
+  }
+
+  return response.json() as Promise<EssayStudySessionResponse>;
+}
+
+export async function listEssayStudySessionsForSubmission(
+  submissionId: number,
+): Promise<EssayStudySessionListItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/submissions/${submissionId}/study-sessions`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar sessoes de estudo da redacao.");
+  }
+
+  return response.json() as Promise<EssayStudySessionListItem[]>;
 }
 
 export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPayload): Promise<QuestionAttemptBulkResponse> {

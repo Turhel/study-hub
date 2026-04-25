@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
 import { getGamificationSummary } from "./lib/api";
+import EssayPage from "./pages/EssayPage";
 import LessonsPage from "./pages/LessonsPage";
 import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
@@ -15,11 +16,11 @@ const navigationItems = [
   { label: "Aulas", path: "/lessons", icon: <BooksEmojiIcon /> },
   { label: "Estatisticas", path: "/stats", icon: <StatsEmojiIcon /> },
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
+  { label: "Redacao", path: "/essay", icon: <MemoEmojiIcon /> },
 ];
 
 const futureItems = [
   { label: "Revisoes", icon: <ReviewEmojiIcon /> },
-  { label: "Redacao", icon: <MemoEmojiIcon /> },
 ];
 
 const profileMenuItems = [
@@ -397,6 +398,7 @@ export default function App() {
           <Route path="/lessons" element={<LessonsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/timer" element={<TimerPage />} />
+          <Route path="/essay" element={<EssayPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

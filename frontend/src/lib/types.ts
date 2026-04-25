@@ -314,3 +314,90 @@ export type BlockProgressDisciplineResponse = {
   ready_to_advance: boolean;
   message: string;
 };
+
+export type EssayCorrectionMode = "score_only" | "detailed" | "teach";
+
+export type EssayCorrectionPayload = {
+  theme: string;
+  essay_text: string;
+  student_goal?: string | null;
+  mode?: EssayCorrectionMode;
+};
+
+export type EssayScoreRange = {
+  min: number;
+  max: number;
+};
+
+export type EssayCompetencyResult = {
+  score: number;
+  comment: string;
+};
+
+export type EssayCorrectionResponse = {
+  estimated_score_range: EssayScoreRange;
+  competencies: Record<string, EssayCompetencyResult>;
+  strengths: string[];
+  weaknesses: string[];
+  improvement_plan: string[];
+  confidence_note: string;
+};
+
+export type EssaySubmissionResponse = {
+  id: number;
+  theme: string;
+  essay_text: string;
+  created_at: string;
+};
+
+export type EssayCorrectionStoredResponse = EssayCorrectionResponse & {
+  id: number;
+  submission: EssaySubmissionResponse;
+  provider: string;
+  model: string;
+  prompt_name: string;
+  prompt_hash: string;
+  mode: EssayCorrectionMode;
+  tokens_input: number;
+  tokens_output: number;
+  tokens_total: number;
+  created_at: string;
+};
+
+export type EssayStudyMessageResponse = {
+  id: number;
+  role: "system" | "user" | "assistant";
+  content: string;
+  tokens_estimated: number;
+  created_at: string;
+};
+
+export type EssayStudySessionStatus = "active" | "closed" | "token_limit_reached";
+
+export type EssayStudySessionResponse = {
+  id: number;
+  essay_submission_id: number;
+  essay_correction_id: number;
+  provider: string;
+  model: string;
+  prompt_name: string;
+  prompt_hash: string;
+  tokens_input: number;
+  tokens_output: number;
+  status: EssayStudySessionStatus;
+  tokens_total: number;
+  token_limit: number;
+  can_accept_messages: boolean;
+  messages_count: number;
+  started_at: string;
+  ended_at: string | null;
+  messages: EssayStudyMessageResponse[];
+};
+
+export type EssayStudySessionListItem = Omit<EssayStudySessionResponse, "messages">;
+
+export type EssayStudySessionCloseResponse = {
+  id: number;
+  status: Exclude<EssayStudySessionStatus, "active">;
+  ended_at: string;
+};
