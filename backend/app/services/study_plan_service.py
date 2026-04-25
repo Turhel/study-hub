@@ -167,6 +167,20 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
     return items
 
 
+def _response_from_items(items: list[StudyPlanItem]) -> StudyPlanTodayResponse:
+    return StudyPlanTodayResponse(
+        summary=StudyPlanSummary(
+            total_questions=sum(item.planned_questions for item in items),
+            focus_count=len(items),
+        ),
+        items=items,
+    )
+
+
+def _empty_plan_response() -> StudyPlanTodayResponse:
+    return _response_from_items([])
+
+
 def _gap_weight(session: Session, subject_id: int) -> tuple[float, str]:
     attempts = session.exec(
         select(QuestionAttempt)
@@ -468,28 +482,16 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
     if existing_plan is not None and existing_plan.id is not None:
         existing_items = _items_for_plan(session, existing_plan, today)
         if existing_items:
-            return StudyPlanTodayResponse(
-                summary=StudyPlanSummary(
-                    total_questions=existing_plan.total_planned_questions,
-                    focus_count=len(existing_items),
-                ),
-                items=existing_items,
-            )
+            return _response_from_items(existing_items)
 
     capacity = get_or_create_capacity(session)
     if not capacity.include_new_content:
-        return StudyPlanTodayResponse(
-            summary=StudyPlanSummary(total_questions=0, focus_count=0),
-            items=[],
-        )
+        return _empty_plan_response()
     block_progress, subject_progress = sync_progression(session, today)
     roadmap_overview = build_guided_roadmap_overview(session, block_progress)
     candidates = _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
     if not candidates:
-        return StudyPlanTodayResponse(
-            summary=StudyPlanSummary(total_questions=0, focus_count=0),
-            items=[],
-        )
+        return _empty_plan_response()
 
     total_questions = safe_daily_question_load(capacity)
     focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
@@ -497,10 +499,7 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
     question_counts = _question_distribution(total_questions, len(selected))
     plan = _create_plan(session, selected, question_counts)
 
-    return StudyPlanTodayResponse(
-        summary=StudyPlanSummary(total_questions=plan.total_planned_questions, focus_count=len(selected)),
-        items=_items_for_plan(session, plan, today),
-    )
+    return _response_from_items(_items_for_plan(session, plan, today))
 
 
 def recalculate_today_study_plan(session: Session) -> StudyPlanRecalculateResponse:

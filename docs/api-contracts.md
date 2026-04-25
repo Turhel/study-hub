@@ -193,6 +193,8 @@ Isso pode acontecer se a base estiver vazia, se ainda nao houver plano diario ge
 - `roadmap_*` pode vir parcialmente nulo se algum item nao estiver mapeado
 - `execution_status` hoje usa `nao_iniciado`, `em_andamento` ou `concluido`
 - a carga do plano considera as preferencias atuais de `/api/study-guide/preferences`
+- `summary.total_questions` sempre deve bater com a soma de `items[].planned_questions`
+- `summary.focus_count` sempre deve bater com `items.length`; se `items=[]`, ambos os campos do summary devem ser `0`
 
 ## GET `/api/study-guide/preferences`
 

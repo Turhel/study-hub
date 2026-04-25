@@ -101,9 +101,21 @@ def _check_roadmap_mapping_coverage(payload: Any, result: CheckResult) -> None:
 
 def _check_study_plan_today(payload: Any, result: CheckResult) -> None:
     _require(payload, ["summary"], result.errors)
+    total_questions = _require(payload, ["summary", "total_questions"], result.errors)
+    focus_count = _require(payload, ["summary", "focus_count"], result.errors)
     items = _require(payload, ["items"], result.errors)
     if items is None or not isinstance(items, list):
         return
+    item_total = 0
+    for item in items:
+        if isinstance(item, dict) and isinstance(item.get("planned_questions"), int):
+            item_total += item["planned_questions"]
+    if isinstance(focus_count, int) and focus_count != len(items):
+        result.errors.append("summary.focus_count deve bater com len(items)")
+    if isinstance(total_questions, int) and total_questions != item_total:
+        result.errors.append("summary.total_questions deve bater com a soma de planned_questions")
+    if isinstance(focus_count, int) and focus_count > 0 and not items:
+        result.errors.append("items nao pode ser vazio quando focus_count > 0")
     if not items:
         result.warnings.append("/api/study-plan/today vazio")
         return
