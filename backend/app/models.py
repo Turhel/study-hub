@@ -210,6 +210,22 @@ class MockExam(SQLModel, table=True):
     observacoes: str | None = None
 
 
+class LessonContent(SQLModel, table=True):
+    __tablename__ = "lesson_contents"
+
+    id: int | None = Field(default=None, primary_key=True)
+    roadmap_node_id: str | None = Field(default=None, foreign_key="roadmap_nodes.node_id", index=True)
+    subject_id: int | None = Field(default=None, foreign_key="subjects.id", index=True)
+    title: str = Field(index=True)
+    body_markdown: str
+    youtube_url: str | None = None
+    extra_links_json: str | None = None
+    notes: str | None = None
+    is_published: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
+
 class Essay(SQLModel, table=True):
     __tablename__ = "essays"
 

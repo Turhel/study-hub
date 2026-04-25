@@ -170,6 +170,22 @@ def _check_stats_disciplines(payload: Any, result: CheckResult) -> None:
             result.errors.append(f"Campo obrigatorio ausente no primeiro item de stats/disciplines: {field_name}")
 
 
+def _check_lesson_contents(payload: Any, result: CheckResult) -> None:
+    if not isinstance(payload, list):
+        result.errors.append("Payload de /api/lessons/contents deveria ser lista")
+        return
+    if not payload:
+        result.warnings.append("/api/lessons/contents vazio")
+        return
+    first = payload[0]
+    if not isinstance(first, dict):
+        result.errors.append("Primeiro item de /api/lessons/contents deveria ser objeto")
+        return
+    for field_name in ["id", "title", "body_markdown", "extra_links", "is_published"]:
+        if field_name not in first:
+            result.errors.append(f"Campo obrigatorio ausente no primeiro item de lessons/contents: {field_name}")
+
+
 def _check_free_study_catalog(payload: Any, result: CheckResult) -> None:
     disciplines = _require(payload, ["disciplines"], result.errors)
     if disciplines is None or not isinstance(disciplines, list):
@@ -238,6 +254,7 @@ CHECKS: list[tuple[str, Any]] = [
     ("/api/study-plan/today", _check_study_plan_today),
     ("/api/stats/overview", _check_stats_overview),
     ("/api/stats/disciplines", _check_stats_disciplines),
+    ("/api/lessons/contents", _check_lesson_contents),
     ("/api/free-study/catalog", _check_free_study_catalog),
     ("/api/activity/recent", _check_activity_recent),
     ("/api/activity/today", _check_activity_today),

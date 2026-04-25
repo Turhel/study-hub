@@ -469,6 +469,47 @@ class StatsDisciplineDetailResponse(BaseModel):
     mock_exam_last3_by_area: list[StatsMockExamAreaAverage] = Field(default_factory=list)
 
 
+class LessonExtraLink(BaseModel):
+    label: str = Field(min_length=1)
+    url: str = Field(min_length=1)
+
+
+class LessonContentCreate(BaseModel):
+    roadmap_node_id: str | None = None
+    subject_id: int | None = None
+    title: str = Field(min_length=1)
+    body_markdown: str = Field(min_length=1)
+    youtube_url: str | None = None
+    extra_links: list[LessonExtraLink] = Field(default_factory=list)
+    notes: str | None = None
+    is_published: bool = False
+
+
+class LessonContentUpdate(BaseModel):
+    roadmap_node_id: str | None = None
+    subject_id: int | None = None
+    title: str | None = Field(default=None, min_length=1)
+    body_markdown: str | None = Field(default=None, min_length=1)
+    youtube_url: str | None = None
+    extra_links: list[LessonExtraLink] | None = None
+    notes: str | None = None
+    is_published: bool | None = None
+
+
+class LessonContentResponse(BaseModel):
+    id: int
+    roadmap_node_id: str | None = None
+    subject_id: int | None = None
+    title: str
+    body_markdown: str
+    youtube_url: str | None = None
+    extra_links: list[LessonExtraLink] = Field(default_factory=list)
+    notes: str | None = None
+    is_published: bool
+    created_at: str
+    updated_at: str
+
+
 class FreeStudyRoadmapNodeBrief(BaseModel):
     node_id: str
     discipline: str

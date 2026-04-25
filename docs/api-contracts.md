@@ -407,6 +407,127 @@ Retornar detalhe de uma disciplina ou area estrategica, incluindo tendencias, as
 - blocos em risco usam `block_mastery.status="em_risco"` ou score de dominio abaixo do limiar conservador
 - nao ha calculo TRI real nesta etapa
 
+## GET `/api/lessons/contents`
+
+**Objetivo**
+
+Listar conteudos de aula cadastrados para roadmap nodes e/ou subjects.
+
+**Query params**
+
+- `published_only`: boolean opcional; quando `true`, retorna apenas conteudos publicados
+
+**Exemplo de resposta**
+
+```json
+[
+  {
+    "id": 1,
+    "roadmap_node_id": "MATH_001",
+    "subject_id": 17,
+    "title": "Operacoes com inteiros",
+    "body_markdown": "Resumo da aula...",
+    "youtube_url": "https://www.youtube.com/watch?v=abc123",
+    "extra_links": [
+      {
+        "label": "Lista de exercicios",
+        "url": "https://example.com/lista"
+      }
+    ],
+    "notes": "Aula base para matematica basica",
+    "is_published": true,
+    "created_at": "2026-04-25T09:10:00",
+    "updated_at": "2026-04-25T09:10:00"
+  }
+]
+```
+
+**Estado vazio esperado**
+
+```json
+[]
+```
+
+## GET `/api/lessons/contents/{id}`
+
+**Objetivo**
+
+Retornar um conteudo de aula especifico.
+
+**Erro comum**
+
+- `404` com `{"detail":"Conteudo de aula nao encontrado."}`
+
+## POST `/api/lessons/contents`
+
+**Objetivo**
+
+Criar conteudo de aula associado a pelo menos um `roadmap_node_id` ou `subject_id`.
+
+**Exemplo de request**
+
+```json
+{
+  "roadmap_node_id": "MATH_001",
+  "subject_id": 17,
+  "title": "Operacoes com inteiros",
+  "body_markdown": "Resumo da aula...",
+  "youtube_url": "https://www.youtube.com/watch?v=abc123",
+  "extra_links": [
+    {
+      "label": "Lista de exercicios",
+      "url": "https://example.com/lista"
+    }
+  ],
+  "notes": "Aula base para matematica basica",
+  "is_published": true
+}
+```
+
+**Regras de validacao**
+
+- `subject_id`, quando enviado, precisa existir em `subjects`
+- `roadmap_node_id`, quando enviado, precisa existir em `roadmap_nodes`
+- pelo menos um entre `roadmap_node_id` e `subject_id` deve ser enviado
+
+## PUT `/api/lessons/contents/{id}`
+
+**Objetivo**
+
+Editar campos de um conteudo de aula existente. A validacao de referencias segue as mesmas regras do POST.
+
+**Exemplo de request**
+
+```json
+{
+  "title": "Operacoes com inteiros - versao revisada",
+  "body_markdown": "Resumo revisado da aula...",
+  "is_published": false
+}
+```
+
+## DELETE `/api/lessons/contents/{id}`
+
+**Objetivo**
+
+Excluir um conteudo de aula.
+
+**Resposta**
+
+- `204 No Content`
+
+## GET `/api/lessons/by-subject/{subject_id}`
+
+**Objetivo**
+
+Listar conteudos associados diretamente a um subject.
+
+## GET `/api/lessons/by-roadmap-node/{node_id}`
+
+**Objetivo**
+
+Listar conteudos associados diretamente a um roadmap node.
+
 ## GET `/api/activity/recent`
 
 **Objetivo**
