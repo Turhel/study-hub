@@ -138,6 +138,38 @@ def _check_study_guide_preferences(payload: Any, result: CheckResult) -> None:
         result.errors.append("max_questions fora do intervalo esperado")
 
 
+def _check_stats_overview(payload: Any, result: CheckResult) -> None:
+    required_fields = [
+        "total_questions_all_time",
+        "total_questions_today",
+        "total_questions_this_week",
+        "total_questions_this_month",
+        "accuracy_all_time",
+        "accuracy_this_week",
+        "accuracy_this_month",
+        "risk_blocks_count",
+        "weak_subjects_count",
+    ]
+    for field_name in required_fields:
+        _require(payload, [field_name], result.errors)
+
+
+def _check_stats_disciplines(payload: Any, result: CheckResult) -> None:
+    if not isinstance(payload, list):
+        result.errors.append("Payload de /api/stats/disciplines deveria ser lista")
+        return
+    if not payload:
+        result.warnings.append("/api/stats/disciplines vazio")
+        return
+    first = payload[0]
+    if not isinstance(first, dict):
+        result.errors.append("Primeiro item de /api/stats/disciplines deveria ser objeto")
+        return
+    for field_name in ["discipline", "strategic_discipline", "total_questions", "accuracy"]:
+        if field_name not in first:
+            result.errors.append(f"Campo obrigatorio ausente no primeiro item de stats/disciplines: {field_name}")
+
+
 def _check_free_study_catalog(payload: Any, result: CheckResult) -> None:
     disciplines = _require(payload, ["disciplines"], result.errors)
     if disciplines is None or not isinstance(disciplines, list):
@@ -204,6 +236,8 @@ CHECKS: list[tuple[str, Any]] = [
     ("/api/roadmap/mapping/coverage", _check_roadmap_mapping_coverage),
     ("/api/study-guide/preferences", _check_study_guide_preferences),
     ("/api/study-plan/today", _check_study_plan_today),
+    ("/api/stats/overview", _check_stats_overview),
+    ("/api/stats/disciplines", _check_stats_disciplines),
     ("/api/free-study/catalog", _check_free_study_catalog),
     ("/api/activity/recent", _check_activity_recent),
     ("/api/activity/today", _check_activity_today),
