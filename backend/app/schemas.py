@@ -381,6 +381,94 @@ class ActivityTodayResponse(BaseModel):
     impacted_block_ids: list[int]
 
 
+class StatsMockExamAreaAverage(BaseModel):
+    area: str
+    exams_count: int
+    average_accuracy: float | None = None
+    average_correct: float | None = None
+    average_total_questions: float | None = None
+
+
+class StatsOverviewResponse(BaseModel):
+    total_questions_all_time: int
+    total_questions_today: int
+    total_questions_this_week: int
+    total_questions_this_month: int
+    accuracy_all_time: float
+    accuracy_this_week: float
+    accuracy_this_month: float
+    average_time_correct_questions_seconds: float | None = None
+    studied_subjects_this_week: int
+    impacted_blocks_this_week: int
+    risk_blocks_count: int
+    weak_subjects_count: int
+    mock_exam_last3_by_area: list[StatsMockExamAreaAverage] = Field(default_factory=list)
+
+
+class StatsDisciplineItem(BaseModel):
+    discipline: str
+    strategic_discipline: str
+    total_questions: int
+    correct_questions: int
+    accuracy: float
+    questions_this_week: int
+    questions_this_month: int
+    average_time_correct_questions_seconds: float | None = None
+    studied_subjects_count: int
+    weak_subjects_count: int
+    risk_blocks_count: int
+
+
+class StatsTrendPoint(BaseModel):
+    date: str
+    questions: int
+    correct: int
+    accuracy: float
+
+
+class StatsTrend(BaseModel):
+    period: Literal["last_7_days", "last_30_days"]
+    points: list[StatsTrendPoint]
+
+
+class StatsSubjectPerformance(BaseModel):
+    subject_id: int
+    subject_name: str
+    discipline: str
+    block_id: int | None = None
+    attempts: int
+    correct: int
+    accuracy: float
+    mastery_score: float | None = None
+
+
+class StatsRiskBlock(BaseModel):
+    block_id: int
+    block_name: str
+    discipline: str
+    status: str
+    mastery_score: float | None = None
+    reason: str
+
+
+class StatsRecentAttemptsSummary(BaseModel):
+    total_questions: int
+    correct_questions: int
+    accuracy: float
+    average_time_correct_questions_seconds: float | None = None
+
+
+class StatsDisciplineDetailResponse(BaseModel):
+    summary: StatsDisciplineItem
+    trend_last_7_days: StatsTrend
+    trend_last_30_days: StatsTrend
+    top_weak_subjects: list[StatsSubjectPerformance]
+    top_strongest_subjects: list[StatsSubjectPerformance]
+    risk_blocks: list[StatsRiskBlock]
+    recent_attempts_summary: StatsRecentAttemptsSummary
+    mock_exam_last3_by_area: list[StatsMockExamAreaAverage] = Field(default_factory=list)
+
+
 class FreeStudyRoadmapNodeBrief(BaseModel):
     node_id: str
     discipline: str

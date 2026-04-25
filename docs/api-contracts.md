@@ -291,6 +291,122 @@ Substituir explicitamente o plano ativo do dia por um novo plano calculado com a
 - o recalc registra evento `daily_plan_generated` com metadata `recalculated=true`, `total_questions` e `focus_count`
 - se `include_new_content=false`, o recalc pode retornar plano vazio, sem criar foco novo
 
+## GET `/api/stats/overview`
+
+**Objetivo**
+
+Retornar a visao geral de desempenho para a futura pagina de estatisticas.
+
+**Exemplo de resposta**
+
+```json
+{
+  "total_questions_all_time": 120,
+  "total_questions_today": 12,
+  "total_questions_this_week": 36,
+  "total_questions_this_month": 120,
+  "accuracy_all_time": 0.6417,
+  "accuracy_this_week": 0.6667,
+  "accuracy_this_month": 0.6417,
+  "average_time_correct_questions_seconds": 142.5,
+  "studied_subjects_this_week": 4,
+  "impacted_blocks_this_week": 3,
+  "risk_blocks_count": 2,
+  "weak_subjects_count": 5,
+  "mock_exam_last3_by_area": []
+}
+```
+
+**Observacoes de integracao**
+
+- taxas de acerto usam `acertos / questoes`
+- tempo medio considera apenas questoes corretas com tempo preenchido
+- se nao houver dados, contadores retornam `0`, taxas retornam `0.0` e tempo medio retorna `null`
+- `mock_exam_last3_by_area` nao e TRI; e apenas media simples dos 3 ultimos simulados por area, quando houver dados
+
+## GET `/api/stats/disciplines`
+
+**Objetivo**
+
+Retornar estatisticas agregadas por disciplina, com disciplina estrategica normalizada quando possivel.
+
+**Exemplo de resposta**
+
+```json
+[
+  {
+    "discipline": "Biologia",
+    "strategic_discipline": "Natureza",
+    "total_questions": 30,
+    "correct_questions": 18,
+    "accuracy": 0.6,
+    "questions_this_week": 12,
+    "questions_this_month": 30,
+    "average_time_correct_questions_seconds": 150.0,
+    "studied_subjects_count": 3,
+    "weak_subjects_count": 1,
+    "risk_blocks_count": 1
+  }
+]
+```
+
+**Estados vazios esperados**
+
+```json
+[]
+```
+
+## GET `/api/stats/discipline/{discipline}`
+
+**Objetivo**
+
+Retornar detalhe de uma disciplina ou area estrategica, incluindo tendencias, assuntos fracos/fortes, blocos em risco e resumo recente.
+
+**Exemplo parcial de resposta**
+
+```json
+{
+  "summary": {
+    "discipline": "Matematica",
+    "strategic_discipline": "Matematica",
+    "total_questions": 20,
+    "correct_questions": 14,
+    "accuracy": 0.7,
+    "questions_this_week": 20,
+    "questions_this_month": 20,
+    "average_time_correct_questions_seconds": 130.0,
+    "studied_subjects_count": 2,
+    "weak_subjects_count": 0,
+    "risk_blocks_count": 0
+  },
+  "trend_last_7_days": {
+    "period": "last_7_days",
+    "points": []
+  },
+  "trend_last_30_days": {
+    "period": "last_30_days",
+    "points": []
+  },
+  "top_weak_subjects": [],
+  "top_strongest_subjects": [],
+  "risk_blocks": [],
+  "recent_attempts_summary": {
+    "total_questions": 20,
+    "correct_questions": 14,
+    "accuracy": 0.7,
+    "average_time_correct_questions_seconds": 130.0
+  },
+  "mock_exam_last3_by_area": []
+}
+```
+
+**Observacoes de integracao**
+
+- tendencias retornam pontos diarios simples; o frontend monta o grafico
+- assuntos fracos exigem pelo menos 3 tentativas e baixa taxa de acerto ou dominio baixo
+- blocos em risco usam `block_mastery.status="em_risco"` ou score de dominio abaixo do limiar conservador
+- nao ha calculo TRI real nesta etapa
+
 ## GET `/api/activity/recent`
 
 **Objetivo**
