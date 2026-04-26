@@ -287,17 +287,17 @@ export default function EssayPage() {
             </div>
           </div>
           <div className="essay-capability-grid">
-            <article>
+            <article className="essay-capability-card">
               <span>LLM</span>
               <strong>{capabilities?.llm.enabled ? "Ligado" : "Desligado"}</strong>
               <small>{capabilities?.llm.provider ?? "sem provider"} / {capabilities?.llm.model ?? "sem modelo"}</small>
             </article>
-            <article>
+            <article className="essay-capability-card">
               <span>Correcao</span>
               <strong>{capabilities?.features.essay_correction_enabled ? "Disponivel" : "Indisponivel"}</strong>
               <small>{correctionEnabled ? "Botao liberado" : "Bloqueada nesta maquina"}</small>
             </article>
-            <article>
+            <article className="essay-capability-card">
               <span>Estudo</span>
               <strong>{capabilities?.features.essay_study_enabled ? "Disponivel" : "Indisponivel"}</strong>
               <small>{studyEnabled ? "Chat liberado apos correcao" : "Chat bloqueado"}</small>
@@ -387,19 +387,19 @@ export default function EssayPage() {
               </div>
             </div>
             <div className="essay-state-list">
-              <article className={theme.trim() ? "is-done" : ""}>
+              <article className={`essay-state-card ${theme.trim() ? "is-done" : ""}`}>
                 <strong>Tema</strong>
                 <span>{theme.trim() ? "preenchido" : "pendente"}</span>
               </article>
-              <article className={essayText.trim() ? "is-done" : ""}>
+              <article className={`essay-state-card ${essayText.trim() ? "is-done" : ""}`}>
                 <strong>Texto</strong>
                 <span>{essayText.trim() ? `${wordCount} palavras` : "pendente"}</span>
               </article>
-              <article className={correction ? "is-done" : ""}>
+              <article className={`essay-state-card ${correction ? "is-done" : ""}`}>
                 <strong>Correcao</strong>
                 <span>{correction ? `id ${correction.id}` : "aguardando IA"}</span>
               </article>
-              <article className={studySession ? "is-done" : ""}>
+              <article className={`essay-state-card ${studySession ? "is-done" : ""}`}>
                 <strong>Estudo</strong>
                 <span>{studySession ? studySession.status : "opcional"}</span>
               </article>

@@ -1873,69 +1873,124 @@ textarea {
 }
 
 .stats-hero-panel {
-  grid-column: span 12;
+  grid-column: auto;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .stats-card {
-  display: grid;
-  gap: 0.25rem;
+  --stats-card-accent: rgba(82, 115, 167, 0.22);
   min-width: 0;
-  border: 1px solid var(--border-soft);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  padding: 0.9rem;
-  box-shadow: 0 1px 3px var(--shadow-soft);
+  overflow: hidden;
+  border: 2px solid rgba(88, 121, 164, 0.7);
+  border-radius: 10px;
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, var(--stats-card-accent) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(4, 7, 13, 0.24);
 }
 
 .stats-card span {
-  color: var(--muted-text);
+  color: rgba(206, 217, 235, 0.72);
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .stats-card strong {
-  color: var(--app-text);
+  color: #f8fbff;
   font-family: "Fraunces", Georgia, serif;
   font-size: 1.65rem;
   line-height: 1;
 }
 
 .stats-card small {
-  color: var(--muted-text);
+  color: rgba(206, 217, 235, 0.78);
   font-size: 0.78rem;
   font-weight: 700;
 }
 
+.stats-card-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 6rem;
+  padding: 0.95rem 1rem;
+}
+
+.stats-card-footer {
+  border-top: 2px solid rgba(112, 133, 170, 0.42);
+  background: rgba(11, 21, 42, 0.92);
+  padding: 0.58rem 1rem;
+}
+
+.stats-card-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 9px 12px rgba(0, 0, 0, 0.28));
+}
+
+.stats-card-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.stats-card-blue {
+  --stats-card-accent: rgba(82, 115, 167, 0.22);
+}
+
+.stats-card-pink {
+  --stats-card-accent: rgba(160, 69, 126, 0.22);
+}
+
+.stats-card-gold {
+  --stats-card-accent: rgba(155, 139, 49, 0.24);
+}
+
+.stats-card-green {
+  --stats-card-accent: rgba(55, 142, 91, 0.22);
+}
+
 .stats-two-column {
   display: grid;
-  grid-column: span 12;
+  grid-column: auto;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
 .stats-list-panel {
-  border: 2px solid var(--border-soft);
-  border-radius: 8px;
-  background: var(--surface);
-  padding: 1rem;
-  box-shadow: 0 1px 3px var(--shadow-soft);
+  overflow: hidden;
+  border: 2px solid rgba(88, 121, 164, 0.7);
+  border-radius: 10px;
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.18) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(4, 7, 13, 0.24);
+  padding: 0;
+}
+
+.stats-list-head {
+  padding: 0.95rem 1rem 0.8rem;
 }
 
 .stats-list-panel h3 {
-  margin: 0 0 0.8rem;
+  margin: 0;
+  color: #f8fbff;
   font-size: 1rem;
 }
 
 .stats-list {
   display: grid;
-  gap: 0.55rem;
+  gap: 0;
+  padding: 0 0.9rem 0.9rem;
 }
 
 .stats-list-item {
@@ -1943,10 +1998,13 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 0.85rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  padding: 0.72rem 0.8rem;
+  border-top: 1px solid rgba(112, 133, 170, 0.24);
+  background: rgba(11, 21, 42, 0.66);
+  padding: 0.78rem 0.85rem;
+}
+
+.stats-list-item:first-child {
+  border-top: 0;
 }
 
 .stats-list-item div {
@@ -1962,13 +2020,13 @@ textarea {
 }
 
 .stats-list-item strong {
-  color: var(--app-text);
+  color: #f8fbff;
   font-size: 0.9rem;
 }
 
 .stats-list-item span,
 .stats-list-item small {
-  color: var(--muted-text);
+  color: rgba(206, 217, 235, 0.78);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -1985,19 +2043,22 @@ textarea {
 }
 
 .stats-discipline-tabs button {
-  border: 1px solid var(--border-soft);
+  border: 2px solid rgba(112, 133, 170, 0.42);
   border-radius: 999px;
-  background: var(--today-outline-bg);
-  padding: 0.48rem 0.72rem;
-  color: var(--app-text);
+  background: rgba(11, 21, 42, 0.66);
+  padding: 0.5rem 0.78rem;
+  color: rgba(233, 239, 248, 0.88);
   font-size: 0.82rem;
   font-weight: 800;
 }
 
 .stats-discipline-tabs button.is-active {
-  border-color: rgba(57, 170, 240, 0.72);
-  background: #39aaf0;
+  border-color: rgba(18, 51, 76, 0.94);
+  background: linear-gradient(180deg, var(--cta-blue), var(--cta-blue-dark));
   color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    3px 3px 0 var(--button-shadow);
 }
 
 .lessons-page {
@@ -2011,7 +2072,7 @@ textarea {
 .lessons-hero-panel,
 .lessons-toolbar,
 .lessons-grid {
-  grid-column: span 12;
+  grid-column: auto;
 }
 
 .lessons-hero-panel h1 {
@@ -2094,11 +2155,14 @@ textarea {
 }
 
 .lessons-module-body {
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  padding: 0.85rem;
-  box-shadow: 0 1px 3px var(--shadow-soft);
+  overflow: hidden;
+  border: 2px solid rgba(88, 121, 164, 0.7);
+  border-radius: 10px;
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.18) 100%);
+  padding: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(4, 7, 13, 0.24);
 }
 
 .lessons-module-head {
@@ -2106,6 +2170,7 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.8rem;
+  padding: 0.95rem 1rem 0.85rem;
 }
 
 .lessons-module-head div {
@@ -2114,10 +2179,10 @@ textarea {
 
 .lessons-module-head span {
   display: inline-flex;
-  border: 1px solid var(--border-soft);
+  border: 2px solid rgba(112, 133, 170, 0.42);
   border-radius: 999px;
-  background: var(--today-chip-bg);
-  color: var(--muted-text);
+  background: rgba(11, 21, 42, 0.72);
+  color: rgba(233, 239, 248, 0.82);
   padding: 0.22rem 0.5rem;
   font-size: 0.7rem;
   font-weight: 800;
@@ -2125,7 +2190,7 @@ textarea {
 
 .lessons-module-head h2 {
   margin: 0.45rem 0 0;
-  color: var(--app-text);
+  color: #f8fbff;
   font-size: 1rem;
   line-height: 1.25;
 }
@@ -2133,7 +2198,7 @@ textarea {
 .lessons-module-head p,
 .lessons-module-head small {
   margin: 0.2rem 0 0;
-  color: var(--muted-text);
+  color: rgba(206, 217, 235, 0.78);
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.4;
@@ -2146,7 +2211,10 @@ textarea {
 .lessons-subject-list {
   display: grid;
   gap: 0.45rem;
-  margin-top: 0.75rem;
+  margin-top: 0;
+  padding: 0.85rem 1rem 1rem;
+  border-top: 2px solid rgba(112, 133, 170, 0.3);
+  background: rgba(11, 21, 42, 0.78);
 }
 
 .lessons-subject-list button {
@@ -2154,18 +2222,18 @@ textarea {
   gap: 0.15rem;
   width: 100%;
   min-width: 0;
-  border: 1px solid var(--border-soft);
+  border: 2px solid rgba(112, 133, 170, 0.3);
   border-radius: 10px;
-  background: var(--today-outline-bg);
+  background: rgba(255, 255, 255, 0.04);
   padding: 0.65rem 0.72rem;
-  color: var(--app-text);
+  color: #f8fbff;
   text-align: left;
 }
 
 .lessons-subject-list button:hover,
 .lessons-subject-list button.is-selected {
   border-color: rgba(57, 170, 240, 0.62);
-  background: color-mix(in srgb, var(--surface) 82%, #39aaf0 12%);
+  background: rgba(57, 170, 240, 0.13);
 }
 
 .lessons-subject-list strong,
@@ -2182,7 +2250,7 @@ textarea {
 
 .lessons-subject-list span,
 .lessons-subject-list small {
-  color: var(--muted-text);
+  color: rgba(206, 217, 235, 0.78);
   font-size: 0.74rem;
   line-height: 1.35;
 }
@@ -2218,10 +2286,10 @@ textarea {
 }
 
 .lessons-selected-meta span {
-  border: 1px solid var(--border-soft);
+  border: 2px solid rgba(112, 133, 170, 0.42);
   border-radius: 999px;
-  background: var(--today-chip-bg);
-  color: var(--muted-text);
+  background: rgba(11, 21, 42, 0.72);
+  color: rgba(233, 239, 248, 0.82);
   padding: 0.26rem 0.52rem;
   font-size: 0.72rem;
   font-weight: 750;
@@ -2276,7 +2344,7 @@ textarea {
 .lessons-notes {
   display: grid;
   gap: 0.35rem;
-  border-top: 1px solid var(--border-soft);
+  border-top: 1px solid rgba(112, 133, 170, 0.24);
   padding-top: 0.75rem;
 }
 
@@ -2331,7 +2399,7 @@ textarea {
 .essay-result-panel,
 .essay-study-panel,
 .essay-empty-result {
-  grid-column: span 12;
+  grid-column: auto;
 }
 
 .essay-hero-panel h1 {
@@ -2371,11 +2439,13 @@ textarea {
 .essay-competency-card,
 .essay-result-list,
 .essay-confidence-note {
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  padding: 0.85rem;
-  box-shadow: 0 1px 3px var(--shadow-soft);
+  border: 2px solid rgba(88, 121, 164, 0.7);
+  border-radius: 10px;
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.18) 100%);
+  padding: 0.95rem 1rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(4, 7, 13, 0.24);
 }
 
 .essay-capability-grid span,
@@ -2383,7 +2453,7 @@ textarea {
 .essay-state-list span,
 .essay-chat-meta span,
 .essay-word-count {
-  color: var(--muted-text);
+  color: rgba(206, 217, 235, 0.78);
   font-size: 0.74rem;
   font-weight: 800;
 }
@@ -2393,13 +2463,13 @@ textarea {
 .essay-state-list strong {
   display: block;
   margin: 0.18rem 0;
-  color: var(--app-text);
+  color: #f8fbff;
   font-size: 1rem;
 }
 
 .essay-capability-grid small {
   display: block;
-  color: var(--muted-text);
+  color: rgba(206, 217, 235, 0.78);
   font-size: 0.76rem;
   line-height: 1.35;
 }
@@ -2445,9 +2515,9 @@ textarea {
 }
 
 .essay-word-count {
-  border: 1px solid var(--border-soft);
+  border: 2px solid rgba(112, 133, 170, 0.42);
   border-radius: 999px;
-  background: var(--today-chip-bg);
+  background: rgba(11, 21, 42, 0.72);
   padding: 0.28rem 0.55rem;
 }
 
@@ -2464,7 +2534,8 @@ textarea {
 }
 
 .essay-state-list article.is-done {
-  border-color: rgba(76, 203, 99, 0.38);
+  border-color: rgba(76, 203, 99, 0.52);
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(55, 142, 91, 0.18) 100%);
 }
 
 .essay-empty-result {
@@ -2521,9 +2592,9 @@ textarea {
 
 .essay-provider-row span,
 .essay-chat-meta span {
-  border: 1px solid var(--border-soft);
+  border: 2px solid rgba(112, 133, 170, 0.42);
   border-radius: 999px;
-  background: var(--today-chip-bg);
+  background: rgba(11, 21, 42, 0.72);
   padding: 0.26rem 0.52rem;
 }
 
@@ -2614,9 +2685,9 @@ textarea {
 .essay-chat-message {
   display: grid;
   gap: 0.25rem;
-  border: 1px solid var(--border-soft);
+  border: 2px solid rgba(112, 133, 170, 0.34);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  background: rgba(11, 21, 42, 0.72);
   padding: 0.75rem;
 }
 
