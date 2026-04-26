@@ -942,6 +942,62 @@ textarea {
   margin-top: 0.95rem;
 }
 
+.today-activity-overview {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(112, 133, 170, 0.28);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.42);
+}
+
+.today-activity-overview strong {
+  color: #f8fbff;
+  font-size: 0.92rem;
+}
+
+.today-activity-overview p {
+  margin: 0;
+  color: rgba(206, 217, 235, 0.82);
+  font-size: 0.81rem;
+  line-height: 1.5;
+}
+
+.today-activity-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+.today-activity-metric {
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.78rem 0.82rem;
+  border: 1px solid rgba(112, 133, 170, 0.28);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.62);
+}
+
+.today-activity-metric strong {
+  color: #f8fbff;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.today-activity-metric span {
+  color: var(--today-kicker-text);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.today-activity-metric small {
+  color: rgba(206, 217, 235, 0.74);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 .today-feedback {
   display: flex;
   align-items: center;
@@ -3123,6 +3179,7 @@ textarea {
     align-items: flex-start;
   }
 
+  .today-activity-metrics-grid,
   .today-intensity-grid {
     grid-template-columns: 1fr;
   }

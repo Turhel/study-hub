@@ -383,6 +383,58 @@ function ActivityList({ items }: { items?: ActivityItem[] }) {
   );
 }
 
+function activityHeadline(activityToday?: {
+  question_attempts_registered?: number;
+  subjects_studied_today?: number;
+  blocks_impacted_today?: number;
+  reviews_generated_today?: number;
+  progression_decisions_today?: number;
+}) {
+  if (!activityToday) {
+    return {
+      title: "Aguardando dados de hoje",
+      description: "Quando o backend responder, este card mostra o que ja andou e o que ainda esta em aberto.",
+    };
+  }
+
+  if ((activityToday.question_attempts_registered ?? 0) === 0) {
+    return {
+      title: "Dia ainda sem registro",
+      description: "O proximo passo para movimentar o estudo e registrar algumas questoes no foco do dia.",
+    };
+  }
+
+  if ((activityToday.subjects_studied_today ?? 0) <= 1) {
+    return {
+      title: "Voce ja começou",
+      description: "Ja houve execucao hoje. Agora vale decidir se fecha esse foco ou abre um segundo assunto.",
+    };
+  }
+
+  return {
+    title: "Dia em movimento",
+    description: "Voce ja espalhou estudo por mais de um assunto. Agora vale usar isso para revisar estatisticas e manter o ritmo.",
+  };
+}
+
+function ActivityMetric({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+}) {
+  return (
+    <article className="today-activity-metric">
+      <strong>{value}</strong>
+      <span>{label}</span>
+      <small>{hint}</small>
+    </article>
+  );
+}
+
 export default function TodayPage() {
   const queryClient = useQueryClient();
   const [preferencesForm, setPreferencesForm] = useState<PreferencesForm>(defaultPreferences);
@@ -572,6 +624,7 @@ export default function TodayPage() {
 
     return `Hoje voce pediu ${preferencesForm.daily_minutes} min, intensidade ${preferencesForm.intensity}, ate ${preferencesForm.max_focus_count} focos e ate ${preferencesForm.max_questions} questoes, ${toggles.join(" e ")}.`;
   }, [preferencesForm]);
+  const activitySummary = useMemo(() => activityHeadline(activityToday), [activityToday]);
 
   function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
     setPreferencesForm((current) => ({ ...current, [key]: value }));
@@ -963,10 +1016,39 @@ export default function TodayPage() {
                 </div>
                 {activityTodayQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
               </div>
+
+              <div className="today-activity-overview">
+                <div>
+                  <strong>{activitySummary.title}</strong>
+                  <p>{activitySummary.description}</p>
+                </div>
+              </div>
+
+              <div className="today-activity-metrics-grid">
+                <ActivityMetric
+                  label="Questoes registradas"
+                  value={activityToday?.question_attempts_registered ?? 0}
+                  hint="Volume real ja salvo hoje."
+                />
+                <ActivityMetric
+                  label="Assuntos estudados"
+                  value={activityToday?.subjects_studied_today ?? 0}
+                  hint="Quantos temas receberam atencao."
+                />
+                <ActivityMetric
+                  label="Blocos impactados"
+                  value={activityToday?.blocks_impacted_today ?? 0}
+                  hint="Onde seu progresso mexeu na trilha."
+                />
+                <ActivityMetric
+                  label="Revisoes geradas"
+                  value={activityToday?.reviews_generated_today ?? 0}
+                  hint="O que ja virou manutencao futura."
+                />
+              </div>
+
               <div className="today-activity-summary">
-                <span>Blocos: {activityToday?.blocks_impacted_today ?? 0}</span>
-                <span>Revisoes: {activityToday?.reviews_generated_today ?? 0}</span>
-                <span>Decisoes: {activityToday?.progression_decisions_today ?? 0}</span>
+                <span>Decisoes de progressao: {activityToday?.progression_decisions_today ?? 0}</span>
               </div>
             </section>
           </aside>
