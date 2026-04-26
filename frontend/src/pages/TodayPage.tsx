@@ -219,16 +219,6 @@ function SummaryCard({
   );
 }
 
-function TodayGuidanceIcon() {
-  return (
-    <svg viewBox="0 0 48 48" aria-hidden="true">
-      <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
-      <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
-      <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
-    </svg>
-  );
-}
-
 function GuideIcon() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true">
@@ -695,8 +685,8 @@ export default function TodayPage() {
         <section className="today-panel today-status-panel">
           <div>
             <p className="today-eyebrow">Foco do dia</p>
-            <h1>Plano de hoje</h1>
-            <p>Use este painel para ajustar carga, registrar execucao e manter a trilha atualizada.</p>
+            <h1>Seu estudo de hoje</h1>
+            <p>Ajuste a carga, execute os focos e registre o que fez.</p>
           </div>
 
           <div className="today-capability-row">
@@ -722,40 +712,6 @@ export default function TodayPage() {
           </section>
         ) : null}
 
-        <section className="app-guidance-panel">
-          <div className="app-guidance-head">
-            <div>
-              <h3>Comece por aqui</h3>
-              <p>Foco do dia e a tela que organiza seu estudo. A ideia e simples: ver o plano, registrar execucao e usar isso para alimentar o resto do app.</p>
-            </div>
-            <span className="app-guidance-icon">
-              <TodayGuidanceIcon />
-            </span>
-          </div>
-          <div className="app-guidance-steps">
-            <div className="app-guidance-step">
-              <span className="app-guidance-step-index">1</span>
-              <p>Confirme a carga do dia em Guia.</p>
-            </div>
-            <div className="app-guidance-step">
-              <span className="app-guidance-step-index">2</span>
-              <p>Abra um foco e registre as questoes feitas.</p>
-            </div>
-            <div className="app-guidance-step">
-              <span className="app-guidance-step-index">3</span>
-              <p>Depois use Estatisticas para revisar o que aconteceu e Aulas para aprofundar o que ficou fraco.</p>
-            </div>
-          </div>
-          <div className="app-guidance-actions">
-            <Link className="app-secondary-action app-guidance-link" to="/stats">
-              Ver estatisticas
-            </Link>
-            <Link className="app-secondary-action app-guidance-link" to="/lessons">
-              Ir para aulas
-            </Link>
-          </div>
-        </section>
-
         <NextStepPanel
           title={nextStep.title}
           description={nextStep.description}
@@ -774,13 +730,13 @@ export default function TodayPage() {
 
         <section className="today-content-grid">
           <section className="today-panel today-plan-panel">
-            <div className="today-section-head">
-              <div>
-                <p className="today-eyebrow">Plano</p>
-                <h2>Focos de hoje</h2>
+              <div className="today-section-head">
+                <div>
+                  <p className="today-eyebrow">Plano</p>
+                  <h2>Focos</h2>
+                </div>
+                {planQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
               </div>
-              {planQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
-            </div>
 
             {planQuery.isLoading || !hasPlanItems ? (
               <article className="today-focus-card today-discipline-card-default today-focus-empty-card">
@@ -790,9 +746,9 @@ export default function TodayPage() {
                     <p>
                       {planQuery.isLoading
                         ? "Buscando plano, preferencias e progresso do dia."
-                        : "Quando o backend retornar itens, eles aparecem aqui neste formato."}
+                        : "Quando houver itens, eles aparecem aqui como seus proximos focos."}
                     </p>
-                    <strong>{planQuery.isLoading ? "Carregando plano de hoje..." : "Ajuste preferencias ou recalcule o plano."}</strong>
+                    <strong>{planQuery.isLoading ? "Carregando..." : "Ajuste o Guia ou recalcule o plano."}</strong>
                   </div>
                   <span className="today-card-illustration" aria-hidden="true">
                     <DisciplineIcon kind="default" />
@@ -923,7 +879,7 @@ export default function TodayPage() {
               <div className="today-guide-overview">
                 <div>
                   <strong>Defina o ritmo antes de estudar</strong>
-                  <p>Este card so controla a carga do dia. Ajuste o volume, salve e recalcule quando quiser mudar o plano.</p>
+                  <p>Ajuste o volume e recalcule se quiser mudar o plano de hoje.</p>
                 </div>
                 <span className="today-guide-icon" aria-hidden="true">
                   <GuideIcon />
@@ -1015,7 +971,7 @@ export default function TodayPage() {
               </div>
 
               <div className="today-guide-actions-note">
-                <p>Salvar guarda sua preferencia. Recalcular aplica isso no plano de hoje.</p>
+                <p>Salvar guarda. Recalcular aplica no plano de hoje.</p>
               </div>
 
               <div className="today-action-row">
