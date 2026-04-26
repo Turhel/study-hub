@@ -1,0 +1,4 @@
+
+> study-hub@0.1.0 dev:backend
+> powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\dev-backend-auto.ps1
+
