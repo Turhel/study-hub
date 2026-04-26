@@ -38,16 +38,102 @@ function saveExternalDraftsLocally(session: TimerSession, drafts: ExternalQuesti
   localStorage.setItem("study-hub-external-question-drafts", JSON.stringify([payload, ...saved].slice(0, 10)));
 }
 
-function suggestedPersonalDifficulty(elapsedSeconds: number, targetSeconds: number, current: ExternalQuestionDraft["personalDifficulty"]) {
+function parsePeerAccuracy(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return Math.min(Math.max(parsed, 0), 100);
+}
+
+function generalDifficultyFromPeerAccuracy(peerAccuracy: number | null): ExternalQuestionDraft["personalDifficulty"] | null {
+  if (peerAccuracy === null) {
+    return null;
+  }
+  if (peerAccuracy <= 40) {
+    return "alta";
+  }
+  if (peerAccuracy <= 60) {
+    return "media";
+  }
+  return "baixa";
+}
+
+function difficultyLabel(value: ExternalQuestionDraft["personalDifficulty"] | null): string {
+  if (value === "alta") {
+    return "dificil";
+  }
+  if (value === "media") {
+    return "media";
+  }
+  if (value === "baixa") {
+    return "facil";
+  }
+  return "indefinida";
+}
+
+function suggestedPersonalDifficulty(
+  elapsedSeconds: number,
+  targetSeconds: number,
+  wasCorrect: ExternalQuestionDraft["wasCorrect"],
+  peerAccuracy: string,
+): {
+  general: ExternalQuestionDraft["personalDifficulty"] | null;
+  personal: ExternalQuestionDraft["personalDifficulty"] | null;
+  note: string;
+} {
+  const parsedPeerAccuracy = parsePeerAccuracy(peerAccuracy);
+  const general = generalDifficultyFromPeerAccuracy(parsedPeerAccuracy);
+
+  if (general === null) {
+    return {
+      general: null,
+      personal: null,
+      note: "Informe a taxa de acerto dos outros alunos para destravar a sugestao.",
+    };
+  }
+
+  let score = general === "baixa" ? 0 : general === "media" ? 1 : 2;
   const overtimeRatio = targetSeconds > 0 ? elapsedSeconds / targetSeconds : 1;
 
-  if (overtimeRatio >= 1.8) {
-    return current === "alta" ? "alta" : "alta";
+  if (wasCorrect === "incorrect") {
+    score += 1;
   }
-  if (overtimeRatio >= 1.25) {
-    return current === "baixa" ? "media" : current;
+
+  if (overtimeRatio >= 3) {
+    score += 1;
+  } else if (overtimeRatio >= 1.75) {
+    score += 0.5;
+  } else if (overtimeRatio <= 0.5 && wasCorrect === "correct") {
+    score -= 0.25;
   }
-  return current;
+
+  const clampedScore = Math.min(Math.max(score, 0), 2.5);
+  const personal =
+    clampedScore >= 2 ? "alta" : clampedScore >= 0.85 ? "media" : "baixa";
+
+  const pieces = [
+    `Geral: ${difficultyLabel(general)} (${parsedPeerAccuracy}% de acerto).`,
+    wasCorrect === "correct" ? "Voce acertou." : wasCorrect === "incorrect" ? "Voce errou." : "Falta marcar se acertou ou errou.",
+    overtimeRatio >= 3
+      ? "O tempo ficou muito acima do alvo, entao ele puxou a dificuldade pessoal para cima."
+      : overtimeRatio >= 1.75
+        ? "O tempo ficou acima do alvo e aumentou um pouco a dificuldade pessoal."
+        : overtimeRatio <= 0.5 && wasCorrect === "correct"
+          ? "O tempo ficou baixo e ajudou a aliviar a dificuldade pessoal."
+          : "O tempo entrou como multiplicador, nao como definidor.",
+  ];
+
+  return {
+    general,
+    personal,
+    note: pieces.join(" "),
+  };
 }
 
 export default function SessionSummaryModal({ session, onClose }: SessionSummaryModalProps) {
@@ -247,7 +333,8 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
                   const suggestedDifficulty = suggestedPersonalDifficulty(
                     elapsed,
                     session.setup.targetSecondsPerQuestion,
-                    draft.personalDifficulty,
+                    draft.wasCorrect,
+                    draft.peerAccuracy,
                   );
 
                   return (
@@ -271,7 +358,29 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
                       {expandedQuestion === draft.questionNumber ? (
                         <div className="mt-3 space-y-3">
                           <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-zinc-300">
-                            Sugestao de dificuldade pelo tempo: <strong className="text-zinc-100">{suggestedDifficulty}</strong>
+                            <p className="leading-5">
+                              Dificuldade geral sugerida:{" "}
+                              <strong className="text-zinc-100">{difficultyLabel(suggestedDifficulty.general)}</strong>
+                            </p>
+                            <p className="mt-1 leading-5">
+                              Dificuldade pessoal sugerida:{" "}
+                              <strong className="text-zinc-100">{difficultyLabel(suggestedDifficulty.personal)}</strong>
+                            </p>
+                            <p className="mt-2 leading-5 text-zinc-400">{suggestedDifficulty.note}</p>
+                            {suggestedDifficulty.personal ? (
+                              <button
+                                type="button"
+                                className="mt-3 timer-widget-button px-3"
+                                onClick={() =>
+                                  updateDraft(draft.questionNumber, (current) => ({
+                                    ...current,
+                                    personalDifficulty: suggestedDifficulty.personal ?? current.personalDifficulty,
+                                  }))
+                                }
+                              >
+                                Usar sugestao pessoal
+                              </button>
+                            ) : null}
                           </div>
 
                           <div className="space-y-2">
