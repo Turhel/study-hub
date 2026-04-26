@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { getStatsByDiscipline, getStatsOverview } from "../lib/api";
 import type { StatsDisciplineSignal, StatsSubjectPerformance } from "../lib/types";
 
 const disciplines = ["Matematica", "Biologia", "Quimica", "Fisica", "Linguagens", "Humanas"];
+type StatsCardTone = "blue" | "pink" | "gold" | "green";
 
 function formatPercent(value?: number | null): string {
   return `${Math.round((value ?? 0) * 100)}%`;
@@ -24,12 +26,67 @@ function formatSeconds(value?: number | null): string {
   return seconds ? `${minutes}min ${seconds}s` : `${minutes}min`;
 }
 
-function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
+function StatsGlyph({ tone }: { tone: StatsCardTone }) {
+  if (tone === "gold") {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="10" y="8" width="28" height="32" rx="5" className="today-icon-fill-gold" />
+        <path d="M17 18h14M17 25h14M17 32h8" className="today-icon-line-dark" />
+      </svg>
+    );
+  }
+  if (tone === "pink") {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="9" y="9" width="30" height="30" rx="8" className="today-icon-fill-pink" />
+        <path d="M24 15v18M15 24h18" className="today-icon-line-soft" />
+      </svg>
+    );
+  }
+  if (tone === "green") {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="16" className="today-icon-fill-green" />
+        <path d="M14 27c6-9 14-9 20 0M17 33c5-5 9-5 14 0" className="today-icon-line-dark" />
+      </svg>
+    );
+  }
   return (
-    <article className="stats-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {hint ? <small>{hint}</small> : null}
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
+      <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
+      <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
+    </svg>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  tone: StatsCardTone;
+}) {
+  return (
+    <article className={`stats-card stats-card-${tone}`}>
+      <div className="stats-card-main">
+        <div>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+        <span className="stats-card-icon">
+          <StatsGlyph tone={tone} />
+        </span>
+      </div>
+      {hint ? (
+        <div className="stats-card-footer">
+          <small>{hint}</small>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -37,7 +94,9 @@ function StatCard({ label, value, hint }: { label: string; value: string | numbe
 function DisciplineSignalList({ title, items }: { title: string; items?: StatsDisciplineSignal[] }) {
   return (
     <section className="stats-list-panel">
-      <h3>{title}</h3>
+      <div className="stats-list-head">
+        <h3>{title}</h3>
+      </div>
       {items && items.length > 0 ? (
         <div className="stats-list">
           {items.map((item) => (
@@ -62,7 +121,9 @@ function DisciplineSignalList({ title, items }: { title: string; items?: StatsDi
 function SubjectList({ title, items }: { title: string; items?: StatsSubjectPerformance[] }) {
   return (
     <section className="stats-list-panel">
-      <h3>{title}</h3>
+      <div className="stats-list-head">
+        <h3>{title}</h3>
+      </div>
       {items && items.length > 0 ? (
         <div className="stats-list">
           {items.slice(0, 5).map((item) => (
@@ -81,6 +142,16 @@ function SubjectList({ title, items }: { title: string; items?: StatsSubjectPerf
         <p className="today-empty-copy">Sem assuntos nesta lista.</p>
       )}
     </section>
+  );
+}
+
+function GuidanceIcon() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
+      <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
+      <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
+    </svg>
   );
 }
 
@@ -120,6 +191,40 @@ export default function StatsPage() {
           </section>
         ) : null}
 
+        <section className="app-guidance-panel">
+          <div className="app-guidance-head">
+            <div>
+              <h3>Como usar esta tela</h3>
+              <p>As estatisticas servem para confirmar se o estudo do dia virou registro real, nao para te deixar perdido em numero.</p>
+            </div>
+            <span className="app-guidance-icon">
+              <GuidanceIcon />
+            </span>
+          </div>
+          <div className="app-guidance-steps">
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">1</span>
+              <p>Registre algumas questoes no Foco do dia para alimentar este painel.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">2</span>
+              <p>Use o overview para ver volume e acerto sem abrir disciplina por disciplina.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">3</span>
+              <p>Quando algo estiver fraco, volte para a TodayPage ou para Aulas e ataque esse ponto.</p>
+            </div>
+          </div>
+          <div className="app-guidance-actions">
+            <Link className="app-primary-action app-primary-action-blue app-guidance-link" to="/">
+              Abrir foco do dia
+            </Link>
+            <Link className="app-secondary-action app-guidance-link" to="/lessons">
+              Ir para aulas
+            </Link>
+          </div>
+        </section>
+
         <section className="today-panel today-panel-wide">
           <div className="today-section-heading">
             <div>
@@ -129,21 +234,25 @@ export default function StatsPage() {
           </div>
 
           {overviewQuery.isLoading ? (
-            <p className="today-empty-copy">Carregando estatisticas...</p>
+            <div className="app-empty-card">
+              <strong>Carregando estatisticas...</strong>
+              <p>Assim que houver resposta do backend, este bloco mostra volume, acerto e tempo medio.</p>
+            </div>
           ) : (
             <div className="stats-grid">
-              <StatCard label="Questoes hoje" value={overview?.questions_today ?? 0} />
-              <StatCard label="Questoes na semana" value={overview?.questions_this_week ?? 0} />
-              <StatCard label="Questoes no mes" value={overview?.questions_this_month ?? 0} />
-              <StatCard label="Acerto hoje" value={formatPercent(overview?.accuracy_today)} />
-              <StatCard label="Acerto na semana" value={formatPercent(overview?.accuracy_this_week)} />
-              <StatCard label="Acerto no mes" value={formatPercent(overview?.accuracy_this_month)} />
+              <StatCard label="Questoes hoje" value={overview?.questions_today ?? 0} tone="gold" />
+              <StatCard label="Questoes na semana" value={overview?.questions_this_week ?? 0} tone="blue" />
+              <StatCard label="Questoes no mes" value={overview?.questions_this_month ?? 0} tone="pink" />
+              <StatCard label="Acerto hoje" value={formatPercent(overview?.accuracy_today)} tone="green" />
+              <StatCard label="Acerto na semana" value={formatPercent(overview?.accuracy_this_week)} tone="blue" />
+              <StatCard label="Acerto no mes" value={formatPercent(overview?.accuracy_this_month)} tone="pink" />
               <StatCard
                 label="Tempo medio correto"
                 value={formatSeconds(overview?.avg_time_correct_questions_seconds)}
+                tone="gold"
               />
-              <StatCard label="Assuntos na semana" value={overview?.studied_subjects_this_week ?? 0} />
-              <StatCard label="Blocos impactados" value={overview?.impacted_blocks_this_week ?? 0} />
+              <StatCard label="Assuntos na semana" value={overview?.studied_subjects_this_week ?? 0} tone="green" />
+              <StatCard label="Blocos impactados" value={overview?.impacted_blocks_this_week ?? 0} tone="blue" />
             </div>
           )}
         </section>
@@ -175,24 +284,31 @@ export default function StatsPage() {
           </div>
 
           {disciplineQuery.isError ? (
-            <p className="today-empty-copy">Nao foi possivel carregar esta disciplina agora.</p>
+            <div className="app-empty-card">
+              <strong>Disciplina indisponivel agora.</strong>
+              <p>Voce ainda pode usar o overview geral e voltar nesta aba quando o backend responder.</p>
+            </div>
           ) : null}
 
           {disciplineQuery.isLoading ? (
-            <p className="today-empty-copy">Carregando disciplina...</p>
+            <div className="app-empty-card">
+              <strong>Carregando disciplina...</strong>
+              <p>Este painel aprofunda o desempenho so da materia selecionada.</p>
+            </div>
           ) : (
             <div className="stats-grid">
-              <StatCard label="Questoes na semana" value={discipline?.questions_this_week ?? 0} />
-              <StatCard label="Questoes no mes" value={discipline?.questions_this_month ?? 0} />
-              <StatCard label="Acerto" value={formatPercent(discipline?.accuracy)} />
+              <StatCard label="Questoes na semana" value={discipline?.questions_this_week ?? 0} tone="gold" />
+              <StatCard label="Questoes no mes" value={discipline?.questions_this_month ?? 0} tone="blue" />
+              <StatCard label="Acerto" value={formatPercent(discipline?.accuracy)} tone="green" />
               <StatCard
                 label="Tempo medio correto"
                 value={formatSeconds(discipline?.avg_time_correct_questions_seconds)}
+                tone="pink"
               />
-              <StatCard label="Revisoes vencidas" value={discipline?.review_due_count ?? 0} />
-              <StatCard label="Blocos em andamento" value={discipline?.blocks_in_progress ?? 0} />
-              <StatCard label="Blocos revisaveis" value={discipline?.blocks_reviewable ?? 0} />
-              <StatCard label="Assuntos estudados" value={discipline?.studied_subjects ?? 0} />
+              <StatCard label="Revisoes vencidas" value={discipline?.review_due_count ?? 0} tone="pink" />
+              <StatCard label="Blocos em andamento" value={discipline?.blocks_in_progress ?? 0} tone="blue" />
+              <StatCard label="Blocos revisaveis" value={discipline?.blocks_reviewable ?? 0} tone="gold" />
+              <StatCard label="Assuntos estudados" value={discipline?.studied_subjects ?? 0} tone="green" />
             </div>
           )}
         </section>

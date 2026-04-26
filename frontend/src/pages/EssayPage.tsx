@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 import {
   closeEssayStudySession,
@@ -132,6 +133,16 @@ function StudyMessage({ message }: { message: EssayStudyMessageResponse }) {
       <p>{message.content}</p>
       <small>{formatDateTime(message.created_at)}</small>
     </article>
+  );
+}
+
+function EssayGuidanceIcon() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="8" y="6" width="21" height="29" rx="4" className="today-icon-fill-blue" />
+      <path d="M13 14h11M13 20h11M13 26h7" className="today-icon-line-soft" />
+      <path d="M25 30l11-11 5 5-11 11-7 2 2-7z" className="today-icon-fill-gold" />
+    </svg>
   );
 }
 
@@ -279,6 +290,37 @@ export default function EssayPage() {
           </section>
         ) : null}
 
+        <section className="app-guidance-panel">
+          <div className="app-guidance-head">
+            <div>
+              <h3>Como usar redacao sem se enrolar</h3>
+              <p>Esta tela tem dois trabalhos: guardar seu texto e, quando houver IA disponivel, transformar isso em correcao e estudo.</p>
+            </div>
+            <span className="app-guidance-icon">
+              <EssayGuidanceIcon />
+            </span>
+          </div>
+          <div className="app-guidance-steps">
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">1</span>
+              <p>Preencha tema e texto.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">2</span>
+              <p>Se a IA estiver ligada, corrija e leia os pontos fortes e fracos.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">3</span>
+              <p>Use o chat depois da correcao para estudar os erros mais importantes.</p>
+            </div>
+          </div>
+          <div className="app-guidance-actions">
+            <Link className="app-secondary-action app-guidance-link" to="/">
+              Voltar ao foco do dia
+            </Link>
+          </div>
+        </section>
+
         <section className="today-panel essay-capabilities-panel">
           <div className="today-section-heading">
             <div>
@@ -287,17 +329,17 @@ export default function EssayPage() {
             </div>
           </div>
           <div className="essay-capability-grid">
-            <article>
+            <article className="essay-capability-card">
               <span>LLM</span>
               <strong>{capabilities?.llm.enabled ? "Ligado" : "Desligado"}</strong>
               <small>{capabilities?.llm.provider ?? "sem provider"} / {capabilities?.llm.model ?? "sem modelo"}</small>
             </article>
-            <article>
+            <article className="essay-capability-card">
               <span>Correcao</span>
               <strong>{capabilities?.features.essay_correction_enabled ? "Disponivel" : "Indisponivel"}</strong>
               <small>{correctionEnabled ? "Botao liberado" : "Bloqueada nesta maquina"}</small>
             </article>
-            <article>
+            <article className="essay-capability-card">
               <span>Estudo</span>
               <strong>{capabilities?.features.essay_study_enabled ? "Disponivel" : "Indisponivel"}</strong>
               <small>{studyEnabled ? "Chat liberado apos correcao" : "Chat bloqueado"}</small>
@@ -387,19 +429,19 @@ export default function EssayPage() {
               </div>
             </div>
             <div className="essay-state-list">
-              <article className={theme.trim() ? "is-done" : ""}>
+              <article className={`essay-state-card ${theme.trim() ? "is-done" : ""}`}>
                 <strong>Tema</strong>
                 <span>{theme.trim() ? "preenchido" : "pendente"}</span>
               </article>
-              <article className={essayText.trim() ? "is-done" : ""}>
+              <article className={`essay-state-card ${essayText.trim() ? "is-done" : ""}`}>
                 <strong>Texto</strong>
                 <span>{essayText.trim() ? `${wordCount} palavras` : "pendente"}</span>
               </article>
-              <article className={correction ? "is-done" : ""}>
+              <article className={`essay-state-card ${correction ? "is-done" : ""}`}>
                 <strong>Correcao</strong>
                 <span>{correction ? `id ${correction.id}` : "aguardando IA"}</span>
               </article>
-              <article className={studySession ? "is-done" : ""}>
+              <article className={`essay-state-card ${studySession ? "is-done" : ""}`}>
                 <strong>Estudo</strong>
                 <span>{studySession ? studySession.status : "opcional"}</span>
               </article>
