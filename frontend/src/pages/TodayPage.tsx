@@ -59,6 +59,12 @@ const defaultAttemptForm: AttemptForm = {
   notes: "",
 };
 
+const intensityDescriptions: Record<StudyGuideIntensity, string> = {
+  leve: "Carga mais segura para manter consistencia sem se esmagar.",
+  normal: "Equilibrio entre volume, revisao e conteudo novo.",
+  forte: "Puxa mais questoes e focos quando voce quer acelerar.",
+};
+
 const disciplineVisualMap: Record<string, { icon: DisciplineIconKind; toneClassName: string }> = {
   "Linguagens e Codigos": { icon: "languages", toneClassName: "today-discipline-card-languages" },
   Linguagens: { icon: "languages", toneClassName: "today-discipline-card-languages" },
@@ -223,6 +229,16 @@ function TodayGuidanceIcon() {
   );
 }
 
+function GuideIcon() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="8" y="9" width="32" height="28" rx="8" className="today-icon-fill-gold" />
+      <path d="M15 18h18M15 24h18M15 30h10" className="today-icon-line-dark" />
+      <path d="M33 12v24" className="today-icon-line-soft" />
+    </svg>
+  );
+}
+
 function NextStepPanel({
   title,
   description,
@@ -321,12 +337,14 @@ function PreferenceNumberInput({
   value,
   min,
   max,
+  hint,
   onChange,
 }: {
   label: string;
   value: number;
   min: number;
   max: number;
+  hint?: string;
   onChange: (value: number) => void;
 }) {
   return (
@@ -340,6 +358,7 @@ function PreferenceNumberInput({
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
       />
+      {hint ? <small>{hint}</small> : null}
     </label>
   );
 }
@@ -545,6 +564,14 @@ export default function TodayPage() {
     preferencesQuery,
     recalculateMutation,
   ]);
+  const guideSummary = useMemo(() => {
+    const toggles = [
+      preferencesForm.include_reviews ? "com revisoes" : "sem revisoes",
+      preferencesForm.include_new_content ? "com conteudo novo" : "sem conteudo novo",
+    ];
+
+    return `Hoje voce pediu ${preferencesForm.daily_minutes} min, intensidade ${preferencesForm.intensity}, ate ${preferencesForm.max_focus_count} focos e ate ${preferencesForm.max_questions} questoes, ${toggles.join(" e ")}.`;
+  }, [preferencesForm]);
 
   function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
     setPreferencesForm((current) => ({ ...current, [key]: value }));
@@ -810,31 +837,36 @@ export default function TodayPage() {
                 {preferencesQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
               </div>
 
+              <div className="today-guide-overview">
+                <div>
+                  <strong>Defina o ritmo antes de estudar</strong>
+                  <p>Este card so controla a carga do dia. Ajuste o volume, salve e recalcule quando quiser mudar o plano.</p>
+                </div>
+                <span className="today-guide-icon" aria-hidden="true">
+                  <GuideIcon />
+                </span>
+              </div>
+
+              <div className="today-guide-summary">
+                <span className="today-guide-summary-label">Resumo atual</span>
+                <p>{guideSummary}</p>
+              </div>
+
               <div className="today-preferences-grid">
                 <PreferenceNumberInput
                   label="Minutos"
                   value={preferencesForm.daily_minutes}
                   min={15}
                   max={360}
+                  hint="Quanto tempo total voce quer dedicar hoje."
                   onChange={(value) => updatePreference("daily_minutes", value)}
                 />
-                <label className="today-form-field">
-                  <span>Intensidade</span>
-                  <select
-                    className="app-input"
-                    value={preferencesForm.intensity}
-                    onChange={(event) => updatePreference("intensity", event.target.value as StudyGuideIntensity)}
-                  >
-                    <option value="leve">Leve</option>
-                    <option value="normal">Normal</option>
-                    <option value="forte">Forte</option>
-                  </select>
-                </label>
                 <PreferenceNumberInput
                   label="Focos max."
                   value={preferencesForm.max_focus_count}
                   min={1}
                   max={5}
+                  hint="Quantos assuntos diferentes podem entrar no plano."
                   onChange={(value) => updatePreference("max_focus_count", value)}
                 />
                 <PreferenceNumberInput
@@ -842,27 +874,65 @@ export default function TodayPage() {
                   value={preferencesForm.max_questions}
                   min={1}
                   max={80}
+                  hint="Teto de questoes para o dia nao explodir."
                   onChange={(value) => updatePreference("max_questions", value)}
                 />
               </div>
 
-              <div className="today-toggle-row">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={preferencesForm.include_reviews}
-                    onChange={(event) => updatePreference("include_reviews", event.target.checked)}
-                  />
-                  Incluir revisoes
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={preferencesForm.include_new_content}
-                    onChange={(event) => updatePreference("include_new_content", event.target.checked)}
-                  />
-                  Conteudo novo
-                </label>
+              <div className="today-guide-section">
+                <div className="today-guide-section-copy">
+                  <strong>Intensidade</strong>
+                  <p>Escolha o ritmo geral do dia. Isso muda o quanto o plano pressiona sua carga.</p>
+                </div>
+                <div className="today-intensity-grid" role="radiogroup" aria-label="Intensidade do guia">
+                  {(["leve", "normal", "forte"] as StudyGuideIntensity[]).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`today-intensity-card ${preferencesForm.intensity === option ? "is-active" : ""}`}
+                      onClick={() => updatePreference("intensity", option)}
+                      aria-pressed={preferencesForm.intensity === option}
+                    >
+                      <strong>{option}</strong>
+                      <span>{intensityDescriptions[option]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="today-guide-section">
+                <div className="today-guide-section-copy">
+                  <strong>O que entra no plano</strong>
+                  <p>Use estes toggles para dizer se hoje o plano pode trazer revisoes, conteudo novo ou os dois.</p>
+                </div>
+                <div className="today-toggle-stack">
+                  <label className="today-toggle-card">
+                    <div>
+                      <strong>Incluir revisoes</strong>
+                      <span>Bom para consolidar e nao deixar materia vencer.</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={preferencesForm.include_reviews}
+                      onChange={(event) => updatePreference("include_reviews", event.target.checked)}
+                    />
+                  </label>
+                  <label className="today-toggle-card">
+                    <div>
+                      <strong>Conteudo novo</strong>
+                      <span>Bom quando voce quer continuar avancando na trilha.</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={preferencesForm.include_new_content}
+                      onChange={(event) => updatePreference("include_new_content", event.target.checked)}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="today-guide-actions-note">
+                <p>Salvar guarda sua preferencia. Recalcular aplica isso no plano de hoje.</p>
               </div>
 
               <div className="today-action-row">

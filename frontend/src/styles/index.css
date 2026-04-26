@@ -764,6 +764,12 @@ textarea {
   line-height: 1.55;
 }
 
+.today-form-field small {
+  color: var(--muted-text);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .today-capability-row,
 .today-focus-metrics,
 .today-activity-summary {
@@ -801,6 +807,139 @@ textarea {
 .today-error-panel strong {
   display: block;
   margin-bottom: 0.25rem;
+}
+
+.today-guide-overview,
+.today-guide-summary,
+.today-guide-section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.today-guide-overview {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  margin-top: 0.8rem;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid rgba(112, 133, 170, 0.28);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.42);
+}
+
+.today-guide-overview strong,
+.today-guide-section-copy strong {
+  color: #f8fbff;
+  font-size: 0.92rem;
+}
+
+.today-guide-overview p,
+.today-guide-summary p,
+.today-guide-section-copy p,
+.today-guide-actions-note p {
+  margin: 0.2rem 0 0;
+  color: rgba(206, 217, 235, 0.82);
+  font-size: 0.81rem;
+  line-height: 1.5;
+}
+
+.today-guide-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+}
+
+.today-guide-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.today-guide-summary {
+  margin-top: 0.8rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(57, 170, 240, 0.28);
+  border-radius: 12px;
+  background: rgba(57, 170, 240, 0.08);
+}
+
+.today-guide-summary-label {
+  color: var(--today-kicker-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.today-guide-section {
+  margin-top: 1rem;
+}
+
+.today-guide-section-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.today-intensity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.today-intensity-card,
+.today-toggle-card {
+  border: 2px solid rgba(112, 133, 170, 0.34);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.62);
+}
+
+.today-intensity-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem 0.85rem;
+  text-align: left;
+  color: #f8fbff;
+}
+
+.today-intensity-card strong,
+.today-toggle-card strong {
+  font-size: 0.84rem;
+  text-transform: capitalize;
+}
+
+.today-intensity-card span,
+.today-toggle-card span {
+  color: rgba(206, 217, 235, 0.78);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.today-intensity-card.is-active {
+  border-color: rgba(57, 170, 240, 0.72);
+  background: rgba(57, 170, 240, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.today-toggle-stack {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.today-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.8rem 0.9rem;
+}
+
+.today-toggle-card input {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+}
+
+.today-guide-actions-note {
+  margin-top: 0.95rem;
 }
 
 .today-feedback {
@@ -2974,6 +3113,17 @@ textarea {
 
   .stats-grid,
   .stats-two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .today-guide-overview,
+  .today-toggle-card {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .today-intensity-grid {
     grid-template-columns: 1fr;
   }
 
