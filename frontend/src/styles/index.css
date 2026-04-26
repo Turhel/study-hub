@@ -194,10 +194,30 @@ textarea {
 .app-topbar-nav {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
+  gap: 0.8rem;
+  flex-wrap: nowrap;
   justify-content: flex-start;
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.app-topbar-primary-nav,
+.app-topbar-secondary-nav {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.app-topbar-primary-nav {
+  gap: 0.45rem;
+  flex: 0 1 auto;
+}
+
+.app-topbar-secondary-nav {
+  gap: 0.35rem;
+  padding-left: 0.8rem;
+  border-left: 1px solid var(--border-soft);
+  flex: 0 0 auto;
 }
 
 .app-topbar-link {
@@ -235,6 +255,30 @@ textarea {
 
 :root[data-theme="light"] .app-topbar-link-active {
   background: var(--cta-blue);
+}
+
+.app-topbar-link-secondary {
+  border-color: var(--border-soft);
+  background: color-mix(in srgb, var(--surface-soft) 92%, transparent);
+  color: var(--muted-text);
+  padding: 0.48rem 0.64rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.app-topbar-link-secondary:hover {
+  background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
+  color: var(--app-text);
+}
+
+.app-topbar-link-secondary-active {
+  border-color: rgba(47, 169, 244, 0.3);
+  background: color-mix(in srgb, var(--cta-blue) 18%, transparent);
+  color: var(--app-text);
+}
+
+:root[data-theme="light"] .app-topbar-link-secondary-active {
+  color: #12334c;
 }
 
 .app-topbar-link-muted {
@@ -3111,7 +3155,6 @@ textarea {
 
   .app-topbar-nav {
     flex: 1 1 auto;
-    flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
     scrollbar-width: none;
@@ -3120,6 +3163,11 @@ textarea {
 
   .app-topbar-nav::-webkit-scrollbar {
     display: none;
+  }
+
+  .app-topbar-primary-nav,
+  .app-topbar-secondary-nav {
+    flex-wrap: nowrap;
   }
 
   .app-topbar-link {
@@ -3270,8 +3318,18 @@ textarea {
     max-width: calc(100vw - 7.2rem);
   }
 
+  .app-topbar-secondary-nav {
+    padding-left: 0.55rem;
+  }
+
   .app-topbar-link {
     max-width: 8.5rem;
+  }
+
+  .app-topbar-link-secondary {
+    max-width: 5.8rem;
+    padding-right: 0.52rem;
+    padding-left: 0.52rem;
   }
 }
 

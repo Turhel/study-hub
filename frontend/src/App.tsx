@@ -11,10 +11,13 @@ import TodayPage from "./pages/TodayPage";
 
 type ThemeMode = "light" | "dark";
 
-const navigationItems = [
+const primaryNavigationItems = [
   { label: "Hoje", path: "/", icon: <FocusEmojiIcon /> },
   { label: "Aulas", path: "/lessons", icon: <BooksEmojiIcon /> },
   { label: "Stats", path: "/stats", icon: <StatsEmojiIcon /> },
+];
+
+const secondaryNavigationItems = [
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
   { label: "Redacao", path: "/essay", icon: <MemoEmojiIcon /> },
 ];
@@ -238,17 +241,34 @@ export default function App() {
       <header className="app-topbar">
         <div className="app-topbar-row">
           <nav className="app-topbar-nav" aria-label="Principal">
-            {navigationItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `app-topbar-link ${isActive ? "app-topbar-link-active" : ""}`}
-              >
-                <span className="app-topbar-link-icon">{item.icon}</span>
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
+            <div className="app-topbar-primary-nav">
+              {primaryNavigationItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) => `app-topbar-link ${isActive ? "app-topbar-link-active" : ""}`}
+                >
+                  <span className="app-topbar-link-icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
 
+            <div className="app-topbar-secondary-nav" aria-label="Apoio">
+              {secondaryNavigationItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `app-topbar-link app-topbar-link-secondary ${isActive ? "app-topbar-link-secondary-active" : ""}`
+                  }
+                  title={item.label}
+                >
+                  <span className="app-topbar-link-icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           </nav>
 
           <div className="app-topbar-actions">
