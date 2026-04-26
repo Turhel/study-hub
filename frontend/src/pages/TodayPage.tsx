@@ -24,6 +24,7 @@ import type {
 
 type PreferencesForm = StudyGuidePreferencesPayload;
 type DisciplineIconKind = "languages" | "humanas" | "math" | "nature" | "writing" | "default";
+type MetricIconKind = "target" | "focus" | "questions" | "subjects";
 
 type AttemptForm = {
   quantity: number;
@@ -146,6 +147,69 @@ function DisciplineIcon({ kind }: { kind: DisciplineIconKind }) {
       <path d="M22 24h14M22 32h14M22 40h10" className="today-icon-line-soft" />
       <path d="M44 24h6v30h-6z" className="today-icon-fill-gold" />
     </svg>
+  );
+}
+
+function MetricIcon({ kind }: { kind: MetricIconKind }) {
+  if (kind === "target") {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
+        <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
+        <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
+      </svg>
+    );
+  }
+  if (kind === "focus") {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="9" y="9" width="30" height="30" rx="8" className="today-icon-fill-pink" />
+        <path d="M24 15v18M15 24h18" className="today-icon-line-soft" />
+      </svg>
+    );
+  }
+  if (kind === "questions") {
+    return (
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect x="10" y="8" width="28" height="32" rx="5" className="today-icon-fill-gold" />
+        <path d="M17 18h14M17 25h14M17 32h8" className="today-icon-line-dark" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="16" className="today-icon-fill-green" />
+      <path d="M14 27c6-9 14-9 20 0M17 33c5-5 9-5 14 0" className="today-icon-line-dark" />
+    </svg>
+  );
+}
+
+function SummaryCard({
+  label,
+  value,
+  detail,
+  icon,
+}: {
+  label: string;
+  value: number;
+  detail: string;
+  icon: MetricIconKind;
+}) {
+  return (
+    <article className={`today-mini-card today-mini-card-${icon}`}>
+      <div className="today-mini-card-main">
+        <div>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+        <span className="today-mini-icon">
+          <MetricIcon kind={icon} />
+        </span>
+      </div>
+      <div className="today-mini-card-footer">
+        <small>{detail}</small>
+      </div>
+    </article>
   );
 }
 
@@ -432,26 +496,10 @@ export default function TodayPage() {
         ) : null}
 
         <section className="today-summary-grid">
-          <article className="today-mini-card">
-            <span>Total planejado</span>
-            <strong>{planSummary?.total_questions ?? 0}</strong>
-            <small>questoes</small>
-          </article>
-          <article className="today-mini-card">
-            <span>Focos</span>
-            <strong>{planSummary?.focus_count ?? 0}</strong>
-            <small>ativos</small>
-          </article>
-          <article className="today-mini-card">
-            <span>Registradas hoje</span>
-            <strong>{activityToday?.question_attempts_registered ?? 0}</strong>
-            <small>questoes</small>
-          </article>
-          <article className="today-mini-card">
-            <span>Assuntos hoje</span>
-            <strong>{activityToday?.subjects_studied_today ?? 0}</strong>
-            <small>estudados</small>
-          </article>
+          <SummaryCard label="Total planejado" value={planSummary?.total_questions ?? 0} detail="questoes" icon="target" />
+          <SummaryCard label="Focos" value={planSummary?.focus_count ?? 0} detail="ativos" icon="focus" />
+          <SummaryCard label="Registradas hoje" value={activityToday?.question_attempts_registered ?? 0} detail="questoes" icon="questions" />
+          <SummaryCard label="Assuntos hoje" value={activityToday?.subjects_studied_today ?? 0} detail="estudados" icon="subjects" />
         </section>
 
         <section className="today-content-grid">
@@ -464,12 +512,48 @@ export default function TodayPage() {
               {planQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
             </div>
 
-            {planQuery.isLoading ? <p className="today-empty-copy">Carregando plano de hoje...</p> : null}
-
-            {!planQuery.isLoading && !hasPlanItems ? (
-              <p className="today-empty-copy">
-                Nenhum foco elegivel no plano de hoje. Ajuste preferencias ou recalcule quando houver dados estruturais.
-              </p>
+            {planQuery.isLoading || !hasPlanItems ? (
+              <article className="today-focus-card today-discipline-card-default today-focus-empty-card">
+                <div className="today-focus-main">
+                  <div className="today-focus-copy">
+                    <h3>{planQuery.isLoading ? "Preparando seus focos" : "Sem focos para exibir"}</h3>
+                    <p>
+                      {planQuery.isLoading
+                        ? "Buscando plano, preferencias e progresso do dia."
+                        : "Quando o backend retornar itens, eles aparecem aqui neste formato."}
+                    </p>
+                    <strong>{planQuery.isLoading ? "Carregando plano de hoje..." : "Ajuste preferencias ou recalcule o plano."}</strong>
+                  </div>
+                  <span className="today-card-illustration" aria-hidden="true">
+                    <DisciplineIcon kind="default" />
+                  </span>
+                </div>
+                <div className="today-focus-footer">
+                  <div className="today-focus-score-block">
+                    <div className="today-score-chip" aria-label="Prioridade indisponivel">
+                      <span className="today-score-pill" />
+                      <span className="today-score-info">i</span>
+                    </div>
+                    <span>Prioridade</span>
+                  </div>
+                  <div className="today-focus-count-block">
+                    <strong>0</strong>
+                    <span>Feitas</span>
+                  </div>
+                  <div className="today-focus-actions">
+                    <button type="button" className="today-discipline-icon-button" disabled aria-label="Estatisticas indisponiveis">
+                      <span className="today-discipline-chart" aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                    </button>
+                    <button type="button" className="today-register-button" disabled>
+                      Treinar
+                    </button>
+                  </div>
+                </div>
+              </article>
             ) : null}
 
             <div className="today-focus-list">
