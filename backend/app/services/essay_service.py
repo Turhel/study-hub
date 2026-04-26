@@ -113,11 +113,19 @@ def _compose_correction_messages(prompt: PromptFile, payload: EssayCorrectionCre
 
 
 def _extract_section(text: str, start_label: str, next_label: str | None = None) -> str:
-    pattern = rf"{re.escape(start_label)}\s*(.*)"
+    # Use a more flexible start pattern to handle markdown like **C1:**
+    start_pattern = rf"(?:^|\n)[#* \t]*{re.escape(start_label)}[#* \t]*:?\s*(.*)"
+    
     if next_label:
-        pattern = rf"{re.escape(start_label)}\s*(.*?)(?=\n\s*{re.escape(next_label)}\s*:|\Z)"
+        # Use a non-greedy match until the next label, which may also be formatted
+        next_pattern = rf"(?:\n\s*[#* \t]*{re.escape(next_label)}[#* \t]*:?|\Z)"
+        pattern = rf"(?:^|\n)[#* \t]*{re.escape(start_label)}[#* \t]*:?\s*(.*?){next_pattern}"
+    else:
+        pattern = start_pattern
+        
     match = re.search(pattern, text, flags=re.DOTALL | re.IGNORECASE)
     return match.group(1).strip() if match else ""
+
 
 
 def _extract_bullet_value(section: str, bullet_label: str) -> str:
