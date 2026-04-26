@@ -719,6 +719,11 @@ textarea {
   gap: 0.9rem;
 }
 
+.today-functional-shell .today-panel {
+  grid-column: auto;
+  min-width: 0;
+}
+
 .today-panel {
   border: 2px solid var(--today-card-border);
   border-radius: 10px;
@@ -853,15 +858,24 @@ textarea {
 
 .today-content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 0.9fr);
-  gap: 0.9rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
   align-items: start;
+}
+
+.today-plan-panel {
+  min-width: 0;
 }
 
 .today-side-stack,
 .today-focus-list {
   display: grid;
   gap: 0.9rem;
+}
+
+.today-side-stack {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  align-items: start;
 }
 
 .today-section-head {
