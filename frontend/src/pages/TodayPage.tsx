@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import {
   getRecentActivity,
@@ -22,6 +23,7 @@ import type {
 } from "../lib/types";
 
 type PreferencesForm = StudyGuidePreferencesPayload;
+type DisciplineIconKind = "languages" | "humanas" | "math" | "nature" | "writing" | "default";
 
 type AttemptForm = {
   quantity: number;
@@ -56,34 +58,95 @@ const defaultAttemptForm: AttemptForm = {
   notes: "",
 };
 
-const disciplineVisualMap: Record<string, { icon: string; toneClassName: string }> = {
-  "Linguagens e Codigos": { icon: "📝", toneClassName: "today-discipline-card-languages" },
-  Linguagens: { icon: "📝", toneClassName: "today-discipline-card-languages" },
-  "Ciencias Humanas": { icon: "🏛️", toneClassName: "today-discipline-card-humanas" },
-  Humanas: { icon: "🏛️", toneClassName: "today-discipline-card-humanas" },
-  Geografia: { icon: "🌍", toneClassName: "today-discipline-card-humanas" },
-  Historia: { icon: "📜", toneClassName: "today-discipline-card-humanas" },
-  Sociologia: { icon: "👥", toneClassName: "today-discipline-card-humanas" },
-  Filosofia: { icon: "🤔", toneClassName: "today-discipline-card-humanas" },
-  "Matematica e suas Tecnologias": { icon: "📐", toneClassName: "today-discipline-card-math" },
-  Matematica: { icon: "📐", toneClassName: "today-discipline-card-math" },
-  "Ciencias da Natureza": { icon: "🌿", toneClassName: "today-discipline-card-nature" },
-  Natureza: { icon: "🌿", toneClassName: "today-discipline-card-nature" },
-  Biologia: { icon: "🧬", toneClassName: "today-discipline-card-nature" },
-  Quimica: { icon: "🧪", toneClassName: "today-discipline-card-nature" },
-  Fisica: { icon: "⚡", toneClassName: "today-discipline-card-nature" },
-  Redacao: { icon: "✍️", toneClassName: "today-discipline-card-writing" },
+const disciplineVisualMap: Record<string, { icon: DisciplineIconKind; toneClassName: string }> = {
+  "Linguagens e Codigos": { icon: "languages", toneClassName: "today-discipline-card-languages" },
+  Linguagens: { icon: "languages", toneClassName: "today-discipline-card-languages" },
+  "Ciencias Humanas": { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
+  Humanas: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
+  Geografia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
+  Historia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
+  Sociologia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
+  Filosofia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
+  "Matematica e suas Tecnologias": { icon: "math", toneClassName: "today-discipline-card-math" },
+  Matematica: { icon: "math", toneClassName: "today-discipline-card-math" },
+  "Ciencias da Natureza": { icon: "nature", toneClassName: "today-discipline-card-nature" },
+  Natureza: { icon: "nature", toneClassName: "today-discipline-card-nature" },
+  Biologia: { icon: "nature", toneClassName: "today-discipline-card-nature" },
+  Quimica: { icon: "nature", toneClassName: "today-discipline-card-nature" },
+  Fisica: { icon: "nature", toneClassName: "today-discipline-card-nature" },
+  Redacao: { icon: "writing", toneClassName: "today-discipline-card-writing" },
 };
 
 function normalizeDisciplineKey(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-function visualForDiscipline(value: string): { icon: string; toneClassName: string } {
+function visualForDiscipline(value: string): { icon: DisciplineIconKind; toneClassName: string } {
   return disciplineVisualMap[normalizeDisciplineKey(value)] ?? {
-    icon: "📚",
+    icon: "default",
     toneClassName: "today-discipline-card-default",
   };
+}
+
+function DisciplineIcon({ kind }: { kind: DisciplineIconKind }) {
+  if (kind === "math") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="9" y="23" width="24" height="24" rx="4" className="today-icon-fill-blue" />
+        <path d="M17 23v24M25 23v24M9 31h24M9 39h24" className="today-icon-line-soft" />
+        <path d="M34 47l12-26 12 26H34z" className="today-icon-fill-gold" />
+        <path d="M42 35h8M46 27v14" className="today-icon-line-dark" />
+        <circle cx="47" cy="18" r="12" className="today-icon-fill-coral" />
+        <path d="M39 18h16M47 10v16" className="today-icon-line-dark" />
+      </svg>
+    );
+  }
+  if (kind === "humanas") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M12 25h40L32 12 12 25z" className="today-icon-fill-pink" />
+        <path d="M16 28h32M20 28v19M30 28v19M44 28v19M16 48h32M12 54h40" className="today-icon-line-soft" />
+        <circle cx="32" cy="21" r="3" className="today-icon-fill-gold" />
+      </svg>
+    );
+  }
+  if (kind === "nature") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="33" r="20" className="today-icon-fill-blue" />
+        <path d="M14 34c7 4 11 4 18 0s11-4 18 0" className="today-icon-line-dark" />
+        <path d="M20 28l7-8 7 8 5-5 7 9" className="today-icon-fill-green" />
+        <circle cx="48" cy="15" r="4" className="today-icon-fill-gold" />
+        <path d="M48 7v3M48 20v3M40 15h3M53 15h3" className="today-icon-line-soft" />
+      </svg>
+    );
+  }
+  if (kind === "languages") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="13" y="16" width="34" height="38" rx="5" className="today-icon-fill-gold" />
+        <path d="M22 24h16M22 32h18M22 40h12" className="today-icon-line-dark" />
+        <path d="M38 45l13-13 5 5-13 13-8 3 3-8z" className="today-icon-fill-coral" />
+        <path d="M48 35l5 5" className="today-icon-line-dark" />
+      </svg>
+    );
+  }
+  if (kind === "writing") {
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="14" y="12" width="34" height="42" rx="5" className="today-icon-fill-blue" />
+        <path d="M22 22h18M22 31h18M22 40h10" className="today-icon-line-soft" />
+        <path d="M36 49l15-15 5 5-15 15-8 2 3-7z" className="today-icon-fill-gold" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M14 16h22a8 8 0 018 8v30H22a8 8 0 01-8-8V16z" className="today-icon-fill-blue" />
+      <path d="M22 24h14M22 32h14M22 40h10" className="today-icon-line-soft" />
+      <path d="M44 24h6v30h-6z" className="today-icon-fill-gold" />
+    </svg>
+  );
 }
 
 function formatOptional(value: unknown): string {
@@ -413,25 +476,49 @@ export default function TodayPage() {
               {focusCards.map(({ item, visual }) => (
                 <article key={`${item.block_id}-${item.subject_id}`} className={`today-focus-card ${visual.toneClassName}`}>
                   <div className="today-focus-main">
-                    <div>
-                      <div className="today-focus-title-row">
-                        <span aria-hidden="true">{visual.icon}</span>
-                        <h3>{item.discipline}</h3>
-                      </div>
+                    <div className="today-focus-copy">
+                      <h3>{item.discipline}</h3>
                       <p>{item.block_name}</p>
                       <strong>{item.subject_name}</strong>
                     </div>
-                    <button type="button" className="today-register-button" onClick={() => openAttemptModal(item)}>
-                      Registrar questoes
-                    </button>
+                    <span className="today-card-illustration" aria-hidden="true">
+                      <DisciplineIcon kind={visual.icon} />
+                    </span>
+                  </div>
+
+                  <div className="today-focus-footer">
+                    <div className="today-focus-score-block">
+                      <div className="today-score-chip" aria-label={`Prioridade ${formatOptional(item.priority_score)}`}>
+                        <span className="today-score-pill" />
+                        <span className="today-score-info">i</span>
+                      </div>
+                      <span>Prioridade</span>
+                    </div>
+
+                    <div className="today-focus-count-block">
+                      <strong>{item.completed_today}</strong>
+                      <span>Feitas</span>
+                    </div>
+
+                    <div className="today-focus-actions">
+                      <Link className="today-discipline-icon-button" to={`/stats?discipline=${encodeURIComponent(item.discipline)}`} aria-label={`Ver estatisticas de ${item.discipline}`}>
+                        <span className="today-discipline-chart" aria-hidden="true">
+                          <i />
+                          <i />
+                          <i />
+                        </span>
+                      </Link>
+                      <button type="button" className="today-register-button" onClick={() => openAttemptModal(item)}>
+                        Treinar
+                      </button>
+                    </div>
                   </div>
 
                   <div className="today-focus-metrics">
                     <span>{item.planned_questions} planejadas</span>
-                    <span>{item.completed_today} feitas</span>
                     <span>{item.remaining_today} restantes</span>
                     <span>{item.planned_mode}</span>
-                    <span>prioridade {formatOptional(item.priority_score)}</span>
+                    <span>score {formatOptional(item.priority_score)}</span>
                   </div>
 
                   <dl className="today-roadmap-details">
