@@ -147,7 +147,20 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   );
 
   function updateSetup<T extends keyof SessionSetup>(key: T, value: SessionSetup[T]) {
-    setSetup((current) => ({ ...current, [key]: value }));
+    setSetup((current) => {
+      const next = { ...current, [key]: value };
+
+      if (
+        (key === "discipline" && value !== current.discipline) ||
+        (key === "block" && value !== current.block) ||
+        (key === "subject" && value !== current.subject)
+      ) {
+        next.blockId = null;
+        next.subjectId = null;
+      }
+
+      return next;
+    });
   }
 
   function startSession() {
@@ -290,6 +303,19 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
       window.setTimeout(() => setSummarySession(nextSession), 0);
       return nextSession;
     });
+  }
+
+  function cancelTraining() {
+    const shouldCancel = window.confirm("Cancelar este treino e descartar a sessao atual?");
+    if (!shouldCancel) {
+      return;
+    }
+
+    closeFloatingController();
+    setSummarySession(null);
+    setSession(null);
+    setFloatingMessage(null);
+    setSetup(buildSetupFromPreset(preset));
   }
 
   function closeFloatingController() {
@@ -506,6 +532,12 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                 onFinish={() => undefined}
               />
             </div>
+
+            <div className="mt-3">
+              <button className="timer-widget-button-danger w-full" onClick={cancelTraining}>
+                Cancelar treino
+              </button>
+            </div>
           </div>
 
           <aside className="rounded-[20px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
@@ -538,9 +570,14 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                   {setup.questionSource === "db" ? "Banco de questoes" : "PDF / livro / apostila"}
                 </p>
               </div>
-              <button className="timer-close-button" onClick={finishSession} aria-label="Finalizar sessao">
-                Finalizar
-              </button>
+              <div className="flex items-center gap-2">
+                <button className="timer-widget-button-danger px-3 py-2" onClick={cancelTraining} aria-label="Cancelar treino">
+                  Cancelar
+                </button>
+                <button className="timer-close-button" onClick={finishSession} aria-label="Finalizar sessao">
+                  Finalizar
+                </button>
+              </div>
             </div>
 
             {showQuestionMap ? (

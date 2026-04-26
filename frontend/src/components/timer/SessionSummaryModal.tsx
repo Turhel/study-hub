@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { saveTimerSession } from "../../lib/api";
+import { saveQuestionAttemptsBulk, saveTimerSession } from "../../lib/api";
 import { buildTimerSessionPayload, formatTime, saveLocalSession, summarizeSession } from "../../lib/timer";
 import type { ExternalQuestionDraft, SessionSummaryForm, TimerSession } from "../../lib/timerTypes";
 
@@ -20,9 +21,9 @@ function buildInitialDrafts(session: TimerSession): ExternalQuestionDraft[] {
       prompt: "",
       options: ["", "", "", "", ""],
       correctOptionIndex: null,
-      wasCorrect: "",
+      wasCorrect: question.status === "skipped" ? "incorrect" : "",
       peerAccuracy: "",
-      personalDifficulty: "media",
+      personalDifficulty: question.status === "skipped" ? "alta" : "media",
       notes: "",
     }));
 }
@@ -75,6 +76,33 @@ function difficultyLabel(value: ExternalQuestionDraft["personalDifficulty"] | nu
     return "facil";
   }
   return "indefinida";
+}
+
+function payloadDifficulty(value: ExternalQuestionDraft["personalDifficulty"] | SessionSummaryForm["difficulty"]): "facil" | "media" | "dificil" {
+  if (value === "alta") {
+    return "dificil";
+  }
+  if (value === "media") {
+    return "media";
+  }
+  return "facil";
+}
+
+function averageDifficulty(values: ExternalQuestionDraft["personalDifficulty"][], fallback: SessionSummaryForm["difficulty"]): "facil" | "media" | "dificil" {
+  if (!values.length) {
+    return payloadDifficulty(fallback);
+  }
+
+  const total = values.reduce((sum, value) => sum + (value === "alta" ? 2 : value === "media" ? 1 : 0), 0);
+  const average = total / values.length;
+
+  if (average >= 1.5) {
+    return "dificil";
+  }
+  if (average >= 0.65) {
+    return "media";
+  }
+  return "facil";
 }
 
 function suggestedPersonalDifficulty(
@@ -137,6 +165,7 @@ function suggestedPersonalDifficulty(
 }
 
 export default function SessionSummaryModal({ session, onClose }: SessionSummaryModalProps) {
+  const queryClient = useQueryClient();
   const summary = summarizeSession(session);
   const [form, setForm] = useState<SessionSummaryForm>({
     difficulty: "media",
@@ -195,6 +224,75 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
     setStatusMessage("Rascunho das questoes salvo localmente.");
   }
 
+  async function registerSubjectAttemptsIfPossible() {
+    const quantity = summary.completedQuestions + summary.skippedQuestions;
+
+    if (quantity <= 0) {
+      return "Sessao salva sem registro de questoes, porque nenhuma questao foi concluida.";
+    }
+
+    if (!session.setup.blockId || !session.setup.subjectId) {
+      return "Sessao salva, mas sem block_id/subject_id o guia ainda nao consegue aprender com este treino.";
+    }
+
+    const unresolved = externalDrafts.filter((draft) => {
+      const question = session.questions[draft.questionNumber - 1];
+      return question?.status !== "skipped" && draft.wasCorrect === "";
+    });
+
+    if (unresolved.length > 0) {
+      return "Sessao salva, mas faltou marcar se algumas questoes foram acertadas ou erradas. Sem isso o guia nao foi atualizado.";
+    }
+
+    const correctCount = externalDrafts.filter((draft) => draft.wasCorrect === "correct").length;
+    const generalDifficulties = externalDrafts.map((draft) => {
+      const suggestion = suggestedPersonalDifficulty(
+        session.questions[draft.questionNumber - 1]?.elapsedSeconds ?? 0,
+        session.setup.targetSecondsPerQuestion,
+        draft.wasCorrect,
+        draft.peerAccuracy,
+      );
+      return suggestion.general ?? form.difficulty;
+    });
+    const personalDifficulties = externalDrafts.map((draft) => draft.personalDifficulty);
+
+    const attemptsResponse = await saveQuestionAttemptsBulk({
+      discipline: session.setup.discipline,
+      block_id: session.setup.blockId,
+      subject_id: session.setup.subjectId,
+      source: session.setup.questionSource === "db" ? "timer-db" : "timer-external",
+      quantity,
+      correct_count: correctCount,
+      difficulty_bank: averageDifficulty(generalDifficulties, form.difficulty),
+      difficulty_personal: averageDifficulty(personalDifficulties, form.difficulty),
+      elapsed_seconds: session.totalElapsedSeconds,
+      confidence: null,
+      error_type: summary.skippedQuestions > 0 ? "includes_skipped_as_incorrect" : null,
+      notes: [form.notes.trim(), "Treino via timer. Questoes puladas contam como incorretas."]
+        .filter(Boolean)
+        .join(" "),
+      study_mode: "guided",
+    });
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["study-plan-today"] }),
+      queryClient.invalidateQueries({ queryKey: ["activity-today"] }),
+      queryClient.invalidateQueries({ queryKey: ["activity-recent"] }),
+      queryClient.invalidateQueries({ queryKey: ["gamification-summary"] }),
+      queryClient.invalidateQueries({ queryKey: ["stats-overview"] }),
+      queryClient.invalidateQueries({ queryKey: ["stats-discipline"] }),
+    ]);
+
+    return [
+      `${attemptsResponse.created_attempts} questoes registradas para ${session.setup.subject}.`,
+      attemptsResponse.impact_message,
+      attemptsResponse.mastery_status ? `Dominio: ${attemptsResponse.mastery_status}` : null,
+      attemptsResponse.next_review_date ? `Proxima revisao: ${attemptsResponse.next_review_date}` : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
   async function handleSave() {
     saveLocalSession(session);
     localStorage.setItem("study-hub-timer-last-summary-form", JSON.stringify(form));
@@ -208,10 +306,21 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
 
     try {
       const response = await saveTimerSession(buildTimerSessionPayload(session, form));
+      let attemptsMessage: string | null = null;
+      try {
+        attemptsMessage = await registerSubjectAttemptsIfPossible();
+      } catch {
+        attemptsMessage = "Sessao salva, mas o registro das questoes para o guia falhou nesta tentativa.";
+      }
       setStatusMessage(
-        isExternalSession
-          ? `Sessao salva no backend (#${response.id}) e question maker guardado localmente.`
-          : `Sessao salva no backend (#${response.id}).`,
+        [
+          isExternalSession
+            ? `Sessao salva no backend (#${response.id}) e question maker guardado localmente.`
+            : `Sessao salva no backend (#${response.id}).`,
+          attemptsMessage,
+        ]
+          .filter(Boolean)
+          .join(" "),
       );
       window.setTimeout(onClose, 900);
     } catch {
@@ -320,14 +429,13 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
             )}
           </div>
 
-          {isExternalSession ? (
-            <div className="space-y-3">
-              {externalDrafts.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-400">
-                  Nenhuma questao recebeu tempo suficiente para abrir o question maker.
-                </div>
-              ) : (
-                externalDrafts.map((draft) => {
+          <div className="space-y-3">
+            {externalDrafts.length === 0 ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-zinc-400">
+                Nenhuma questao recebeu tempo suficiente para abrir o fechamento por questao.
+              </div>
+            ) : (
+              externalDrafts.map((draft) => {
                   const question = session.questions[draft.questionNumber - 1];
                   const elapsed = question?.elapsedSeconds ?? 0;
                   const suggestedDifficulty = suggestedPersonalDifficulty(
@@ -357,6 +465,12 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
 
                       {expandedQuestion === draft.questionNumber ? (
                         <div className="mt-3 space-y-3">
+                          {question?.status === "skipped" ? (
+                            <div className="rounded-xl border border-rose-300/20 bg-rose-400/10 p-3 text-xs text-zinc-300">
+                              Esta questao foi pulada no treino. Ela entra no registro como incorreta.
+                            </div>
+                          ) : null}
+
                           <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-zinc-300">
                             <p className="leading-5">
                               Dificuldade geral sugerida:{" "}
@@ -383,139 +497,13 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
                             ) : null}
                           </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <strong className="text-sm text-zinc-100">Textos da questao</strong>
-                              <button type="button" className="timer-widget-button px-3" onClick={() => addTextBlock(draft.questionNumber)}>
-                                Adicionar texto
-                              </button>
-                            </div>
-                            {draft.textBlocks.map((block, index) => (
-                              <div key={`${draft.questionNumber}-text-${index}`} className="space-y-2">
-                                <textarea
-                                  className="timer-input min-h-20 resize-y"
-                                  value={block}
-                                  onChange={(event) =>
-                                    updateDraft(draft.questionNumber, (current) => ({
-                                      ...current,
-                                      textBlocks: current.textBlocks.map((value, blockIndex) =>
-                                        blockIndex === index ? event.target.value : value,
-                                      ),
-                                    }))
-                                  }
-                                  placeholder={`Texto ${index + 1}`}
-                                />
-                                {draft.textBlocks.length > 1 ? (
-                                  <button
-                                    type="button"
-                                    className="timer-widget-button px-3"
-                                    onClick={() => removeTextBlock(draft.questionNumber, index)}
-                                  >
-                                    Remover texto
-                                  </button>
-                                ) : null}
-                              </div>
-                            ))}
-                          </div>
-
-                          <label className="block text-[11px] text-zinc-400">
-                            Imagem ou grafico
-                            <input
-                              className="timer-input mt-1"
-                              type="file"
-                              accept="image/*"
-                              onChange={(event) => {
-                                const file = event.target.files?.[0] ?? null;
-                                updateDraft(draft.questionNumber, (current) => ({
-                                  ...current,
-                                  imageLabel: file?.name ?? "",
-                                  imagePreviewUrl: file ? URL.createObjectURL(file) : null,
-                                }));
-                              }}
-                            />
-                          </label>
-
-                          {draft.imagePreviewUrl ? (
-                            <div className="overflow-hidden rounded-xl border border-white/10">
-                              <img src={draft.imagePreviewUrl} alt={draft.imageLabel || `Questao ${draft.questionNumber}`} className="max-h-56 w-full object-contain bg-black/20" />
-                            </div>
-                          ) : null}
-
-                          <label className="block text-[11px] text-zinc-400">
-                            Enunciado
-                            <textarea
-                              className="timer-input mt-1 min-h-24 resize-y"
-                              value={draft.prompt}
-                              onChange={(event) => updateDraft(draft.questionNumber, (current) => ({ ...current, prompt: event.target.value }))}
-                            />
-                          </label>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <strong className="text-sm text-zinc-100">Itens para marcar</strong>
-                              <button type="button" className="timer-widget-button px-3" onClick={() => addOption(draft.questionNumber)}>
-                                Adicionar item
-                              </button>
-                            </div>
-                            <div className="grid gap-2 sm:grid-cols-2">
-                              {draft.options.map((option, index) => (
-                                <div key={`${draft.questionNumber}-option-${index}`} className="rounded-xl border border-white/10 bg-black/15 p-2">
-                                  <label className="block text-[11px] text-zinc-400">
-                                    Item {String.fromCharCode(65 + index)}
-                                    <input
-                                      className="timer-input mt-1"
-                                      value={option}
-                                      onChange={(event) =>
-                                        updateDraft(draft.questionNumber, (current) => ({
-                                          ...current,
-                                          options: current.options.map((value, optionIndex) =>
-                                            optionIndex === index ? event.target.value : value,
-                                          ),
-                                        }))
-                                      }
-                                    />
-                                  </label>
-                                  {draft.options.length > 2 ? (
-                                    <button
-                                      type="button"
-                                      className="mt-2 timer-widget-button px-3"
-                                      onClick={() => removeOption(draft.questionNumber, index)}
-                                    >
-                                      Remover item
-                                    </button>
-                                  ) : null}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <label className="block text-[11px] text-zinc-400">
-                              Item correto
-                              <select
-                                className="timer-input mt-1"
-                                value={draft.correctOptionIndex ?? ""}
-                                onChange={(event) =>
-                                  updateDraft(draft.questionNumber, (current) => ({
-                                    ...current,
-                                    correctOptionIndex: event.target.value === "" ? null : Number(event.target.value),
-                                  }))
-                                }
-                              >
-                                <option value="">Nao informar</option>
-                                {draft.options.map((_, index) => (
-                                  <option key={`${draft.questionNumber}-correct-${index}`} value={index}>
-                                    {String.fromCharCode(65 + index)}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
                             <label className="block text-[11px] text-zinc-400">
                               Acertou ou errou?
                               <select
                                 className="timer-input mt-1"
                                 value={draft.wasCorrect}
+                                disabled={question?.status === "skipped"}
                                 onChange={(event) =>
                                   updateDraft(draft.questionNumber, (current) => ({
                                     ...current,
@@ -541,7 +529,7 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
                               />
                             </label>
 
-                            <label className="block text-[11px] text-zinc-400">
+                            <label className="block text-[11px] text-zinc-400 sm:col-span-2">
                               Dificuldade pessoal
                               <select
                                 className="timer-input mt-1"
@@ -560,6 +548,137 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
                             </label>
                           </div>
 
+                          {isExternalSession ? (
+                            <>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <strong className="text-sm text-zinc-100">Textos da questao</strong>
+                                  <button type="button" className="timer-widget-button px-3" onClick={() => addTextBlock(draft.questionNumber)}>
+                                    Adicionar texto
+                                  </button>
+                                </div>
+                                {draft.textBlocks.map((block, index) => (
+                                  <div key={`${draft.questionNumber}-text-${index}`} className="space-y-2">
+                                    <textarea
+                                      className="timer-input min-h-20 resize-y"
+                                      value={block}
+                                      onChange={(event) =>
+                                        updateDraft(draft.questionNumber, (current) => ({
+                                          ...current,
+                                          textBlocks: current.textBlocks.map((value, blockIndex) =>
+                                            blockIndex === index ? event.target.value : value,
+                                          ),
+                                        }))
+                                      }
+                                      placeholder={`Texto ${index + 1}`}
+                                    />
+                                    {draft.textBlocks.length > 1 ? (
+                                      <button
+                                        type="button"
+                                        className="timer-widget-button px-3"
+                                        onClick={() => removeTextBlock(draft.questionNumber, index)}
+                                      >
+                                        Remover texto
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
+
+                              <label className="block text-[11px] text-zinc-400">
+                                Imagem ou grafico
+                                <input
+                                  className="timer-input mt-1"
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0] ?? null;
+                                    updateDraft(draft.questionNumber, (current) => ({
+                                      ...current,
+                                      imageLabel: file?.name ?? "",
+                                      imagePreviewUrl: file ? URL.createObjectURL(file) : null,
+                                    }));
+                                  }}
+                                />
+                              </label>
+
+                              {draft.imagePreviewUrl ? (
+                                <div className="overflow-hidden rounded-xl border border-white/10">
+                                  <img src={draft.imagePreviewUrl} alt={draft.imageLabel || `Questao ${draft.questionNumber}`} className="max-h-56 w-full object-contain bg-black/20" />
+                                </div>
+                              ) : null}
+
+                              <label className="block text-[11px] text-zinc-400">
+                                Enunciado
+                                <textarea
+                                  className="timer-input mt-1 min-h-24 resize-y"
+                                  value={draft.prompt}
+                                  onChange={(event) => updateDraft(draft.questionNumber, (current) => ({ ...current, prompt: event.target.value }))}
+                                />
+                              </label>
+
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <strong className="text-sm text-zinc-100">Itens para marcar</strong>
+                                  <button type="button" className="timer-widget-button px-3" onClick={() => addOption(draft.questionNumber)}>
+                                    Adicionar item
+                                  </button>
+                                </div>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  {draft.options.map((option, index) => (
+                                    <div key={`${draft.questionNumber}-option-${index}`} className="rounded-xl border border-white/10 bg-black/15 p-2">
+                                      <label className="block text-[11px] text-zinc-400">
+                                        Item {String.fromCharCode(65 + index)}
+                                        <input
+                                          className="timer-input mt-1"
+                                          value={option}
+                                          onChange={(event) =>
+                                            updateDraft(draft.questionNumber, (current) => ({
+                                              ...current,
+                                              options: current.options.map((value, optionIndex) =>
+                                                optionIndex === index ? event.target.value : value,
+                                              ),
+                                            }))
+                                          }
+                                        />
+                                      </label>
+                                      {draft.options.length > 2 ? (
+                                        <button
+                                          type="button"
+                                          className="mt-2 timer-widget-button px-3"
+                                          onClick={() => removeOption(draft.questionNumber, index)}
+                                        >
+                                          Remover item
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <label className="block text-[11px] text-zinc-400">
+                                Item correto
+                                <select
+                                  className="timer-input mt-1"
+                                  value={draft.correctOptionIndex ?? ""}
+                                  onChange={(event) =>
+                                    updateDraft(draft.questionNumber, (current) => ({
+                                      ...current,
+                                      correctOptionIndex: event.target.value === "" ? null : Number(event.target.value),
+                                    }))
+                                  }
+                                >
+                                  <option value="">Nao informar</option>
+                                  {draft.options.map((_, index) => (
+                                    <option key={`${draft.questionNumber}-correct-${index}`} value={index}>
+                                      {String.fromCharCode(65 + index)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </>
+                          ) : null}
+
                           <label className="block text-[11px] text-zinc-400">
                             Observacoes
                             <textarea
@@ -572,10 +691,9 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
                       ) : null}
                     </article>
                   );
-                })
-              )}
-            </div>
-          ) : null}
+              })
+            )}
+          </div>
         </div>
 
         <div className="mt-5 grid gap-2 sm:grid-cols-3">
