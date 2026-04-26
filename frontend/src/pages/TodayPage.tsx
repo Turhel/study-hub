@@ -732,7 +732,7 @@ export default function TodayPage() {
           <section className="today-panel today-plan-panel">
               <div className="today-section-head">
                 <div>
-                  <p className="today-eyebrow">Plano</p>
+                  <p className="today-eyebrow">Hoje</p>
                   <h2>Focos</h2>
                 </div>
                 {planQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
@@ -870,8 +870,8 @@ export default function TodayPage() {
             <section className="today-panel">
               <div className="today-section-head">
                 <div>
-                  <p className="today-eyebrow">Guia</p>
-                  <h2>Carga do dia</h2>
+                  <p className="today-eyebrow">Carga</p>
+                  <h2>Guia do dia</h2>
                 </div>
                 {preferencesQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
               </div>
@@ -997,8 +997,8 @@ export default function TodayPage() {
             <section className="today-panel">
               <div className="today-section-head">
                 <div>
-                  <p className="today-eyebrow">Activity</p>
-                  <h2>Hoje</h2>
+                  <p className="today-eyebrow">Hoje</p>
+                  <h2>Progresso</h2>
                 </div>
                 {activityTodayQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
               </div>
@@ -1043,8 +1043,8 @@ export default function TodayPage() {
         <section className="today-panel">
           <div className="today-section-head">
             <div>
-              <p className="today-eyebrow">Historico</p>
-              <h2>Atividades recentes</h2>
+              <p className="today-eyebrow">Recentes</p>
+              <h2>Historico do dia</h2>
             </div>
             {recentActivityQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
           </div>

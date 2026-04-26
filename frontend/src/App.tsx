@@ -12,15 +12,11 @@ import TodayPage from "./pages/TodayPage";
 type ThemeMode = "light" | "dark";
 
 const navigationItems = [
-  { label: "Foco do dia", path: "/", icon: <FocusEmojiIcon /> },
+  { label: "Hoje", path: "/", icon: <FocusEmojiIcon /> },
   { label: "Aulas", path: "/lessons", icon: <BooksEmojiIcon /> },
-  { label: "Estatisticas", path: "/stats", icon: <StatsEmojiIcon /> },
+  { label: "Stats", path: "/stats", icon: <StatsEmojiIcon /> },
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
   { label: "Redacao", path: "/essay", icon: <MemoEmojiIcon /> },
-];
-
-const futureItems = [
-  { label: "Revisoes", icon: <ReviewEmojiIcon /> },
 ];
 
 const profileMenuItems = [
@@ -93,16 +89,6 @@ function BooksEmojiIcon() {
       <rect x="11.4" y="6.2" width="8.7" height="20" rx="2.5" fill="#FFCF59" />
       <rect x="18.4" y="7.2" width="8.8" height="19" rx="2.5" fill="#3AA0FF" />
       <path d="M6.8 11.3h4.2v1.45H6.8zm0 3.1h4.2v1.45H6.8zm6.4-4h5.2v1.45h-5.2zm0 3.1h5.2v1.45h-5.2zm7.2-1.2h4.8v1.45h-4.8zm0 3.1h4.8v1.45h-4.8z" fill="#FFFFFF" />
-    </svg>
-  );
-}
-
-function ReviewEmojiIcon() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden="true">
-      <circle cx="16" cy="16" r="11.5" fill="#F3EEFF" />
-      <path d="M16 7.7a8.3 8.3 0 017.12 12.58l2.15 1.25-1.07 1.83-2.2-1.27A8.3 8.3 0 1116 7.7z" fill="#9672FF" />
-      <path d="M10.1 11.9L7 9l1.35-1.34 1.98 1.92V5.75h1.98v6.15c0 .44-.36.8-.8.8H10.1zm11.77 1.1h-1.98v5.02H17.9v-6.15c0-.44.35-.8.8-.8h1.06l3.34 3.2-1.23 1.34-2-1.9z" fill="#FFB648" />
     </svg>
   );
 }
@@ -263,12 +249,6 @@ export default function App() {
               </NavLink>
             ))}
 
-            {futureItems.map((item) => (
-              <span key={item.label} className="app-topbar-link app-topbar-link-muted">
-                <span className="app-topbar-link-icon">{item.icon}</span>
-                <span>{item.label}</span>
-              </span>
-            ))}
           </nav>
 
           <div className="app-topbar-actions">
@@ -347,7 +327,7 @@ export default function App() {
                 <div className="topbar-profile-header">
                   <div>
                     <h2>Ola, Thullyo</h2>
-                    <p>Seu hub pessoal de estudo, sem ruido e sem camadas desnecessarias.</p>
+                    <p>Seu hub pessoal de estudo.</p>
                   </div>
                   <div className="topbar-profile-avatar" aria-hidden="true">
                     <AvatarIcon />
