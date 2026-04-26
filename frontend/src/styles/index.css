@@ -7,17 +7,18 @@
 :root {
   color-scheme: light;
   font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  background: #f8f3e8;
-  --app-bg: #f8f3e8;
-  --app-bg-glow: rgba(255, 237, 170, 0.7);
-  --app-bg-accent: rgba(166, 211, 255, 0.2);
-  --app-text: #1d2433;
-  --surface: #fffdf8;
-  --surface-strong: rgba(255, 253, 248, 0.96);
-  --surface-soft: rgba(255, 255, 255, 0.74);
-  --border-strong: #232323;
-  --border-soft: rgba(35, 35, 35, 0.1);
-  --shadow-soft: rgba(34, 34, 34, 0.12);
+  background: #fbfaf1;
+  --app-bg: #fbfaf1;
+  --app-text: #20242e;
+  --surface: #fffef8;
+  --surface-strong: #fffef8;
+  --surface-soft: rgba(255, 254, 248, 0.82);
+  --border-strong: #20242e;
+  --border-soft: rgba(32, 36, 46, 0.24);
+  --shadow-soft: rgba(32, 36, 46, 0.18);
+  --button-shadow: rgba(32, 36, 46, 0.92);
+  --cta-blue: #2fa9f4;
+  --cta-blue-dark: #168ed8;
   --muted-text: #596173;
   --chip-bg: #fffdf8;
   --overlay-card: #fffaf0;
@@ -48,9 +49,9 @@
   --today-chip-text: #2e2a24;
   --today-chip-shadow: rgba(34, 34, 34, 0.1);
   --today-point-bg: rgba(255, 255, 255, 0.72);
-  --today-card-bg: rgba(255, 255, 255, 0.8);
-  --today-card-border: rgba(57, 48, 40, 0.12);
-  --today-card-shadow: rgba(72, 57, 43, 0.06);
+  --today-card-bg: rgba(255, 254, 248, 0.88);
+  --today-card-border: rgba(32, 36, 46, 0.22);
+  --today-card-shadow: rgba(32, 36, 46, 0.12);
   --today-card-highlight: rgba(255, 208, 89, 0.18);
   --today-card-icon-bg: linear-gradient(180deg, #ffe88f, #ffd46a);
   --today-outline-bg: rgba(255, 253, 248, 0.92);
@@ -74,17 +75,18 @@
 }
 
 :root[data-theme="dark"] {
-  background: #11141b;
-  --app-bg: #11141b;
-  --app-bg-glow: rgba(64, 124, 255, 0.16);
-  --app-bg-accent: rgba(255, 191, 71, 0.08);
+  background: #0f1117;
+  --app-bg: #0f1117;
   --app-text: #eef2f8;
-  --surface: #171b23;
-  --surface-strong: rgba(23, 27, 35, 0.96);
-  --surface-soft: rgba(23, 27, 35, 0.92);
+  --surface: #151a24;
+  --surface-strong: #171d29;
+  --surface-soft: rgba(21, 26, 36, 0.94);
   --border-strong: #5d677c;
-  --border-soft: rgba(93, 103, 124, 0.45);
+  --border-soft: rgba(91, 107, 139, 0.58);
   --shadow-soft: rgba(0, 0, 0, 0.34);
+  --button-shadow: rgba(4, 7, 12, 0.98);
+  --cta-blue: #2fa9f4;
+  --cta-blue-dark: #168ed8;
   --muted-text: #b7c1d4;
   --chip-bg: #171b23;
   --overlay-card: #171b23;
@@ -115,8 +117,8 @@
   --today-chip-text: #f1f5fb;
   --today-chip-shadow: rgba(0, 0, 0, 0.18);
   --today-point-bg: rgba(255, 255, 255, 0.05);
-  --today-card-bg: rgba(23, 27, 35, 0.88);
-  --today-card-border: rgba(93, 103, 124, 0.45);
+  --today-card-bg: rgba(19, 24, 34, 0.94);
+  --today-card-border: rgba(91, 107, 139, 0.6);
   --today-card-shadow: rgba(0, 0, 0, 0.16);
   --today-card-highlight: rgba(255, 208, 89, 0.14);
   --today-card-icon-bg: linear-gradient(180deg, #ffe88f, #ffcc55);
@@ -143,10 +145,7 @@
 body {
   margin: 0;
   min-width: 300px;
-  background:
-    radial-gradient(circle at top, var(--app-bg-glow), transparent 24rem),
-    radial-gradient(circle at 20% 10%, var(--app-bg-accent), transparent 18rem),
-    var(--app-bg);
+  background: var(--app-bg);
   color: var(--app-text);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   transition: background 180ms ease, color 180ms ease;
@@ -171,17 +170,25 @@ textarea {
 .app-topbar {
   display: grid;
   gap: 0.75rem;
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 1rem 1.5rem 0;
+  width: 100%;
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(10px);
 }
 
 .app-topbar-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  width: min(100%, 67rem);
+  margin: 0 auto;
   min-width: 0;
+  padding: 0.5rem 1.5rem;
 }
 
 .app-topbar-nav {
@@ -198,15 +205,14 @@ textarea {
   align-items: center;
   min-width: 0;
   gap: 0.5rem;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  background: var(--surface);
-  padding: 0.55rem 0.72rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0.55rem 0.78rem;
   color: var(--app-text);
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 1px 3px var(--shadow-soft);
   transition: transform 150ms ease, background 150ms ease;
 }
 
@@ -222,8 +228,13 @@ textarea {
 }
 
 .app-topbar-link-active {
-  background: #39aaf0;
+  border-color: rgba(47, 169, 244, 0.3);
+  background: color-mix(in srgb, var(--cta-blue) 24%, transparent);
   color: #fff;
+}
+
+:root[data-theme="light"] .app-topbar-link-active {
+  background: var(--cta-blue);
 }
 
 .app-topbar-link-muted {
@@ -259,12 +270,14 @@ textarea {
 .topbar-hover-icon {
   display: inline-grid;
   place-items: center;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-soft);
   cursor: pointer;
+  box-shadow: 0 1px 3px var(--shadow-soft);
   transition: transform 150ms ease, filter 150ms ease;
 }
 
@@ -314,7 +327,7 @@ textarea {
 
 .topbar-stat-card {
   border: 2px solid var(--overlay-card-border);
-  border-radius: 28px;
+  border-radius: 14px;
   background: var(--overlay-card);
   color: var(--overlay-card-text);
   padding: 1rem;
@@ -458,7 +471,7 @@ textarea {
   justify-items: center;
   gap: 0.25rem;
   border: 1px solid var(--overlay-chip-border);
-  border-radius: 22px;
+  border-radius: 10px;
   background: var(--overlay-chip-bg);
   padding: 0.95rem 0.75rem;
 }
@@ -707,10 +720,10 @@ textarea {
 }
 
 .today-panel {
-  border: 1px solid var(--today-card-border);
-  border-radius: 12px;
+  border: 2px solid var(--today-card-border);
+  border-radius: 10px;
   background: var(--today-card-bg);
-  box-shadow: 0 8px 20px var(--today-card-shadow);
+  box-shadow: 2px 2px 0 var(--today-card-shadow);
   padding: 1rem;
 }
 
@@ -816,8 +829,8 @@ textarea {
 }
 
 .today-mini-card {
-  border: 1px solid var(--today-card-border);
-  border-radius: 12px;
+  border: 2px solid var(--today-card-border);
+  border-radius: 10px;
   background: var(--surface-soft);
   padding: 0.85rem;
 }
@@ -860,8 +873,8 @@ textarea {
 }
 
 .today-focus-card {
-  border: 1px solid var(--discipline-card-border);
-  border-radius: 12px;
+  border: 2px solid var(--discipline-card-border);
+  border-radius: 10px;
   color: var(--discipline-card-text);
   padding: 0.9rem;
 }
@@ -901,7 +914,7 @@ textarea {
   align-self: flex-start;
   flex: 0 0 auto;
   border: 1px solid var(--discipline-icon-button-border);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--discipline-icon-button-bg);
   color: var(--discipline-icon-button-text);
   padding: 0.52rem 0.72rem;
@@ -1037,8 +1050,8 @@ textarea {
 
 .today-discipline-card {
   overflow: hidden;
-  border: 1px solid var(--discipline-card-border);
-  border-radius: 12px;
+  border: 2px solid var(--discipline-card-border);
+  border-radius: 10px;
   color: var(--discipline-card-text);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
@@ -1060,8 +1073,8 @@ textarea {
 
 .today-discipline-card h2 {
   margin: 0;
-  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(1.05rem, 1.35vw, 1.3rem);
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(1.25rem, 1.55vw, 1.55rem);
   font-weight: 800;
   line-height: 1.18;
   letter-spacing: 0;
@@ -1158,7 +1171,7 @@ textarea {
 .today-discipline-icon-button,
 .today-discipline-train-button {
   border: 1px solid var(--discipline-icon-button-border);
-  border-radius: 9px;
+  border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 750;
 }
@@ -1178,11 +1191,11 @@ textarea {
 .today-discipline-train-button {
   min-width: 5.2rem;
   padding: 0.58rem 0.85rem;
-  background: linear-gradient(180deg, #39aaf0, #2795de);
+  background: linear-gradient(180deg, var(--cta-blue), var(--cta-blue-dark));
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 6px 18px var(--discipline-train-button-shadow);
+    3px 3px 0 var(--button-shadow);
 }
 
 .today-discipline-chart {
@@ -1405,7 +1418,7 @@ textarea {
 .app-primary-action,
 .app-secondary-action {
   border: 2px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 9px;
   padding: 0.92rem 1.2rem;
   font-size: 0.92rem;
   font-weight: 800;
@@ -1415,7 +1428,7 @@ textarea {
 .app-primary-action {
   background: #ffe680;
   color: #1c2230;
-  box-shadow: 4px 4px 0 var(--shadow-soft);
+  box-shadow: 4px 4px 0 var(--button-shadow);
 }
 
 .app-primary-action:hover,
@@ -1434,7 +1447,7 @@ textarea {
 }
 
 .app-primary-action-blue {
-  background: #39aaf0;
+  background: linear-gradient(180deg, var(--cta-blue), var(--cta-blue-dark));
   color: #fff;
 }
 
@@ -1442,7 +1455,7 @@ textarea {
 .app-outline-action {
   background: var(--today-outline-bg);
   color: var(--app-text);
-  box-shadow: 3px 3px 0 var(--shadow-soft);
+  box-shadow: 3px 3px 0 var(--button-shadow);
 }
 
 .app-outline-action:hover {
@@ -1452,7 +1465,7 @@ textarea {
 .app-input {
   width: 100%;
   border: 2px solid var(--border-soft);
-  border-radius: 16px;
+  border-radius: 9px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   padding: 0.72rem 0.84rem;
   color: var(--app-text);
@@ -1672,7 +1685,7 @@ textarea {
 
 .stats-list-panel {
   border: 2px solid var(--border-soft);
-  border-radius: 22px;
+  border-radius: 8px;
   background: var(--surface);
   padding: 1rem;
   box-shadow: 0 1px 3px var(--shadow-soft);
