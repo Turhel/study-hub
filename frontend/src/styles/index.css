@@ -2052,6 +2052,118 @@ textarea {
   font-weight: 800;
 }
 
+.app-guidance-panel {
+  display: grid;
+  gap: 0.85rem;
+  border: 2px solid rgba(88, 121, 164, 0.7);
+  border-radius: 10px;
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.18) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(4, 7, 13, 0.22);
+  padding: 1rem 1.05rem;
+}
+
+.app-guidance-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.app-guidance-head h3 {
+  margin: 0;
+  color: #f8fbff;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.1rem;
+  line-height: 1.15;
+}
+
+.app-guidance-head p,
+.app-guidance-body p,
+.app-guidance-step {
+  margin: 0;
+  color: rgba(206, 217, 235, 0.82);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.app-guidance-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.24));
+}
+
+.app-guidance-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.app-guidance-steps {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.app-guidance-step {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.app-guidance-step-index {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  border: 2px solid rgba(112, 133, 170, 0.42);
+  border-radius: 999px;
+  background: rgba(11, 21, 42, 0.72);
+  color: #f8fbff;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.app-guidance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.app-guidance-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.app-empty-card {
+  display: grid;
+  gap: 0.85rem;
+  border: 2px solid rgba(88, 121, 164, 0.7);
+  border-radius: 10px;
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.18) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(4, 7, 13, 0.22);
+  padding: 1rem 1.05rem;
+}
+
+.app-empty-card strong {
+  color: #f8fbff;
+  font-size: 0.96rem;
+}
+
+.app-empty-card p {
+  margin: 0;
+  color: rgba(206, 217, 235, 0.82);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
 .stats-discipline-tabs button.is-active {
   border-color: rgba(18, 51, 76, 0.94);
   background: linear-gradient(180deg, var(--cta-blue), var(--cta-blue-dark));

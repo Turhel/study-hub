@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 import {
   closeEssayStudySession,
@@ -132,6 +133,16 @@ function StudyMessage({ message }: { message: EssayStudyMessageResponse }) {
       <p>{message.content}</p>
       <small>{formatDateTime(message.created_at)}</small>
     </article>
+  );
+}
+
+function EssayGuidanceIcon() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="8" y="6" width="21" height="29" rx="4" className="today-icon-fill-blue" />
+      <path d="M13 14h11M13 20h11M13 26h7" className="today-icon-line-soft" />
+      <path d="M25 30l11-11 5 5-11 11-7 2 2-7z" className="today-icon-fill-gold" />
+    </svg>
   );
 }
 
@@ -278,6 +289,37 @@ export default function EssayPage() {
             <p>Nao foi possivel consultar a maquina agora. A correcao por IA fica bloqueada por seguranca.</p>
           </section>
         ) : null}
+
+        <section className="app-guidance-panel">
+          <div className="app-guidance-head">
+            <div>
+              <h3>Como usar redacao sem se enrolar</h3>
+              <p>Esta tela tem dois trabalhos: guardar seu texto e, quando houver IA disponivel, transformar isso em correcao e estudo.</p>
+            </div>
+            <span className="app-guidance-icon">
+              <EssayGuidanceIcon />
+            </span>
+          </div>
+          <div className="app-guidance-steps">
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">1</span>
+              <p>Preencha tema e texto.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">2</span>
+              <p>Se a IA estiver ligada, corrija e leia os pontos fortes e fracos.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">3</span>
+              <p>Use o chat depois da correcao para estudar os erros mais importantes.</p>
+            </div>
+          </div>
+          <div className="app-guidance-actions">
+            <Link className="app-secondary-action app-guidance-link" to="/">
+              Voltar ao foco do dia
+            </Link>
+          </div>
+        </section>
 
         <section className="today-panel essay-capabilities-panel">
           <div className="today-section-heading">

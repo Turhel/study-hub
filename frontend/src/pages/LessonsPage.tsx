@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 import {
   createLessonContent,
@@ -178,6 +179,17 @@ function getLessonError(...errors: unknown[]): string | null {
   return found ? "Nao foi possivel carregar este conteudo agora." : null;
 }
 
+function LessonsGuidanceIcon() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="6" y="11" width="13" height="26" rx="3" className="today-icon-fill-green" />
+      <rect x="17.5" y="8.5" width="13" height="28.5" rx="3" className="today-icon-fill-gold" />
+      <rect x="29" y="10" width="13" height="27" rx="3" className="today-icon-fill-blue" />
+      <path d="M10 16h5M10 21h5M21 15h6M21 20h6M32 17h6M32 22h6" className="today-icon-line-soft" />
+    </svg>
+  );
+}
+
 export default function LessonsPage() {
   const queryClient = useQueryClient();
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
@@ -334,6 +346,37 @@ export default function LessonsPage() {
           </section>
         ) : null}
 
+        <section className="app-guidance-panel">
+          <div className="app-guidance-head">
+            <div>
+              <h3>Como navegar aqui</h3>
+              <p>Aulas existe para te dar um lugar simples: escolher a disciplina, abrir o conteudo e estudar sem caçar material perdido.</p>
+            </div>
+            <span className="app-guidance-icon">
+              <LessonsGuidanceIcon />
+            </span>
+          </div>
+          <div className="app-guidance-steps">
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">1</span>
+              <p>Escolha a disciplina no topo.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">2</span>
+              <p>Abra um modulo e selecione um conteudo da lista.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">3</span>
+              <p>Se nao existir aula, crie um resumo curto ou cole o link principal.</p>
+            </div>
+          </div>
+          <div className="app-guidance-actions">
+            <Link className="app-secondary-action app-guidance-link" to="/">
+              Voltar ao foco do dia
+            </Link>
+          </div>
+        </section>
+
         {feedback ? (
           <section className="today-feedback">
             <span>{feedback}</span>
@@ -352,7 +395,10 @@ export default function LessonsPage() {
           </div>
 
           {catalogQuery.isLoading ? (
-            <p className="today-empty-copy">Carregando catalogo...</p>
+            <div className="app-empty-card">
+              <strong>Carregando catalogo...</strong>
+              <p>Quando o catalogo responder, as disciplinas e modulos aparecem aqui para voce escolher.</p>
+            </div>
           ) : disciplines.length > 0 ? (
             <div className="stats-discipline-tabs lessons-discipline-tabs" role="tablist" aria-label="Disciplinas">
               {disciplines.map((item) => (
@@ -372,11 +418,17 @@ export default function LessonsPage() {
               ))}
             </div>
           ) : (
-            <p className="today-empty-copy">Nenhuma disciplina encontrada no catalogo.</p>
+            <div className="app-empty-card">
+              <strong>Nenhuma disciplina encontrada.</strong>
+              <p>Sem catalogo nao ha trilha para navegar. Vale verificar o backend antes de continuar.</p>
+            </div>
           )}
 
           {blockProgressQuery.isError ? (
-            <p className="today-empty-copy">Progressao da disciplina indisponivel. A lista continua pelo catalogo.</p>
+            <div className="app-empty-card">
+              <strong>Progressao indisponivel.</strong>
+              <p>Voce ainda pode navegar pelo catalogo, mas sem a leitura de bloqueios e avancos desta disciplina.</p>
+            </div>
           ) : blockProgressQuery.data?.message ? (
             <p className="lessons-progress-note">{blockProgressQuery.data.message}</p>
           ) : null}
@@ -385,8 +437,9 @@ export default function LessonsPage() {
         <div className="lessons-grid">
           <section className="lessons-module-list" aria-label="Modulos da disciplina">
             {modules.length === 0 && !catalogQuery.isLoading ? (
-              <article className="today-panel">
-                <p className="today-empty-copy">Nenhum modulo encontrado para esta disciplina.</p>
+              <article className="app-empty-card">
+                <strong>Nenhum modulo encontrado.</strong>
+                <p>Sem modulos, nao ha trilha para abrir conteudos nesta disciplina.</p>
               </article>
             ) : null}
 
@@ -458,7 +511,10 @@ export default function LessonsPage() {
             {lessonError ? <p className="today-form-error">{lessonError}</p> : null}
 
             {lessonLoading ? (
-              <p className="today-empty-copy">Carregando aula...</p>
+              <div className="app-empty-card">
+                <strong>Carregando aula...</strong>
+                <p>Este painel mostra o texto editorial, links e notas do conteudo selecionado.</p>
+              </div>
             ) : isEditing && selectedSubject ? (
               <form
                 className="lessons-editor"

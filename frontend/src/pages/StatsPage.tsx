@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { getStatsByDiscipline, getStatsOverview } from "../lib/api";
 import type { StatsDisciplineSignal, StatsSubjectPerformance } from "../lib/types";
@@ -144,6 +145,16 @@ function SubjectList({ title, items }: { title: string; items?: StatsSubjectPerf
   );
 }
 
+function GuidanceIcon() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
+      <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
+      <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
+    </svg>
+  );
+}
+
 export default function StatsPage() {
   const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
 
@@ -180,6 +191,40 @@ export default function StatsPage() {
           </section>
         ) : null}
 
+        <section className="app-guidance-panel">
+          <div className="app-guidance-head">
+            <div>
+              <h3>Como usar esta tela</h3>
+              <p>As estatisticas servem para confirmar se o estudo do dia virou registro real, nao para te deixar perdido em numero.</p>
+            </div>
+            <span className="app-guidance-icon">
+              <GuidanceIcon />
+            </span>
+          </div>
+          <div className="app-guidance-steps">
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">1</span>
+              <p>Registre algumas questoes no Foco do dia para alimentar este painel.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">2</span>
+              <p>Use o overview para ver volume e acerto sem abrir disciplina por disciplina.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">3</span>
+              <p>Quando algo estiver fraco, volte para a TodayPage ou para Aulas e ataque esse ponto.</p>
+            </div>
+          </div>
+          <div className="app-guidance-actions">
+            <Link className="app-primary-action app-primary-action-blue app-guidance-link" to="/">
+              Abrir foco do dia
+            </Link>
+            <Link className="app-secondary-action app-guidance-link" to="/lessons">
+              Ir para aulas
+            </Link>
+          </div>
+        </section>
+
         <section className="today-panel today-panel-wide">
           <div className="today-section-heading">
             <div>
@@ -189,7 +234,10 @@ export default function StatsPage() {
           </div>
 
           {overviewQuery.isLoading ? (
-            <p className="today-empty-copy">Carregando estatisticas...</p>
+            <div className="app-empty-card">
+              <strong>Carregando estatisticas...</strong>
+              <p>Assim que houver resposta do backend, este bloco mostra volume, acerto e tempo medio.</p>
+            </div>
           ) : (
             <div className="stats-grid">
               <StatCard label="Questoes hoje" value={overview?.questions_today ?? 0} tone="gold" />
@@ -236,11 +284,17 @@ export default function StatsPage() {
           </div>
 
           {disciplineQuery.isError ? (
-            <p className="today-empty-copy">Nao foi possivel carregar esta disciplina agora.</p>
+            <div className="app-empty-card">
+              <strong>Disciplina indisponivel agora.</strong>
+              <p>Voce ainda pode usar o overview geral e voltar nesta aba quando o backend responder.</p>
+            </div>
           ) : null}
 
           {disciplineQuery.isLoading ? (
-            <p className="today-empty-copy">Carregando disciplina...</p>
+            <div className="app-empty-card">
+              <strong>Carregando disciplina...</strong>
+              <p>Este painel aprofunda o desempenho so da materia selecionada.</p>
+            </div>
           ) : (
             <div className="stats-grid">
               <StatCard label="Questoes na semana" value={discipline?.questions_this_week ?? 0} tone="gold" />

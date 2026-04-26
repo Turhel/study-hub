@@ -213,6 +213,16 @@ function SummaryCard({
   );
 }
 
+function TodayGuidanceIcon() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
+      <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
+      <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
+    </svg>
+  );
+}
+
 function formatOptional(value: unknown): string {
   if (value === null || value === undefined || value === "") {
     return "Nao informado";
@@ -494,6 +504,40 @@ export default function TodayPage() {
             </button>
           </section>
         ) : null}
+
+        <section className="app-guidance-panel">
+          <div className="app-guidance-head">
+            <div>
+              <h3>Comece por aqui</h3>
+              <p>Foco do dia e a tela que organiza seu estudo. A ideia e simples: ver o plano, registrar execucao e usar isso para alimentar o resto do app.</p>
+            </div>
+            <span className="app-guidance-icon">
+              <TodayGuidanceIcon />
+            </span>
+          </div>
+          <div className="app-guidance-steps">
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">1</span>
+              <p>Confirme a carga do dia em Guia.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">2</span>
+              <p>Abra um foco e registre as questoes feitas.</p>
+            </div>
+            <div className="app-guidance-step">
+              <span className="app-guidance-step-index">3</span>
+              <p>Depois use Estatisticas para revisar o que aconteceu e Aulas para aprofundar o que ficou fraco.</p>
+            </div>
+          </div>
+          <div className="app-guidance-actions">
+            <Link className="app-secondary-action app-guidance-link" to="/stats">
+              Ver estatisticas
+            </Link>
+            <Link className="app-secondary-action app-guidance-link" to="/lessons">
+              Ir para aulas
+            </Link>
+          </div>
+        </section>
 
         <section className="today-summary-grid">
           <SummaryCard label="Total planejado" value={planSummary?.total_questions ?? 0} detail="questoes" icon="target" />
