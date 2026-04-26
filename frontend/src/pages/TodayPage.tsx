@@ -495,6 +495,15 @@ export default function TodayPage() {
     }
   }, [preferencesQuery.data]);
 
+  const savedPreferences = useMemo<PreferencesForm | null>(() => {
+    if (!preferencesQuery.data) {
+      return null;
+    }
+
+    const { updated_at: _updatedAt, ...payload } = preferencesQuery.data;
+    return payload;
+  }, [preferencesQuery.data]);
+
   const refreshTodayData = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["study-plan-today"] }),
@@ -555,6 +564,21 @@ export default function TodayPage() {
   const capabilities = capabilitiesQuery.data;
   const activityToday = activityTodayQuery.data;
   const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
+  const guideHasUnsavedChanges = useMemo(() => {
+    if (!savedPreferences) {
+      return false;
+    }
+
+    return (
+      savedPreferences.daily_minutes !== preferencesForm.daily_minutes ||
+      savedPreferences.intensity !== preferencesForm.intensity ||
+      savedPreferences.max_focus_count !== preferencesForm.max_focus_count ||
+      savedPreferences.max_questions !== preferencesForm.max_questions ||
+      savedPreferences.include_reviews !== preferencesForm.include_reviews ||
+      savedPreferences.include_new_content !== preferencesForm.include_new_content
+    );
+  }, [preferencesForm, savedPreferences]);
+  const guideBusy = savePreferencesMutation.isPending || recalculateMutation.isPending;
 
   const backendOffline = planQuery.isError && capabilitiesQuery.isError && preferencesQuery.isError;
   const focusCards = useMemo(
@@ -598,8 +622,10 @@ export default function TodayPage() {
       return {
         title: "Ajuste a carga e recalcule o plano",
         description: "Quando nao ha focos, o proximo passo util e salvar as preferencias do guia e pedir um novo plano.",
-        primaryLabel: "Recalcular plano",
-        onPrimary: () => recalculateMutation.mutate(),
+        primaryLabel: guideHasUnsavedChanges ? "Salvar e recalcular" : "Recalcular plano",
+        onPrimary: () => {
+          void applyGuideChanges();
+        },
         secondaryLabel: "Ir para aulas",
         secondaryTo: "/lessons",
       };
@@ -630,11 +656,11 @@ export default function TodayPage() {
     activityToday?.question_attempts_registered,
     backendOffline,
     capabilitiesQuery,
+    guideHasUnsavedChanges,
     hasPlanItems,
     planItems,
     planQuery,
     preferencesQuery,
-    recalculateMutation,
   ]);
   const guideSummary = useMemo(() => {
     const toggles = [
@@ -648,6 +674,17 @@ export default function TodayPage() {
 
   function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
     setPreferencesForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function applyGuideChanges() {
+    try {
+      if (guideHasUnsavedChanges) {
+        await savePreferencesMutation.mutateAsync(preferencesForm);
+      }
+      await recalculateMutation.mutateAsync();
+    } catch {
+      // Mutations already surface feedback to the UI.
+    }
   }
 
   function openAttemptModal(item: StudyPlanItem) {
@@ -889,6 +926,7 @@ export default function TodayPage() {
               <div className="today-guide-summary">
                 <span className="today-guide-summary-label">Resumo atual</span>
                 <p>{guideSummary}</p>
+                {guideHasUnsavedChanges ? <small className="today-guide-dirty">Voce alterou o guia. Falta aplicar no plano.</small> : null}
               </div>
 
               <div className="today-preferences-grid">
@@ -971,14 +1009,18 @@ export default function TodayPage() {
               </div>
 
               <div className="today-guide-actions-note">
-                <p>Salvar guarda. Recalcular aplica no plano de hoje.</p>
+                <p>
+                  {guideHasUnsavedChanges
+                    ? "Voce mudou o guia acima. Recalcular agora salva essas mudancas e reaplica o plano de hoje."
+                    : "Salvar guarda. Recalcular usa o que ja esta salvo para montar o plano de hoje."}
+                </p>
               </div>
 
               <div className="today-action-row">
                 <button
                   type="button"
                   className="app-secondary-action"
-                  disabled={savePreferencesMutation.isPending}
+                  disabled={guideBusy}
                   onClick={() => savePreferencesMutation.mutate(preferencesForm)}
                 >
                   {savePreferencesMutation.isPending ? "Salvando..." : "Salvar"}
@@ -986,10 +1028,18 @@ export default function TodayPage() {
                 <button
                   type="button"
                   className="app-primary-action app-primary-action-blue"
-                  disabled={recalculateMutation.isPending}
-                  onClick={() => recalculateMutation.mutate()}
+                  disabled={guideBusy}
+                  onClick={() => {
+                    void applyGuideChanges();
+                  }}
                 >
-                  {recalculateMutation.isPending ? "Recalculando..." : "Recalcular plano"}
+                  {recalculateMutation.isPending
+                    ? "Recalculando..."
+                    : savePreferencesMutation.isPending
+                      ? "Salvando..."
+                      : guideHasUnsavedChanges
+                        ? "Salvar e recalcular"
+                        : "Recalcular plano"}
                 </button>
               </div>
             </section>
