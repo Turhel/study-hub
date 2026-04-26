@@ -1,4 +1,5 @@
 export type TimerMode = "prova" | "livre";
+export type QuestionSourceKind = "db" | "external";
 
 export type QuestionStatus = "pending" | "active" | "completed" | "skipped";
 
@@ -9,6 +10,21 @@ export type SessionSetup = {
   questionCount: number;
   targetSecondsPerQuestion: number;
   mode: TimerMode;
+  questionSource: QuestionSourceKind;
+  blockId?: number | null;
+  subjectId?: number | null;
+};
+
+export type TimerLaunchPreset = {
+  discipline: string;
+  block: string;
+  subject: string;
+  questionCount: number;
+  targetSecondsPerQuestion?: number;
+  mode?: TimerMode;
+  questionSource?: QuestionSourceKind;
+  blockId?: number | null;
+  subjectId?: number | null;
 };
 
 export type QuestionEntry = {
@@ -41,6 +57,20 @@ export type SessionSummary = {
   skippedQuestions: number;
   averageCompletedSeconds: number;
   overTargetQuestions: number;
+};
+
+export type ExternalQuestionDraft = {
+  questionNumber: number;
+  textBlocks: string[];
+  imageLabel: string;
+  imagePreviewUrl: string | null;
+  prompt: string;
+  options: string[];
+  correctOptionIndex: number | null;
+  wasCorrect: "" | "correct" | "incorrect";
+  peerAccuracy: string;
+  personalDifficulty: "baixa" | "media" | "alta";
+  notes: string;
 };
 
 export type TimerSessionItemPayload = {

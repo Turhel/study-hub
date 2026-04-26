@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   getRecentActivity,
@@ -457,6 +457,7 @@ function ActivityMetric({
 
 export default function TodayPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [preferencesForm, setPreferencesForm] = useState<PreferencesForm>(defaultPreferences);
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
@@ -711,6 +712,24 @@ export default function TodayPage() {
     });
   }
 
+  function openTrainingTimer(item: StudyPlanItem) {
+    navigate("/timer", {
+      state: {
+        timerPreset: {
+          discipline: item.discipline,
+          block: item.block_name,
+          subject: item.subject_name,
+          blockId: item.block_id,
+          subjectId: item.subject_id,
+          questionCount: Math.max(item.remaining_today || item.planned_questions || 1, 1),
+          targetSecondsPerQuestion: 180,
+          mode: "prova",
+          questionSource: "external",
+        },
+      },
+    });
+  }
+
   return (
     <main className="today-page">
       <motion.section
@@ -855,7 +874,7 @@ export default function TodayPage() {
                           <i />
                         </span>
                       </Link>
-                      <button type="button" className="today-register-button" onClick={() => openAttemptModal(item)}>
+                      <button type="button" className="today-register-button" onClick={() => openTrainingTimer(item)}>
                         Treinar
                       </button>
                     </div>
@@ -866,6 +885,12 @@ export default function TodayPage() {
                     <span>{item.remaining_today} restantes</span>
                     <span>{item.planned_mode}</span>
                     <span>score {formatOptional(item.priority_score)}</span>
+                  </div>
+
+                  <div className="today-focus-secondary-row">
+                    <button type="button" className="today-focus-secondary-action" onClick={() => openAttemptModal(item)}>
+                      Registrar manualmente
+                    </button>
                   </div>
 
                   <dl className="today-roadmap-details">

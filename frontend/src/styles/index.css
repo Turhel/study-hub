@@ -1372,6 +1372,20 @@ textarea {
   color: rgba(233, 239, 248, 0.82);
 }
 
+.today-focus-secondary-row {
+  padding: 0 1.35rem 0.9rem;
+}
+
+.today-focus-secondary-action {
+  border: 0;
+  background: transparent;
+  color: #7ec5ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 0.18rem;
+}
+
 .today-roadmap-details {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
