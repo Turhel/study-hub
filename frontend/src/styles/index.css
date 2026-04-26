@@ -873,16 +873,31 @@ textarea {
 }
 
 .today-focus-card {
+  --discipline-card-border: rgba(88, 121, 164, 0.7);
+  --discipline-card-text: #f5f7fb;
+  --discipline-card-copy: rgba(233, 239, 248, 0.78);
+  --discipline-card-footer-bg: rgba(11, 21, 42, 0.92);
+  --discipline-card-footer-border: rgba(112, 133, 170, 0.42);
+  --discipline-icon-button-bg: linear-gradient(180deg, var(--cta-blue), var(--cta-blue-dark));
+  --discipline-icon-button-border: rgba(18, 51, 76, 0.94);
+  --discipline-icon-button-text: #ffffff;
+  overflow: hidden;
   border: 2px solid var(--discipline-card-border);
   border-radius: 10px;
   color: var(--discipline-card-text);
-  padding: 0.9rem;
+  padding: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 20px rgba(4, 7, 13, 0.32);
 }
 
 .today-focus-main {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.9rem;
+  min-height: 6.3rem;
+  padding: 1rem 1.1rem 0.95rem;
 }
 
 .today-focus-title-row {
@@ -893,8 +908,14 @@ textarea {
 
 .today-focus-title-row h3 {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.2;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.12;
+}
+
+.today-focus-title-row span {
+  font-size: 1.45rem;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.24));
 }
 
 .today-focus-card p {
@@ -913,17 +934,29 @@ textarea {
 .today-register-button {
   align-self: flex-start;
   flex: 0 0 auto;
-  border: 1px solid var(--discipline-icon-button-border);
-  border-radius: 8px;
+  border: 2px solid var(--discipline-icon-button-border);
+  border-radius: 9px;
   background: var(--discipline-icon-button-bg);
   color: var(--discipline-icon-button-text);
-  padding: 0.52rem 0.72rem;
+  padding: 0.58rem 0.8rem;
   font-size: 0.78rem;
   font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    3px 3px 0 var(--button-shadow);
 }
 
 .today-focus-metrics {
-  margin-top: 0.75rem;
+  margin: 0;
+  padding: 0.78rem 1.1rem;
+  border-top: 2px solid var(--discipline-card-footer-border);
+  background: var(--discipline-card-footer-bg);
+}
+
+.today-focus-card .today-focus-metrics span {
+  border-color: rgba(112, 133, 170, 0.42);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(233, 239, 248, 0.82);
 }
 
 .today-roadmap-details {
@@ -931,6 +964,12 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem 0.75rem;
   margin: 0.85rem 0 0;
+}
+
+.today-focus-card .today-roadmap-details {
+  margin: 0;
+  padding: 0.9rem 1.1rem 1.05rem;
+  border-top: 1px solid rgba(112, 133, 170, 0.24);
 }
 
 .today-roadmap-details div {
@@ -1041,14 +1080,29 @@ textarea {
 
 .today-discipline-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 24rem));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 27.5rem));
   justify-content: center;
   gap: 0.9rem;
-  width: min(100%, 50rem);
+  width: min(100%, 58rem);
   margin: 1rem auto 0;
 }
 
 .today-discipline-card {
+  --discipline-card-border: rgba(88, 121, 164, 0.7);
+  --discipline-card-text: #f5f7fb;
+  --discipline-card-copy: rgba(233, 239, 248, 0.78);
+  --discipline-card-shadow: rgba(4, 7, 13, 0.42);
+  --discipline-card-footer-bg: rgba(11, 21, 42, 0.92);
+  --discipline-card-footer-border: rgba(112, 133, 170, 0.42);
+  --discipline-card-meta: rgba(206, 217, 235, 0.72);
+  --discipline-score-pill: linear-gradient(180deg, #5a6b80, #4d5d73);
+  --discipline-score-info-bg: rgba(255, 255, 255, 0.92);
+  --discipline-score-info-text: #1f2734;
+  --discipline-count-text: #f8fbff;
+  --discipline-icon-button-bg: rgba(24, 30, 41, 0.92);
+  --discipline-icon-button-border: rgba(112, 133, 170, 0.6);
+  --discipline-icon-button-text: #f3f7fc;
+  --discipline-icon-bar: rgba(240, 246, 255, 0.95);
   overflow: hidden;
   border: 2px solid var(--discipline-card-border);
   border-radius: 10px;
@@ -1063,8 +1117,8 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.85rem;
-  min-height: 5.9rem;
-  padding: 1rem 1rem 0.9rem;
+  min-height: 7rem;
+  padding: 1.15rem 1.35rem 1.05rem;
 }
 
 .today-discipline-card-main > div {
@@ -1074,9 +1128,9 @@ textarea {
 .today-discipline-card h2 {
   margin: 0;
   font-family: "Fraunces", Georgia, serif;
-  font-size: clamp(1.25rem, 1.55vw, 1.55rem);
+  font-size: clamp(1.45rem, 1.8vw, 1.8rem);
   font-weight: 800;
-  line-height: 1.18;
+  line-height: 1.08;
   letter-spacing: 0;
   overflow-wrap: anywhere;
 }
@@ -1093,10 +1147,13 @@ textarea {
 .today-discipline-icon {
   display: inline-grid;
   place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 3.3rem;
+  height: 3.3rem;
   flex: 0 0 auto;
-  font-size: 1.45rem;
+  border-radius: 14px;
+  background: radial-gradient(circle at 70% 30%, rgba(255, 223, 86, 0.22), transparent 56%);
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
+  font-size: 2.05rem;
 }
 
 .today-discipline-card-footer {
@@ -1104,9 +1161,10 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border-top: 1px solid var(--discipline-card-footer-border);
+  min-height: 4.15rem;
+  border-top: 2px solid var(--discipline-card-footer-border);
   background: var(--discipline-card-footer-bg);
-  padding: 0.68rem 0.9rem;
+  padding: 0.78rem 1.15rem;
 }
 
 .today-discipline-footer-meta {
@@ -1129,8 +1187,8 @@ textarea {
 }
 
 .today-score-pill {
-  width: 1.9rem;
-  height: 0.82rem;
+  width: 2.35rem;
+  height: 1rem;
   border-radius: 999px;
   background: var(--discipline-score-pill);
 }
@@ -1155,7 +1213,7 @@ textarea {
 
 .today-discipline-footer-count strong {
   color: var(--discipline-count-text);
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -1170,8 +1228,8 @@ textarea {
 
 .today-discipline-icon-button,
 .today-discipline-train-button {
-  border: 1px solid var(--discipline-icon-button-border);
-  border-radius: 8px;
+  border: 2px solid var(--discipline-icon-button-border);
+  border-radius: 9px;
   font-size: 0.8rem;
   font-weight: 750;
 }
@@ -1179,18 +1237,18 @@ textarea {
 .today-discipline-icon-button {
   display: inline-grid;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.55rem;
+  height: 2.55rem;
   background: var(--discipline-icon-button-bg);
   color: var(--discipline-icon-button-text);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 0 1px rgba(255, 255, 255, 0.03);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    2px 2px 0 rgba(3, 8, 18, 0.9);
 }
 
 .today-discipline-train-button {
-  min-width: 5.2rem;
-  padding: 0.58rem 0.85rem;
+  min-width: 5.9rem;
+  padding: 0.64rem 0.95rem;
   background: linear-gradient(180deg, var(--cta-blue), var(--cta-blue-dark));
   color: #fff;
   box-shadow:
@@ -1225,27 +1283,27 @@ textarea {
 }
 
 .today-discipline-card-languages {
-  background: linear-gradient(135deg, rgba(28, 57, 76, 0.95), rgba(23, 27, 35, 0.98));
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(37, 118, 154, 0.22) 100%);
 }
 
 .today-discipline-card-humanas {
-  background: linear-gradient(135deg, rgba(66, 38, 68, 0.95), rgba(23, 27, 35, 0.98));
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(160, 69, 126, 0.22) 100%);
 }
 
 .today-discipline-card-math {
-  background: linear-gradient(135deg, rgba(63, 51, 28, 0.95), rgba(23, 27, 35, 0.98));
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(155, 139, 49, 0.24) 100%);
 }
 
 .today-discipline-card-nature {
-  background: linear-gradient(135deg, rgba(26, 63, 50, 0.95), rgba(23, 27, 35, 0.98));
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(55, 142, 91, 0.22) 100%);
 }
 
 .today-discipline-card-writing {
-  background: linear-gradient(135deg, rgba(74, 40, 32, 0.95), rgba(23, 27, 35, 0.98));
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(196, 96, 61, 0.22) 100%);
 }
 
 .today-discipline-card-default {
-  background: linear-gradient(135deg, rgba(36, 53, 74, 0.95), rgba(23, 27, 35, 0.98));
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.22) 100%);
 }
 
 :root[data-theme="light"] .today-subjects-shell {
@@ -1257,27 +1315,27 @@ textarea {
 }
 
 :root[data-theme="light"] .today-discipline-card-languages {
-  background: linear-gradient(135deg, #eef7ff, #f8f5ee);
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(37, 118, 154, 0.22) 100%);
 }
 
 :root[data-theme="light"] .today-discipline-card-humanas {
-  background: linear-gradient(135deg, #f7efff, #fbf5ee);
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(160, 69, 126, 0.22) 100%);
 }
 
 :root[data-theme="light"] .today-discipline-card-math {
-  background: linear-gradient(135deg, #f8f1d9, #fbf6ea);
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(155, 139, 49, 0.24) 100%);
 }
 
 :root[data-theme="light"] .today-discipline-card-nature {
-  background: linear-gradient(135deg, #eef8ef, #f7f5ea);
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(55, 142, 91, 0.22) 100%);
 }
 
 :root[data-theme="light"] .today-discipline-card-writing {
-  background: linear-gradient(135deg, #fff0ea, #fbf5ee);
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(196, 96, 61, 0.22) 100%);
 }
 
 :root[data-theme="light"] .today-discipline-card-default {
-  background: linear-gradient(135deg, #eef3fb, #f8f5ee);
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.22) 100%);
 }
 
 @media (max-width: 720px) {
