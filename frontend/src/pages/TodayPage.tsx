@@ -368,11 +368,41 @@ function ActivityList({ items }: { items?: ActivityItem[] }) {
     return <p className="today-empty-copy">Nenhuma atividade recente ainda. Registre questoes para alimentar o historico.</p>;
   }
 
+  function activityTypeLabel(type: string): string {
+    const normalized = type.toLowerCase();
+    if (normalized.includes("question")) return "Questoes";
+    if (normalized.includes("review")) return "Revisao";
+    if (normalized.includes("progress")) return "Progressao";
+    if (normalized.includes("plan")) return "Plano";
+    return "Atividade";
+  }
+
+  function relativeTime(value: string): string {
+    const createdAt = new Date(value).getTime();
+    const diffMs = Date.now() - createdAt;
+    const diffMinutes = Math.max(Math.floor(diffMs / 60000), 0);
+
+    if (diffMinutes < 1) return "agora";
+    if (diffMinutes < 60) return `${diffMinutes} min atras`;
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} h atras`;
+
+    return new Date(value).toLocaleDateString("pt-BR");
+  }
+
   return (
     <div className="today-activity-list">
       {items?.slice(0, 6).map((item, index) => (
-        <article key={`${item.created_at}-${item.type}-${index}`} className="today-activity-item">
-          <div>
+        <article
+          key={`${item.created_at}-${item.type}-${index}`}
+          className={`today-activity-item ${index === 0 ? "is-latest" : ""}`}
+        >
+          <div className="today-activity-copy">
+            <div className="today-activity-meta">
+              <span className="today-activity-type">{activityTypeLabel(item.type)}</span>
+              <small>{relativeTime(item.created_at)}</small>
+            </div>
             <strong>{item.title}</strong>
             <p>{item.description}</p>
           </div>
