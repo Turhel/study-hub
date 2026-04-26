@@ -9,7 +9,7 @@
     "check:backend": "cd backend && python -m pytest",
     "check:backend:install": "python -m pip install -r backend/requirements.txt",
     "dev": "npm run dev:frontend",
-    "dev:backend": "node scripts/dev-orchestrator.mjs backend",
+    "dev:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-backend-auto.ps1",
     "dev:backend:inner": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\dev-backend.ps1",
     "dev:frontend": "npm --prefix frontend run dev",
     "tauri:dev": "concurrently -k -n backend,tauri -c cyan,magenta \"npm run dev:backend:inner\" \"npm run tauri:desktop\"",
