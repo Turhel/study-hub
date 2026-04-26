@@ -4,3 +4,4 @@ INFO:     Started reloader process [11744] using WatchFiles
 INFO:     Started server process [9928]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app\services\essay_service.py'. Reloading...
