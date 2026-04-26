@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node ../scripts/dev-orchestrator.mjs frontend",
+    "vite:dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
