@@ -223,6 +223,42 @@ function TodayGuidanceIcon() {
   );
 }
 
+function NextStepPanel({
+  title,
+  description,
+  primaryLabel,
+  onPrimary,
+  secondaryLabel,
+  secondaryTo,
+}: {
+  title: string;
+  description: string;
+  primaryLabel: string;
+  onPrimary?: () => void;
+  secondaryLabel?: string;
+  secondaryTo?: string;
+}) {
+  return (
+    <section className="app-next-step-panel">
+      <div className="app-next-step-copy">
+        <p className="today-eyebrow">Faca agora</p>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+      <div className="app-next-step-actions">
+        <button type="button" className="app-primary-action app-primary-action-blue" onClick={onPrimary}>
+          {primaryLabel}
+        </button>
+        {secondaryLabel && secondaryTo ? (
+          <Link className="app-secondary-action app-guidance-link" to={secondaryTo}>
+            {secondaryLabel}
+          </Link>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 function formatOptional(value: unknown): string {
   if (value === null || value === undefined || value === "") {
     return "Nao informado";
@@ -438,6 +474,77 @@ export default function TodayPage() {
       })),
     [planItems],
   );
+  const nextStep = useMemo(() => {
+    if (backendOffline) {
+      return {
+        title: "Recupere a conexao com o backend",
+        description: "Sem backend voce perde plano, activity e registro. Assim que ele voltar, esta tela volta a te orientar.",
+        primaryLabel: "Tentar novamente",
+        onPrimary: () => {
+          void refreshTodayData();
+          void capabilitiesQuery.refetch();
+          void preferencesQuery.refetch();
+        },
+        secondaryLabel: undefined,
+        secondaryTo: undefined,
+      };
+    }
+
+    if (planQuery.isLoading) {
+      return {
+        title: "Espere o plano carregar",
+        description: "A prioridade do estudo depende do plano do dia. Quando ele responder, voce ja pode comecar pelo primeiro foco.",
+        primaryLabel: "Atualizar plano",
+        onPrimary: () => {
+          void planQuery.refetch();
+        },
+        secondaryLabel: "Ver estatisticas",
+        secondaryTo: "/stats",
+      };
+    }
+
+    if (!hasPlanItems) {
+      return {
+        title: "Ajuste a carga e recalcule o plano",
+        description: "Quando nao ha focos, o proximo passo util e salvar as preferencias do guia e pedir um novo plano.",
+        primaryLabel: "Recalcular plano",
+        onPrimary: () => recalculateMutation.mutate(),
+        secondaryLabel: "Ir para aulas",
+        secondaryTo: "/lessons",
+      };
+    }
+
+    if ((activityToday?.question_attempts_registered ?? 0) === 0) {
+      return {
+        title: `Comece por ${planItems[0]?.subject_name ?? "seu primeiro foco"}`,
+        description: "Seu plano ja existe. O passo mais importante agora e fazer algumas questoes e registrar o resultado para o app aprender com voce.",
+        primaryLabel: "Registrar questoes",
+        onPrimary: () => openAttemptModal(planItems[0]),
+        secondaryLabel: "Ver aulas",
+        secondaryTo: "/lessons",
+      };
+    }
+
+    return {
+      title: "Feche o ciclo do estudo",
+      description: "Voce ja registrou execucao hoje. Agora vale revisar activity e usar Estatisticas ou Aulas para decidir o proximo aprofundamento.",
+      primaryLabel: "Abrir estatisticas",
+      onPrimary: () => {
+        window.location.assign("/stats");
+      },
+      secondaryLabel: "Ir para aulas",
+      secondaryTo: "/lessons",
+    };
+  }, [
+    activityToday?.question_attempts_registered,
+    backendOffline,
+    capabilitiesQuery,
+    hasPlanItems,
+    planItems,
+    planQuery,
+    preferencesQuery,
+    recalculateMutation,
+  ]);
 
   function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
     setPreferencesForm((current) => ({ ...current, [key]: value }));
@@ -538,6 +645,15 @@ export default function TodayPage() {
             </Link>
           </div>
         </section>
+
+        <NextStepPanel
+          title={nextStep.title}
+          description={nextStep.description}
+          primaryLabel={nextStep.primaryLabel}
+          onPrimary={nextStep.onPrimary}
+          secondaryLabel={nextStep.secondaryLabel}
+          secondaryTo={nextStep.secondaryTo}
+        />
 
         <section className="today-summary-grid">
           <SummaryCard label="Total planejado" value={planSummary?.total_questions ?? 0} detail="questoes" icon="target" />

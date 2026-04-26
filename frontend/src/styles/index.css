@@ -2140,6 +2140,43 @@ textarea {
   text-decoration: none;
 }
 
+.app-next-step-panel {
+  display: grid;
+  gap: 0.95rem;
+  border: 2px solid rgba(57, 170, 240, 0.58);
+  border-radius: 12px;
+  background: linear-gradient(112deg, rgba(17, 23, 34, 0.96) 0%, rgba(21, 29, 42, 0.96) 58%, rgba(47, 169, 244, 0.18) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 24px rgba(4, 7, 13, 0.22);
+  padding: 1rem 1.05rem;
+}
+
+.app-next-step-copy {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.app-next-step-copy h3 {
+  margin: 0;
+  color: #f8fbff;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.app-next-step-copy p:last-child {
+  margin: 0;
+  color: rgba(206, 217, 235, 0.84);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.app-next-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
 .app-empty-card {
   display: grid;
   gap: 0.85rem;

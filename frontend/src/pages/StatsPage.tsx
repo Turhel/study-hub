@@ -155,6 +155,42 @@ function GuidanceIcon() {
   );
 }
 
+function StatsNextStep({
+  title,
+  description,
+  primaryTo,
+  primaryLabel,
+  secondaryTo,
+  secondaryLabel,
+}: {
+  title: string;
+  description: string;
+  primaryTo: string;
+  primaryLabel: string;
+  secondaryTo?: string;
+  secondaryLabel?: string;
+}) {
+  return (
+    <section className="app-next-step-panel">
+      <div className="app-next-step-copy">
+        <p className="today-eyebrow">Faca agora</p>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+      <div className="app-next-step-actions">
+        <Link className="app-primary-action app-primary-action-blue app-guidance-link" to={primaryTo}>
+          {primaryLabel}
+        </Link>
+        {secondaryTo && secondaryLabel ? (
+          <Link className="app-secondary-action app-guidance-link" to={secondaryTo}>
+            {secondaryLabel}
+          </Link>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default function StatsPage() {
   const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
 
@@ -172,6 +208,26 @@ export default function StatsPage() {
 
   const overview = overviewQuery.data;
   const discipline = disciplineQuery.data;
+  const hasAnyVolume = (overview?.questions_today ?? 0) > 0 || (overview?.questions_this_week ?? 0) > 0;
+  const nextStep = hasAnyVolume
+    ? {
+        title: `Use ${selectedDiscipline} para decidir o reforco`,
+        description:
+          "Leia a visao geral, depois veja a disciplina que mais importa agora. Se a taxa de acerto caiu, volte para Today ou Aulas com esse alvo claro.",
+        primaryTo: "/",
+        primaryLabel: "Voltar ao foco do dia",
+        secondaryTo: "/lessons",
+        secondaryLabel: "Abrir aulas",
+      }
+    : {
+        title: "Alimente esta tela primeiro",
+        description:
+          "Sem registro real, Estatisticas vira so uma tela vazia. O melhor proximo passo e resolver algumas questoes no foco do dia e registrar o resultado.",
+        primaryTo: "/",
+        primaryLabel: "Ir para Today",
+        secondaryTo: "/lessons",
+        secondaryLabel: "Ver aulas",
+      };
 
   return (
     <main className="today-page stats-page">
@@ -224,6 +280,8 @@ export default function StatsPage() {
             </Link>
           </div>
         </section>
+
+        <StatsNextStep {...nextStep} />
 
         <section className="today-panel today-panel-wide">
           <div className="today-section-heading">

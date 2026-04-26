@@ -190,6 +190,42 @@ function LessonsGuidanceIcon() {
   );
 }
 
+function LessonsNextStep({
+  title,
+  description,
+  primaryLabel,
+  primaryAction,
+  secondaryLabel,
+  secondaryTo,
+}: {
+  title: string;
+  description: string;
+  primaryLabel: string;
+  primaryAction: () => void;
+  secondaryLabel?: string;
+  secondaryTo?: string;
+}) {
+  return (
+    <section className="app-next-step-panel">
+      <div className="app-next-step-copy">
+        <p className="today-eyebrow">Faca agora</p>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+      <div className="app-next-step-actions">
+        <button type="button" className="app-primary-action app-primary-action-blue" onClick={primaryAction}>
+          {primaryLabel}
+        </button>
+        {secondaryLabel && secondaryTo ? (
+          <Link className="app-secondary-action app-guidance-link" to={secondaryTo}>
+            {secondaryLabel}
+          </Link>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default function LessonsPage() {
   const queryClient = useQueryClient();
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
@@ -326,6 +362,46 @@ export default function LessonsPage() {
     setIsEditing(false);
   }
 
+  const nextStep = !selectedSubject
+    ? {
+        title: "Escolha um conteudo da trilha",
+        description: "Aulas so fica util quando voce seleciona um assunto especifico. Comece pela disciplina atual e abra um conteudo do modulo.",
+        primaryLabel: "Ir para Today",
+        primaryAction: () => {
+          window.location.assign("/");
+        },
+        secondaryLabel: undefined,
+        secondaryTo: undefined,
+      }
+    : isEditing
+      ? {
+          title: "Feche uma aula enxuta",
+          description: "Nao precisa escrever perfeito. Salve um titulo, um resumo curto e um link principal para nao deixar o conteudo sem apoio.",
+          primaryLabel: "Salvar aula",
+          primaryAction: () => saveLessonMutation.mutate(),
+          secondaryLabel: "Voltar ao foco do dia",
+          secondaryTo: "/",
+        }
+      : lessonContent
+        ? {
+            title: `Estude ${selectedSubject.subject_name}`,
+            description: "Agora que o conteudo existe, a melhor proxima acao e usar esta aula como apoio e depois voltar ao foco do dia para praticar.",
+            primaryLabel: "Voltar ao foco do dia",
+            primaryAction: () => {
+              window.location.assign("/");
+            },
+            secondaryLabel: "Ver estatisticas",
+            secondaryTo: "/stats",
+          }
+        : {
+            title: "Cadastre a primeira aula deste conteudo",
+            description: "Sem aula, este ponto da trilha fica sem apoio. O proximo passo util e criar um resumo simples ou anexar o link principal.",
+            primaryLabel: "Criar aula",
+            primaryAction: startEditing,
+            secondaryLabel: "Voltar ao foco do dia",
+            secondaryTo: "/",
+          };
+
   return (
     <main className="today-page lessons-page">
       <section className="today-subjects-shell today-functional-shell lessons-shell">
@@ -376,6 +452,15 @@ export default function LessonsPage() {
             </Link>
           </div>
         </section>
+
+        <LessonsNextStep
+          title={nextStep.title}
+          description={nextStep.description}
+          primaryLabel={nextStep.primaryLabel}
+          primaryAction={nextStep.primaryAction}
+          secondaryLabel={nextStep.secondaryLabel}
+          secondaryTo={nextStep.secondaryTo}
+        />
 
         {feedback ? (
           <section className="today-feedback">

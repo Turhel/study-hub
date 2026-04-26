@@ -146,6 +146,42 @@ function EssayGuidanceIcon() {
   );
 }
 
+function EssayNextStep({
+  title,
+  description,
+  primaryLabel,
+  primaryAction,
+  secondaryLabel,
+  secondaryTo,
+}: {
+  title: string;
+  description: string;
+  primaryLabel: string;
+  primaryAction: () => void;
+  secondaryLabel?: string;
+  secondaryTo?: string;
+}) {
+  return (
+    <section className="app-next-step-panel">
+      <div className="app-next-step-copy">
+        <p className="today-eyebrow">Faca agora</p>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+      <div className="app-next-step-actions">
+        <button type="button" className="app-primary-action app-primary-action-blue" onClick={primaryAction}>
+          {primaryLabel}
+        </button>
+        {secondaryLabel && secondaryTo ? (
+          <Link className="app-secondary-action app-guidance-link" to={secondaryTo}>
+            {secondaryLabel}
+          </Link>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export default function EssayPage() {
   const [theme, setTheme] = useState("");
   const [essayText, setEssayText] = useState("");
@@ -243,6 +279,55 @@ export default function EssayPage() {
     () => essayText.trim().split(/\s+/).filter(Boolean).length,
     [essayText],
   );
+  const nextStep = !theme.trim() || !essayText.trim()
+    ? {
+        title: "Escreva a redacao primeiro",
+        description: "Antes de pensar em IA, o passo certo e preencher tema e texto. Sem isso, a tela vira so expectativa.",
+        primaryLabel: "Continuar escrevendo",
+        primaryAction: () => {
+          const themeInput = document.querySelector<HTMLInputElement>(".essay-form input");
+          themeInput?.focus();
+        },
+        secondaryLabel: "Voltar ao foco do dia",
+        secondaryTo: "/",
+      }
+    : !correctionEnabled
+      ? {
+          title: "Guarde o texto e siga para as objetivas",
+          description: "Nesta maquina a IA esta desligada. Entao o melhor uso desta tela agora e deixar o texto pronto e continuar o estudo principal em Today.",
+          primaryLabel: "Voltar ao foco do dia",
+          primaryAction: () => {
+            window.location.assign("/");
+          },
+          secondaryLabel: "Ver estatisticas",
+          secondaryTo: "/stats",
+        }
+      : !correction
+        ? {
+            title: "Peca a correcao agora",
+            description: "Seu texto ja esta pronto. O proximo passo util e gerar o feedback da IA para descobrir o que corrigir primeiro.",
+            primaryLabel: "Corrigir com IA",
+            primaryAction: submitCorrection,
+            secondaryLabel: "Voltar ao foco do dia",
+            secondaryTo: "/",
+          }
+        : !studySession
+          ? {
+              title: "Transforme a correcao em estudo",
+              description: "Voce ja tem o feedback. Agora vale abrir o chat da redacao para tirar duvidas e sair com um plano de melhora.",
+              primaryLabel: "Estudar esta redacao",
+              primaryAction: () => createStudyMutation.mutate(),
+              secondaryLabel: "Voltar ao foco do dia",
+              secondaryTo: "/",
+            }
+          : {
+              title: "Feche a sessao com uma duvida boa",
+              description: "Pergunte sobre o erro mais importante desta redacao ou sobre como melhorar sua proxima versao.",
+              primaryLabel: "Enviar pergunta",
+              primaryAction: submitStudyMessage,
+              secondaryLabel: "Voltar ao foco do dia",
+              secondaryTo: "/",
+            };
 
   function submitCorrection() {
     setFormError(null);
@@ -320,6 +405,15 @@ export default function EssayPage() {
             </Link>
           </div>
         </section>
+
+        <EssayNextStep
+          title={nextStep.title}
+          description={nextStep.description}
+          primaryLabel={nextStep.primaryLabel}
+          primaryAction={nextStep.primaryAction}
+          secondaryLabel={nextStep.secondaryLabel}
+          secondaryTo={nextStep.secondaryTo}
+        />
 
         <section className="today-panel essay-capabilities-panel">
           <div className="today-section-heading">
