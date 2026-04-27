@@ -26,6 +26,10 @@ python -m uvicorn app.main:app --reload
 
 Por padrao, sem `DATABASE_URL`, o backend usa SQLite local em `backend/data/study_hub.db`.
 
+Modo faculdade/offline com SQLite local estruturado:
+`python -m app.db_tools.bootstrap_sqlite_from_repo --dry-run`
+`python -m app.db_tools.bootstrap_sqlite_from_repo --apply`
+
 ## Banco De Dados: SQLite Ou Postgres
 
 O backend agora suporta os dois modos:

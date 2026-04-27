@@ -30,11 +30,12 @@ def create_db_engine(database_url: str | None = None) -> Engine:
 engine = create_db_engine(DATABASE_URL)
 
 
-def init_db() -> None:
+def init_db(engine_override: Engine | None = None) -> None:
     from app import models  # noqa: F401
 
-    SQLModel.metadata.create_all(engine)
-    run_migrations(engine)
+    active_engine = engine_override or engine
+    SQLModel.metadata.create_all(active_engine)
+    run_migrations(active_engine)
 
 
 def get_session() -> Session:

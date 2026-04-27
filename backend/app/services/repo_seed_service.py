@@ -17,6 +17,17 @@ class RepoSeedExportSummary:
     target_directory: str
 
 
+@dataclass
+class RepoSeedSyncSummary:
+    subjects_created: int = 0
+    subjects_updated: int = 0
+    blocks_created: int = 0
+    blocks_updated: int = 0
+    block_subjects_created: int = 0
+    block_subjects_updated: int = 0
+    source_directory: str = ""
+
+
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
@@ -88,3 +99,116 @@ def load_structural_seed_rows() -> dict[str, list[dict[str, str]]]:
             loaded[key] = [{name: (value or "").strip() for name, value in row.items()} for row in reader]
 
     return loaded
+
+
+def _parse_bool(value: str) -> bool:
+    return value.strip().casefold() in {"1", "true", "sim", "yes", "on"}
+
+
+def _subject_payload(row: dict[str, str]) -> dict[str, object]:
+    return {
+        "id": int(row["id"]),
+        "disciplina": row["disciplina"],
+        "assunto": row["assunto"],
+        "subassunto": row["subassunto"] or None,
+        "competencia": row["competencia"] or None,
+        "habilidade": row["habilidade"] or None,
+        "prioridade_enem": int(row["prioridade_enem"] or 3),
+        "ativo": _parse_bool(row["ativo"]),
+    }
+
+
+def _block_payload(row: dict[str, str]) -> dict[str, object]:
+    return {
+        "id": int(row["id"]),
+        "nome": row["nome"],
+        "disciplina": row["disciplina"],
+        "descricao": row["descricao"] or None,
+        "ordem": int(row["ordem"] or 0),
+        "status": row["status"] or "em_andamento",
+    }
+
+
+def _block_subject_payload(row: dict[str, str]) -> dict[str, object]:
+    return {
+        "id": int(row["id"]),
+        "block_id": int(row["block_id"]),
+        "subject_id": int(row["subject_id"]),
+    }
+
+
+def _payload_has_changes(instance: object, payload: dict[str, object]) -> bool:
+    return any(getattr(instance, field_name) != value for field_name, value in payload.items())
+
+
+def _apply_payload(instance: object, payload: dict[str, object]) -> None:
+    for field_name, value in payload.items():
+        setattr(instance, field_name, value)
+
+
+def sync_structural_seed_into_session(
+    session: Session,
+    *,
+    apply_changes: bool,
+) -> RepoSeedSyncSummary:
+    seed_rows = load_structural_seed_rows()
+    summary = RepoSeedSyncSummary(source_directory=str(get_repo_seed_dir().resolve()))
+
+    subjects_by_id = {row.id: row for row in session.exec(select(Subject)).all()}
+    for row in seed_rows["subjects"]:
+        payload = _subject_payload(row)
+        subject_id = int(payload["id"])
+        existing = subjects_by_id.get(subject_id)
+        if existing is None:
+            summary.subjects_created += 1
+            if apply_changes:
+                subject = Subject(**payload)
+                session.add(subject)
+                subjects_by_id[subject_id] = subject
+            continue
+        if _payload_has_changes(existing, payload):
+            summary.subjects_updated += 1
+            if apply_changes:
+                _apply_payload(existing, payload)
+                session.add(existing)
+
+    blocks_by_id = {row.id: row for row in session.exec(select(Block)).all()}
+    for row in seed_rows["blocks"]:
+        payload = _block_payload(row)
+        block_id = int(payload["id"])
+        existing = blocks_by_id.get(block_id)
+        if existing is None:
+            summary.blocks_created += 1
+            if apply_changes:
+                block = Block(**payload)
+                session.add(block)
+                blocks_by_id[block_id] = block
+            continue
+        if _payload_has_changes(existing, payload):
+            summary.blocks_updated += 1
+            if apply_changes:
+                _apply_payload(existing, payload)
+                session.add(existing)
+
+    block_subjects_by_id = {row.id: row for row in session.exec(select(BlockSubject)).all()}
+    for row in seed_rows["block_subjects"]:
+        payload = _block_subject_payload(row)
+        link_id = int(payload["id"])
+        existing = block_subjects_by_id.get(link_id)
+        if existing is None:
+            summary.block_subjects_created += 1
+            if apply_changes:
+                item = BlockSubject(**payload)
+                session.add(item)
+                block_subjects_by_id[link_id] = item
+            continue
+        if _payload_has_changes(existing, payload):
+            summary.block_subjects_updated += 1
+            if apply_changes:
+                _apply_payload(existing, payload)
+                session.add(existing)
+
+    if apply_changes:
+        session.commit()
+
+    return summary

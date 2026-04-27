@@ -97,7 +97,11 @@ def _parse_float(value: str, field_name: str) -> float:
         raise RoadmapImportError(f"Valor numerico invalido em {field_name}: {value}") from exc
 
 
-def import_roadmap_from_csv(session: "Session | None" = None) -> RoadmapImportSummary:
+def import_roadmap_from_csv(
+    session: "Session | None" = None,
+    *,
+    delete_missing: bool = True,
+) -> RoadmapImportSummary:
     from sqlmodel import select
 
     from app.db import get_session
@@ -255,27 +259,28 @@ def import_roadmap_from_csv(session: "Session | None" = None) -> RoadmapImportSu
         }
         expected_rule_keys = {row["rule_key"] for row in rules_rows}
 
-        for item in list(existing_block_map.values()):
-            key = (item.disciplina, item.block_number, item.node_id)
-            if key not in expected_block_map_keys:
-                db.delete(item)
-                summary.block_map_deleted += 1
+        if delete_missing:
+            for item in list(existing_block_map.values()):
+                key = (item.disciplina, item.block_number, item.node_id)
+                if key not in expected_block_map_keys:
+                    db.delete(item)
+                    summary.block_map_deleted += 1
 
-        for item in list(existing_edges.values()):
-            key = (item.from_node_id, item.to_node_id, item.relation_type)
-            if key not in expected_edge_keys:
-                db.delete(item)
-                summary.edges_deleted += 1
+            for item in list(existing_edges.values()):
+                key = (item.from_node_id, item.to_node_id, item.relation_type)
+                if key not in expected_edge_keys:
+                    db.delete(item)
+                    summary.edges_deleted += 1
 
-        for item in list(existing_nodes.values()):
-            if item.node_id not in expected_node_ids:
-                db.delete(item)
-                summary.nodes_deleted += 1
+            for item in list(existing_nodes.values()):
+                if item.node_id not in expected_node_ids:
+                    db.delete(item)
+                    summary.nodes_deleted += 1
 
-        for item in list(existing_rules.values()):
-            if item.rule_key not in expected_rule_keys:
-                db.delete(item)
-                summary.rules_deleted += 1
+            for item in list(existing_rules.values()):
+                if item.rule_key not in expected_rule_keys:
+                    db.delete(item)
+                    summary.rules_deleted += 1
 
         db.commit()
         summary.disciplines_detected = sorted(disciplines, key=normalize_discipline)
