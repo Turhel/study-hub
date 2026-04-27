@@ -13,6 +13,7 @@ Não há autenticação, multiusuário, Docker, Ollama, correção de redação,
 ## Documentação De Contratos
 
 - contratos principais de API para consumo do frontend: `docs/api-contracts.md`
+- handoff seguro para continuidade manual/OpenClaude: `docs/AI_HANDOFF.md`
 
 ## Rodar Backend
 
