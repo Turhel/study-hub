@@ -132,7 +132,7 @@ export type QuestionAttemptBulkPayload = {
   quantity: number;
   correct_count: number;
   difficulty_bank: "facil" | "media" | "dificil";
-  difficulty_personal: "facil" | "media" | "dificil";
+  difficulty_personal?: "facil" | "media" | "dificil" | null;
   elapsed_seconds?: number | null;
   confidence?: "baixa" | "media" | "alta" | null;
   error_type?: string | null;
@@ -289,6 +289,45 @@ export type FreeStudyCatalogDiscipline = {
 
 export type FreeStudyCatalogResponse = {
   disciplines: FreeStudyCatalogDiscipline[];
+};
+
+export type FreeStudyRoadmapNodeBrief = {
+  node_id: string;
+  discipline: string;
+  strategic_discipline: string;
+  subject_area: string;
+  content: string;
+  subunit: string | null;
+  relation_type?: string | null;
+};
+
+export type FreeStudySubjectContextGuidedStatus =
+  | "entry"
+  | "available"
+  | "blocked_required"
+  | "blocked_cross_required"
+  | "reviewable"
+  | "unmapped"
+  | string;
+
+export type FreeStudySubjectContextResponse = {
+  subject_id: number;
+  subject_name: string;
+  discipline: string;
+  strategic_discipline: string | null;
+  subarea: string | null;
+  block_id: number | null;
+  block_name: string | null;
+  roadmap_node_id: string | null;
+  roadmap_mapped: boolean;
+  free_study_allowed: boolean;
+  guided_status: FreeStudySubjectContextGuidedStatus;
+  warning_level: FreeStudyWarningLevel;
+  warning_message: string | null;
+  direct_prerequisites: FreeStudyRoadmapNodeBrief[];
+  missing_required_nodes: FreeStudyRoadmapNodeBrief[];
+  missing_cross_required_nodes: FreeStudyRoadmapNodeBrief[];
+  missing_recommended_nodes: FreeStudyRoadmapNodeBrief[];
 };
 
 export type BlockProgressItem = {

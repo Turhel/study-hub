@@ -4,6 +4,7 @@ import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
 import { getGamificationSummary } from "./lib/api";
 import EssayPage from "./pages/EssayPage";
+import FreeStudyPage from "./pages/FreeStudyPage";
 import LessonsPage from "./pages/LessonsPage";
 import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
@@ -13,6 +14,7 @@ type ThemeMode = "light" | "dark";
 
 const primaryNavigationItems = [
   { label: "Hoje", path: "/", icon: <FocusEmojiIcon /> },
+  { label: "Modo Livre", path: "/free-study", icon: <CompassEmojiIcon /> },
   { label: "Aulas", path: "/lessons", icon: <BooksEmojiIcon /> },
   { label: "Stats", path: "/stats", icon: <StatsEmojiIcon /> },
 ];
@@ -92,6 +94,19 @@ function BooksEmojiIcon() {
       <rect x="11.4" y="6.2" width="8.7" height="20" rx="2.5" fill="#FFCF59" />
       <rect x="18.4" y="7.2" width="8.8" height="19" rx="2.5" fill="#3AA0FF" />
       <path d="M6.8 11.3h4.2v1.45H6.8zm0 3.1h4.2v1.45H6.8zm6.4-4h5.2v1.45h-5.2zm0 3.1h5.2v1.45h-5.2zm7.2-1.2h4.8v1.45h-4.8zm0 3.1h4.8v1.45h-4.8z" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function CompassEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="11.5" fill="#EAF7FF" />
+      <circle cx="16" cy="16" r="8.8" fill="#FFFFFF" />
+      <circle cx="16" cy="16" r="1.9" fill="#1E2430" />
+      <path d="M22.7 9.3l-3.3 8.1-8.1 3.3 3.3-8.1 8.1-3.3z" fill="#FF8A34" />
+      <path d="M17.7 14.3l-3.4 3.4 1.4-3.4 3.4-1.4-1.4 3.4z" fill="#39AAF0" />
+      <path d="M16 5.8v2.1M16 24.1v2.1M26.2 16h-2.1M7.9 16H5.8" stroke="#5C516A" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -395,6 +410,7 @@ export default function App() {
       <div className="app-content">
         <Routes>
           <Route path="/" element={<TodayPage />} />
+          <Route path="/free-study" element={<FreeStudyPage />} />
           <Route path="/lessons" element={<LessonsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/timer" element={<TimerPage />} />

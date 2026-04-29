@@ -8,6 +8,7 @@ import type {
   EssayStudySessionCloseResponse,
   EssayStudySessionListItem,
   EssayStudySessionResponse,
+  FreeStudySubjectContextResponse,
   FreeStudyCatalogResponse,
   GamificationSummaryResponse,
   LessonContent,
@@ -166,10 +167,38 @@ export async function getFreeStudyCatalog(): Promise<FreeStudyCatalogResponse> {
   const response = await fetch(`${API_BASE_URL}/api/free-study/catalog`);
 
   if (!response.ok) {
-    throw new Error("Nao foi possivel carregar o catalogo de aulas.");
+    throw new Error("Nao foi possivel carregar o catalogo do modo livre.");
   }
 
   return response.json() as Promise<FreeStudyCatalogResponse>;
+}
+
+export async function getFreeStudySubjectContext(subjectId: number): Promise<FreeStudySubjectContextResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/free-study/subjects/${subjectId}/context`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar o contexto deste conteudo.");
+  }
+
+  return response.json() as Promise<FreeStudySubjectContextResponse>;
+}
+
+export async function saveFreeStudyQuestionAttemptsBulk(
+  payload: QuestionAttemptBulkPayload,
+): Promise<QuestionAttemptBulkResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/free-study/question-attempts/bulk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel registrar as questoes no modo livre.");
+  }
+
+  return response.json() as Promise<QuestionAttemptBulkResponse>;
 }
 
 export async function getBlockProgressByDiscipline(discipline: string): Promise<BlockProgressDisciplineResponse> {
