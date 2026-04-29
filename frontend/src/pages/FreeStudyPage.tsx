@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
+import { useStudyTimer } from "../components/StudyTimer";
 import {
   getFreeStudyCatalog,
   getFreeStudySubjectContext,
@@ -171,6 +172,10 @@ export default function FreeStudyPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
   const [attemptForm, setAttemptForm] = useState<FreeStudyAttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [pendingTimerPrefill, setPendingTimerPrefill] = useState<{ subjectId: number; elapsedSeconds: number } | null>(
+    null,
+  );
+  const { pendingCompletion, consumePendingCompletion, startTimer } = useStudyTimer();
 
   const catalogQuery = useQuery({
     queryKey: ["free-study-catalog"],
@@ -212,6 +217,42 @@ export default function FreeStudyPage() {
     setAttemptForm(defaultAttemptForm);
   }, [selectedSubjectId]);
 
+  useEffect(() => {
+    if (!pendingTimerPrefill || selectedSubjectId !== pendingTimerPrefill.subjectId) {
+      return;
+    }
+
+    setAttemptForm({
+      ...defaultAttemptForm,
+      elapsed_seconds: pendingTimerPrefill.elapsedSeconds > 0 ? String(pendingTimerPrefill.elapsedSeconds) : "",
+    });
+    setPendingTimerPrefill(null);
+  }, [pendingTimerPrefill, selectedSubjectId]);
+
+  useEffect(() => {
+    if (!pendingCompletion || pendingCompletion.context.mode !== "free") {
+      return;
+    }
+
+    const matchedDiscipline = disciplines.find((item) =>
+      item.subareas.some((subarea) =>
+        subarea.subjects.some((subject) => subject.subject_id === pendingCompletion.context.subject_id),
+      ),
+    );
+
+    if (matchedDiscipline) {
+      setSelectedDiscipline(matchedDiscipline.discipline);
+    }
+
+    setSelectedSubjectId(pendingCompletion.context.subject_id);
+    setPendingTimerPrefill({
+      subjectId: pendingCompletion.context.subject_id,
+      elapsedSeconds: pendingCompletion.elapsed_seconds,
+    });
+    setFeedback("Timer finalizado. O tempo foi levado para o registro deste conteudo.");
+    consumePendingCompletion();
+  }, [consumePendingCompletion, disciplines, pendingCompletion]);
+
   const registerMutation = useMutation({
     mutationFn: ({
       subject,
@@ -249,6 +290,22 @@ export default function FreeStudyPage() {
     }
 
     registerMutation.mutate({ subject: selectedSubject, context, form: attemptForm });
+  }
+
+  function startSelectedSubjectTimer() {
+    if (!selectedSubject || !context) {
+      return;
+    }
+
+    startTimer({
+      mode: "free",
+      discipline: context.discipline,
+      block_id: selectedSubject.block_id,
+      block_name: selectedSubject.block_name,
+      subject_id: selectedSubject.subject_id,
+      subject_name: selectedSubject.subject_name,
+    });
+    setFeedback("Timer iniciado para este conteudo.");
   }
 
   return (
@@ -405,6 +462,11 @@ export default function FreeStudyPage() {
                   <p className="today-eyebrow">Contexto</p>
                   <h2>{selectedSubject?.subject_name ?? "Selecione um conteudo"}</h2>
                 </div>
+                {selectedSubject && context ? (
+                  <button type="button" className="app-secondary-action lessons-small-action" onClick={startSelectedSubjectTimer}>
+                    Iniciar timer
+                  </button>
+                ) : null}
               </div>
 
               {contextQuery.isLoading ? (

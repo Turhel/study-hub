@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
+import { StudyTimerDock, StudyTimerProvider } from "./components/StudyTimer";
 import { getGamificationSummary } from "./lib/api";
 import EssayPage from "./pages/EssayPage";
 import FreeStudyPage from "./pages/FreeStudyPage";
@@ -252,7 +253,8 @@ export default function App() {
   }, [theme]);
 
   return (
-    <div className="app-shell">
+    <StudyTimerProvider>
+      <div className="app-shell">
       <header className="app-topbar">
         <div className="app-topbar-row">
           <nav className="app-topbar-nav" aria-label="Principal">
@@ -407,17 +409,20 @@ export default function App() {
         </div>
       </header>
 
-      <div className="app-content">
-        <Routes>
-          <Route path="/" element={<TodayPage />} />
-          <Route path="/free-study" element={<FreeStudyPage />} />
-          <Route path="/lessons" element={<LessonsPage />} />
-          <Route path="/stats" element={<StatsPage />} />
-          <Route path="/timer" element={<TimerPage />} />
-          <Route path="/essay" element={<EssayPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <div className="app-content">
+          <Routes>
+            <Route path="/" element={<TodayPage />} />
+            <Route path="/free-study" element={<FreeStudyPage />} />
+            <Route path="/lessons" element={<LessonsPage />} />
+            <Route path="/stats" element={<StatsPage />} />
+            <Route path="/timer" element={<TimerPage />} />
+            <Route path="/essay" element={<EssayPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+
+        <StudyTimerDock />
       </div>
-    </div>
+    </StudyTimerProvider>
   );
 }

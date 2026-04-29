@@ -123,6 +123,33 @@ export type StudyPlanRecalculateResponse = {
   plan: StudyPlanTodayResponse;
 };
 
+export type StudyTimerMode = "guided" | "free";
+
+export type StudyTimerContext = {
+  mode: StudyTimerMode;
+  discipline: string;
+  block_id: number | null;
+  block_name?: string | null;
+  subject_id: number;
+  subject_name: string;
+};
+
+export type StudyTimerSession = {
+  context: StudyTimerContext;
+  elapsed_seconds: number;
+  is_running: boolean;
+  is_paused: boolean;
+  started_at: number | null;
+  last_resumed_at: number | null;
+  accumulated_seconds: number;
+};
+
+export type StudyTimerPendingCompletion = {
+  context: StudyTimerContext;
+  elapsed_seconds: number;
+  finished_at: number;
+};
+
 export type QuestionAttemptBulkPayload = {
   date?: string | null;
   discipline: string;

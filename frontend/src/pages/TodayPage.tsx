@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
+import { useStudyTimer } from "../components/StudyTimer";
 import {
   getRecentActivity,
   getStudyGuidePreferences,
@@ -457,11 +458,11 @@ function ActivityMetric({
 
 export default function TodayPage() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [preferencesForm, setPreferencesForm] = useState<PreferencesForm>(defaultPreferences);
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const { pendingCompletion, consumePendingCompletion, startTimer } = useStudyTimer();
 
   const planQuery = useQuery({
     queryKey: ["study-plan-today"],
@@ -688,12 +689,13 @@ export default function TodayPage() {
     }
   }
 
-  function openAttemptModal(item: StudyPlanItem) {
+  function openAttemptModal(item: StudyPlanItem, elapsedSeconds?: number | null) {
     setSelectedItem(item);
     setAttemptForm({
       ...defaultAttemptForm,
       quantity: Math.max(item.remaining_today || item.planned_questions || 1, 1),
       correct_count: 0,
+      elapsed_seconds: elapsedSeconds && elapsedSeconds > 0 ? String(elapsedSeconds) : "",
     });
   }
 
@@ -713,22 +715,34 @@ export default function TodayPage() {
   }
 
   function openTrainingTimer(item: StudyPlanItem) {
-    navigate("/timer", {
-      state: {
-        timerPreset: {
-          discipline: item.discipline,
-          block: item.block_name,
-          subject: item.subject_name,
-          blockId: item.block_id,
-          subjectId: item.subject_id,
-          questionCount: Math.max(item.remaining_today || item.planned_questions || 1, 1),
-          targetSecondsPerQuestion: 180,
-          mode: "prova",
-          questionSource: "external",
-        },
-      },
+    startTimer({
+      mode: "guided",
+      discipline: item.discipline,
+      block_id: item.block_id,
+      block_name: item.block_name,
+      subject_id: item.subject_id,
+      subject_name: item.subject_name,
     });
+    setFeedback("Timer iniciado para este foco.");
   }
+
+  useEffect(() => {
+    if (!pendingCompletion || pendingCompletion.context.mode !== "guided") {
+      return;
+    }
+
+    const matchedItem =
+      planItems.find((item) => item.subject_id === pendingCompletion.context.subject_id) ??
+      planItems.find((item) => item.block_id === pendingCompletion.context.block_id);
+
+    if (!matchedItem) {
+      return;
+    }
+
+    openAttemptModal(matchedItem, pendingCompletion.elapsed_seconds);
+    setFeedback("Timer finalizado. O tempo foi levado para o registro manual.");
+    consumePendingCompletion();
+  }, [consumePendingCompletion, pendingCompletion, planItems]);
 
   return (
     <main className="today-page">
@@ -831,7 +845,7 @@ export default function TodayPage() {
                       </span>
                     </button>
                     <button type="button" className="today-register-button" disabled>
-                      Treinar
+                      Iniciar timer
                     </button>
                   </div>
                 </div>
@@ -875,7 +889,7 @@ export default function TodayPage() {
                         </span>
                       </Link>
                       <button type="button" className="today-register-button" onClick={() => openTrainingTimer(item)}>
-                        Treinar
+                        Iniciar timer
                       </button>
                     </div>
                   </div>
