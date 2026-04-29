@@ -283,6 +283,24 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Nao foi possivel completar a acao.";
 }
 
+function plannedModeLabel(value: string | null | undefined): string {
+  if (!value) return "Nao informado";
+  if (value === "aprendizado") return "Aprendizado";
+  if (value === "revisao") return "Revisao";
+  if (value === "consolidacao") return "Consolidacao";
+  return value;
+}
+
+function roadmapStatusLabel(value: string | null | undefined): string {
+  if (!value) return "Nao informado";
+  if (value === "entry") return "Entrada";
+  if (value === "available") return "Disponivel";
+  if (value === "blocked_required") return "Bloqueado por prerequisito";
+  if (value === "blocked_cross_required") return "Bloqueado por dependencia cruzada";
+  if (value === "reviewable") return "Revisavel";
+  return value;
+}
+
 function isActivityEmpty(activity?: ActivityItem[]): boolean {
   return !activity || activity.length === 0;
 }
@@ -682,6 +700,18 @@ export default function TodayPage() {
 
     return `Hoje voce pediu ${preferencesForm.daily_minutes} min, intensidade ${preferencesForm.intensity}, ate ${preferencesForm.max_focus_count} focos e ate ${preferencesForm.max_questions} questoes, ${toggles.join(" e ")}.`;
   }, [preferencesForm]);
+  const guideResultSummary = useMemo(() => {
+    const focusCount = planSummary?.focus_count ?? 0;
+    const totalQuestions = planSummary?.total_questions ?? 0;
+    return {
+      focusMessage: `O guia selecionou ${focusCount} foco(s), dentro do limite de ate ${preferencesForm.max_focus_count}.`,
+      questionMessage: `Total sugerido: ${totalQuestions} questoes, limite configurado: ${preferencesForm.max_questions}.`,
+      fewerFocusesThanLimit:
+        focusCount > 0 && focusCount < preferencesForm.max_focus_count
+          ? "O plano pode sugerir menos focos quando ha poucos candidatos uteis ou para evitar carga desnecessaria."
+          : null,
+    };
+  }, [planSummary, preferencesForm.max_focus_count, preferencesForm.max_questions]);
   const activitySummary = useMemo(() => activityHeadline(activityToday), [activityToday]);
 
   function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
@@ -906,8 +936,11 @@ export default function TodayPage() {
 
                   <div className="today-focus-metrics">
                     <span>{item.planned_questions} planejadas</span>
+                    <span>{item.completed_today} feitas hoje</span>
                     <span>{item.remaining_today} restantes</span>
-                    <span>{item.planned_mode}</span>
+                    <span>progresso {Math.round(item.progress_ratio * 100)}%</span>
+                    <span>{plannedModeLabel(item.planned_mode)}</span>
+                    <span>{roadmapStatusLabel(item.roadmap_status)}</span>
                     <span>score {formatOptional(item.priority_score)}</span>
                   </div>
 
@@ -917,13 +950,17 @@ export default function TodayPage() {
                     </button>
                   </div>
 
-                  <dl className="today-roadmap-details">
-                    <div>
-                      <dt>Status roadmap</dt>
-                      <dd>{formatOptional(item.roadmap_status)}</dd>
-                    </div>
-                    <div>
-                      <dt>Node</dt>
+                    <dl className="today-roadmap-details">
+                      <div>
+                        <dt>Modo planejado</dt>
+                        <dd>{plannedModeLabel(item.planned_mode)}</dd>
+                      </div>
+                      <div>
+                        <dt>Status roadmap</dt>
+                        <dd>{roadmapStatusLabel(item.roadmap_status)}</dd>
+                      </div>
+                      <div>
+                        <dt>Node</dt>
                       <dd>{formatOptional(item.roadmap_node_id)}</dd>
                     </div>
                     <div>
@@ -937,13 +974,17 @@ export default function TodayPage() {
                     <div>
                       <dt>Confianca</dt>
                       <dd>{formatOptional(item.roadmap_mapping_confidence)}</dd>
-                    </div>
-                    <div className="today-roadmap-wide">
-                      <dt>Motivo</dt>
-                      <dd>{formatOptional(item.roadmap_reason || item.primary_reason)}</dd>
-                    </div>
-                    <div className="today-roadmap-wide">
-                      <dt>Mapeamento</dt>
+                      </div>
+                      <div className="today-roadmap-wide">
+                        <dt>Leitura do foco</dt>
+                        <dd>{formatOptional(item.primary_reason)}</dd>
+                      </div>
+                      <div className="today-roadmap-wide">
+                        <dt>Motivo roadmap</dt>
+                        <dd>{formatOptional(item.roadmap_reason)}</dd>
+                      </div>
+                      <div className="today-roadmap-wide">
+                        <dt>Mapeamento</dt>
                       <dd>{formatOptional(item.roadmap_mapping_reason)}</dd>
                     </div>
                   </dl>
@@ -972,13 +1013,26 @@ export default function TodayPage() {
                 </span>
               </div>
 
-              <div className="today-guide-summary">
-                <span className="today-guide-summary-label">Resumo atual</span>
-                <p>{guideSummary}</p>
-                {guideHasUnsavedChanges ? <small className="today-guide-dirty">Voce alterou o guia. Falta aplicar no plano.</small> : null}
-              </div>
+                <div className="today-guide-summary">
+                  <span className="today-guide-summary-label">Resumo atual</span>
+                  <p>{guideSummary}</p>
+                  {guideHasUnsavedChanges ? <small className="today-guide-dirty">Voce alterou o guia. Falta aplicar no plano.</small> : null}
+                </div>
 
-              <div className="today-preferences-grid">
+                <div className="today-guide-summary today-guide-summary-secondary">
+                  <span className="today-guide-summary-label">Como este guia funciona</span>
+                  <p>Minutos e intensidade influenciam a carga do dia, mas nao obrigam preencher todos os focos.</p>
+                  <p>Focos max. significa ate esse numero de focos. Questoes max. funciona como teto de volume.</p>
+                </div>
+
+                <div className="today-guide-summary today-guide-summary-result">
+                  <span className="today-guide-summary-label">Leitura do plano atual</span>
+                  <p>{guideResultSummary.focusMessage}</p>
+                  <p>{guideResultSummary.questionMessage}</p>
+                  {guideResultSummary.fewerFocusesThanLimit ? <p>{guideResultSummary.fewerFocusesThanLimit}</p> : null}
+                </div>
+
+                <div className="today-preferences-grid">
                 <PreferenceNumberInput
                   label="Minutos"
                   value={preferencesForm.daily_minutes}

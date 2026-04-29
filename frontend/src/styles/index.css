@@ -987,6 +987,16 @@ textarea {
   background: rgba(57, 170, 240, 0.08);
 }
 
+.today-guide-summary-secondary {
+  border-color: rgba(112, 133, 170, 0.28);
+  background: rgba(11, 21, 42, 0.42);
+}
+
+.today-guide-summary-result {
+  border-color: rgba(111, 193, 124, 0.28);
+  background: rgba(57, 170, 120, 0.08);
+}
+
 .today-guide-summary-label {
   color: var(--today-kicker-text);
   font-size: 0.72rem;
