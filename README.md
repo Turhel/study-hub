@@ -58,6 +58,31 @@ curl http://127.0.0.1:8000/api/study-plan/today
 
 O bootstrap offline usa apenas CSVs versionados em `docs/data_seed` e `docs/roadmap`, aborta se o banco ativo nao for SQLite e nao apaga dados existentes.
 
+### Modo faculdade/offline com snapshot local
+
+1. Em casa, com Supabase acessivel, gere um snapshot local:
+
+```powershell
+cd backend
+python -m app.db_tools.sync_remote_to_sqlite --dry-run
+python -m app.db_tools.sync_remote_to_sqlite --apply
+```
+
+2. Na faculdade, com a rede bloqueando o Supabase, comente `DATABASE_URL` em `backend/.env`.
+3. Suba o backend usando o SQLite local:
+
+```powershell
+python -m uvicorn app.main:app --reload
+```
+
+4. Valide que o backend entrou em modo local:
+
+```powershell
+curl http://127.0.0.1:8000/api/system/capabilities
+```
+
+O snapshot remoto faz apenas leitura no Postgres/Supabase, cria backup do SQLite destino antes da troca e escreve o novo banco local por substituicao segura.
+
 ## Banco De Dados: SQLite Ou Postgres
 
 O backend agora suporta os dois modos:
