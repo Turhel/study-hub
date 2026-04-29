@@ -66,6 +66,23 @@ export type SystemCapabilitiesResponse = {
   };
 };
 
+export type ResetStudyDataPayload = {
+  confirmation_text: string;
+  dry_run: boolean;
+  reset_preferences: boolean;
+  include_essays: boolean;
+};
+
+export type ResetStudyDataResponse = {
+  dry_run: boolean;
+  deleted_counts: Record<string, number>;
+  reset_counts: Record<string, number>;
+  preserved_tables: string[];
+  preferences_reset: boolean;
+  essays_deleted: boolean;
+  warnings: string[];
+};
+
 export type StudyPlanSummary = {
   total_questions: number;
   focus_count: number;

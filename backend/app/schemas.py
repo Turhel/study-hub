@@ -357,6 +357,23 @@ class SystemCapabilitiesResponse(BaseModel):
     features: SystemCapabilitiesFeatures
 
 
+class ResetStudyDataRequest(BaseModel):
+    confirmation_text: str
+    dry_run: bool = True
+    reset_preferences: bool = False
+    include_essays: bool = False
+
+
+class ResetStudyDataResponse(BaseModel):
+    dry_run: bool
+    deleted_counts: dict[str, int] = Field(default_factory=dict)
+    reset_counts: dict[str, int] = Field(default_factory=dict)
+    preserved_tables: list[str] = Field(default_factory=list)
+    preferences_reset: bool
+    essays_deleted: bool
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ActivityItem(BaseModel):
     type: Literal["question_attempt_bulk", "review_upsert", "daily_plan_generated", "block_progress_decision"]
     created_at: str

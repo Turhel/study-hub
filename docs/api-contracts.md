@@ -105,6 +105,86 @@ Expor perfil da maquina, tipo de banco em uso e flags relevantes para o frontend
 - o frontend deve tratar `llm.enabled=false` e `features.*=false` como bloqueio de UX para fluxos de redacao assistida
 - o provider/model sao informativos; o frontend nao deve assumir conectividade local com LM Studio
 
+## POST `/api/system/reset-study-data`
+
+**Objetivo**
+
+Executar um reset seguro dos dados de estudo, preservando a estrutura pedagogica do app.
+
+**Exemplo de request**
+
+```json
+{
+  "confirmation_text": "RESETAR ESTUDOS",
+  "dry_run": true,
+  "reset_preferences": false,
+  "include_essays": false
+}
+```
+
+**Exemplo de resposta**
+
+```json
+{
+  "dry_run": true,
+  "deleted_counts": {
+    "question_attempts": 12,
+    "reviews": 3,
+    "study_events": 9,
+    "daily_study_plan_items": 4,
+    "daily_study_plan": 2,
+    "timer_session_items": 8,
+    "timer_sessions": 2,
+    "mock_exams": 1,
+    "essay_study_messages": 0,
+    "essay_study_sessions": 0,
+    "essay_corrections": 0,
+    "essay_submissions": 0
+  },
+  "reset_counts": {
+    "block_mastery": 2,
+    "block_progress": 258,
+    "subject_progress": 572,
+    "study_capacity_rows": 1
+  },
+  "preserved_tables": [
+    "subjects",
+    "blocks",
+    "block_subjects",
+    "roadmap_nodes",
+    "roadmap_edges",
+    "roadmap_block_map",
+    "roadmap_rules",
+    "lesson_contents"
+  ],
+  "preferences_reset": false,
+  "essays_deleted": false,
+  "warnings": []
+}
+```
+
+**Regras importantes**
+
+- `confirmation_text` precisa ser exatamente `RESETAR ESTUDOS`
+- `dry_run=true` nao apaga nada; apenas retorna o relatorio
+- `dry_run=false` limpa dados de uso e ressincroniza a progressao minima
+- estrutura pedagogica e preservada
+- `reset_preferences=true` volta `study_capacity` para defaults seguros
+- `include_essays=true` tambem apaga `essay_submissions`, `essay_corrections`, `essay_study_sessions` e `essay_study_messages`
+
+**Erros comuns**
+
+- `400`:
+
+```json
+{
+  "detail": {
+    "code": "invalid_confirmation_text",
+    "message": "Digite exatamente RESETAR ESTUDOS para continuar."
+  }
+}
+```
+
 ## GET `/api/study-plan/today`
 
 **Objetivo**

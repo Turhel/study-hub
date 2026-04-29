@@ -7,6 +7,7 @@ import { getGamificationSummary } from "./lib/api";
 import EssayPage from "./pages/EssayPage";
 import FreeStudyPage from "./pages/FreeStudyPage";
 import LessonsPage from "./pages/LessonsPage";
+import SettingsPage from "./pages/SettingsPage";
 import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
 import TodayPage from "./pages/TodayPage";
@@ -22,6 +23,7 @@ const primaryNavigationItems = [
 
 const secondaryNavigationItems = [
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
+  { label: "Configuracoes", path: "/settings", icon: <GearEmojiIcon /> },
   { label: "Redacao", path: "/essay", icon: <MemoEmojiIcon /> },
 ];
 
@@ -416,6 +418,7 @@ export default function App() {
             <Route path="/lessons" element={<LessonsPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/timer" element={<TimerPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/essay" element={<EssayPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -424,5 +427,18 @@ export default function App() {
         <StudyTimerDock />
       </div>
     </StudyTimerProvider>
+  );
+}
+
+function GearEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="4.6" fill="#F5F7FB" />
+      <path
+        d="M28 17.9v-3.8l-3.12-.88a8.95 8.95 0 00-.77-1.86l1.63-2.83-2.69-2.69-2.83 1.63a8.95 8.95 0 00-1.86-.77L17.9 4h-3.8l-.88 3.12c-.64.15-1.27.41-1.86.77L8.53 6.26 5.84 8.95l1.63 2.83c-.36.59-.62 1.22-.77 1.86L4 14.1v3.8l3.12.88c.15.64.41 1.27.77 1.86l-1.63 2.83 2.69 2.69 2.83-1.63c.59.36 1.22.62 1.86.77l.46 3.12h3.8l.88-3.12c.64-.15 1.27-.41 1.86-.77l2.83 1.63 2.69-2.69-1.63-2.83c.36-.59.62-1.22.77-1.86L28 17.9z"
+        fill="#7CC8FF"
+      />
+      <circle cx="16" cy="16" r="2.25" fill="#1E2430" />
+    </svg>
   );
 }

@@ -15,6 +15,8 @@ import type {
   LessonContentPayload,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
+  ResetStudyDataPayload,
+  ResetStudyDataResponse,
   StatsDisciplineResponse,
   StatsOverviewResponse,
   StudyGuidePreferencesPayload,
@@ -83,6 +85,22 @@ export async function getSystemCapabilities(): Promise<SystemCapabilitiesRespons
   }
 
   return response.json() as Promise<SystemCapabilitiesResponse>;
+}
+
+export async function resetStudyData(payload: ResetStudyDataPayload): Promise<ResetStudyDataResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/system/reset-study-data`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel resetar os estudos.");
+  }
+
+  return response.json() as Promise<ResetStudyDataResponse>;
 }
 
 export async function getStudyGuidePreferences(): Promise<StudyGuidePreferencesResponse> {
