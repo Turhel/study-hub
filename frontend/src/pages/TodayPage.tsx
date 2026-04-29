@@ -508,12 +508,13 @@ export default function TodayPage() {
 
   const refreshTodayData = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["study-plan-today"] }),
-      queryClient.invalidateQueries({ queryKey: ["activity-today"] }),
-      queryClient.invalidateQueries({ queryKey: ["activity-recent"] }),
-      queryClient.invalidateQueries({ queryKey: ["gamification-summary"] }),
-      queryClient.invalidateQueries({ queryKey: ["stats-overview"] }),
-      queryClient.invalidateQueries({ queryKey: ["stats-discipline"] }),
+      queryClient.refetchQueries({ queryKey: ["study-plan-today"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["study-guide-preferences"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["activity-recent"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["gamification-summary"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["stats-overview"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["stats-discipline"], type: "active" }),
     ]);
   };
 
@@ -531,7 +532,16 @@ export default function TodayPage() {
   const recalculateMutation = useMutation({
     mutationFn: recalculateStudyPlanToday,
     onSuccess: async (data) => {
-      queryClient.setQueryData(["study-plan-today"], data.plan);
+      const refreshedPlan = await queryClient.fetchQuery({
+        queryKey: ["study-plan-today"],
+        queryFn: getStudyPlanToday,
+      });
+      queryClient.setQueryData(["study-plan-today"], refreshedPlan ?? data.plan);
+      const refreshedPreferences = await queryClient.fetchQuery({
+        queryKey: ["study-guide-preferences"],
+        queryFn: getStudyGuidePreferences,
+      });
+      queryClient.setQueryData(["study-guide-preferences"], refreshedPreferences);
       setFeedback(data.replaced_plan_id ? "Plano recalculado e substituido." : "Plano recalculado.");
       await refreshTodayData();
     },
