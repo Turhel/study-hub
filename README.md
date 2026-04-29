@@ -27,9 +27,36 @@ python -m uvicorn app.main:app --reload
 
 Por padrao, sem `DATABASE_URL`, o backend usa SQLite local em `backend/data/study_hub.db`.
 
-Modo faculdade/offline com SQLite local estruturado:
-`python -m app.db_tools.bootstrap_sqlite_from_repo --dry-run`
-`python -m app.db_tools.bootstrap_sqlite_from_repo --apply`
+### Modo faculdade/offline com SQLite local
+
+1. Comente `DATABASE_URL` em `backend/.env`.
+2. Simule o bootstrap estrutural:
+
+```powershell
+cd backend
+python -m app.db_tools.bootstrap_sqlite_from_repo --dry-run
+```
+
+3. Aplique o bootstrap no SQLite local:
+
+```powershell
+python -m app.db_tools.bootstrap_sqlite_from_repo --apply
+```
+
+4. Suba o backend:
+
+```powershell
+python -m uvicorn app.main:app --reload
+```
+
+5. Valide os endpoints principais:
+
+```powershell
+curl http://127.0.0.1:8000/api/system/capabilities
+curl http://127.0.0.1:8000/api/study-plan/today
+```
+
+O bootstrap offline usa apenas CSVs versionados em `docs/data_seed` e `docs/roadmap`, aborta se o banco ativo nao for SQLite e nao apaga dados existentes.
 
 ## Banco De Dados: SQLite Ou Postgres
 
