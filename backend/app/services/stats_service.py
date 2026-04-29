@@ -3,21 +3,38 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, timedelta
+import unicodedata
 
 from sqlmodel import Session, select
 
 from app.core.rules import STATUS_EM_RISCO, normalize_discipline_name
-from app.models import Block, BlockMastery, BlockProgress, BlockSubject, MockExam, QuestionAttempt, Review, Subject
+from app.models import (
+    Block,
+    BlockMastery,
+    BlockProgress,
+    BlockSubject,
+    MockExam,
+    QuestionAttempt,
+    Review,
+    Subject,
+    SubjectProgress,
+)
 from app.schemas import (
+    StatsDisciplineSubjectItem,
+    StatsDisciplineSubjectsResponse,
     StatsDisciplineResponse,
     StatsDisciplineSignal,
     StatsDisciplineDetailResponse,
     StatsDisciplineItem,
+    StatsHeatmapDay,
+    StatsHeatmapResponse,
     StatsMockExamAreaAverage,
     StatsOverviewResponse,
     StatsRecentAttemptsSummary,
     StatsRiskBlock,
     StatsSubjectPerformance,
+    StatsTimeSeriesPoint,
+    StatsTimeSeriesResponse,
     StatsTrend,
     StatsTrendPoint,
 )
@@ -77,6 +94,72 @@ def _attempt_stats(attempts: list[QuestionAttempt]) -> _AttemptStats:
     )
 
 
+def _attempt_count(attempts: list[QuestionAttempt]) -> int:
+    return len(attempts)
+
+
+def _correct_count(attempts: list[QuestionAttempt]) -> int:
+    return sum(1 for attempt in attempts if attempt.acertou)
+
+
+def _date_window(days: int, today: date) -> tuple[date, date]:
+    return today - timedelta(days=days - 1), today
+
+
+def _filter_attempts_by_discipline(
+    attempts: list[QuestionAttempt],
+    discipline: str | None,
+) -> list[QuestionAttempt]:
+    if discipline is None:
+        return attempts
+    return [attempt for attempt in attempts if _matches_discipline(attempt.disciplina, discipline)]
+
+
+def _subject_progress_by_subject(session: Session) -> dict[int, SubjectProgress]:
+    return {
+        progress.subject_id: progress
+        for progress in session.exec(select(SubjectProgress)).all()
+    }
+
+
+def _current_streak(studied_days: list[bool]) -> int:
+    streak = 0
+    for studied in reversed(studied_days):
+        if not studied:
+            break
+        streak += 1
+    return streak
+
+
+def _longest_streak(studied_days: list[bool]) -> int:
+    longest = 0
+    current = 0
+    for studied in studied_days:
+        if studied:
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return longest
+
+
+def _heatmap_intensity_level(questions_count: int, max_questions_in_day: int) -> int:
+    if questions_count <= 0 or max_questions_in_day <= 0:
+        return 0
+    ratio = questions_count / max_questions_in_day
+    if ratio <= 0.25:
+        return 1
+    if ratio <= 0.5:
+        return 2
+    if ratio <= 0.75:
+        return 3
+    return 4
+
+
+def _week_bucket_start(value: date) -> date:
+    return value - timedelta(days=value.weekday())
+
+
 def _subject_label(subject: Subject | None, subject_id: int | None) -> str:
     if subject is None:
         return f"Assunto {subject_id}" if subject_id is not None else "Assunto nao identificado"
@@ -92,14 +175,62 @@ def _discipline_label(value: str | None) -> tuple[str, str]:
     return discipline, strategic
 
 
+def _canonical_text(value: str | None) -> str:
+    if not value:
+        return ""
+    text = value.strip()
+    if "Ã" in text or "�" in text:
+        try:
+            text = text.encode("latin1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    return " ".join(text.casefold().split())
+
+
+def _discipline_match_key(value: str | None) -> str:
+    normalized = normalize_discipline_name(value)
+    if normalized in {
+        "matematica",
+        "natureza",
+        "biologia",
+        "quimica",
+        "fisica",
+        "linguagens",
+        "humanas",
+        "redacao",
+    }:
+        return normalized
+
+    text = _canonical_text(value)
+    if "matem" in text and "tica" in text:
+        return "matematica"
+    if "nature" in text or "ciencias da natureza" in text:
+        return "natureza"
+    if "biolog" in text:
+        return "biologia"
+    if "quim" in text:
+        return "quimica"
+    if "fis" in text:
+        return "fisica"
+    if any(token in text for token in ("linguag", "portug", "gramat", "literat", "interpret")):
+        return "linguagens"
+    if any(token in text for token in ("human", "hist", "geograf", "sociolog", "filosof")):
+        return "humanas"
+    if "reda" in text:
+        return "redacao"
+    return text
+
+
 def _discipline_key(value: str | None) -> str:
     _, strategic = _discipline_label(value)
-    return normalize_discipline_name(strategic)
+    return _discipline_match_key(strategic)
 
 
 def _matches_discipline(value: str | None, requested: str) -> bool:
-    requested_key = normalize_discipline_name(requested)
-    raw_key = normalize_discipline_name(value)
+    requested_key = _discipline_match_key(requested)
+    raw_key = _discipline_match_key(value)
     strategic_key = _discipline_key(value)
     return requested_key in {raw_key, strategic_key}
 
@@ -469,6 +600,180 @@ def get_stats_discipline(session: Session, discipline: str) -> StatsDisciplineRe
         blocks_in_progress=blocks_in_progress,
         blocks_reviewable=blocks_reviewable,
     )
+
+
+def get_stats_heatmap(
+    session: Session,
+    *,
+    days: int = 365,
+    discipline: str | None = None,
+) -> StatsHeatmapResponse:
+    today = _today()
+    start_date, end_date = _date_window(days, today)
+    filtered_attempts = [
+        attempt
+        for attempt in _filter_attempts_by_discipline(_attempts(session), discipline)
+        if start_date <= attempt.data <= end_date
+    ]
+    attempts_by_day: dict[date, list[QuestionAttempt]] = defaultdict(list)
+    for attempt in filtered_attempts:
+        attempts_by_day[attempt.data].append(attempt)
+
+    max_questions_in_day = 0
+    day_items: list[StatsHeatmapDay] = []
+    studied_flags: list[bool] = []
+    total_questions = 0
+
+    for offset in range(days):
+        current_day = start_date + timedelta(days=offset)
+        day_attempts = attempts_by_day.get(current_day, [])
+        questions_count = _attempt_count(day_attempts)
+        correct_count = _correct_count(day_attempts)
+        studied = questions_count > 0
+        max_questions_in_day = max(max_questions_in_day, questions_count)
+        total_questions += questions_count
+        studied_flags.append(studied)
+        day_items.append(
+            StatsHeatmapDay(
+                date=current_day.isoformat(),
+                weekday=current_day.weekday(),
+                questions_count=questions_count,
+                correct_count=correct_count,
+                accuracy=_accuracy(correct_count, questions_count),
+                studied=studied,
+                intensity_level=0,
+            )
+        )
+
+    for item in day_items:
+        item.intensity_level = _heatmap_intensity_level(item.questions_count, max_questions_in_day)
+
+    return StatsHeatmapResponse(
+        discipline=discipline,
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+        max_questions_in_day=max_questions_in_day,
+        total_questions=total_questions,
+        active_days=sum(1 for studied in studied_flags if studied),
+        current_streak_days=_current_streak(studied_flags),
+        longest_streak_days=_longest_streak(studied_flags),
+        days=day_items,
+    )
+
+
+def get_stats_timeseries(
+    session: Session,
+    *,
+    group_by: str = "week",
+    days: int = 180,
+    discipline: str | None = None,
+) -> StatsTimeSeriesResponse:
+    today = _today()
+    start_date, end_date = _date_window(days, today)
+    filtered_attempts = [
+        attempt
+        for attempt in _filter_attempts_by_discipline(_attempts(session), discipline)
+        if start_date <= attempt.data <= end_date
+    ]
+
+    if group_by == "day":
+        attempts_by_day: dict[date, list[QuestionAttempt]] = defaultdict(list)
+        for attempt in filtered_attempts:
+            attempts_by_day[attempt.data].append(attempt)
+
+        points = []
+        for offset in range(days):
+            current_day = start_date + timedelta(days=offset)
+            day_attempts = attempts_by_day.get(current_day, [])
+            stats = _attempt_stats(day_attempts)
+            points.append(
+                StatsTimeSeriesPoint(
+                    period=current_day.isoformat(),
+                    start_date=current_day.isoformat(),
+                    end_date=current_day.isoformat(),
+                    questions_count=stats.total,
+                    correct_count=stats.correct,
+                    accuracy=_accuracy(stats.correct, stats.total),
+                    avg_time_correct_questions_seconds=stats.average_time_correct_questions_seconds,
+                    active_days=1 if stats.total > 0 else 0,
+                )
+            )
+        return StatsTimeSeriesResponse(discipline=discipline, group_by="day", points=points)
+
+    attempts_by_week: dict[date, list[QuestionAttempt]] = defaultdict(list)
+    for attempt in filtered_attempts:
+        attempts_by_week[_week_bucket_start(attempt.data)].append(attempt)
+
+    first_week_start = _week_bucket_start(start_date)
+    last_week_start = _week_bucket_start(end_date)
+    points: list[StatsTimeSeriesPoint] = []
+    current_week = first_week_start
+    while current_week <= last_week_start:
+        bucket_attempts = attempts_by_week.get(current_week, [])
+        stats = _attempt_stats(bucket_attempts)
+        period_end = current_week + timedelta(days=6)
+        bucket_start = max(current_week, start_date)
+        bucket_end = min(period_end, end_date)
+        iso_year, iso_week, _ = current_week.isocalendar()
+        points.append(
+            StatsTimeSeriesPoint(
+                period=f"{iso_year}-W{iso_week:02d}",
+                start_date=bucket_start.isoformat(),
+                end_date=bucket_end.isoformat(),
+                questions_count=stats.total,
+                correct_count=stats.correct,
+                accuracy=_accuracy(stats.correct, stats.total),
+                avg_time_correct_questions_seconds=stats.average_time_correct_questions_seconds,
+                active_days=len({attempt.data for attempt in bucket_attempts}),
+            )
+        )
+        current_week += timedelta(days=7)
+
+    return StatsTimeSeriesResponse(discipline=discipline, group_by="week", points=points)
+
+
+def get_stats_discipline_subjects(session: Session, discipline: str) -> StatsDisciplineSubjectsResponse:
+    attempts = [attempt for attempt in _attempts(session) if _matches_discipline(attempt.disciplina, discipline)]
+    subjects = _subjects_by_id(session)
+    primary_blocks = _primary_block_by_subject(session)
+    mastery_by_block = _block_mastery_by_id(session)
+    progress_by_subject = _subject_progress_by_subject(session)
+    grouped: dict[int, list[QuestionAttempt]] = defaultdict(list)
+
+    for attempt in attempts:
+        if attempt.subject_id is None:
+            continue
+        grouped[attempt.subject_id].append(attempt)
+
+    items: list[StatsDisciplineSubjectItem] = []
+    for subject_id, subject_attempts in grouped.items():
+        subject = subjects.get(subject_id)
+        latest_attempt = max(subject_attempts, key=lambda item: (item.data, item.id or 0))
+        block_id = latest_attempt.block_id or primary_blocks.get(subject_id)
+        mastery = mastery_by_block.get(block_id) if block_id is not None else None
+        progress = progress_by_subject.get(subject_id)
+        stats = _attempt_stats(subject_attempts)
+        items.append(
+            StatsDisciplineSubjectItem(
+                subject_id=subject_id,
+                subject_name=_subject_label(subject, subject_id),
+                block_id=block_id,
+                questions_count=stats.total,
+                correct_count=stats.correct,
+                accuracy=_accuracy(stats.correct, stats.total),
+                avg_time_correct_questions_seconds=stats.average_time_correct_questions_seconds,
+                last_studied_at=f"{latest_attempt.data.isoformat()}T00:00:00",
+                mastery_score=mastery.score_domino if mastery is not None else None,
+                mastery_status=(
+                    progress.status
+                    if progress is not None
+                    else mastery.status if mastery is not None else None
+                ),
+            )
+        )
+
+    items.sort(key=lambda item: (-item.questions_count, item.accuracy, item.subject_name))
+    return StatsDisciplineSubjectsResponse(discipline=discipline, subjects=items)
 
 
 def get_stats_discipline_detail(session: Session, discipline: str) -> StatsDisciplineDetailResponse:

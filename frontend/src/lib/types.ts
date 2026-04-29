@@ -216,6 +216,20 @@ export type StatsOverviewResponse = {
   recent_activity_count: number;
 };
 
+export type StatsDisciplineItem = {
+  discipline: string;
+  strategic_discipline: string;
+  total_questions: number;
+  correct_questions: number;
+  accuracy: number;
+  questions_this_week: number;
+  questions_this_month: number;
+  average_time_correct_questions_seconds: number | null;
+  studied_subjects_count: number;
+  weak_subjects_count: number;
+  risk_blocks_count: number;
+};
+
 export type StatsSubjectPerformance = {
   subject_id: number;
   subject_name: string;
@@ -241,6 +255,65 @@ export type StatsDisciplineResponse = {
   review_due_count: number;
   blocks_in_progress: number;
   blocks_reviewable: number;
+};
+
+export type StatsHeatmapDay = {
+  date: string;
+  weekday: number;
+  questions_count: number;
+  correct_count: number;
+  accuracy: number;
+  studied: boolean;
+  intensity_level: number;
+};
+
+export type StatsHeatmapResponse = {
+  discipline: string | null;
+  start_date: string;
+  end_date: string;
+  max_questions_in_day: number;
+  total_questions: number;
+  active_days: number;
+  current_streak_days: number;
+  longest_streak_days: number;
+  days: StatsHeatmapDay[];
+};
+
+export type StatsTimeSeriesPoint = {
+  period: string;
+  start_date: string;
+  end_date: string;
+  questions_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_correct_questions_seconds: number | null;
+  active_days: number;
+};
+
+export type StatsTimeSeriesGroupBy = "day" | "week";
+
+export type StatsTimeSeriesResponse = {
+  discipline: string | null;
+  group_by: StatsTimeSeriesGroupBy;
+  points: StatsTimeSeriesPoint[];
+};
+
+export type StatsDisciplineSubjectItem = {
+  subject_id: number;
+  subject_name: string;
+  block_id: number | null;
+  questions_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_correct_questions_seconds: number | null;
+  last_studied_at: string | null;
+  mastery_score: number | null;
+  mastery_status: string | null;
+};
+
+export type StatsDisciplineSubjectsResponse = {
+  discipline: string;
+  subjects: StatsDisciplineSubjectItem[];
 };
 
 export type GamificationStreakResponse = {

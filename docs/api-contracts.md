@@ -477,6 +477,126 @@ Retornar agregados da disciplina ou area estrategica, aceitando variacoes com e 
 - `review_due_count` considera revisoes vencidas da disciplina
 - `blocks_in_progress` e `blocks_reviewable` usam `block_progress` quando houver; caso contrario, caem para `blocks.status`
 
+## GET `/api/stats/heatmap?days=365`
+
+## GET `/api/stats/heatmap?discipline=Matematica&days=365`
+
+**Objetivo**
+
+Retornar uma serie diaria pronta para heatmap visual, com todos os dias do intervalo, inclusive os dias vazios.
+
+**Exemplo de resposta**
+
+```json
+{
+  "discipline": "Matematica",
+  "start_date": "2025-04-30",
+  "end_date": "2026-04-29",
+  "max_questions_in_day": 12,
+  "total_questions": 84,
+  "active_days": 18,
+  "current_streak_days": 2,
+  "longest_streak_days": 6,
+  "days": [
+    {
+      "date": "2026-04-27",
+      "weekday": 0,
+      "questions_count": 2,
+      "correct_count": 2,
+      "accuracy": 1.0,
+      "studied": true,
+      "intensity_level": 2
+    },
+    {
+      "date": "2026-04-28",
+      "weekday": 1,
+      "questions_count": 0,
+      "correct_count": 0,
+      "accuracy": 0.0,
+      "studied": false,
+      "intensity_level": 0
+    }
+  ]
+}
+```
+
+**Observacoes de integracao**
+
+- sempre retorna todos os dias do intervalo
+- `studied=true` exige estudo real com `question_attempts`; `daily_plan_generated` sozinho nao conta
+- `intensity_level` vai de `0` a `4`
+- `weekday` usa o padrao do Python (`0=segunda`, `6=domingo`)
+
+## GET `/api/stats/timeseries?group_by=week&days=180`
+
+## GET `/api/stats/timeseries?discipline=Matematica&group_by=week&days=180`
+
+**Objetivo**
+
+Retornar uma serie temporal agregada por dia ou por semana para desenhar barras e linhas.
+
+**Exemplo de resposta**
+
+```json
+{
+  "discipline": "Matematica",
+  "group_by": "week",
+  "points": [
+    {
+      "period": "2026-W17",
+      "start_date": "2026-04-20",
+      "end_date": "2026-04-26",
+      "questions_count": 4,
+      "correct_count": 3,
+      "accuracy": 0.75,
+      "avg_time_correct_questions_seconds": 90.0,
+      "active_days": 1
+    }
+  ]
+}
+```
+
+**Observacoes de integracao**
+
+- `group_by` v1 aceita `day` e `week`
+- o backend retorna periodos vazios com `questions_count=0` para manter o grafico estavel
+- `avg_time_correct_questions_seconds` considera apenas questoes corretas com tempo preenchido
+
+## GET `/api/stats/discipline/{discipline}/subjects`
+
+**Objetivo**
+
+Retornar o breakdown por assunto da disciplina selecionada.
+
+**Exemplo de resposta**
+
+```json
+{
+  "discipline": "Matematica",
+  "subjects": [
+    {
+      "subject_id": 17,
+      "subject_name": "Matematica Basica - As quatro operacoes",
+      "block_id": 10,
+      "questions_count": 25,
+      "correct_count": 18,
+      "accuracy": 0.72,
+      "avg_time_correct_questions_seconds": 103.0,
+      "last_studied_at": "2026-04-29T00:00:00",
+      "mastery_score": 0.65,
+      "mastery_status": "em_andamento"
+    }
+  ]
+}
+```
+
+**Observacoes de integracao**
+
+- aceita disciplina com ou sem acento no path
+- `mastery_score` vem de `block_mastery` quando houver
+- `mastery_status` usa `subject_progress.status` como prioridade, com fallback para `block_mastery.status`
+- a ordenacao v1 prioriza maior volume de questoes
+
 ## GET `/api/gamification/summary`
 
 **Objetivo**

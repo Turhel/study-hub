@@ -1,15 +1,27 @@
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link } from "react-router-dom";
 
-import { getStatsByDiscipline, getStatsOverview } from "../lib/api";
-import type { StatsDisciplineSignal, StatsSubjectPerformance } from "../lib/types";
+import {
+  getGamificationSummary,
+  getStatsByDiscipline,
+  getStatsDisciplines,
+  getStatsDisciplineSubjects,
+  getStatsHeatmap,
+  getStatsOverview,
+  getStatsTimeSeries,
+} from "../lib/api";
+import type { StatsDisciplineSubjectItem, StatsHeatmapDay, StatsHeatmapResponse, StatsTimeSeriesPoint } from "../lib/types";
 
-const disciplines = ["Matematica", "Biologia", "Quimica", "Fisica", "Linguagens", "Humanas"];
+const GENERAL_FILTER = "Geral";
+
 type StatsCardTone = "blue" | "pink" | "gold" | "green";
 
 function formatPercent(value?: number | null): string {
   return `${Math.round((value ?? 0) * 100)}%`;
+}
+
+function formatDecimal(value?: number | null): string {
+  return value === null || value === undefined ? "0" : value.toFixed(1);
 }
 
 function formatSeconds(value?: number | null): string {
@@ -24,6 +36,17 @@ function formatSeconds(value?: number | null): string {
   const minutes = Math.floor(value / 60);
   const seconds = Math.round(value % 60);
   return seconds ? `${minutes}min ${seconds}s` : `${minutes}min`;
+}
+
+function formatDateLabel(value: string): string {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
+}
+
+function normalizeDisciplineLabel(value: string): string {
+  return value === GENERAL_FILTER ? value : value;
 }
 
 function StatsGlyph({ tone }: { tone: StatsCardTone }) {
@@ -60,7 +83,7 @@ function StatsGlyph({ tone }: { tone: StatsCardTone }) {
   );
 }
 
-function StatCard({
+function SummaryCard({
   label,
   value,
   hint,
@@ -78,7 +101,7 @@ function StatCard({
           <span>{label}</span>
           <strong>{value}</strong>
         </div>
-        <span className="stats-card-icon">
+        <span className="stats-card-icon" aria-hidden="true">
           <StatsGlyph tone={tone} />
         </span>
       </div>
@@ -91,290 +114,609 @@ function StatCard({
   );
 }
 
-function DisciplineSignalList({ title, items }: { title: string; items?: StatsDisciplineSignal[] }) {
+function buildHeatmapWeeks(days: StatsHeatmapDay[]) {
+  const weeks: StatsHeatmapDay[][] = [];
+
+  for (const day of days) {
+    const shouldStartNewWeek = weeks.length === 0 || day.weekday === 0;
+    if (shouldStartNewWeek) {
+      weeks.push([]);
+    }
+    weeks[weeks.length - 1].push(day);
+  }
+
+  return weeks;
+}
+
+function Heatmap({
+  data,
+  title,
+}: {
+  data?: StatsHeatmapResponse;
+  title: string;
+}) {
+  const weeks = useMemo(() => buildHeatmapWeeks(data?.days ?? []), [data?.days]);
+  const monthLabels = useMemo(() => {
+    let lastMonth = "";
+    return weeks.map((week) => {
+      const firstDay = week[0];
+      if (!firstDay) {
+        return "";
+      }
+      const month = new Date(`${firstDay.date}T00:00:00`).toLocaleDateString("pt-BR", { month: "short" });
+      if (month === lastMonth) {
+        return "";
+      }
+      lastMonth = month;
+      return month;
+    });
+  }, [weeks]);
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  if (!data || data.days.length === 0) {
+    return (
+      <section className="stats-chart-card stats-heatmap-panel">
+        <div className="stats-chart-head">
+          <div>
+            <span className="today-eyebrow">Heatmap</span>
+            <h3>{title}</h3>
+          </div>
+        </div>
+        <div className="app-empty-card">
+          <strong>Sem dias para mostrar.</strong>
+          <p>Assim que houver questoes registradas, o mapa de calor passa a desenhar seu ritmo.</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="stats-list-panel">
-      <div className="stats-list-head">
-        <h3>{title}</h3>
+    <section className="stats-chart-card stats-heatmap-panel">
+      <div className="stats-chart-head">
+        <div>
+          <span className="today-eyebrow">Heatmap</span>
+          <h3>{title}</h3>
+        </div>
+        <div className="stats-heatmap-summary">
+          <strong>{data.current_streak_days} dias</strong>
+          <span>ofensiva atual</span>
+        </div>
       </div>
-      {items && items.length > 0 ? (
-        <div className="stats-list">
-          {items.map((item) => (
-            <article key={`${item.discipline}-${item.strategic_discipline}`} className="stats-list-item">
-              <div>
-                <strong>{item.discipline}</strong>
-                <span>{item.strategic_discipline}</span>
-              </div>
-              <small>
-                {item.questions} questoes - {formatPercent(item.accuracy)}
-              </small>
-            </article>
+
+      <div className="stats-heatmap-meta">
+        <article>
+          <strong>{data.longest_streak_days}</strong>
+          <span>maior ofensiva</span>
+        </article>
+        <article>
+          <strong>{data.active_days}</strong>
+          <span>dias ativos</span>
+        </article>
+        <article>
+          <strong>{data.total_questions}</strong>
+          <span>questoes no periodo</span>
+        </article>
+      </div>
+
+      <div className="stats-heatmap-shell">
+        <div className="stats-heatmap-months">
+          {monthLabels.map((month, index) => (
+            <span key={`${month}-${index}`}>{month}</span>
           ))}
         </div>
-      ) : (
-        <p className="today-empty-copy">Sem dados suficientes ainda.</p>
-      )}
+        <div className="stats-heatmap-grid">
+          {weeks.map((week, index) => (
+            <div key={`week-${index}`} className="stats-heatmap-week">
+              {Array.from({ length: 7 }, (_, rowIndex) => {
+                const day = week.find((item) => item.weekday === rowIndex);
+                if (!day) {
+                  return <span key={`empty-${index}-${rowIndex}`} className="heatmap-cell heatmap-cell-empty" />;
+                }
+
+                return (
+                  <span
+                    key={day.date}
+                    className={`heatmap-cell heatmap-level-${day.intensity_level} ${day.date === todayKey ? "is-today" : ""}`}
+                    title={`${formatDateLabel(day.date)} • ${day.questions_count} questoes • ${day.correct_count} acertos • ${formatPercent(day.accuracy)}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="stats-heatmap-legend">
+        <span>sem estudo</span>
+        <i className="heatmap-legend-cell heatmap-level-0" />
+        <i className="heatmap-legend-cell heatmap-level-1" />
+        <i className="heatmap-legend-cell heatmap-level-2" />
+        <i className="heatmap-legend-cell heatmap-level-3" />
+        <i className="heatmap-legend-cell heatmap-level-4" />
+        <span>mais volume</span>
+      </div>
     </section>
   );
 }
 
-function SubjectList({ title, items }: { title: string; items?: StatsSubjectPerformance[] }) {
+function ChartFrame({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
   return (
-    <section className="stats-list-panel">
-      <div className="stats-list-head">
-        <h3>{title}</h3>
-      </div>
-      {items && items.length > 0 ? (
-        <div className="stats-list">
-          {items.slice(0, 5).map((item) => (
-            <article key={item.subject_id} className="stats-list-item">
-              <div>
-                <strong>{item.subject_name}</strong>
-                <span>{item.discipline}</span>
-              </div>
-              <small>
-                {item.attempts} tentativas - {formatPercent(item.accuracy)}
-              </small>
-            </article>
-          ))}
+    <section className="stats-chart-card">
+      <div className="stats-chart-head">
+        <div>
+          <h3>{title}</h3>
+          <p>{subtitle}</p>
         </div>
-      ) : (
-        <p className="today-empty-copy">Sem assuntos nesta lista.</p>
-      )}
+      </div>
+      {children}
     </section>
   );
 }
 
-function GuidanceIcon() {
+function QuestionsBarChart({ points }: { points: StatsTimeSeriesPoint[] }) {
+  const maxValue = Math.max(...points.map((point) => point.questions_count), 1);
+
   return (
-    <svg viewBox="0 0 48 48" aria-hidden="true">
-      <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
-      <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
-      <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
+    <div className="stats-bars-chart" role="img" aria-label="Questoes por periodo">
+      {points.map((point) => (
+        <div key={point.period} className="stats-bars-column" title={`${point.period} • ${point.questions_count} questoes`}>
+          <div className="stats-bars-track">
+            <div
+              className="stats-bars-fill"
+              style={{ height: `${(point.questions_count / maxValue) * 100}%` }}
+            />
+          </div>
+          <span>{point.period.slice(-5)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function buildLinePath(values: number[], width: number, height: number) {
+  if (values.length === 0) {
+    return "";
+  }
+
+  const maxValue = Math.max(...values, 1);
+  return values
+    .map((value, index) => {
+      const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
+      const y = height - (value / maxValue) * height;
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+}
+
+function LineChart({
+  points,
+  valueSelector,
+  strokeClassName,
+  labelBuilder,
+}: {
+  points: StatsTimeSeriesPoint[];
+  valueSelector: (point: StatsTimeSeriesPoint) => number;
+  strokeClassName: string;
+  labelBuilder: (point: StatsTimeSeriesPoint) => string;
+}) {
+  const width = 520;
+  const height = 170;
+  const values = points.map(valueSelector);
+  const path = buildLinePath(values, width, height);
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height + 26}`} className="stats-line-chart" role="img" aria-hidden="true">
+      <path d={path} className={`stats-line-path ${strokeClassName}`} />
+      {points.map((point, index) => {
+        const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
+        const maxValue = Math.max(...values, 1);
+        const y = height - (valueSelector(point) / maxValue) * height;
+        return (
+          <g key={point.period}>
+            <circle cx={x} cy={y} r="4" className={`stats-line-dot ${strokeClassName}`} />
+            <title>{labelBuilder(point)}</title>
+          </g>
+        );
+      })}
     </svg>
   );
 }
 
-function StatsNextStep({
-  title,
-  description,
-  primaryTo,
-  primaryLabel,
-  secondaryTo,
-  secondaryLabel,
+function SubjectBreakdown({
+  discipline,
+  items,
 }: {
-  title: string;
-  description: string;
-  primaryTo: string;
-  primaryLabel: string;
-  secondaryTo?: string;
-  secondaryLabel?: string;
+  discipline: string;
+  items: StatsDisciplineSubjectItem[];
 }) {
+  if (items.length === 0) {
+    return (
+      <section className="stats-chart-card">
+        <div className="stats-chart-head">
+          <div>
+            <h3>Assuntos de {discipline}</h3>
+            <p>Sem assuntos com registro ainda.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const maxQuestions = Math.max(...items.map((item) => item.questions_count), 1);
+
   return (
-    <section className="app-next-step-panel">
-      <div className="app-next-step-copy">
-        <p className="today-eyebrow">Faca agora</p>
-        <h3>{title}</h3>
-        <p>{description}</p>
+    <section className="stats-chart-card">
+      <div className="stats-chart-head">
+        <div>
+          <h3>Assuntos de {discipline}</h3>
+          <p>Volume, acerto e ritmo por conteudo.</p>
+        </div>
       </div>
-      <div className="app-next-step-actions">
-        <Link className="app-primary-action app-primary-action-blue app-guidance-link" to={primaryTo}>
-          {primaryLabel}
-        </Link>
-        {secondaryTo && secondaryLabel ? (
-          <Link className="app-secondary-action app-guidance-link" to={secondaryTo}>
-            {secondaryLabel}
-          </Link>
-        ) : null}
+
+      <div className="stats-breakdown-list">
+        {items.slice(0, 8).map((item) => (
+          <article key={item.subject_id} className="stats-breakdown-item">
+            <div className="stats-breakdown-copy">
+              <strong>{item.subject_name}</strong>
+              <span>
+                {item.questions_count} questoes • {formatPercent(item.accuracy)} • {formatSeconds(item.avg_time_correct_questions_seconds)}
+              </span>
+            </div>
+            <div className="stats-breakdown-bars">
+              <div className="stats-breakdown-bar">
+                <label>Volume</label>
+                <div className="stats-breakdown-track">
+                  <i style={{ width: `${(item.questions_count / maxQuestions) * 100}%` }} />
+                </div>
+              </div>
+              <div className="stats-breakdown-bar">
+                <label>Acerto</label>
+                <div className="stats-breakdown-track stats-breakdown-track-accuracy">
+                  <i style={{ width: `${Math.max(item.accuracy, 0.02) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );
 }
 
 export default function StatsPage() {
-  const [selectedDiscipline, setSelectedDiscipline] = useState(disciplines[0]);
+  const [selectedFilter, setSelectedFilter] = useState(GENERAL_FILTER);
+  const selectedDiscipline = selectedFilter === GENERAL_FILTER ? null : selectedFilter;
 
   const overviewQuery = useQuery({
     queryKey: ["stats-overview"],
     queryFn: getStatsOverview,
     retry: false,
   });
-
-  const disciplineQuery = useQuery({
+  const gamificationQuery = useQuery({
+    queryKey: ["gamification-summary"],
+    queryFn: getGamificationSummary,
+    retry: false,
+  });
+  const disciplinesQuery = useQuery({
+    queryKey: ["stats-disciplines"],
+    queryFn: getStatsDisciplines,
+    retry: false,
+  });
+  const heatmapQuery = useQuery({
+    queryKey: ["stats-heatmap", selectedDiscipline ?? "general", 365],
+    queryFn: () => getStatsHeatmap(365, selectedDiscipline),
+    retry: false,
+  });
+  const timeseriesQuery = useQuery({
+    queryKey: ["stats-timeseries", selectedDiscipline ?? "general", "week", 180],
+    queryFn: () => getStatsTimeSeries("week", 180, selectedDiscipline),
+    retry: false,
+  });
+  const disciplineDetailQuery = useQuery({
     queryKey: ["stats-discipline", selectedDiscipline],
-    queryFn: () => getStatsByDiscipline(selectedDiscipline),
+    queryFn: () => getStatsByDiscipline(selectedDiscipline ?? ""),
+    enabled: selectedDiscipline !== null,
+    retry: false,
+  });
+  const disciplineSubjectsQuery = useQuery({
+    queryKey: ["stats-discipline-subjects", selectedDiscipline],
+    queryFn: () => getStatsDisciplineSubjects(selectedDiscipline ?? ""),
+    enabled: selectedDiscipline !== null,
     retry: false,
   });
 
+  const disciplineOptions = useMemo(() => {
+    const labels = new Set<string>([GENERAL_FILTER]);
+    for (const item of disciplinesQuery.data ?? []) {
+      labels.add(item.discipline);
+    }
+    return Array.from(labels);
+  }, [disciplinesQuery.data]);
+
   const overview = overviewQuery.data;
-  const discipline = disciplineQuery.data;
-  const hasAnyVolume = (overview?.questions_today ?? 0) > 0 || (overview?.questions_this_week ?? 0) > 0;
-  const nextStep = hasAnyVolume
-    ? {
-        title: `Use ${selectedDiscipline} para decidir o reforco`,
-        description:
-          "Leia a visao geral, depois veja a disciplina que mais importa agora. Se a taxa de acerto caiu, volte para Today ou Aulas com esse alvo claro.",
-        primaryTo: "/",
-        primaryLabel: "Voltar ao foco do dia",
-        secondaryTo: "/lessons",
-        secondaryLabel: "Abrir aulas",
-      }
-    : {
-        title: "Alimente esta tela primeiro",
-        description:
-          "Sem registro real, Estatisticas vira so uma tela vazia. O melhor proximo passo e resolver algumas questoes no foco do dia e registrar o resultado.",
-        primaryTo: "/",
-        primaryLabel: "Ir para Today",
-        secondaryTo: "/lessons",
-        secondaryLabel: "Ver aulas",
-      };
+  const streak = gamificationQuery.data?.streak;
+  const mastery = gamificationQuery.data?.mastery;
+  const disciplineDetail = disciplineDetailQuery.data;
+  const heatmap = heatmapQuery.data;
+  const timeseriesPoints = timeseriesQuery.data?.points ?? [];
+  const selectedSubjectItems = disciplineSubjectsQuery.data?.subjects ?? [];
+  const selectedDisciplineCardSource = selectedDiscipline ? disciplineDetail : null;
+  const summaryCards = selectedDisciplineCardSource
+    ? [
+        {
+          label: "Questoes na semana",
+          value: selectedDisciplineCardSource.questions_this_week,
+          hint: normalizeDisciplineLabel(selectedFilter),
+          tone: "gold" as const,
+        },
+        {
+          label: "Questoes no mes",
+          value: selectedDisciplineCardSource.questions_this_month,
+          hint: "janela recente",
+          tone: "blue" as const,
+        },
+        {
+          label: "Acuracia",
+          value: formatPercent(selectedDisciplineCardSource.accuracy),
+          hint: `${selectedDisciplineCardSource.correct_count} acertos`,
+          tone: "green" as const,
+        },
+        {
+          label: "Tempo medio correto",
+          value: formatSeconds(selectedDisciplineCardSource.avg_time_correct_questions_seconds),
+          hint: "so questoes certas",
+          tone: "pink" as const,
+        },
+      ]
+    : [
+        {
+          label: "Questoes hoje",
+          value: overview?.questions_today ?? 0,
+          hint: "dia atual",
+          tone: "gold" as const,
+        },
+        {
+          label: "Questoes na semana",
+          value: overview?.questions_this_week ?? 0,
+          hint: "ultimos 7 dias",
+          tone: "blue" as const,
+        },
+        {
+          label: "Questoes no mes",
+          value: overview?.questions_this_month ?? 0,
+          hint: "janela atual",
+          tone: "pink" as const,
+        },
+        {
+          label: "Acuracia da semana",
+          value: formatPercent(overview?.accuracy_this_week),
+          hint: "acertos / questoes",
+          tone: "green" as const,
+        },
+      ];
+
+  const secondaryCards = [
+    {
+      label: "Tempo medio correto",
+      value: formatSeconds(
+        selectedDiscipline ? disciplineDetail?.avg_time_correct_questions_seconds : overview?.avg_time_correct_questions_seconds,
+      ),
+      hint: "ritmo em questoes certas",
+      tone: "blue" as const,
+    },
+    {
+      label: "Ofensiva atual",
+      value: streak?.current_streak_days ?? 0,
+      hint: streak?.studied_today ? "voce estudou hoje" : "dia atual ainda livre",
+      tone: "gold" as const,
+    },
+    {
+      label: "Maior ofensiva",
+      value: streak?.longest_streak_days ?? 0,
+      hint: "historico recente",
+      tone: "green" as const,
+    },
+    {
+      label: "Estrelas",
+      value: mastery?.total_mastery_stars ?? 0,
+      hint: `${mastery?.mastered_subjects_count ?? 0} assuntos dominados`,
+      tone: "pink" as const,
+    },
+  ];
+
+  const isAnyLoading =
+    overviewQuery.isLoading ||
+    gamificationQuery.isLoading ||
+    disciplinesQuery.isLoading ||
+    heatmapQuery.isLoading ||
+    timeseriesQuery.isLoading;
+
+  const hasAnyError =
+    overviewQuery.isError ||
+    gamificationQuery.isError ||
+    heatmapQuery.isError ||
+    timeseriesQuery.isError ||
+    (selectedDiscipline !== null && (disciplineDetailQuery.isError || disciplineSubjectsQuery.isError));
 
   return (
     <main className="today-page stats-page">
       <section className="today-subjects-shell today-functional-shell">
         <section className="today-panel stats-hero-panel">
-          <div>
-            <p className="today-eyebrow">Estatisticas</p>
-            <h1>Visao de desempenho</h1>
-            <p>Um resumo direto do que foi registrado, sem transformar estudo em painel corporativo.</p>
+          <div className="stats-hero-copy">
+            <div>
+              <p className="today-eyebrow">Estatisticas</p>
+              <h1>Seu estudo em mapa, ritmo e tendencia</h1>
+              <p>Menos texto, mais leitura visual do que realmente aconteceu no estudo.</p>
+            </div>
+            <div className="stats-filter-row" role="tablist" aria-label="Filtro de disciplina">
+              {disciplineOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={option === selectedFilter ? "is-active" : ""}
+                  onClick={() => setSelectedFilter(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
-        {overviewQuery.isError ? (
+        {hasAnyError ? (
           <section className="today-panel today-error-panel">
-            <strong>Estatisticas indisponiveis</strong>
-            <p>Nao foi possivel carregar o overview agora. A pagina continua pronta para tentar novamente.</p>
+            <strong>Algum bloco de estatisticas nao carregou.</strong>
+            <p>A pagina continua estavel, mas parte dos graficos pode estar incompleta ate a proxima tentativa.</p>
           </section>
         ) : null}
 
-        <section className="app-guidance-panel">
-          <div className="app-guidance-head">
-            <div>
-              <h3>Como usar esta tela</h3>
-              <p>As estatisticas servem para confirmar se o estudo do dia virou registro real, nao para te deixar perdido em numero.</p>
-            </div>
-            <span className="app-guidance-icon">
-              <GuidanceIcon />
-            </span>
-          </div>
-          <div className="app-guidance-steps">
-            <div className="app-guidance-step">
-              <span className="app-guidance-step-index">1</span>
-              <p>Registre algumas questoes no Foco do dia para alimentar este painel.</p>
-            </div>
-            <div className="app-guidance-step">
-              <span className="app-guidance-step-index">2</span>
-              <p>Use o overview para ver volume e acerto sem abrir disciplina por disciplina.</p>
-            </div>
-            <div className="app-guidance-step">
-              <span className="app-guidance-step-index">3</span>
-              <p>Quando algo estiver fraco, volte para a TodayPage ou para Aulas e ataque esse ponto.</p>
-            </div>
-          </div>
-          <div className="app-guidance-actions">
-            <Link className="app-primary-action app-primary-action-blue app-guidance-link" to="/">
-              Abrir foco do dia
-            </Link>
-            <Link className="app-secondary-action app-guidance-link" to="/lessons">
-              Ir para aulas
-            </Link>
-          </div>
-        </section>
-
-        <StatsNextStep {...nextStep} />
-
         <section className="today-panel today-panel-wide">
-          <div className="today-section-heading">
-            <div>
-              <p className="today-eyebrow">Overview</p>
-              <h2>Geral</h2>
-            </div>
-          </div>
-
-          {overviewQuery.isLoading ? (
-            <div className="app-empty-card">
-              <strong>Carregando estatisticas...</strong>
-              <p>Assim que houver resposta do backend, este bloco mostra volume, acerto e tempo medio.</p>
-            </div>
-          ) : (
-            <div className="stats-grid">
-              <StatCard label="Questoes hoje" value={overview?.questions_today ?? 0} tone="gold" />
-              <StatCard label="Questoes na semana" value={overview?.questions_this_week ?? 0} tone="blue" />
-              <StatCard label="Questoes no mes" value={overview?.questions_this_month ?? 0} tone="pink" />
-              <StatCard label="Acerto hoje" value={formatPercent(overview?.accuracy_today)} tone="green" />
-              <StatCard label="Acerto na semana" value={formatPercent(overview?.accuracy_this_week)} tone="blue" />
-              <StatCard label="Acerto no mes" value={formatPercent(overview?.accuracy_this_month)} tone="pink" />
-              <StatCard
-                label="Tempo medio correto"
-                value={formatSeconds(overview?.avg_time_correct_questions_seconds)}
-                tone="gold"
-              />
-              <StatCard label="Assuntos na semana" value={overview?.studied_subjects_this_week ?? 0} tone="green" />
-              <StatCard label="Blocos impactados" value={overview?.impacted_blocks_this_week ?? 0} tone="blue" />
-            </div>
-          )}
-        </section>
-
-        <div className="stats-two-column">
-          <DisciplineSignalList title="Disciplinas fracas" items={overview?.weak_disciplines} />
-          <DisciplineSignalList title="Disciplinas fortes" items={overview?.strong_disciplines} />
-        </div>
-
-        <section className="today-panel today-panel-wide">
-          <div className="today-section-heading">
-            <div>
-              <p className="today-eyebrow">Por disciplina</p>
-              <h2>{discipline?.discipline ?? selectedDiscipline}</h2>
-            </div>
-          </div>
-
-          <div className="stats-discipline-tabs" role="tablist" aria-label="Disciplinas">
-            {disciplines.map((disciplineName) => (
-              <button
-                key={disciplineName}
-                type="button"
-                className={disciplineName === selectedDiscipline ? "is-active" : ""}
-                onClick={() => setSelectedDiscipline(disciplineName)}
-              >
-                {disciplineName}
-              </button>
+          <div className="stats-grid">
+            {summaryCards.map((card) => (
+              <SummaryCard key={card.label} {...card} />
+            ))}
+            {secondaryCards.map((card) => (
+              <SummaryCard key={card.label} {...card} />
             ))}
           </div>
-
-          {disciplineQuery.isError ? (
-            <div className="app-empty-card">
-              <strong>Disciplina indisponivel agora.</strong>
-              <p>Voce ainda pode usar o overview geral e voltar nesta aba quando o backend responder.</p>
-            </div>
-          ) : null}
-
-          {disciplineQuery.isLoading ? (
-            <div className="app-empty-card">
-              <strong>Carregando disciplina...</strong>
-              <p>Este painel aprofunda o desempenho so da materia selecionada.</p>
-            </div>
-          ) : (
-            <div className="stats-grid">
-              <StatCard label="Questoes na semana" value={discipline?.questions_this_week ?? 0} tone="gold" />
-              <StatCard label="Questoes no mes" value={discipline?.questions_this_month ?? 0} tone="blue" />
-              <StatCard label="Acerto" value={formatPercent(discipline?.accuracy)} tone="green" />
-              <StatCard
-                label="Tempo medio correto"
-                value={formatSeconds(discipline?.avg_time_correct_questions_seconds)}
-                tone="pink"
-              />
-              <StatCard label="Revisoes vencidas" value={discipline?.review_due_count ?? 0} tone="pink" />
-              <StatCard label="Blocos em andamento" value={discipline?.blocks_in_progress ?? 0} tone="blue" />
-              <StatCard label="Blocos revisaveis" value={discipline?.blocks_reviewable ?? 0} tone="gold" />
-              <StatCard label="Assuntos estudados" value={discipline?.studied_subjects ?? 0} tone="green" />
-            </div>
-          )}
         </section>
 
-        <div className="stats-two-column">
-          <SubjectList title="Assuntos fracos" items={discipline?.weak_subjects} />
-          <SubjectList title="Assuntos fortes" items={discipline?.strong_subjects} />
+        <Heatmap
+          data={heatmap}
+          title={selectedDiscipline ? `Ultimos 365 dias em ${selectedDiscipline}` : "Ultimos 365 dias de estudo"}
+        />
+
+        <div className="stats-trend-grid">
+          <ChartFrame title="Questoes por semana" subtitle="Volume registrado ao longo do tempo.">
+            {timeseriesPoints.length > 0 ? (
+              <QuestionsBarChart points={timeseriesPoints} />
+            ) : (
+              <p className="today-empty-copy">Sem pontos suficientes para desenhar o volume.</p>
+            )}
+          </ChartFrame>
+
+          <ChartFrame title="Acuracia por semana" subtitle="Linha de acerto no periodo filtrado.">
+            {timeseriesPoints.length > 0 ? (
+              <LineChart
+                points={timeseriesPoints}
+                valueSelector={(point) => point.accuracy}
+                strokeClassName="stats-line-accent-blue"
+                labelBuilder={(point) => `${point.period} • ${formatPercent(point.accuracy)} • ${point.correct_count} acertos`}
+              />
+            ) : (
+              <p className="today-empty-copy">Sem pontos suficientes para desenhar a acuracia.</p>
+            )}
+          </ChartFrame>
+
+          <ChartFrame title="Tempo medio correto" subtitle="So respostas corretas entram aqui.">
+            {timeseriesPoints.length > 0 ? (
+              <LineChart
+                points={timeseriesPoints}
+                valueSelector={(point) => point.avg_time_correct_questions_seconds ?? 0}
+                strokeClassName="stats-line-accent-gold"
+                labelBuilder={(point) => `${point.period} • ${formatSeconds(point.avg_time_correct_questions_seconds)}`}
+              />
+            ) : (
+              <p className="today-empty-copy">Sem tempo suficiente para desenhar o ritmo.</p>
+            )}
+          </ChartFrame>
         </div>
+
+        {selectedDiscipline ? (
+          <>
+            <section className="today-panel today-panel-wide">
+              <div className="stats-grid">
+                <SummaryCard
+                  label="Assuntos estudados"
+                  value={disciplineDetail?.studied_subjects ?? 0}
+                  hint={selectedDiscipline}
+                  tone="green"
+                />
+                <SummaryCard
+                  label="Revisoes vencidas"
+                  value={disciplineDetail?.review_due_count ?? 0}
+                  hint="ponto de manutencao"
+                  tone="pink"
+                />
+                <SummaryCard
+                  label="Blocos em andamento"
+                  value={disciplineDetail?.blocks_in_progress ?? 0}
+                  hint="trilha ativa"
+                  tone="blue"
+                />
+                <SummaryCard
+                  label="Blocos revisaveis"
+                  value={disciplineDetail?.blocks_reviewable ?? 0}
+                  hint="conteudo para consolidar"
+                  tone="gold"
+                />
+              </div>
+            </section>
+
+            <SubjectBreakdown discipline={selectedDiscipline} items={selectedSubjectItems} />
+          </>
+        ) : (
+          <div className="stats-two-column">
+            <section className="stats-chart-card">
+              <div className="stats-chart-head">
+                <div>
+                  <h3>Disciplinas fortes</h3>
+                  <p>Onde o registro recente esta sustentando melhor o acerto.</p>
+                </div>
+              </div>
+              <div className="stats-breakdown-list">
+                {(overview?.strong_disciplines ?? []).slice(0, 5).map((item) => (
+                  <article key={`strong-${item.discipline}`} className="stats-breakdown-item">
+                    <div className="stats-breakdown-copy">
+                      <strong>{item.discipline}</strong>
+                      <span>{item.questions} questoes • {formatPercent(item.accuracy)}</span>
+                    </div>
+                  </article>
+                ))}
+                {(overview?.strong_disciplines ?? []).length === 0 ? (
+                  <p className="today-empty-copy">Sem dados suficientes ainda.</p>
+                ) : null}
+              </div>
+            </section>
+
+            <section className="stats-chart-card">
+              <div className="stats-chart-head">
+                <div>
+                  <h3>Disciplinas fracas</h3>
+                  <p>Onde vale revisar o foco do dia ou puxar aula de reforco.</p>
+                </div>
+              </div>
+              <div className="stats-breakdown-list">
+                {(overview?.weak_disciplines ?? []).slice(0, 5).map((item) => (
+                  <article key={`weak-${item.discipline}`} className="stats-breakdown-item">
+                    <div className="stats-breakdown-copy">
+                      <strong>{item.discipline}</strong>
+                      <span>{item.questions} questoes • {formatPercent(item.accuracy)}</span>
+                    </div>
+                  </article>
+                ))}
+                {(overview?.weak_disciplines ?? []).length === 0 ? (
+                  <p className="today-empty-copy">Sem sinais fracos relevantes ainda.</p>
+                ) : null}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {isAnyLoading ? (
+          <section className="today-panel app-empty-card">
+            <strong>Montando os graficos...</strong>
+            <p>Assim que os endpoints responderem, a leitura visual fica completa.</p>
+          </section>
+        ) : null}
       </section>
     </main>
   );

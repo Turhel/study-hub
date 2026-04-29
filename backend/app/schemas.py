@@ -497,6 +497,63 @@ class StatsDisciplineResponse(BaseModel):
     blocks_reviewable: int
 
 
+class StatsHeatmapDay(BaseModel):
+    date: str
+    weekday: int
+    questions_count: int
+    correct_count: int
+    accuracy: float
+    studied: bool
+    intensity_level: int
+
+
+class StatsHeatmapResponse(BaseModel):
+    discipline: str | None = None
+    start_date: str
+    end_date: str
+    max_questions_in_day: int
+    total_questions: int
+    active_days: int
+    current_streak_days: int
+    longest_streak_days: int
+    days: list[StatsHeatmapDay]
+
+
+class StatsTimeSeriesPoint(BaseModel):
+    period: str
+    start_date: str
+    end_date: str
+    questions_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_correct_questions_seconds: float | None = None
+    active_days: int
+
+
+class StatsTimeSeriesResponse(BaseModel):
+    discipline: str | None = None
+    group_by: Literal["day", "week"]
+    points: list[StatsTimeSeriesPoint]
+
+
+class StatsDisciplineSubjectItem(BaseModel):
+    subject_id: int
+    subject_name: str
+    block_id: int | None = None
+    questions_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_correct_questions_seconds: float | None = None
+    last_studied_at: str | None = None
+    mastery_score: float | None = None
+    mastery_status: str | None = None
+
+
+class StatsDisciplineSubjectsResponse(BaseModel):
+    discipline: str
+    subjects: list[StatsDisciplineSubjectItem]
+
+
 class StatsDisciplineDetailResponse(BaseModel):
     summary: StatsDisciplineItem
     trend_last_7_days: StatsTrend

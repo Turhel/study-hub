@@ -18,7 +18,12 @@ import type {
   ResetStudyDataPayload,
   ResetStudyDataResponse,
   StatsDisciplineResponse,
+  StatsDisciplineItem,
+  StatsDisciplineSubjectsResponse,
+  StatsHeatmapResponse,
   StatsOverviewResponse,
+  StatsTimeSeriesGroupBy,
+  StatsTimeSeriesResponse,
   StudyGuidePreferencesPayload,
   StudyGuidePreferencesResponse,
   StudyPlanRecalculateResponse,
@@ -169,6 +174,65 @@ export async function getStatsByDiscipline(discipline: string): Promise<StatsDis
   }
 
   return response.json() as Promise<StatsDisciplineResponse>;
+}
+
+export async function getStatsDisciplines(): Promise<StatsDisciplineItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/stats/disciplines`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar as disciplinas.");
+  }
+
+  return response.json() as Promise<StatsDisciplineItem[]>;
+}
+
+export async function getStatsHeatmap(
+  days = 365,
+  discipline?: string | null,
+): Promise<StatsHeatmapResponse> {
+  const params = new URLSearchParams({ days: String(days) });
+  if (discipline) {
+    params.set("discipline", discipline);
+  }
+  const response = await fetch(`${API_BASE_URL}/api/stats/heatmap?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar o heatmap.");
+  }
+
+  return response.json() as Promise<StatsHeatmapResponse>;
+}
+
+export async function getStatsTimeSeries(
+  groupBy: StatsTimeSeriesGroupBy,
+  days = 180,
+  discipline?: string | null,
+): Promise<StatsTimeSeriesResponse> {
+  const params = new URLSearchParams({ group_by: groupBy, days: String(days) });
+  if (discipline) {
+    params.set("discipline", discipline);
+  }
+  const response = await fetch(`${API_BASE_URL}/api/stats/timeseries?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar a serie temporal.");
+  }
+
+  return response.json() as Promise<StatsTimeSeriesResponse>;
+}
+
+export async function getStatsDisciplineSubjects(
+  discipline: string,
+): Promise<StatsDisciplineSubjectsResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/stats/discipline/${encodeURIComponent(discipline)}/subjects`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar os assuntos da disciplina.");
+  }
+
+  return response.json() as Promise<StatsDisciplineSubjectsResponse>;
 }
 
 export async function getGamificationSummary(): Promise<GamificationSummaryResponse> {
