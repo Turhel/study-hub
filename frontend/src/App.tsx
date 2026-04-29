@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 
 import { StudyTimerDock, StudyTimerProvider } from "./components/StudyTimer";
-import { getGamificationSummary } from "./lib/api";
+import { getGamificationSummary, getRecentActivity } from "./lib/api";
+import type { ActivityItem } from "./lib/types";
 import EssayPage from "./pages/EssayPage";
 import FreeStudyPage from "./pages/FreeStudyPage";
 import LessonsPage from "./pages/LessonsPage";
@@ -23,7 +24,6 @@ const primaryNavigationItems = [
 
 const secondaryNavigationItems = [
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
-  { label: "Configuracoes", path: "/settings", icon: <GearEmojiIcon /> },
   { label: "Redacao", path: "/essay", icon: <MemoEmojiIcon /> },
 ];
 
@@ -34,17 +34,7 @@ const profileMenuItems = [
   { label: "Exportar progresso", icon: "📦" },
 ];
 
-const weekdays = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"];
-
-const weekdayLabels: Record<string, string> = {
-  seg: "Seg",
-  ter: "Ter",
-  qua: "Qua",
-  qui: "Qui",
-  sex: "Sex",
-  sab: "Sab",
-  dom: "Dom",
-};
+const streakWeekdayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"] as const;
 
 const masterySummaryItems = [
   { label: "Questoes", key: "question_mastery_stars" },
@@ -221,7 +211,59 @@ function formatDate(value?: string | null): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
 }
 
+function toDateKey(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toRecentStudyDateKeys(activity: ActivityItem[] | undefined, studiedToday: boolean | undefined): Set<string> {
+  const keys = new Set<string>();
+
+  for (const item of activity ?? []) {
+    if (item.type === "daily_plan_generated") {
+      continue;
+    }
+
+    const parsed = new Date(item.created_at);
+    if (Number.isNaN(parsed.getTime())) {
+      continue;
+    }
+
+    keys.add(toDateKey(parsed));
+  }
+
+  if (studiedToday) {
+    keys.add(toDateKey(new Date()));
+  }
+
+  return keys;
+}
+
+function buildRollingStreakDays(activity: ActivityItem[] | undefined, studiedToday: boolean | undefined) {
+  const recentStudyDates = toRecentStudyDateKeys(activity, studiedToday);
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(base);
+    day.setDate(base.getDate() - (6 - index));
+    const key = toDateKey(day);
+
+    return {
+      key,
+      label: streakWeekdayLabels[day.getDay()],
+      shortDate: String(day.getDate()).padStart(2, "0"),
+      done: recentStudyDates.has(key),
+      isToday: index === 6,
+      fullDate: day.toLocaleDateString("pt-BR"),
+    };
+  });
+}
+
 export default function App() {
+  const navigate = useNavigate();
   const [theme, setTheme] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") {
       return "light";
@@ -239,14 +281,23 @@ export default function App() {
     queryFn: getGamificationSummary,
     retry: false,
   });
+  const recentActivityQuery = useQuery({
+    queryKey: ["activity-recent", 120],
+    queryFn: () => getRecentActivity(120),
+    retry: false,
+  });
 
   const streak = gamificationQuery.data?.streak;
   const mastery = gamificationQuery.data?.mastery;
-  const activeWeekdays = new Set(streak?.active_weekdays ?? []);
-  const streakDays = weekdays.map((day) => ({
-    label: weekdayLabels[day],
-    done: activeWeekdays.has(day),
-  }));
+  const streakDays = useMemo(
+    () => buildRollingStreakDays(recentActivityQuery.data, streak?.studied_today),
+    [recentActivityQuery.data, streak?.studied_today],
+  );
+  const hasRollingStreakData = (recentActivityQuery.data?.length ?? 0) > 0;
+  const profileMenuItems = [
+    { label: "Configuracoes", icon: "⚙️", onClick: () => navigate("/settings") },
+    { label: "Preferencias de estudo", icon: "🧠", onClick: () => navigate("/settings") },
+  ];
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -311,12 +362,18 @@ export default function App() {
 
                 <div className="topbar-streak-row">
                   {streakDays.map((day) => (
-                    <div key={day.label} className="topbar-streak-day">
+                    <div key={day.key} className={`topbar-streak-day ${day.isToday ? "is-today" : ""}`} title={day.fullDate}>
                       <span>{day.label}</span>
+                      <small>{day.shortDate}</small>
                       <i className={day.done ? "is-active" : ""} />
                     </div>
                   ))}
                 </div>
+                <p className="topbar-stat-note">
+                  {hasRollingStreakData
+                    ? "Janela movel dos ultimos 7 dias corridos."
+                    : "Mostrando os ultimos 7 dias. Os marcadores acendem conforme voce registra estudo real."}
+                </p>
                 <p className="topbar-stat-note">Maior sequencia: {streak?.longest_streak_days ?? 0} dias</p>
               </section>
             </HoverPanelButton>
@@ -394,7 +451,7 @@ export default function App() {
                   </button>
 
                   {profileMenuItems.map((item) => (
-                    <button key={item.label} type="button" className="topbar-profile-item">
+                    <button key={item.label} type="button" className="topbar-profile-item" onClick={item.onClick}>
                       <span className="topbar-profile-item-icon" aria-hidden="true">
                         {item.icon}
                       </span>

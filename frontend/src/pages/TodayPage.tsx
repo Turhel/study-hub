@@ -763,12 +763,9 @@ export default function TodayPage() {
                   </span>
                 </div>
                 <div className="today-focus-footer">
-                  <div className="today-focus-score-block">
-                    <div className="today-score-chip" aria-label="Prioridade indisponivel">
-                      <span className="today-score-pill" />
-                      <span className="today-score-info">i</span>
-                    </div>
-                    <span>Prioridade</span>
+                  <div className="today-focus-status-block">
+                    <strong>Plano aguardando dados</strong>
+                    <span>Quando houver focos, o guia mostra o modo e o status aqui.</span>
                   </div>
                   <div className="today-focus-count-block">
                     <strong>0</strong>
@@ -805,12 +802,9 @@ export default function TodayPage() {
                   </div>
 
                   <div className="today-focus-footer">
-                    <div className="today-focus-score-block">
-                      <div className="today-score-chip" aria-label={`Prioridade ${formatOptional(item.priority_score)}`}>
-                        <span className="today-score-pill" />
-                        <span className="today-score-info">i</span>
-                      </div>
-                      <span>Prioridade</span>
+                    <div className="today-focus-status-block">
+                      <strong>{plannedModeLabel(item.planned_mode)}</strong>
+                      <span>{roadmapStatusLabel(item.roadmap_status)}</span>
                     </div>
 
                     <div className="today-focus-count-block">
@@ -837,9 +831,16 @@ export default function TodayPage() {
                     <span>{item.completed_today} feitas hoje</span>
                     <span>{item.remaining_today} restantes</span>
                     <span>progresso {Math.round(item.progress_ratio * 100)}%</span>
-                    <span>{plannedModeLabel(item.planned_mode)}</span>
-                    <span>{roadmapStatusLabel(item.roadmap_status)}</span>
-                    <span>score {formatOptional(item.priority_score)}</span>
+                    <span>modo {plannedModeLabel(item.planned_mode)}</span>
+                    <span>status {roadmapStatusLabel(item.roadmap_status)}</span>
+                  </div>
+
+                  <div className="today-focus-explanation">
+                    <strong>Por que este foco</strong>
+                    <p>{formatOptional(item.primary_reason)}</p>
+                    {item.roadmap_reason && item.roadmap_reason !== item.primary_reason ? (
+                      <p className="today-focus-explanation-secondary">{item.roadmap_reason}</p>
+                    ) : null}
                   </div>
 
                   <div className="today-focus-secondary-row">
@@ -848,44 +849,35 @@ export default function TodayPage() {
                     </button>
                   </div>
 
+                  <details className="today-focus-details">
+                    <summary>Detalhes tecnicos do foco</summary>
                     <dl className="today-roadmap-details">
                       <div>
-                        <dt>Modo planejado</dt>
-                        <dd>{plannedModeLabel(item.planned_mode)}</dd>
-                      </div>
-                      <div>
-                        <dt>Status roadmap</dt>
-                        <dd>{roadmapStatusLabel(item.roadmap_status)}</dd>
-                      </div>
-                      <div>
                         <dt>Node</dt>
-                      <dd>{formatOptional(item.roadmap_node_id)}</dd>
-                    </div>
-                    <div>
-                      <dt>Mapeado</dt>
-                      <dd>{formatOptional(item.roadmap_mapped)}</dd>
-                    </div>
-                    <div>
-                      <dt>Origem</dt>
-                      <dd>{formatOptional(item.roadmap_mapping_source)}</dd>
-                    </div>
-                    <div>
-                      <dt>Confianca</dt>
-                      <dd>{formatOptional(item.roadmap_mapping_confidence)}</dd>
+                        <dd>{formatOptional(item.roadmap_node_id)}</dd>
+                      </div>
+                      <div>
+                        <dt>Mapeado</dt>
+                        <dd>{formatOptional(item.roadmap_mapped)}</dd>
+                      </div>
+                      <div>
+                        <dt>Origem do mapeamento</dt>
+                        <dd>{formatOptional(item.roadmap_mapping_source)}</dd>
+                      </div>
+                      <div>
+                        <dt>Confianca</dt>
+                        <dd>{formatOptional(item.roadmap_mapping_confidence)}</dd>
                       </div>
                       <div className="today-roadmap-wide">
-                        <dt>Leitura do foco</dt>
-                        <dd>{formatOptional(item.primary_reason)}</dd>
-                      </div>
-                      <div className="today-roadmap-wide">
-                        <dt>Motivo roadmap</dt>
+                        <dt>Motivo do roadmap</dt>
                         <dd>{formatOptional(item.roadmap_reason)}</dd>
                       </div>
                       <div className="today-roadmap-wide">
-                        <dt>Mapeamento</dt>
-                      <dd>{formatOptional(item.roadmap_mapping_reason)}</dd>
-                    </div>
-                  </dl>
+                        <dt>Observacao de mapeamento</dt>
+                        <dd>{formatOptional(item.roadmap_mapping_reason)}</dd>
+                      </div>
+                    </dl>
+                  </details>
                 </article>
               ))}
             </div>

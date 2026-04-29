@@ -449,6 +449,13 @@ textarea {
   font-weight: 800;
 }
 
+.topbar-streak-day small {
+  color: color-mix(in srgb, var(--overlay-card-text) 68%, white 12%);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .topbar-streak-day i {
   display: block;
   width: 2.2rem;
@@ -493,6 +500,11 @@ textarea {
 .topbar-streak-day i.is-active::before,
 .topbar-streak-day i.is-active::after {
   display: none;
+}
+
+.topbar-streak-day.is-today span,
+.topbar-streak-day.is-today small {
+  color: #ffffff;
 }
 
 .topbar-stat-note {
@@ -660,6 +672,53 @@ textarea {
 .topbar-profile-item-arrow {
   margin-left: auto;
   color: var(--overlay-card-muted);
+  font-size: 0;
+}
+
+.topbar-profile-item-arrow::before {
+  content: "→";
+  font-size: 0.95rem;
+}
+
+.topbar-profile-menu > .topbar-profile-item:first-child .topbar-profile-item-icon {
+  font-size: 0;
+}
+
+[data-theme="light"] .topbar-profile-menu > .topbar-profile-item:first-child .topbar-profile-item-icon::before {
+  content: "🌙";
+  font-size: 1rem;
+}
+
+[data-theme="dark"] .topbar-profile-menu > .topbar-profile-item:first-child .topbar-profile-item-icon::before {
+  content: "☀️";
+  font-size: 1rem;
+}
+
+/* Normalize menu glyphs with CSS escapes so the dropdown stays readable even if file encoding varies. */
+.topbar-profile-item-icon {
+  font-size: 0;
+}
+
+.topbar-profile-item-arrow::before {
+  content: "\2192";
+}
+
+[data-theme="light"] .topbar-profile-menu > .topbar-profile-item:first-child .topbar-profile-item-icon::before {
+  content: "\263E";
+}
+
+[data-theme="dark"] .topbar-profile-menu > .topbar-profile-item:first-child .topbar-profile-item-icon::before {
+  content: "\2600";
+}
+
+.topbar-profile-menu > .topbar-profile-item:nth-child(2) .topbar-profile-item-icon::before {
+  content: "\2699";
+  font-size: 1rem;
+}
+
+.topbar-profile-menu > .topbar-profile-item:nth-child(3) .topbar-profile-item-icon::before {
+  content: "\1F9E0";
+  font-size: 1rem;
 }
 
 .app-content {
@@ -1405,18 +1464,26 @@ textarea {
   padding: 0.8rem 1.35rem;
 }
 
-.today-focus-score-block,
+.today-focus-status-block,
 .today-focus-count-block {
   display: grid;
   gap: 0.18rem;
   justify-items: start;
 }
 
-.today-focus-score-block > span,
+.today-focus-status-block > span,
 .today-focus-count-block span {
   color: var(--discipline-card-meta);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.today-focus-status-block strong {
+  margin: 0;
+  color: var(--discipline-card-text);
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .today-focus-count-block strong {
@@ -1472,6 +1539,30 @@ textarea {
   padding: 0 1.35rem 0.9rem;
 }
 
+.today-focus-explanation {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0 1.35rem 0.85rem;
+}
+
+.today-focus-explanation strong {
+  color: rgba(233, 239, 248, 0.92);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.today-focus-explanation p {
+  margin: 0;
+  color: rgba(233, 239, 248, 0.82);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.today-focus-explanation-secondary {
+  color: rgba(181, 200, 224, 0.9);
+}
+
 .today-focus-secondary-action {
   border: 0;
   background: transparent;
@@ -1482,17 +1573,38 @@ textarea {
   text-underline-offset: 0.18rem;
 }
 
+.today-focus-details {
+  margin: 0;
+  border-top: 1px solid rgba(112, 133, 170, 0.24);
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.today-focus-details summary {
+  cursor: pointer;
+  color: #9ed6ff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  list-style: none;
+}
+
+.today-focus-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.today-focus-details summary::after {
+  content: "+";
+  margin-left: 0.45rem;
+}
+
+.today-focus-details[open] summary::after {
+  content: "−";
+}
+
 .today-roadmap-details {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem 0.75rem;
   margin: 0.85rem 0 0;
-}
-
-.today-focus-card .today-roadmap-details {
-  margin: 0;
-  padding: 0.9rem 1.1rem 1.05rem;
-  border-top: 1px solid rgba(112, 133, 170, 0.24);
 }
 
 .today-roadmap-details div {
@@ -1849,30 +1961,6 @@ textarea {
   font-weight: 650;
 }
 
-.today-score-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.today-score-pill {
-  width: 2.35rem;
-  height: 1rem;
-  border-radius: 999px;
-  background: var(--discipline-score-pill);
-}
-
-.today-score-info {
-  display: inline-grid;
-  place-items: center;
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 5px;
-  background: var(--discipline-score-info-bg);
-  color: var(--discipline-score-info-text);
-  font-size: 0.62rem;
-  font-weight: 900;
-}
 
 .today-discipline-footer-count {
   display: grid;
