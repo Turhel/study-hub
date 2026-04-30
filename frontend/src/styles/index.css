@@ -2502,6 +2502,7 @@ textarea {
 }
 
 .stats-card strong {
+  display: block;
   color: #f8fbff;
   font-family: "Fraunces", Georgia, serif;
   font-size: 1.65rem;
@@ -2521,6 +2522,12 @@ textarea {
   gap: 0.75rem;
   min-height: 6rem;
   padding: 0.95rem 1rem;
+}
+
+.stats-card-copy {
+  display: grid;
+  gap: 0.42rem;
+  min-width: 0;
 }
 
 .stats-card-footer {
@@ -2574,6 +2581,7 @@ textarea {
 
 .stats-chart-card {
   overflow: hidden;
+  min-width: 0;
   border: 2px solid rgba(88, 121, 164, 0.7);
   border-radius: 10px;
   background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.18) 100%);
@@ -2670,11 +2678,24 @@ textarea {
 .stats-heatmap-shell {
   overflow-x: auto;
   padding-bottom: 0.25rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.stats-heatmap-shell::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.stats-heatmap-track {
+  width: max-content;
+  min-width: 100%;
+  padding-right: 1.2rem;
 }
 
 .stats-heatmap-months {
   display: grid;
-  grid-auto-flow: column;
+  grid-template-columns: repeat(var(--heatmap-weeks, 53), 0.9rem);
   grid-auto-columns: 0.9rem;
   gap: 0.28rem;
   margin-bottom: 0.45rem;
@@ -2682,6 +2703,13 @@ textarea {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.stats-heatmap-months span {
+  width: max-content;
+  min-width: 0;
+  white-space: nowrap;
+  transform: translateX(-0.08rem);
 }
 
 .stats-heatmap-grid {
@@ -2714,10 +2742,22 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.45rem;
   color: rgba(206, 217, 235, 0.76);
   font-size: 0.74rem;
   font-weight: 700;
+}
+
+.stats-heatmap-legend-separator {
+  opacity: 0.45;
+}
+
+.stats-heatmap-note {
+  margin: -0.35rem 0 0;
+  color: rgba(206, 217, 235, 0.7);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 .stats-bars-chart {
@@ -2739,6 +2779,8 @@ textarea {
   color: rgba(206, 217, 235, 0.7);
   font-size: 0.66rem;
   font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .stats-bars-track {
@@ -4119,7 +4161,7 @@ textarea {
   }
 
   .stats-bars-chart {
-    grid-auto-columns: minmax(1.45rem, 1fr);
+    grid-auto-columns: minmax(2rem, 1fr);
   }
 
   .lessons-module {
@@ -4181,6 +4223,10 @@ textarea {
 }
 
 @media (max-width: 640px) {
+  .stats-heatmap-months {
+    grid-template-columns: repeat(var(--heatmap-weeks, 53), 0.78rem);
+  }
+
   .stats-heatmap-grid,
   .stats-heatmap-months {
     grid-auto-columns: 0.8rem;

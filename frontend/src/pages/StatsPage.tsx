@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -43,6 +43,23 @@ function formatDateLabel(value: string): string {
     day: "2-digit",
     month: "short",
   });
+}
+
+function formatMonthLabel(value: string): string {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR", {
+    month: "short",
+  });
+}
+
+function formatWeekTick(startDate: string, endDate: string): string {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  if (start.getMonth() === end.getMonth()) {
+    return `${start.toLocaleDateString("pt-BR", { day: "2-digit" })} ${start.toLocaleDateString("pt-BR", { month: "short" })}`;
+  }
+
+  return start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
 function normalizeDisciplineLabel(value: string): string {
@@ -97,7 +114,7 @@ function SummaryCard({
   return (
     <article className={`stats-card stats-card-${tone}`}>
       <div className="stats-card-main">
-        <div>
+        <div className="stats-card-copy">
           <span>{label}</span>
           <strong>{value}</strong>
         </div>
@@ -136,20 +153,26 @@ function Heatmap({
   title: string;
 }) {
   const weeks = useMemo(() => buildHeatmapWeeks(data?.days ?? []), [data?.days]);
+  const heatmapTrackStyle = useMemo(
+    () => ({ "--heatmap-weeks": String(weeks.length) }) as CSSProperties,
+    [weeks.length],
+  );
   const monthLabels = useMemo(() => {
     let lastMonth = "";
-    return weeks.map((week) => {
-      const firstDay = week[0];
-      if (!firstDay) {
-        return "";
-      }
-      const month = new Date(`${firstDay.date}T00:00:00`).toLocaleDateString("pt-BR", { month: "short" });
-      if (month === lastMonth) {
-        return "";
-      }
-      lastMonth = month;
-      return month;
-    });
+    return weeks
+      .map((week, index) => {
+        const firstDay = week[0];
+        if (!firstDay) {
+          return null;
+        }
+        const month = formatMonthLabel(firstDay.date);
+        if (month === lastMonth) {
+          return null;
+        }
+        lastMonth = month;
+        return { index, month };
+      })
+      .filter((item): item is { index: number; month: string } => item !== null);
   }, [weeks]);
   const todayKey = new Date().toISOString().slice(0, 10);
 
@@ -199,30 +222,34 @@ function Heatmap({
       </div>
 
       <div className="stats-heatmap-shell">
-        <div className="stats-heatmap-months">
-          {monthLabels.map((month, index) => (
-            <span key={`${month}-${index}`}>{month}</span>
-          ))}
-        </div>
-        <div className="stats-heatmap-grid">
-          {weeks.map((week, index) => (
-            <div key={`week-${index}`} className="stats-heatmap-week">
-              {Array.from({ length: 7 }, (_, rowIndex) => {
-                const day = week.find((item) => item.weekday === rowIndex);
-                if (!day) {
-                  return <span key={`empty-${index}-${rowIndex}`} className="heatmap-cell heatmap-cell-empty" />;
-                }
+        <div className="stats-heatmap-track" style={heatmapTrackStyle}>
+          <div className="stats-heatmap-months" aria-hidden="true">
+            {monthLabels.map(({ month, index }) => (
+              <span key={`${month}-${index}`} style={{ gridColumn: `${index + 1}` }}>
+                {month}
+              </span>
+            ))}
+          </div>
+          <div className="stats-heatmap-grid">
+            {weeks.map((week, index) => (
+              <div key={`week-${index}`} className="stats-heatmap-week">
+                {Array.from({ length: 7 }, (_, rowIndex) => {
+                  const day = week.find((item) => item.weekday === rowIndex);
+                  if (!day) {
+                    return <span key={`empty-${index}-${rowIndex}`} className="heatmap-cell heatmap-cell-empty" />;
+                  }
 
-                return (
-                  <span
-                    key={day.date}
-                    className={`heatmap-cell heatmap-level-${day.intensity_level} ${day.date === todayKey ? "is-today" : ""}`}
-                    title={`${formatDateLabel(day.date)} • ${day.questions_count} questoes • ${day.correct_count} acertos • ${formatPercent(day.accuracy)}`}
-                  />
-                );
-              })}
-            </div>
-          ))}
+                  return (
+                    <span
+                      key={day.date}
+                      className={`heatmap-cell heatmap-level-${day.intensity_level} ${day.date === todayKey ? "is-today" : ""}`}
+                      title={`${formatDateLabel(day.date)} - ${day.questions_count} questoes - ${day.correct_count} acertos - ${formatPercent(day.accuracy)}`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -233,8 +260,11 @@ function Heatmap({
         <i className="heatmap-legend-cell heatmap-level-2" />
         <i className="heatmap-legend-cell heatmap-level-3" />
         <i className="heatmap-legend-cell heatmap-level-4" />
-        <span>mais volume</span>
+        <span>menos questoes</span>
+        <span className="stats-heatmap-legend-separator">/</span>
+        <span>mais questoes</span>
       </div>
+      <p className="stats-heatmap-note">Menos questoes ficam mais escuras. Mais questoes ficam mais claras. Em telas menores, deslize na horizontal.</p>
     </section>
   );
 }
@@ -267,14 +297,18 @@ function QuestionsBarChart({ points }: { points: StatsTimeSeriesPoint[] }) {
   return (
     <div className="stats-bars-chart" role="img" aria-label="Questoes por periodo">
       {points.map((point) => (
-        <div key={point.period} className="stats-bars-column" title={`${point.period} • ${point.questions_count} questoes`}>
+        <div
+          key={point.period}
+          className="stats-bars-column"
+          title={`${formatWeekTick(point.start_date, point.end_date)} - ${point.questions_count} questoes - ${point.correct_count} acertos`}
+        >
           <div className="stats-bars-track">
             <div
               className="stats-bars-fill"
               style={{ height: `${(point.questions_count / maxValue) * 100}%` }}
             />
           </div>
-          <span>{point.period.slice(-5)}</span>
+          <span>{formatWeekTick(point.start_date, point.end_date)}</span>
         </div>
       ))}
     </div>
@@ -609,7 +643,7 @@ export default function StatsPage() {
                 points={timeseriesPoints}
                 valueSelector={(point) => point.accuracy}
                 strokeClassName="stats-line-accent-blue"
-                labelBuilder={(point) => `${point.period} • ${formatPercent(point.accuracy)} • ${point.correct_count} acertos`}
+                labelBuilder={(point) => `${formatWeekTick(point.start_date, point.end_date)} - ${formatPercent(point.accuracy)} - ${point.correct_count} acertos`}
               />
             ) : (
               <p className="today-empty-copy">Sem pontos suficientes para desenhar a acuracia.</p>
@@ -622,7 +656,7 @@ export default function StatsPage() {
                 points={timeseriesPoints}
                 valueSelector={(point) => point.avg_time_correct_questions_seconds ?? 0}
                 strokeClassName="stats-line-accent-gold"
-                labelBuilder={(point) => `${point.period} • ${formatSeconds(point.avg_time_correct_questions_seconds)}`}
+                labelBuilder={(point) => `${formatWeekTick(point.start_date, point.end_date)} - ${formatSeconds(point.avg_time_correct_questions_seconds)}`}
               />
             ) : (
               <p className="today-empty-copy">Sem tempo suficiente para desenhar o ritmo.</p>
