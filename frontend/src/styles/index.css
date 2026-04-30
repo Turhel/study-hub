@@ -2641,7 +2641,7 @@ textarea {
 .stats-chart-head p {
   margin: 0.18rem 0 0;
   color: rgba(206, 217, 235, 0.78);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   line-height: 1.45;
 }
 
@@ -2799,8 +2799,8 @@ textarea {
 }
 
 .stats-trend-strip {
-  --trend-item-width: 4rem;
-  --trend-item-gap: 0.5rem;
+  --trend-item-width: 3.35rem;
+  --trend-item-gap: 0.38rem;
   overflow-x: auto;
   cursor: grab;
   scrollbar-width: none;
@@ -2819,8 +2819,8 @@ textarea {
 .stats-chart-note {
   margin: 0;
   color: rgba(206, 217, 235, 0.72);
-  font-size: 0.72rem;
-  line-height: 1.5;
+  font-size: 0.68rem;
+  line-height: 1.4;
 }
 
 .stats-bars-chart {
@@ -2830,15 +2830,15 @@ textarea {
   grid-auto-columns: var(--trend-item-width);
   gap: var(--trend-item-gap);
   align-items: end;
-  min-height: 10.8rem;
-  padding-top: 0.55rem;
+  min-height: 8.2rem;
+  padding-top: 0.35rem;
 }
 
 .stats-bars-overlay {
   position: absolute;
   inset: 0 0 auto 0;
   width: 100%;
-  height: 7rem;
+  height: 5rem;
   overflow: visible;
   pointer-events: none;
 }
@@ -2853,13 +2853,13 @@ textarea {
 .stats-bars-column strong {
   color: #f8fbff;
   font-family: "Fraunces", Georgia, serif;
-  font-size: 0.92rem;
+  font-size: 0.84rem;
   line-height: 1;
 }
 
 .stats-bars-column span {
   color: rgba(206, 217, 235, 0.7);
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 700;
   text-align: center;
   line-height: 1.2;
@@ -2869,7 +2869,7 @@ textarea {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  min-height: 7.9rem;
+  min-height: 5.9rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
@@ -2891,7 +2891,7 @@ textarea {
 }
 
 .stats-line-chart {
-  min-height: 9.6rem;
+  min-height: 7.2rem;
   overflow: visible;
 }
 
@@ -2935,7 +2935,7 @@ textarea {
 .stats-line-target-label,
 .stats-line-axis-label {
   fill: rgba(206, 217, 235, 0.72);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
 }
 
@@ -4272,8 +4272,8 @@ textarea {
   }
 
   .stats-trend-strip {
-    --trend-item-width: 3.6rem;
-    --trend-item-gap: 0.45rem;
+    --trend-item-width: 3rem;
+    --trend-item-gap: 0.35rem;
   }
 
   .lessons-module {
