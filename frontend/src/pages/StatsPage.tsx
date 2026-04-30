@@ -409,15 +409,15 @@ function Heatmap({
       </div>
 
       <div className="stats-heatmap-meta">
-        <article>
+        <article title="Maior sequencia de dias estudando dentro do periodo mostrado.">
           <strong>{data.longest_streak_days}</strong>
           <span>maior ofensiva</span>
         </article>
-        <article>
+        <article title="Quantidade de dias com estudo real dentro do periodo filtrado.">
           <strong>{data.active_days}</strong>
           <span>dias ativos</span>
         </article>
-        <article>
+        <article title="Total de questoes registradas no periodo filtrado.">
           <strong>{data.total_questions}</strong>
           <span>questoes no periodo</span>
         </article>
@@ -462,11 +462,9 @@ function Heatmap({
         <i className="heatmap-legend-cell heatmap-level-2" />
         <i className="heatmap-legend-cell heatmap-level-3" />
         <i className="heatmap-legend-cell heatmap-level-4" />
-        <span>menos questoes</span>
         <span className="stats-heatmap-legend-separator">/</span>
         <span>mais questoes</span>
       </div>
-      <p className="stats-heatmap-note">Menos questoes ficam mais escuras. Mais questoes ficam mais claras. Em telas menores, deslize na horizontal.</p>
     </section>
   );
 }
@@ -562,7 +560,7 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
       </div>
       <div className="stats-chart-legend">
         <span><i className="stats-legend-swatch stats-legend-swatch-bar" />questoes</span>
-        {regression ? <span><i className="stats-legend-swatch stats-legend-swatch-line" />tendencia</span> : null}
+        {regression ? <span title="Linha pontilhada calculada por regressao linear simples sobre o volume semanal."><i className="stats-legend-swatch stats-legend-swatch-line" />tendencia</span> : null}
       </div>
     </div>
   );
@@ -638,6 +636,10 @@ function AccuracyTrendChart({
           })}
         </svg>
       </div>
+      <div className="stats-chart-legend">
+        <span><i className="stats-legend-swatch stats-legend-swatch-area" />acuracia</span>
+        {regression ? <span title="Linha pontilhada calculada por regressao linear simples sobre a acuracia semanal."><i className="stats-legend-swatch stats-legend-swatch-line" />tendencia</span> : null}
+      </div>
     </div>
   );
 }
@@ -702,6 +704,11 @@ function TimeTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
             );
           })}
         </svg>
+      </div>
+      <div className="stats-chart-legend">
+        <span><i className="stats-legend-swatch stats-legend-swatch-time" />tempo real</span>
+        {regression ? <span title="Linha pontilhada calculada por regressao linear simples sobre o tempo medio das questoes corretas."><i className="stats-legend-swatch stats-legend-swatch-line stats-legend-swatch-line-gold" />tendencia</span> : null}
+        <span title="Referencia de 3 minutos para leitura mais confortavel do ritmo."><i className="stats-legend-swatch stats-legend-swatch-target" />meta 3min</span>
       </div>
       <div className="stats-trend-status">{trendSummary}</div>
     </div>
@@ -928,24 +935,17 @@ export default function StatsPage() {
     <main className="today-page stats-page">
       <section className="today-subjects-shell today-functional-shell">
         <section className="today-panel stats-hero-panel">
-          <div className="stats-hero-copy">
-            <div>
-              <p className="today-eyebrow">Estatisticas</p>
-              <h1>Seu estudo em mapa, ritmo e tendencia</h1>
-              <p>Menos texto, mais leitura visual do que realmente aconteceu no estudo.</p>
-            </div>
-            <div className="stats-filter-row" role="tablist" aria-label="Filtro de disciplina">
-              {disciplineOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={option === selectedFilter ? "is-active" : ""}
-                  onClick={() => setSelectedFilter(option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+          <div className="stats-filter-row" role="tablist" aria-label="Filtro de disciplina">
+            {disciplineOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={option === selectedFilter ? "is-active" : ""}
+                onClick={() => setSelectedFilter(option)}
+              >
+                {option}
+              </button>
+            ))}
           </div>
         </section>
 
@@ -955,17 +955,6 @@ export default function StatsPage() {
             <p>A pagina continua estavel, mas parte dos graficos pode estar incompleta ate a proxima tentativa.</p>
           </section>
         ) : null}
-
-        <section className="today-panel today-panel-wide">
-          <div className="stats-grid">
-            {summaryCards.map((card) => (
-              <SummaryCard key={card.label} {...card} />
-            ))}
-            {secondaryCards.map((card) => (
-              <SummaryCard key={card.label} {...card} />
-            ))}
-          </div>
-        </section>
 
         <Heatmap
           data={heatmap}
@@ -1000,35 +989,6 @@ export default function StatsPage() {
 
         {selectedDiscipline ? (
           <>
-            <section className="today-panel today-panel-wide">
-              <div className="stats-grid">
-                <SummaryCard
-                  label="Assuntos estudados"
-                  value={disciplineDetail?.studied_subjects ?? 0}
-                  hint={selectedDiscipline}
-                  tone="green"
-                />
-                <SummaryCard
-                  label="Revisoes vencidas"
-                  value={disciplineDetail?.review_due_count ?? 0}
-                  hint="ponto de manutencao"
-                  tone="pink"
-                />
-                <SummaryCard
-                  label="Blocos em andamento"
-                  value={disciplineDetail?.blocks_in_progress ?? 0}
-                  hint="trilha ativa"
-                  tone="blue"
-                />
-                <SummaryCard
-                  label="Blocos revisaveis"
-                  value={disciplineDetail?.blocks_reviewable ?? 0}
-                  hint="conteudo para consolidar"
-                  tone="gold"
-                />
-              </div>
-            </section>
-
             <SubjectBreakdown discipline={selectedDiscipline} items={selectedSubjectItems} />
           </>
         ) : (
@@ -1078,6 +1038,45 @@ export default function StatsPage() {
             </section>
           </div>
         )}
+
+        <section className="today-panel today-panel-wide">
+          <div className="stats-grid">
+            {summaryCards.map((card) => (
+              <SummaryCard key={card.label} {...card} />
+            ))}
+            {secondaryCards.map((card) => (
+              <SummaryCard key={card.label} {...card} />
+            ))}
+            {selectedDiscipline ? (
+              <>
+                <SummaryCard
+                  label="Assuntos estudados"
+                  value={disciplineDetail?.studied_subjects ?? 0}
+                  hint={selectedDiscipline}
+                  tone="green"
+                />
+                <SummaryCard
+                  label="Revisoes vencidas"
+                  value={disciplineDetail?.review_due_count ?? 0}
+                  hint="ponto de manutencao"
+                  tone="pink"
+                />
+                <SummaryCard
+                  label="Blocos em andamento"
+                  value={disciplineDetail?.blocks_in_progress ?? 0}
+                  hint="trilha ativa"
+                  tone="blue"
+                />
+                <SummaryCard
+                  label="Blocos revisaveis"
+                  value={disciplineDetail?.blocks_reviewable ?? 0}
+                  hint="conteudo para consolidar"
+                  tone="gold"
+                />
+              </>
+            ) : null}
+          </div>
+        </section>
 
         {isAnyLoading ? (
           <section className="today-panel app-empty-card">
