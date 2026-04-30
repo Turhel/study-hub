@@ -480,8 +480,8 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
   const focusIndex = Math.max(points.length - 1, 0);
   const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
   const actualMax = Math.max(...trendPoints.filter((point) => !point.isProjection).map((point) => point.questions_count), 1);
-  const chartWidth = Math.max(trendPoints.length * 54, 220);
-  const chartHeight = 84;
+  const chartWidth = Math.max(trendPoints.length * 48, 196);
+  const chartHeight = 72;
   const lineValues = trendPoints.map((point) => point.questions_count);
   const coordinates = buildChartGeometry(lineValues, chartWidth, chartHeight, 0);
   const actualCoords = coordinates.slice(0, points.length);
@@ -498,7 +498,12 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
         onPointerCancel={scroller.handlePointerCancel}
       >
         <div className="stats-bars-chart" style={{ width: `${chartWidth}px` }} role="img" aria-label="Questoes por semana com tendencia">
-          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="stats-bars-overlay" aria-hidden="true">
+          <svg
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            className="stats-bars-overlay"
+            aria-hidden="true"
+            preserveAspectRatio="none"
+          >
             <path d={buildLinePathFromCoords(actualCoords)} className="stats-line-path stats-line-accent-blue" />
             <path d={buildLinePathFromCoords(projectedCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue" />
           </svg>
@@ -545,8 +550,8 @@ function LineChart({
   const trendPoints = useMemo(() => buildProjectedTrendPoints(points, metric, 3), [metric, points]);
   const focusIndex = Math.max(points.length - 1, 0);
   const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
-  const width = Math.max(trendPoints.length * 54, 220);
-  const height = 92;
+  const width = Math.max(trendPoints.length * 48, 196);
+  const height = 78;
   const values = trendPoints.map(valueSelector);
   const coords = buildChartGeometry(values, width, height, metric === "accuracy" ? 0 : 0);
   const actualCoords = coords.slice(0, points.length);
@@ -564,7 +569,7 @@ function LineChart({
         onPointerUp={scroller.handlePointerUp}
         onPointerCancel={scroller.handlePointerCancel}
       >
-        <svg viewBox={`0 0 ${width} ${height + 28}`} className="stats-line-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
+        <svg viewBox={`0 0 ${width} ${height + 24}`} className="stats-line-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
           {targetY !== null ? (
             <>
               <line x1="0" x2={width} y1={targetY} y2={targetY} className="stats-line-target" />
@@ -591,7 +596,7 @@ function LineChart({
                   className={`stats-line-dot ${strokeClassName} ${point.isProjection ? "is-projection" : ""}`}
                 />
                 {!point.isProjection ? (
-                  <text x={coord.x} y={height + 17} textAnchor="middle" className="stats-line-axis-label">
+                  <text x={coord.x} y={height + 15} textAnchor="middle" className="stats-line-axis-label">
                     {point.label}
                   </text>
                 ) : null}
