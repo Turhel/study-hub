@@ -184,10 +184,10 @@ function buildX(index: number, count: number, left: number, right: number, width
 
 function describeTimeTrend(direction: TrendDirection): string {
   if (direction === "down") {
-    return "tempo melhorando";
+    return "melhorando";
   }
   if (direction === "up") {
-    return "tempo aumentando";
+    return "piorando";
   }
   return "estavel";
 }
@@ -501,17 +501,10 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
   const top = 14;
   const bottom = 132;
   const scale = buildChartScale(points.map((point) => point.questions_count), { min: 0, minVisualMax: 5, paddingTopRatio: 0.15 });
-  const regression = linearRegression(points.map((point) => point.questions_count));
-  const trendCoords = regression
-    ? points.map((_, index) => ({
-        x: buildX(index, points.length, left, right, width),
-        y: scale.toY(clampNumber(getTrendValue(regression, index) ?? 0, 0, scale.max), top, bottom),
-      }))
-    : [];
   const labelStep = getVisibleLabelStep(points.length);
   const plotWidth = width - left - right;
   const barSlot = points.length > 0 ? plotWidth / points.length : plotWidth;
-  const barWidth = Math.max(14, Math.min(22, barSlot * 0.58));
+  const barWidth = Math.max(12, Math.min(18, barSlot * 0.54));
 
   return (
     <div className="stats-trend-strip-shell">
@@ -530,7 +523,6 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
             aria-hidden="true"
           >
             <line x1={left} x2={width - right} y1={bottom} y2={bottom} className="stats-axis-line" />
-            {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue" /> : null}
             {points.map((point, index) => {
               const x = buildX(index, points.length, left, right, width);
               const y = scale.toY(point.questions_count, top, bottom);
@@ -557,10 +549,6 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
             })}
           </svg>
         </div>
-      </div>
-      <div className="stats-chart-legend">
-        <span><i className="stats-legend-swatch stats-legend-swatch-bar" />questoes</span>
-        {regression ? <span title="Linha pontilhada calculada por regressao linear simples sobre o volume semanal."><i className="stats-legend-swatch stats-legend-swatch-line" />tendencia</span> : null}
       </div>
     </div>
   );
@@ -618,7 +606,7 @@ function AccuracyTrendChart({
           })}
           <line x1={left} x2={width - right} y1={bottom} y2={bottom} className="stats-axis-line" />
           <path d={buildLinePath(actualCoords)} className="stats-line-path stats-line-accent-blue" />
-          {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue" /> : null}
+          {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue stats-line-trend-subtle" /> : null}
           {points.map((point, index) => {
             const coord = actualCoords[index];
             const showLabel = index % labelStep === 0 || index === points.length - 1;
@@ -687,7 +675,7 @@ function TimeTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
           </text>
           <line x1={left} x2={width - right} y1={bottom} y2={bottom} className="stats-axis-line" />
           <path d={buildLinePath(actualCoords)} className="stats-line-path stats-line-accent-gold" />
-          {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-gold" /> : null}
+          {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-gold stats-line-trend-subtle" /> : null}
           {points.map((point, index) => {
             const coord = actualCoords[index];
             const showLabel = index % labelStep === 0 || index === points.length - 1;
@@ -962,7 +950,7 @@ export default function StatsPage() {
         />
 
         <div className="stats-trend-grid">
-          <ChartFrame title="Questoes por semana" subtitle="Volume semanal com leitura mais compacta.">
+          <ChartFrame title="Questoes por semana" subtitle="Volume semanal em barras simples.">
             {timeseriesPoints.length > 0 ? (
               <QuestionsTrendChart points={timeseriesPoints} />
             ) : (
@@ -970,7 +958,7 @@ export default function StatsPage() {
             )}
           </ChartFrame>
 
-          <ChartFrame title="Acuracia por semana" subtitle="Escala fixa de 0% a 100%, com respiro visual.">
+          <ChartFrame title="Acuracia por semana" subtitle="Escala fixa de 0% a 100%, com referencia clara.">
             {timeseriesPoints.length > 0 ? (
               <AccuracyTrendChart points={timeseriesPoints} />
             ) : (
@@ -978,7 +966,7 @@ export default function StatsPage() {
             )}
           </ChartFrame>
 
-          <ChartFrame title="Tempo medio correto" subtitle="Linha real, tendencia e meta discreta de 3min.">
+          <ChartFrame title="Tempo medio correto" subtitle="Linha real com meta de 3min e tendencia discreta.">
             {timeseriesPoints.length > 0 ? (
               <TimeTrendChart points={timeseriesPoints} />
             ) : (

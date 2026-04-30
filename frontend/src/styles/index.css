@@ -2829,6 +2829,10 @@ textarea {
   opacity: 0.88;
 }
 
+.stats-line-trend-subtle {
+  opacity: 0.58;
+}
+
 .stats-line-dot {
   stroke: #0d121b;
   stroke-width: 2;
@@ -2922,6 +2926,8 @@ textarea {
 
 .stats-bar-rect {
   fill: #4aa6ff;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1;
 }
 
 .stats-trend-status {
