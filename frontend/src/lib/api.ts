@@ -13,6 +13,9 @@ import type {
   GamificationSummaryResponse,
   LessonContent,
   LessonContentPayload,
+  MockExam,
+  MockExamPayload,
+  MockExamSummaryResponse,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
   ResetStudyDataPayload,
@@ -302,6 +305,68 @@ export async function getLessonContents(publishedOnly = false): Promise<LessonCo
   }
 
   return response.json() as Promise<LessonContent[]>;
+}
+
+export async function getMockExams(): Promise<MockExam[]> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar os simulados.");
+  }
+
+  return response.json() as Promise<MockExam[]>;
+}
+
+export async function getMockExamSummary(): Promise<MockExamSummaryResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/summary`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar o resumo dos simulados.");
+  }
+
+  return response.json() as Promise<MockExamSummaryResponse>;
+}
+
+export async function createMockExam(payload: MockExamPayload): Promise<MockExam> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel salvar o simulado.");
+  }
+
+  return response.json() as Promise<MockExam>;
+}
+
+export async function updateMockExam(id: number, payload: Partial<MockExamPayload>): Promise<MockExam> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel atualizar o simulado.");
+  }
+
+  return response.json() as Promise<MockExam>;
+}
+
+export async function deleteMockExam(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel excluir o simulado.");
+  }
 }
 
 export async function getLessonContentsBySubject(subjectId: number): Promise<LessonContent[]> {

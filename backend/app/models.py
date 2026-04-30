@@ -206,8 +206,11 @@ class MockExam(SQLModel, table=True):
     total_questoes: int = Field(ge=1)
     total_acertos: int = Field(ge=0)
     facil_erros: int = Field(default=0, ge=0)
+    tri_score: float | None = Field(default=None, ge=0)
     tempo_total_min: int | None = Field(default=None, ge=0)
     observacoes: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 
 
 class LessonContent(SQLModel, table=True):

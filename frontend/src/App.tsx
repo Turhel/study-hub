@@ -8,6 +8,7 @@ import type { ActivityItem } from "./lib/types";
 import EssayPage from "./pages/EssayPage";
 import FreeStudyPage from "./pages/FreeStudyPage";
 import LessonsPage from "./pages/LessonsPage";
+import MockExamsPage from "./pages/MockExamsPage";
 import SettingsPage from "./pages/SettingsPage";
 import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
@@ -19,6 +20,7 @@ const primaryNavigationItems = [
   { label: "Hoje", path: "/", icon: <FocusEmojiIcon /> },
   { label: "Modo Livre", path: "/free-study", icon: <CompassEmojiIcon /> },
   { label: "Aulas", path: "/lessons", icon: <BooksEmojiIcon /> },
+  { label: "Simulados", path: "/mock-exams", icon: <StatsEmojiIcon /> },
   { label: "Stats", path: "/stats", icon: <StatsEmojiIcon /> },
 ];
 
@@ -473,6 +475,7 @@ export default function App() {
             <Route path="/" element={<TodayPage />} />
             <Route path="/free-study" element={<FreeStudyPage />} />
             <Route path="/lessons" element={<LessonsPage />} />
+            <Route path="/mock-exams" element={<MockExamsPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/timer" element={<TimerPage />} />
             <Route path="/settings" element={<SettingsPage />} />

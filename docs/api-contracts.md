@@ -1575,6 +1575,115 @@ Enviar uma nova mensagem para a sessao de estudo assistido.
 - tambem depende de capabilities/LLM
 - `404` e usado quando a sessao nao existe
 
+## Simulados
+
+### GET `/api/mock-exams`
+
+**Objetivo**
+
+Listar os simulados registrados manualmente, em ordem da data mais recente para a mais antiga.
+
+**Campos principais**
+
+- `id`
+- `exam_date`
+- `title`
+- `area`
+- `total_questions`
+- `correct_count`
+- `accuracy`
+- `tri_score`
+- `duration_minutes`
+- `notes`
+- `created_at`
+- `updated_at`
+
+### POST `/api/mock-exams`
+
+**Objetivo**
+
+Criar um simulado manual.
+
+**Payload**
+
+```json
+{
+  "exam_date": "2026-04-30",
+  "title": "Simulado Natureza abril",
+  "area": "Natureza",
+  "total_questions": 45,
+  "correct_count": 31,
+  "tri_score": 672.5,
+  "duration_minutes": 180,
+  "notes": "Fui bem em Biologia, cai em Fisica."
+}
+```
+
+**Regras**
+
+- `total_questions` precisa ser maior que zero
+- `correct_count` nao pode ser maior que `total_questions`
+- `tri_score` e opcional
+- a API nao calcula TRI real; apenas armazena a nota informada
+
+### GET `/api/mock-exams/{id}`
+
+**Objetivo**
+
+Buscar um simulado especifico.
+
+### PUT `/api/mock-exams/{id}`
+
+**Objetivo**
+
+Editar um simulado existente.
+
+**Observacoes**
+
+- aceita atualizacao parcial
+- continua validando `correct_count <= total_questions`
+
+### DELETE `/api/mock-exams/{id}`
+
+**Objetivo**
+
+Excluir um simulado.
+
+### GET `/api/mock-exams/summary`
+
+**Objetivo**
+
+Entregar um resumo enxuto para cards e graficos simples da area de Simulados.
+
+**Resposta esperada**
+
+```json
+{
+  "total_exams": 3,
+  "latest_exam_date": "2026-04-30",
+  "last_three_average_tri": 671.2,
+  "last_three_average_accuracy": 0.71,
+  "best_tri_score": 701.0,
+  "by_area": [
+    {
+      "area": "Natureza",
+      "total_exams": 2,
+      "latest_tri_score": 672.5,
+      "best_tri_score": 672.5,
+      "average_accuracy": 0.72
+    }
+  ],
+  "recent": []
+}
+```
+
+**Observacoes**
+
+- `last_three_average_tri` usa os 3 simulados mais recentes com `tri_score` preenchido
+- `last_three_average_accuracy` usa os 3 simulados mais recentes com total valido
+- `best_tri_score` ignora `null`
+- `recent` volta ordenado por `exam_date desc`
+
 ## Observacoes Finais De Integracao
 
 - O smoke check atual cobre diretamente:

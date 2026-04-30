@@ -406,6 +406,68 @@ class StatsMockExamAreaAverage(BaseModel):
     average_total_questions: float | None = None
 
 
+MockExamArea = Literal["Linguagens", "Humanas", "Natureza", "Matemática", "Redação", "Geral"]
+
+
+class MockExamBase(BaseModel):
+    exam_date: str
+    title: str = Field(min_length=1)
+    area: MockExamArea
+    total_questions: int = Field(ge=1)
+    correct_count: int = Field(ge=0)
+    tri_score: float | None = Field(default=None, ge=0)
+    duration_minutes: int | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
+class MockExamCreate(MockExamBase):
+    pass
+
+
+class MockExamUpdate(BaseModel):
+    exam_date: str | None = None
+    title: str | None = Field(default=None, min_length=1)
+    area: MockExamArea | None = None
+    total_questions: int | None = Field(default=None, ge=1)
+    correct_count: int | None = Field(default=None, ge=0)
+    tri_score: float | None = Field(default=None, ge=0)
+    duration_minutes: int | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
+class MockExamResponse(BaseModel):
+    id: int
+    exam_date: str
+    title: str
+    area: MockExamArea
+    total_questions: int
+    correct_count: int
+    accuracy: float
+    tri_score: float | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
+    created_at: str
+    updated_at: str
+
+
+class MockExamAreaSummary(BaseModel):
+    area: MockExamArea
+    total_exams: int
+    latest_tri_score: float | None = None
+    best_tri_score: float | None = None
+    average_accuracy: float | None = None
+
+
+class MockExamSummaryResponse(BaseModel):
+    total_exams: int
+    latest_exam_date: str | None = None
+    last_three_average_tri: float | None = None
+    last_three_average_accuracy: float | None = None
+    best_tri_score: float | None = None
+    by_area: list[MockExamAreaSummary] = Field(default_factory=list)
+    recent: list[MockExamResponse] = Field(default_factory=list)
+
+
 class StatsDisciplineSignal(BaseModel):
     discipline: str
     strategic_discipline: str

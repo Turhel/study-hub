@@ -316,6 +316,58 @@ export type StatsDisciplineSubjectsResponse = {
   subjects: StatsDisciplineSubjectItem[];
 };
 
+export type MockExamArea =
+  | "Linguagens"
+  | "Humanas"
+  | "Natureza"
+  | "Matemática"
+  | "Redação"
+  | "Geral";
+
+export type MockExamPayload = {
+  exam_date: string;
+  title: string;
+  area: MockExamArea;
+  total_questions: number;
+  correct_count: number;
+  tri_score?: number | null;
+  duration_minutes?: number | null;
+  notes?: string | null;
+};
+
+export type MockExam = {
+  id: number;
+  exam_date: string;
+  title: string;
+  area: MockExamArea;
+  total_questions: number;
+  correct_count: number;
+  accuracy: number;
+  tri_score: number | null;
+  duration_minutes: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MockExamSummaryArea = {
+  area: MockExamArea;
+  total_exams: number;
+  latest_tri_score: number | null;
+  best_tri_score: number | null;
+  average_accuracy: number | null;
+};
+
+export type MockExamSummaryResponse = {
+  total_exams: number;
+  latest_exam_date: string | null;
+  last_three_average_tri: number | null;
+  last_three_average_accuracy: number | null;
+  best_tri_score: number | null;
+  by_area: MockExamSummaryArea[];
+  recent: MockExam[];
+};
+
 export type GamificationStreakResponse = {
   current_streak_days: number;
   longest_streak_days: number;
