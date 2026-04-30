@@ -2608,8 +2608,8 @@ textarea {
 
 .stats-trend-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
 }
 
 .stats-chart-card {
@@ -2621,7 +2621,7 @@ textarea {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 8px 20px rgba(4, 7, 13, 0.24);
-  padding: 1rem;
+  padding: 1rem 1.05rem;
 }
 
 .stats-chart-head {
@@ -4170,7 +4170,6 @@ textarea {
   }
 
   .stats-grid,
-  .stats-trend-grid,
   .stats-two-column,
   .stats-heatmap-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4242,7 +4241,6 @@ textarea {
   }
 
   .stats-grid,
-  .stats-trend-grid,
   .stats-two-column,
   .stats-heatmap-meta {
     grid-template-columns: 1fr;
