@@ -160,12 +160,25 @@ function useDraggableTrendStrip(itemCount: number, focusIndex: number) {
       return;
     }
 
-    const styles = window.getComputedStyle(element);
-    const itemWidth = Number.parseFloat(styles.getPropertyValue("--trend-item-width")) || 78;
-    const gap = Number.parseFloat(styles.getPropertyValue("--trend-item-gap")) || 12;
-    const targetLeft = focusIndex * (itemWidth + gap) - (element.clientWidth - itemWidth) / 2;
-    const maxLeft = Math.max(0, itemCount * (itemWidth + gap) - gap - element.clientWidth);
-    element.scrollLeft = Math.max(0, Math.min(targetLeft, maxLeft));
+    const frame = window.requestAnimationFrame(() => {
+      const items = Array.from(element.querySelectorAll<HTMLElement>(".stats-bars-column, .stats-trend-anchor"));
+      const focusItem = items[focusIndex];
+      if (focusItem) {
+        const itemCenter = focusItem.offsetLeft + focusItem.offsetWidth / 2;
+        const targetLeft = itemCenter - element.clientWidth / 2;
+        const maxLeft = Math.max(0, element.scrollWidth - element.clientWidth);
+        element.scrollLeft = Math.max(0, Math.min(targetLeft, maxLeft));
+        return;
+      }
+
+      const segmentWidth = element.scrollWidth / Math.max(itemCount, 1);
+      const itemCenter = segmentWidth * focusIndex + segmentWidth / 2;
+      const targetLeft = itemCenter - element.clientWidth / 2;
+      const maxLeft = Math.max(0, element.scrollWidth - element.clientWidth);
+      element.scrollLeft = Math.max(0, Math.min(targetLeft, maxLeft));
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [focusIndex, itemCount]);
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
