@@ -15,20 +15,21 @@ import type { StatsDisciplineSubjectItem, StatsHeatmapDay, StatsHeatmapResponse,
 const GENERAL_FILTER = "Geral";
 
 type StatsCardTone = "blue" | "pink" | "gold" | "green";
-type TrendMetricKey = "questions_count" | "accuracy" | "avg_time_correct_questions_seconds";
-
-type TrendPoint = StatsTimeSeriesPoint & {
-  isProjection?: boolean;
-  label: string;
-  periodHint: string;
+type TrendDirection = "up" | "down" | "flat";
+type ChartScaleOptions = {
+  min?: number;
+  max?: number;
+  minVisualMax?: number;
+  paddingTopRatio?: number;
+};
+type ChartScale = {
+  min: number;
+  max: number;
+  toY: (value: number, top: number, bottom: number) => number;
 };
 
 function formatPercent(value?: number | null): string {
   return `${Math.round((value ?? 0) * 100)}%`;
-}
-
-function formatDecimal(value?: number | null): string {
-  return value === null || value === undefined ? "0" : value.toFixed(1);
 }
 
 function formatSeconds(value?: number | null): string {
@@ -58,15 +59,22 @@ function formatMonthLabel(value: string): string {
   });
 }
 
-function formatWeekTick(startDate: string, endDate: string): string {
+function formatWeekLabel(startDate: string, endDate: string): string {
   const start = new Date(`${startDate}T00:00:00`);
   const end = new Date(`${endDate}T00:00:00`);
 
   if (start.getMonth() === end.getMonth()) {
-    return `${start.toLocaleDateString("pt-BR", { day: "2-digit" })} ${start.toLocaleDateString("pt-BR", { month: "short" })}`;
+    return `${start.toLocaleDateString("pt-BR", { day: "2-digit" })}–${end.toLocaleDateString("pt-BR", { day: "2-digit" })} ${start.toLocaleDateString("pt-BR", { month: "short" })}`;
   }
 
-  return start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return `${start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}–${end.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}`;
+}
+
+function formatWeekTick(startDate: string): string {
+  return new Date(`${startDate}T00:00:00`).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 function formatWeekRange(startDate: string, endDate: string): string {
@@ -75,79 +83,113 @@ function formatWeekRange(startDate: string, endDate: string): string {
   return `${start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} - ${end.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}`;
 }
 
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function formatIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 function clampNumber(value: number, min: number, max?: number): number {
   const upper = max === undefined ? value : Math.min(value, max);
   return Math.max(min, upper);
 }
 
-function buildProjectedTrendPoints(points: StatsTimeSeriesPoint[], metric: TrendMetricKey, futureCount = 3): TrendPoint[] {
+function formatSecondsShort(value?: number | null): string {
+  if (value === null || value === undefined) {
+    return "0s";
+  }
+  const rounded = Math.max(0, Math.round(value));
+  const minutes = Math.floor(rounded / 60);
+  const seconds = rounded % 60;
+  if (minutes === 0) {
+    return `${seconds}s`;
+  }
+  return `${minutes}m${String(seconds).padStart(2, "0")}s`;
+}
+
+function buildChartScale(values: number[], options: ChartScaleOptions = {}): ChartScale {
+  const min = options.min ?? 0;
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  const rawMax = finiteValues.length > 0 ? Math.max(...finiteValues) : min;
+  const max = Math.max(
+    min + 1,
+    options.max ?? Math.max(rawMax * (1 + (options.paddingTopRatio ?? 0)), options.minVisualMax ?? min + 1),
+  );
+
+  return {
+    min,
+    max,
+    toY(value: number, top: number, bottom: number) {
+      const clamped = clampNumber(value, min, max);
+      const span = Math.max(max - min, 1);
+      const normalized = (clamped - min) / span;
+      return bottom - normalized * (bottom - top);
+    },
+  };
+}
+
+function linearRegression(values: Array<number | null | undefined>): null | { slope: number; intercept: number; direction: TrendDirection } {
+  const usable = values
+    .map((value, index) => ({ x: index, y: value }))
+    .filter((point): point is { x: number; y: number } => point.y !== null && point.y !== undefined && Number.isFinite(point.y));
+
+  if (usable.length < 2) {
+    return null;
+  }
+
+  const count = usable.length;
+  const sumX = usable.reduce((total, point) => total + point.x, 0);
+  const sumY = usable.reduce((total, point) => total + point.y, 0);
+  const sumXY = usable.reduce((total, point) => total + point.x * point.y, 0);
+  const sumXX = usable.reduce((total, point) => total + point.x * point.x, 0);
+  const denominator = count * sumXX - sumX * sumX;
+  if (denominator === 0) {
+    return null;
+  }
+
+  const slope = (count * sumXY - sumX * sumY) / denominator;
+  const intercept = (sumY - slope * sumX) / count;
+  const direction: TrendDirection = Math.abs(slope) < 0.001 ? "flat" : slope > 0 ? "up" : "down";
+  return { slope, intercept, direction };
+}
+
+function getTrendValue(regression: null | { slope: number; intercept: number }, index: number): number | null {
+  if (!regression) {
+    return null;
+  }
+  return regression.intercept + regression.slope * index;
+}
+
+function buildLinePath(points: Array<{ x: number; y: number }>) {
   if (points.length === 0) {
-    return [];
+    return "";
   }
+  return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ");
+}
 
-  const actualPoints: TrendPoint[] = points.map((point) => ({
-    ...point,
-    label: formatWeekTick(point.start_date, point.end_date),
-    periodHint: formatWeekRange(point.start_date, point.end_date),
-  }));
-
-  const values = points.map((point) => {
-    if (metric === "questions_count") {
-      return point.questions_count;
-    }
-    if (metric === "accuracy") {
-      return point.accuracy;
-    }
-    return point.avg_time_correct_questions_seconds ?? 0;
-  });
-
-  const recentValues = values.slice(-3);
-  const deltas = recentValues.slice(1).map((value, index) => value - recentValues[index]);
-  const averageDelta = deltas.length > 0 ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
-  const lastPoint = points[points.length - 1];
-  let lastValue = values[values.length - 1] ?? 0;
-
-  for (let offset = 1; offset <= futureCount; offset += 1) {
-    const startDate = addDays(new Date(`${lastPoint.start_date}T00:00:00`), 7 * offset);
-    const endDate = addDays(new Date(`${lastPoint.end_date}T00:00:00`), 7 * offset);
-    let projectedValue = lastValue + averageDelta;
-
-    if (metric === "accuracy") {
-      projectedValue = clampNumber(projectedValue, 0, 1);
-    } else if (metric === "questions_count") {
-      projectedValue = clampNumber(projectedValue, 0);
-    } else {
-      projectedValue = clampNumber(projectedValue, 0);
-    }
-
-    lastValue = projectedValue;
-
-    actualPoints.push({
-      period: `${lastPoint.period}-projection-${offset}`,
-      start_date: formatIsoDate(startDate),
-      end_date: formatIsoDate(endDate),
-      questions_count: metric === "questions_count" ? Math.round(projectedValue) : 0,
-      correct_count: 0,
-      accuracy: metric === "accuracy" ? projectedValue : 0,
-      avg_time_correct_questions_seconds: metric === "avg_time_correct_questions_seconds" ? projectedValue : null,
-      active_days: 0,
-      isProjection: true,
-      label: formatWeekTick(formatIsoDate(startDate), formatIsoDate(endDate)),
-      periodHint: `Projecao ${formatWeekRange(formatIsoDate(startDate), formatIsoDate(endDate))}`,
-    });
+function getVisibleLabelStep(count: number): number {
+  if (count <= 6) {
+    return 1;
   }
+  if (count <= 10) {
+    return 2;
+  }
+  if (count <= 16) {
+    return 3;
+  }
+  return 4;
+}
 
-  return actualPoints;
+function buildX(index: number, count: number, left: number, right: number, width: number): number {
+  const plotWidth = width - left - right;
+  if (count <= 1) {
+    return left + plotWidth / 2;
+  }
+  return left + (index / (count - 1)) * plotWidth;
+}
+
+function describeTimeTrend(direction: TrendDirection): string {
+  if (direction === "down") {
+    return "tempo melhorando";
+  }
+  if (direction === "up") {
+    return "tempo aumentando";
+  }
+  return "estavel";
 }
 
 function useDraggableTrendStrip(itemCount: number, focusIndex: number) {
@@ -451,41 +493,27 @@ function ChartFrame({
   );
 }
 
-function buildChartGeometry(values: number[], width: number, height: number, floor = 0) {
-  const safeValues = values.length > 0 ? values : [0];
-  const maxValue = Math.max(...safeValues, floor + 1);
-  const minValue = floor;
-  const span = Math.max(maxValue - minValue, 1);
-
-  return values.map((value, index) => {
-    const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
-    const normalized = (value - minValue) / span;
-    const y = height - normalized * height;
-    return { x, y };
-  });
-}
-
-function buildLinePathFromCoords(coords: Array<{ x: number; y: number }>) {
-  if (coords.length === 0) {
-    return "";
-  }
-
-  return coords
-    .map((coord, index) => `${index === 0 ? "M" : "L"} ${coord.x.toFixed(2)} ${coord.y.toFixed(2)}`)
-    .join(" ");
-}
-
 function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
-  const trendPoints = useMemo(() => buildProjectedTrendPoints(points, "questions_count", 3), [points]);
   const focusIndex = Math.max(points.length - 1, 0);
-  const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
-  const actualMax = Math.max(...trendPoints.filter((point) => !point.isProjection).map((point) => point.questions_count), 1);
-  const chartWidth = Math.max(trendPoints.length * 38, 156);
-  const chartHeight = 74;
-  const lineValues = trendPoints.map((point) => point.questions_count);
-  const coordinates = buildChartGeometry(lineValues, chartWidth, chartHeight, 0);
-  const actualCoords = coordinates.slice(0, points.length);
-  const projectedCoords = coordinates.slice(Math.max(points.length - 1, 0));
+  const scroller = useDraggableTrendStrip(points.length, focusIndex);
+  const width = Math.max(points.length * 44, 220);
+  const height = 176;
+  const left = 34;
+  const right = 12;
+  const top = 14;
+  const bottom = 132;
+  const scale = buildChartScale(points.map((point) => point.questions_count), { min: 0, minVisualMax: 5, paddingTopRatio: 0.15 });
+  const regression = linearRegression(points.map((point) => point.questions_count));
+  const trendCoords = regression
+    ? points.map((_, index) => ({
+        x: buildX(index, points.length, left, right, width),
+        y: scale.toY(clampNumber(getTrendValue(regression, index) ?? 0, 0, scale.max), top, bottom),
+      }))
+    : [];
+  const labelStep = getVisibleLabelStep(points.length);
+  const plotWidth = width - left - right;
+  const barSlot = points.length > 0 ? plotWidth / points.length : plotWidth;
+  const barWidth = Math.max(14, Math.min(22, barSlot * 0.58));
 
   return (
     <div className="stats-trend-strip-shell">
@@ -497,66 +525,76 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
         onPointerUp={scroller.handlePointerUp}
         onPointerCancel={scroller.handlePointerCancel}
       >
-        <div className="stats-bars-chart" style={{ width: `${chartWidth}px` }} role="img" aria-label="Questoes por semana com tendencia">
+        <div className="stats-bars-chart" style={{ width: `${width}px` }} role="img" aria-label="Questoes por semana com tendencia">
           <svg
-            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-            className="stats-bars-overlay"
+            viewBox={`0 0 ${width} ${height}`}
+            className="stats-composed-chart"
             aria-hidden="true"
-            preserveAspectRatio="none"
           >
-            <path d={buildLinePathFromCoords(actualCoords)} className="stats-line-path stats-line-accent-blue" />
-            <path d={buildLinePathFromCoords(projectedCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue" />
+            <line x1={left} x2={width - right} y1={bottom} y2={bottom} className="stats-axis-line" />
+            {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue" /> : null}
+            {points.map((point, index) => {
+              const x = buildX(index, points.length, left, right, width);
+              const y = scale.toY(point.questions_count, top, bottom);
+              const showLabel = index % labelStep === 0 || index === points.length - 1;
+              return (
+                <g key={point.period}>
+                  <rect
+                    x={x - barWidth / 2}
+                    y={y}
+                    width={barWidth}
+                    height={Math.max(bottom - y, 1)}
+                    rx="4"
+                    className="stats-bar-rect"
+                  >
+                    <title>{`${formatWeekRange(point.start_date, point.end_date)} - ${point.questions_count} questoes`}</title>
+                  </rect>
+                  {showLabel ? (
+                    <text x={x} y={bottom + 14} textAnchor="middle" className="stats-line-axis-label">
+                      {formatWeekTick(point.start_date)}
+                    </text>
+                  ) : null}
+                </g>
+              );
+            })}
           </svg>
-          {trendPoints.map((point) => (
-            <div
-              key={point.period}
-              className={`stats-bars-column ${point.isProjection ? "is-projection" : ""} ${point.isProjection ? "" : "is-current-band"}`}
-              title={`${point.periodHint} - ${point.questions_count} questoes`}
-            >
-              <div className="stats-bars-track">
-                <div
-                  className="stats-bars-fill"
-                  style={{ height: `${(point.questions_count / actualMax) * 100}%` }}
-                />
-              </div>
-              <strong>{point.questions_count}</strong>
-              <span>{point.label}</span>
-            </div>
-          ))}
         </div>
+      </div>
+      <div className="stats-chart-legend">
+        <span><i className="stats-legend-swatch stats-legend-swatch-bar" />questoes</span>
+        {regression ? <span><i className="stats-legend-swatch stats-legend-swatch-line" />tendencia</span> : null}
       </div>
     </div>
   );
 }
 
-function LineChart({
+function AccuracyTrendChart({
   points,
-  valueSelector,
-  strokeClassName,
-  labelBuilder,
-  metric,
-  targetValue,
-  targetLabel,
 }: {
   points: StatsTimeSeriesPoint[];
-  valueSelector: (point: StatsTimeSeriesPoint) => number;
-  strokeClassName: string;
-  labelBuilder: (point: StatsTimeSeriesPoint) => string;
-  metric: TrendMetricKey;
-  targetValue?: number;
-  targetLabel?: string;
 }) {
-  const trendPoints = useMemo(() => buildProjectedTrendPoints(points, metric, 3), [metric, points]);
   const focusIndex = Math.max(points.length - 1, 0);
-  const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
-  const width = Math.max(trendPoints.length * 38, 156);
-  const height = 82;
-  const values = trendPoints.map(valueSelector);
-  const coords = buildChartGeometry(values, width, height, metric === "accuracy" ? 0 : 0);
-  const actualCoords = coords.slice(0, points.length);
-  const projectedCoords = coords.slice(Math.max(points.length - 1, 0));
-  const maxValue = Math.max(...values, targetValue ?? 1, 1);
-  const targetY = targetValue === undefined ? null : height - (targetValue / maxValue) * height;
+  const scroller = useDraggableTrendStrip(points.length, focusIndex);
+  const width = Math.max(points.length * 44, 220);
+  const height = 176;
+  const left = 36;
+  const right = 12;
+  const top = 14;
+  const bottom = 132;
+  const scale = buildChartScale(points.map((point) => point.accuracy), { min: 0, max: 1.1 });
+  const actualCoords = points.map((point, index) => ({
+    x: buildX(index, points.length, left, right, width),
+    y: scale.toY(clampNumber(point.accuracy, 0, 1), top, bottom),
+  }));
+  const regression = linearRegression(points.map((point) => point.accuracy));
+  const trendCoords = regression
+    ? points.map((_, index) => ({
+        x: buildX(index, points.length, left, right, width),
+        y: scale.toY(clampNumber(getTrendValue(regression, index) ?? 0, 0, 1), top, bottom),
+      }))
+    : [];
+  const labelStep = getVisibleLabelStep(points.length);
+  const referenceTicks = [0, 0.5, 1];
 
   return (
     <div className="stats-trend-strip-shell">
@@ -568,43 +606,104 @@ function LineChart({
         onPointerUp={scroller.handlePointerUp}
         onPointerCancel={scroller.handlePointerCancel}
       >
-        <svg viewBox={`0 0 ${width} ${height + 20}`} className="stats-line-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
-          {targetY !== null ? (
-            <>
-              <line x1="0" x2={width} y1={targetY} y2={targetY} className="stats-line-target" />
-              {targetLabel ? (
-                <text x={width - 6} y={Math.max(targetY - 6, 14)} className="stats-line-target-label">
-                  {targetLabel}
+        <svg viewBox={`0 0 ${width} ${height}`} className="stats-composed-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
+          {referenceTicks.map((tick) => {
+            const y = scale.toY(tick, top, bottom);
+            return (
+              <g key={tick}>
+                <line x1={left} x2={width - right} y1={y} y2={y} className="stats-grid-line" />
+                <text x={left - 8} y={y + 3} textAnchor="end" className="stats-y-axis-label">
+                  {formatPercent(tick)}
                 </text>
-              ) : null}
-            </>
-          ) : null}
-          <path d={buildLinePathFromCoords(actualCoords)} className={`stats-line-path ${strokeClassName}`} />
-          <path d={buildLinePathFromCoords(projectedCoords)} className={`stats-line-path stats-line-projection ${strokeClassName}`} />
-          {trendPoints.map((point, index) => {
-            const coord = coords[index];
-            if (!coord) {
-              return null;
-            }
+              </g>
+            );
+          })}
+          <line x1={left} x2={width - right} y1={bottom} y2={bottom} className="stats-axis-line" />
+          <path d={buildLinePath(actualCoords)} className="stats-line-path stats-line-accent-blue" />
+          {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue" /> : null}
+          {points.map((point, index) => {
+            const coord = actualCoords[index];
+            const showLabel = index % labelStep === 0 || index === points.length - 1;
             return (
               <g key={point.period}>
-                <circle
-                  cx={coord.x}
-                  cy={coord.y}
-                  r={point.isProjection ? "2.6" : "3.5"}
-                  className={`stats-line-dot ${strokeClassName} ${point.isProjection ? "is-projection" : ""}`}
-                />
-                {!point.isProjection ? (
-                  <text x={coord.x} y={height + 13} textAnchor="middle" className="stats-line-axis-label">
-                    {point.label}
+                <circle cx={coord.x} cy={coord.y} r="3.5" className="stats-line-dot stats-line-accent-blue" />
+                <title>{`${formatWeekLabel(point.start_date, point.end_date)} - ${formatPercent(point.accuracy)}`}</title>
+                {showLabel ? (
+                  <text x={coord.x} y={bottom + 14} textAnchor="middle" className="stats-line-axis-label">
+                    {formatWeekTick(point.start_date)}
                   </text>
                 ) : null}
-                <title>{labelBuilder(point)}</title>
               </g>
             );
           })}
         </svg>
       </div>
+    </div>
+  );
+}
+
+function TimeTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
+  const focusIndex = Math.max(points.length - 1, 0);
+  const scroller = useDraggableTrendStrip(points.length, focusIndex);
+  const width = Math.max(points.length * 44, 220);
+  const height = 176;
+  const left = 40;
+  const right = 12;
+  const top = 14;
+  const bottom = 132;
+  const values = points.map((point) => point.avg_time_correct_questions_seconds ?? 0);
+  const scale = buildChartScale(values, { min: 0, minVisualMax: 180, paddingTopRatio: 0.15 });
+  const actualCoords = points.map((point, index) => ({
+    x: buildX(index, points.length, left, right, width),
+    y: scale.toY(point.avg_time_correct_questions_seconds ?? 0, top, bottom),
+  }));
+  const regression = linearRegression(values);
+  const trendCoords = regression
+    ? points.map((_, index) => ({
+        x: buildX(index, points.length, left, right, width),
+        y: scale.toY(clampNumber(getTrendValue(regression, index) ?? 0, 0, scale.max), top, bottom),
+      }))
+    : [];
+  const targetY = scale.toY(180, top, bottom);
+  const labelStep = getVisibleLabelStep(points.length);
+  const trendSummary = regression ? describeTimeTrend(regression.direction) : "sem tendencia suficiente";
+
+  return (
+    <div className="stats-trend-strip-shell">
+      <div
+        ref={scroller.ref}
+        className="stats-trend-strip"
+        onPointerDown={scroller.handlePointerDown}
+        onPointerMove={scroller.handlePointerMove}
+        onPointerUp={scroller.handlePointerUp}
+        onPointerCancel={scroller.handlePointerCancel}
+      >
+        <svg viewBox={`0 0 ${width} ${height}`} className="stats-composed-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
+          <line x1={left} x2={width - right} y1={targetY} y2={targetY} className="stats-line-target" />
+          <text x={width - right} y={Math.max(targetY - 6, top + 8)} textAnchor="end" className="stats-line-target-label">
+            meta 3min
+          </text>
+          <line x1={left} x2={width - right} y1={bottom} y2={bottom} className="stats-axis-line" />
+          <path d={buildLinePath(actualCoords)} className="stats-line-path stats-line-accent-gold" />
+          {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-gold" /> : null}
+          {points.map((point, index) => {
+            const coord = actualCoords[index];
+            const showLabel = index % labelStep === 0 || index === points.length - 1;
+            return (
+              <g key={point.period}>
+                <circle cx={coord.x} cy={coord.y} r="3.5" className="stats-line-dot stats-line-accent-gold" />
+                <title>{`${formatWeekLabel(point.start_date, point.end_date)} - ${formatSecondsShort(point.avg_time_correct_questions_seconds)}`}</title>
+                {showLabel ? (
+                  <text x={coord.x} y={bottom + 14} textAnchor="middle" className="stats-line-axis-label">
+                    {formatWeekTick(point.start_date)}
+                  </text>
+                ) : null}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div className="stats-trend-status">{trendSummary}</div>
     </div>
   );
 }
@@ -874,7 +973,7 @@ export default function StatsPage() {
         />
 
         <div className="stats-trend-grid">
-          <ChartFrame title="Questoes por semana" subtitle="Semana atual no foco. Arraste para voltar no historico.">
+          <ChartFrame title="Questoes por semana" subtitle="Volume semanal com leitura mais compacta.">
             {timeseriesPoints.length > 0 ? (
               <QuestionsTrendChart points={timeseriesPoints} />
             ) : (
@@ -882,31 +981,17 @@ export default function StatsPage() {
             )}
           </ChartFrame>
 
-          <ChartFrame title="Acuracia por semana" subtitle="Semana atual ao centro, com projecao dos proximos passos.">
+          <ChartFrame title="Acuracia por semana" subtitle="Escala fixa de 0% a 100%, com respiro visual.">
             {timeseriesPoints.length > 0 ? (
-              <LineChart
-                points={timeseriesPoints}
-                valueSelector={(point) => point.accuracy}
-                strokeClassName="stats-line-accent-blue"
-                labelBuilder={(point) => `${formatWeekTick(point.start_date, point.end_date)} - ${formatPercent(point.accuracy)} - ${point.correct_count} acertos`}
-                metric="accuracy"
-              />
+              <AccuracyTrendChart points={timeseriesPoints} />
             ) : (
               <p className="today-empty-copy">Sem pontos suficientes para desenhar a acuracia.</p>
             )}
           </ChartFrame>
 
-          <ChartFrame title="Tempo medio correto" subtitle="So respostas corretas entram aqui. A referencia boa fica em 2min45s ou menos.">
+          <ChartFrame title="Tempo medio correto" subtitle="Linha real, tendencia e meta discreta de 3min.">
             {timeseriesPoints.length > 0 ? (
-              <LineChart
-                points={timeseriesPoints}
-                valueSelector={(point) => point.avg_time_correct_questions_seconds ?? 0}
-                strokeClassName="stats-line-accent-gold"
-                labelBuilder={(point) => `${formatWeekTick(point.start_date, point.end_date)} - ${formatSeconds(point.avg_time_correct_questions_seconds)}`}
-                metric="avg_time_correct_questions_seconds"
-                targetValue={165}
-                targetLabel="2m45"
-              />
+              <TimeTrendChart points={timeseriesPoints} />
             ) : (
               <p className="today-empty-copy">Sem tempo suficiente para desenhar o ritmo.</p>
             )}
