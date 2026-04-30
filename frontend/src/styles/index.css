@@ -148,6 +148,7 @@ body {
   background: var(--app-bg);
   color: var(--app-text);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: clip;
   transition: background 180ms ease, color 180ms ease;
 }
 
@@ -165,6 +166,7 @@ textarea {
 .app-shell {
   min-height: 100vh;
   color: var(--app-text);
+  overflow-x: clip;
 }
 
 .app-topbar {
@@ -807,6 +809,7 @@ textarea {
 
 .today-page {
   padding: 1rem 1.5rem 3rem;
+  overflow-x: clip;
 }
 
 .today-status {
@@ -2097,6 +2100,36 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .app-topbar-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .app-topbar-actions {
+    margin-left: auto;
+    order: 1;
+  }
+
+  .app-topbar-nav {
+    order: 2;
+    flex: 1 1 100%;
+    width: 100%;
+    flex-wrap: wrap;
+    overflow: visible;
+    gap: 0.5rem;
+  }
+
+  .app-topbar-primary-nav,
+  .app-topbar-secondary-nav {
+    flex-wrap: wrap;
+  }
+
+  .app-topbar-secondary-nav {
+    gap: 0.45rem;
+    padding-left: 0;
+    border-left: 0;
+  }
+
   .today-page {
     padding-right: 1rem;
     padding-left: 1rem;
@@ -4114,8 +4147,7 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .app-topbar-actions,
-  .app-topbar-nav {
+  .app-topbar-actions {
     width: auto;
   }
 
@@ -4238,23 +4270,52 @@ textarea {
     padding: 0.8rem 0.75rem 2rem;
   }
 
+  .app-topbar-row {
+    gap: 0.55rem;
+    padding: 0.45rem 0.75rem;
+  }
+
   .app-topbar-nav {
     display: flex;
-    max-width: calc(100vw - 7.2rem);
+    max-width: none;
+    width: 100%;
+    gap: 0.35rem;
+  }
+
+  .app-topbar-primary-nav,
+  .app-topbar-secondary-nav {
+    gap: 0.35rem;
   }
 
   .app-topbar-secondary-nav {
-    padding-left: 0.55rem;
+    padding-left: 0;
   }
 
   .app-topbar-link {
-    max-width: 8.5rem;
+    max-width: none;
+    gap: 0.35rem;
+    padding: 0.42rem 0.52rem;
+    font-size: 0.74rem;
   }
 
   .app-topbar-link-secondary {
-    max-width: 5.8rem;
-    padding-right: 0.52rem;
-    padding-left: 0.52rem;
+    max-width: none;
+    padding-right: 0.48rem;
+    padding-left: 0.48rem;
+  }
+
+  .app-topbar-link-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .app-topbar-actions {
+    gap: 0.3rem;
+  }
+
+  .topbar-hover-icon {
+    width: 2.1rem;
+    height: 2.1rem;
   }
 }
 
