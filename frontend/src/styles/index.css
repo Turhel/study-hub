@@ -2799,8 +2799,8 @@ textarea {
 }
 
 .stats-trend-strip {
-  --trend-item-width: 4.9rem;
-  --trend-item-gap: 0.7rem;
+  --trend-item-width: 4rem;
+  --trend-item-gap: 0.5rem;
   overflow-x: auto;
   cursor: grab;
   scrollbar-width: none;
@@ -2819,7 +2819,7 @@ textarea {
 .stats-chart-note {
   margin: 0;
   color: rgba(206, 217, 235, 0.72);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   line-height: 1.5;
 }
 
@@ -2830,15 +2830,15 @@ textarea {
   grid-auto-columns: var(--trend-item-width);
   gap: var(--trend-item-gap);
   align-items: end;
-  min-height: 13.6rem;
-  padding-top: 0.9rem;
+  min-height: 10.8rem;
+  padding-top: 0.55rem;
 }
 
 .stats-bars-overlay {
   position: absolute;
   inset: 0 0 auto 0;
   width: 100%;
-  height: 9rem;
+  height: 7rem;
   overflow: visible;
   pointer-events: none;
 }
@@ -2846,20 +2846,20 @@ textarea {
 .stats-bars-column {
   position: relative;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.25rem;
   justify-items: center;
 }
 
 .stats-bars-column strong {
   color: #f8fbff;
   font-family: "Fraunces", Georgia, serif;
-  font-size: 1rem;
+  font-size: 0.92rem;
   line-height: 1;
 }
 
 .stats-bars-column span {
   color: rgba(206, 217, 235, 0.7);
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 700;
   text-align: center;
   line-height: 1.2;
@@ -2869,7 +2869,7 @@ textarea {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  min-height: 10.6rem;
+  min-height: 7.9rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
@@ -2891,7 +2891,7 @@ textarea {
 }
 
 .stats-line-chart {
-  min-height: 13rem;
+  min-height: 9.6rem;
   overflow: visible;
 }
 
@@ -2935,7 +2935,7 @@ textarea {
 .stats-line-target-label,
 .stats-line-axis-label {
   fill: rgba(206, 217, 235, 0.72);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -4272,8 +4272,8 @@ textarea {
   }
 
   .stats-trend-strip {
-    --trend-item-width: 4.35rem;
-    --trend-item-gap: 0.55rem;
+    --trend-item-width: 3.6rem;
+    --trend-item-gap: 0.45rem;
   }
 
   .lessons-module {

@@ -480,8 +480,8 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
   const focusIndex = Math.max(points.length - 1, 0);
   const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
   const actualMax = Math.max(...trendPoints.filter((point) => !point.isProjection).map((point) => point.questions_count), 1);
-  const chartWidth = Math.max(trendPoints.length * 78, 320);
-  const chartHeight = 144;
+  const chartWidth = Math.max(trendPoints.length * 64, 264);
+  const chartHeight = 112;
   const lineValues = trendPoints.map((point) => point.questions_count);
   const coordinates = buildChartGeometry(lineValues, chartWidth, chartHeight, 0);
   const actualCoords = coordinates.slice(0, points.length);
@@ -545,8 +545,8 @@ function LineChart({
   const trendPoints = useMemo(() => buildProjectedTrendPoints(points, metric, 3), [metric, points]);
   const focusIndex = Math.max(points.length - 1, 0);
   const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
-  const width = Math.max(trendPoints.length * 78, 320);
-  const height = 170;
+  const width = Math.max(trendPoints.length * 64, 264);
+  const height = 124;
   const values = trendPoints.map(valueSelector);
   const coords = buildChartGeometry(values, width, height, metric === "accuracy" ? 0 : 0);
   const actualCoords = coords.slice(0, points.length);
