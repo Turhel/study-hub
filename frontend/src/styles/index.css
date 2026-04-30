@@ -2823,15 +2823,15 @@ textarea {
   grid-auto-columns: var(--trend-item-width);
   gap: var(--trend-item-gap);
   align-items: end;
-  min-height: 5rem;
-  padding-top: 0.1rem;
+  min-height: 5.75rem;
+  padding-top: 0.16rem;
 }
 
 .stats-bars-overlay {
   position: absolute;
   inset: 0 0 auto 0;
   width: 100%;
-  height: 2.9rem;
+  height: 3.6rem;
   overflow: hidden;
   pointer-events: none;
 }
@@ -2862,7 +2862,7 @@ textarea {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  min-height: 3.85rem;
+  min-height: 4.55rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
@@ -2884,7 +2884,7 @@ textarea {
 }
 
 .stats-line-chart {
-  min-height: 4.25rem;
+  min-height: 5.3rem;
   overflow: visible;
 }
 
