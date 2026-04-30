@@ -1,5 +1,5 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import {
   getGamificationSummary,
@@ -15,6 +15,13 @@ import type { StatsDisciplineSubjectItem, StatsHeatmapDay, StatsHeatmapResponse,
 const GENERAL_FILTER = "Geral";
 
 type StatsCardTone = "blue" | "pink" | "gold" | "green";
+type TrendMetricKey = "questions_count" | "accuracy" | "avg_time_correct_questions_seconds";
+
+type TrendPoint = StatsTimeSeriesPoint & {
+  isProjection?: boolean;
+  label: string;
+  periodHint: string;
+};
 
 function formatPercent(value?: number | null): string {
   return `${Math.round((value ?? 0) * 100)}%`;
@@ -60,6 +67,146 @@ function formatWeekTick(startDate: string, endDate: string): string {
   }
 
   return start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+function formatWeekRange(startDate: string, endDate: string): string {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  return `${start.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} - ${end.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function clampNumber(value: number, min: number, max?: number): number {
+  const upper = max === undefined ? value : Math.min(value, max);
+  return Math.max(min, upper);
+}
+
+function buildProjectedTrendPoints(points: StatsTimeSeriesPoint[], metric: TrendMetricKey, futureCount = 3): TrendPoint[] {
+  if (points.length === 0) {
+    return [];
+  }
+
+  const actualPoints: TrendPoint[] = points.map((point) => ({
+    ...point,
+    label: formatWeekTick(point.start_date, point.end_date),
+    periodHint: formatWeekRange(point.start_date, point.end_date),
+  }));
+
+  const values = points.map((point) => {
+    if (metric === "questions_count") {
+      return point.questions_count;
+    }
+    if (metric === "accuracy") {
+      return point.accuracy;
+    }
+    return point.avg_time_correct_questions_seconds ?? 0;
+  });
+
+  const recentValues = values.slice(-3);
+  const deltas = recentValues.slice(1).map((value, index) => value - recentValues[index]);
+  const averageDelta = deltas.length > 0 ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
+  const lastPoint = points[points.length - 1];
+  let lastValue = values[values.length - 1] ?? 0;
+
+  for (let offset = 1; offset <= futureCount; offset += 1) {
+    const startDate = addDays(new Date(`${lastPoint.start_date}T00:00:00`), 7 * offset);
+    const endDate = addDays(new Date(`${lastPoint.end_date}T00:00:00`), 7 * offset);
+    let projectedValue = lastValue + averageDelta;
+
+    if (metric === "accuracy") {
+      projectedValue = clampNumber(projectedValue, 0, 1);
+    } else if (metric === "questions_count") {
+      projectedValue = clampNumber(projectedValue, 0);
+    } else {
+      projectedValue = clampNumber(projectedValue, 0);
+    }
+
+    lastValue = projectedValue;
+
+    actualPoints.push({
+      period: `${lastPoint.period}-projection-${offset}`,
+      start_date: formatIsoDate(startDate),
+      end_date: formatIsoDate(endDate),
+      questions_count: metric === "questions_count" ? Math.round(projectedValue) : 0,
+      correct_count: 0,
+      accuracy: metric === "accuracy" ? projectedValue : 0,
+      avg_time_correct_questions_seconds: metric === "avg_time_correct_questions_seconds" ? projectedValue : null,
+      active_days: 0,
+      isProjection: true,
+      label: formatWeekTick(formatIsoDate(startDate), formatIsoDate(endDate)),
+      periodHint: `Projecao ${formatWeekRange(formatIsoDate(startDate), formatIsoDate(endDate))}`,
+    });
+  }
+
+  return actualPoints;
+}
+
+function useDraggableTrendStrip(itemCount: number, focusIndex: number) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const dragState = useRef<{ pointerId: number; startX: number; startScrollLeft: number } | null>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+
+    const styles = window.getComputedStyle(element);
+    const itemWidth = Number.parseFloat(styles.getPropertyValue("--trend-item-width")) || 78;
+    const gap = Number.parseFloat(styles.getPropertyValue("--trend-item-gap")) || 12;
+    const targetLeft = focusIndex * (itemWidth + gap) - (element.clientWidth - itemWidth) / 2;
+    const maxLeft = Math.max(0, itemCount * (itemWidth + gap) - gap - element.clientWidth);
+    element.scrollLeft = Math.max(0, Math.min(targetLeft, maxLeft));
+  }, [focusIndex, itemCount]);
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+    dragState.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: element.scrollLeft,
+    };
+    element.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const element = ref.current;
+    const state = dragState.current;
+    if (!element || !state || state.pointerId !== event.pointerId) {
+      return;
+    }
+    const delta = event.clientX - state.startX;
+    element.scrollLeft = state.startScrollLeft - delta;
+  }
+
+  function handlePointerEnd(event: ReactPointerEvent<HTMLDivElement>) {
+    const element = ref.current;
+    if (!element || !dragState.current || dragState.current.pointerId !== event.pointerId) {
+      return;
+    }
+    element.releasePointerCapture(event.pointerId);
+    dragState.current = null;
+  }
+
+  return {
+    ref,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp: handlePointerEnd,
+    handlePointerCancel: handlePointerEnd,
+  };
 }
 
 function normalizeDisciplineLabel(value: string): string {
@@ -291,43 +438,78 @@ function ChartFrame({
   );
 }
 
-function QuestionsBarChart({ points }: { points: StatsTimeSeriesPoint[] }) {
-  const maxValue = Math.max(...points.map((point) => point.questions_count), 1);
+function buildChartGeometry(values: number[], width: number, height: number, floor = 0) {
+  const safeValues = values.length > 0 ? values : [0];
+  const maxValue = Math.max(...safeValues, floor + 1);
+  const minValue = floor;
+  const span = Math.max(maxValue - minValue, 1);
 
-  return (
-    <div className="stats-bars-chart" role="img" aria-label="Questoes por periodo">
-      {points.map((point) => (
-        <div
-          key={point.period}
-          className="stats-bars-column"
-          title={`${formatWeekTick(point.start_date, point.end_date)} - ${point.questions_count} questoes - ${point.correct_count} acertos`}
-        >
-          <div className="stats-bars-track">
-            <div
-              className="stats-bars-fill"
-              style={{ height: `${(point.questions_count / maxValue) * 100}%` }}
-            />
-          </div>
-          <span>{formatWeekTick(point.start_date, point.end_date)}</span>
-        </div>
-      ))}
-    </div>
-  );
+  return values.map((value, index) => {
+    const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
+    const normalized = (value - minValue) / span;
+    const y = height - normalized * height;
+    return { x, y };
+  });
 }
 
-function buildLinePath(values: number[], width: number, height: number) {
-  if (values.length === 0) {
+function buildLinePathFromCoords(coords: Array<{ x: number; y: number }>) {
+  if (coords.length === 0) {
     return "";
   }
 
-  const maxValue = Math.max(...values, 1);
-  return values
-    .map((value, index) => {
-      const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
-      const y = height - (value / maxValue) * height;
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
+  return coords
+    .map((coord, index) => `${index === 0 ? "M" : "L"} ${coord.x.toFixed(2)} ${coord.y.toFixed(2)}`)
     .join(" ");
+}
+
+function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
+  const trendPoints = useMemo(() => buildProjectedTrendPoints(points, "questions_count", 3), [points]);
+  const focusIndex = Math.max(points.length - 1, 0);
+  const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
+  const actualMax = Math.max(...trendPoints.filter((point) => !point.isProjection).map((point) => point.questions_count), 1);
+  const chartWidth = Math.max(trendPoints.length * 78, 320);
+  const chartHeight = 144;
+  const lineValues = trendPoints.map((point) => point.questions_count);
+  const coordinates = buildChartGeometry(lineValues, chartWidth, chartHeight, 0);
+  const actualCoords = coordinates.slice(0, points.length);
+  const projectedCoords = coordinates.slice(Math.max(points.length - 1, 0));
+
+  return (
+    <div className="stats-trend-strip-shell">
+      <div
+        ref={scroller.ref}
+        className="stats-trend-strip"
+        onPointerDown={scroller.handlePointerDown}
+        onPointerMove={scroller.handlePointerMove}
+        onPointerUp={scroller.handlePointerUp}
+        onPointerCancel={scroller.handlePointerCancel}
+      >
+        <div className="stats-bars-chart" style={{ width: `${chartWidth}px` }} role="img" aria-label="Questoes por semana com tendencia">
+          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="stats-bars-overlay" aria-hidden="true">
+            <path d={buildLinePathFromCoords(actualCoords)} className="stats-line-path stats-line-accent-blue" />
+            <path d={buildLinePathFromCoords(projectedCoords)} className="stats-line-path stats-line-projection stats-line-accent-blue" />
+          </svg>
+          {trendPoints.map((point) => (
+            <div
+              key={point.period}
+              className={`stats-bars-column ${point.isProjection ? "is-projection" : ""} ${point.isProjection ? "" : "is-current-band"}`}
+              title={`${point.periodHint} - ${point.questions_count} questoes`}
+            >
+              <div className="stats-bars-track">
+                <div
+                  className="stats-bars-fill"
+                  style={{ height: `${(point.questions_count / actualMax) * 100}%` }}
+                />
+              </div>
+              <strong>{point.questions_count}</strong>
+              <span>{point.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="stats-chart-note">A faixa abre na semana atual. Arraste para rever semanas anteriores.</p>
+    </div>
+  );
 }
 
 function LineChart({
@@ -335,32 +517,85 @@ function LineChart({
   valueSelector,
   strokeClassName,
   labelBuilder,
+  metric,
+  targetValue,
+  targetLabel,
 }: {
   points: StatsTimeSeriesPoint[];
   valueSelector: (point: StatsTimeSeriesPoint) => number;
   strokeClassName: string;
   labelBuilder: (point: StatsTimeSeriesPoint) => string;
+  metric: TrendMetricKey;
+  targetValue?: number;
+  targetLabel?: string;
 }) {
-  const width = 520;
+  const trendPoints = useMemo(() => buildProjectedTrendPoints(points, metric, 3), [metric, points]);
+  const focusIndex = Math.max(points.length - 1, 0);
+  const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
+  const width = Math.max(trendPoints.length * 78, 320);
   const height = 170;
-  const values = points.map(valueSelector);
-  const path = buildLinePath(values, width, height);
+  const values = trendPoints.map(valueSelector);
+  const coords = buildChartGeometry(values, width, height, metric === "accuracy" ? 0 : 0);
+  const actualCoords = coords.slice(0, points.length);
+  const projectedCoords = coords.slice(Math.max(points.length - 1, 0));
+  const maxValue = Math.max(...values, targetValue ?? 1, 1);
+  const targetY = targetValue === undefined ? null : height - (targetValue / maxValue) * height;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height + 26}`} className="stats-line-chart" role="img" aria-hidden="true">
-      <path d={path} className={`stats-line-path ${strokeClassName}`} />
-      {points.map((point, index) => {
-        const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
-        const maxValue = Math.max(...values, 1);
-        const y = height - (valueSelector(point) / maxValue) * height;
-        return (
-          <g key={point.period}>
-            <circle cx={x} cy={y} r="4" className={`stats-line-dot ${strokeClassName}`} />
-            <title>{labelBuilder(point)}</title>
-          </g>
-        );
-      })}
-    </svg>
+    <div className="stats-trend-strip-shell">
+      <div
+        ref={scroller.ref}
+        className="stats-trend-strip"
+        onPointerDown={scroller.handlePointerDown}
+        onPointerMove={scroller.handlePointerMove}
+        onPointerUp={scroller.handlePointerUp}
+        onPointerCancel={scroller.handlePointerCancel}
+      >
+        <svg viewBox={`0 0 ${width} ${height + 34}`} className="stats-line-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
+          {targetY !== null ? (
+            <>
+              <line x1="0" x2={width} y1={targetY} y2={targetY} className="stats-line-target" />
+              {targetLabel ? (
+                <text x={width - 6} y={Math.max(targetY - 6, 14)} className="stats-line-target-label">
+                  {targetLabel}
+                </text>
+              ) : null}
+            </>
+          ) : null}
+          <path d={buildLinePathFromCoords(actualCoords)} className={`stats-line-path ${strokeClassName}`} />
+          <path d={buildLinePathFromCoords(projectedCoords)} className={`stats-line-path stats-line-projection ${strokeClassName}`} />
+          {trendPoints.map((point, index) => {
+            const coord = coords[index];
+            if (!coord) {
+              return null;
+            }
+            return (
+              <g key={point.period}>
+                <circle
+                  cx={coord.x}
+                  cy={coord.y}
+                  r={point.isProjection ? "3.5" : "4.5"}
+                  className={`stats-line-dot ${strokeClassName} ${point.isProjection ? "is-projection" : ""}`}
+                />
+                {!point.isProjection ? (
+                  <text x={coord.x} y={height + 20} textAnchor="middle" className="stats-line-axis-label">
+                    {point.label}
+                  </text>
+                ) : null}
+                <title>{labelBuilder(point)}</title>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <p className="stats-chart-note">
+        {metric === "accuracy"
+          ? "A semana atual fica centralizada para deixar a projecao visivel."
+          : metric === "avg_time_correct_questions_seconds"
+            ? "A linha de referencia marca 2min45s. Arraste para revisar semanas anteriores."
+            : "Arraste para ver o historico e a tendencia projetada."}
+      </p>
+    </div>
   );
 }
 
@@ -629,34 +864,38 @@ export default function StatsPage() {
         />
 
         <div className="stats-trend-grid">
-          <ChartFrame title="Questoes por semana" subtitle="Volume registrado ao longo do tempo.">
+          <ChartFrame title="Questoes por semana" subtitle="Semana atual no foco. Arraste para voltar no historico.">
             {timeseriesPoints.length > 0 ? (
-              <QuestionsBarChart points={timeseriesPoints} />
+              <QuestionsTrendChart points={timeseriesPoints} />
             ) : (
               <p className="today-empty-copy">Sem pontos suficientes para desenhar o volume.</p>
             )}
           </ChartFrame>
 
-          <ChartFrame title="Acuracia por semana" subtitle="Linha de acerto no periodo filtrado.">
+          <ChartFrame title="Acuracia por semana" subtitle="Semana atual ao centro, com projecao dos proximos passos.">
             {timeseriesPoints.length > 0 ? (
               <LineChart
                 points={timeseriesPoints}
                 valueSelector={(point) => point.accuracy}
                 strokeClassName="stats-line-accent-blue"
                 labelBuilder={(point) => `${formatWeekTick(point.start_date, point.end_date)} - ${formatPercent(point.accuracy)} - ${point.correct_count} acertos`}
+                metric="accuracy"
               />
             ) : (
               <p className="today-empty-copy">Sem pontos suficientes para desenhar a acuracia.</p>
             )}
           </ChartFrame>
 
-          <ChartFrame title="Tempo medio correto" subtitle="So respostas corretas entram aqui.">
+          <ChartFrame title="Tempo medio correto" subtitle="So respostas corretas entram aqui. A referencia boa fica em 2min45s ou menos.">
             {timeseriesPoints.length > 0 ? (
               <LineChart
                 points={timeseriesPoints}
                 valueSelector={(point) => point.avg_time_correct_questions_seconds ?? 0}
                 strokeClassName="stats-line-accent-gold"
                 labelBuilder={(point) => `${formatWeekTick(point.start_date, point.end_date)} - ${formatSeconds(point.avg_time_correct_questions_seconds)}`}
+                metric="avg_time_correct_questions_seconds"
+                targetValue={165}
+                targetLabel="2m45"
               />
             ) : (
               <p className="today-empty-copy">Sem tempo suficiente para desenhar o ritmo.</p>

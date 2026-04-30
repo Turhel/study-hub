@@ -2793,19 +2793,68 @@ textarea {
   line-height: 1.5;
 }
 
+.stats-trend-strip-shell {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.stats-trend-strip {
+  --trend-item-width: 4.9rem;
+  --trend-item-gap: 0.7rem;
+  overflow-x: auto;
+  cursor: grab;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-x;
+}
+
+.stats-trend-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.stats-trend-strip:active {
+  cursor: grabbing;
+}
+
+.stats-chart-note {
+  margin: 0;
+  color: rgba(206, 217, 235, 0.72);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
 .stats-bars-chart {
+  position: relative;
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(1.8rem, 1fr);
-  gap: 0.45rem;
+  grid-auto-columns: var(--trend-item-width);
+  gap: var(--trend-item-gap);
   align-items: end;
-  min-height: 13rem;
+  min-height: 13.6rem;
+  padding-top: 0.9rem;
+}
+
+.stats-bars-overlay {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  height: 9rem;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .stats-bars-column {
+  position: relative;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.35rem;
   justify-items: center;
+}
+
+.stats-bars-column strong {
+  color: #f8fbff;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .stats-bars-column span {
@@ -2820,7 +2869,7 @@ textarea {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  min-height: 11rem;
+  min-height: 10.6rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
@@ -2832,8 +2881,16 @@ textarea {
   background: linear-gradient(180deg, #7ec5ff, #2f9bff);
 }
 
+.stats-bars-column.is-projection .stats-bars-track {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(126, 197, 255, 0.3);
+}
+
+.stats-bars-column.is-projection .stats-bars-fill {
+  background: linear-gradient(180deg, rgba(126, 197, 255, 0.32), rgba(47, 155, 255, 0.22));
+}
+
 .stats-line-chart {
-  width: 100%;
   min-height: 13rem;
   overflow: visible;
 }
@@ -2845,9 +2902,18 @@ textarea {
   stroke-linejoin: round;
 }
 
+.stats-line-projection {
+  stroke-dasharray: 7 7;
+  opacity: 0.82;
+}
+
 .stats-line-dot {
   stroke: #0d121b;
   stroke-width: 2;
+}
+
+.stats-line-dot.is-projection {
+  opacity: 0.75;
 }
 
 .stats-line-accent-blue {
@@ -2858,6 +2924,19 @@ textarea {
 .stats-line-accent-gold {
   stroke: #ffcf59;
   fill: #ffcf59;
+}
+
+.stats-line-target {
+  stroke: rgba(255, 255, 255, 0.24);
+  stroke-dasharray: 4 6;
+  stroke-width: 2;
+}
+
+.stats-line-target-label,
+.stats-line-axis-label {
+  fill: rgba(206, 217, 235, 0.72);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .stats-breakdown-list {
@@ -4192,8 +4271,9 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .stats-bars-chart {
-    grid-auto-columns: minmax(2rem, 1fr);
+  .stats-trend-strip {
+    --trend-item-width: 4.35rem;
+    --trend-item-gap: 0.55rem;
   }
 
   .lessons-module {
