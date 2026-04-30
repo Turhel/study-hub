@@ -481,7 +481,7 @@ function QuestionsTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
   const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
   const actualMax = Math.max(...trendPoints.filter((point) => !point.isProjection).map((point) => point.questions_count), 1);
   const chartWidth = Math.max(trendPoints.length * 38, 156);
-  const chartHeight = 62;
+  const chartHeight = 74;
   const lineValues = trendPoints.map((point) => point.questions_count);
   const coordinates = buildChartGeometry(lineValues, chartWidth, chartHeight, 0);
   const actualCoords = coordinates.slice(0, points.length);
@@ -550,7 +550,7 @@ function LineChart({
   const focusIndex = Math.max(points.length - 1, 0);
   const scroller = useDraggableTrendStrip(trendPoints.length, focusIndex);
   const width = Math.max(trendPoints.length * 38, 156);
-  const height = 68;
+  const height = 82;
   const values = trendPoints.map(valueSelector);
   const coords = buildChartGeometry(values, width, height, metric === "accuracy" ? 0 : 0);
   const actualCoords = coords.slice(0, points.length);
@@ -568,7 +568,7 @@ function LineChart({
         onPointerUp={scroller.handlePointerUp}
         onPointerCancel={scroller.handlePointerCancel}
       >
-        <svg viewBox={`0 0 ${width} ${height + 18}`} className="stats-line-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
+        <svg viewBox={`0 0 ${width} ${height + 20}`} className="stats-line-chart" role="img" aria-hidden="true" style={{ width: `${width}px` }}>
           {targetY !== null ? (
             <>
               <line x1="0" x2={width} y1={targetY} y2={targetY} className="stats-line-target" />
@@ -595,7 +595,7 @@ function LineChart({
                   className={`stats-line-dot ${strokeClassName} ${point.isProjection ? "is-projection" : ""}`}
                 />
                 {!point.isProjection ? (
-                  <text x={coord.x} y={height + 12} textAnchor="middle" className="stats-line-axis-label">
+                  <text x={coord.x} y={height + 13} textAnchor="middle" className="stats-line-axis-label">
                     {point.label}
                   </text>
                 ) : null}
