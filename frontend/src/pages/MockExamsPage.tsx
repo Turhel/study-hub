@@ -28,6 +28,11 @@ const emptyForm: MockExamFormState = {
   notes: "",
 };
 
+type MetricPillProps = {
+  label: string;
+  value: string;
+};
+
 function formatDate(value: string | null | undefined): string {
   if (!value) {
     return "Sem data";
@@ -59,6 +64,15 @@ function formatDuration(minutes: number | null | undefined): string {
     return `${remaining}min`;
   }
   return `${hours}h${String(remaining).padStart(2, "0")}min`;
+}
+
+function MetricPill({ label, value }: MetricPillProps) {
+  return (
+    <article className="mock-exam-metric-pill">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
+  );
 }
 
 function formFromExam(exam: MockExam | null): MockExamFormState {
@@ -423,27 +437,34 @@ export default function MockExamsPage() {
         ) : null}
 
         <section className="today-panel today-panel-wide mock-exams-summary-grid">
-          <article className="today-stat-card">
+          <article className="today-stat-card mock-exam-summary-card">
             <span>Total de simulados</span>
             <strong>{summaryQuery.data?.total_exams ?? 0}</strong>
             <small>base registrada</small>
           </article>
-          <article className="today-stat-card">
+          <article className="today-stat-card mock-exam-summary-card">
             <span>Media TRI ultimos 3</span>
-            <strong>{formatTri(summaryQuery.data?.last_three_average_tri)}</strong>
+            <strong>{summaryQuery.isLoading ? "..." : formatTri(summaryQuery.data?.last_three_average_tri)}</strong>
             <small>somente notas preenchidas</small>
           </article>
-          <article className="today-stat-card">
+          <article className="today-stat-card mock-exam-summary-card">
             <span>Media de acerto ultimos 3</span>
-            <strong>{formatPercent(summaryQuery.data?.last_three_average_accuracy)}</strong>
+            <strong>{summaryQuery.isLoading ? "..." : formatPercent(summaryQuery.data?.last_three_average_accuracy)}</strong>
             <small>janela recente</small>
           </article>
-          <article className="today-stat-card">
+          <article className="today-stat-card mock-exam-summary-card">
             <span>Melhor TRI</span>
-            <strong>{formatTri(summaryQuery.data?.best_tri_score)}</strong>
+            <strong>{summaryQuery.isLoading ? "..." : formatTri(summaryQuery.data?.best_tri_score)}</strong>
             <small>melhor nota informada</small>
           </article>
         </section>
+
+        {summaryQuery.isError ? (
+          <section className="today-panel today-error-panel">
+            <strong>Resumo indisponivel agora.</strong>
+            <p>Os simulados podem continuar sendo registrados, mas os cards e graficos nao carregaram nesta tentativa.</p>
+          </section>
+        ) : null}
 
         <section className="mock-exams-layout">
           <section className="today-panel mock-exams-form-panel">
@@ -552,6 +573,10 @@ export default function MockExamsPage() {
 
               {formError ? <p className="today-form-error">{formError}</p> : null}
 
+              <p className="mock-exam-form-note">
+                TRI e duracao sao opcionais. O sistema nao calcula TRI real: ele apenas guarda a nota que voce informar.
+              </p>
+
               <div className="today-action-row">
                 {editingExamId != null ? (
                   <button
@@ -596,21 +621,29 @@ export default function MockExamsPage() {
                 {examsQuery.data.map((exam) => (
                   <article key={exam.id} className="mock-exam-row">
                     <div className="mock-exam-row-main">
-                      <strong>{exam.title}</strong>
-                      <span>
-                        {formatDate(exam.exam_date)} - {exam.area}
-                      </span>
+                      <div>
+                        <strong>{exam.title}</strong>
+                        <span>
+                          {formatDate(exam.exam_date)} - {exam.area}
+                        </span>
+                      </div>
+                      <span className="mock-exam-row-area-badge">{exam.area}</span>
                     </div>
                     <div className="mock-exam-row-metrics">
-                      <span>{exam.correct_count}/{exam.total_questions}</span>
-                      <span>{formatPercent(exam.accuracy)}</span>
-                      <span>TRI {formatTri(exam.tri_score)}</span>
-                      <span>{formatDuration(exam.duration_minutes)}</span>
+                      <MetricPill label="Acertos" value={`${exam.correct_count}/${exam.total_questions}`} />
+                      <MetricPill label="Acuracia" value={formatPercent(exam.accuracy)} />
+                      <MetricPill label="TRI" value={formatTri(exam.tri_score)} />
+                      <MetricPill label="Duracao" value={formatDuration(exam.duration_minutes)} />
                     </div>
+                    {exam.notes ? (
+                      <p className="mock-exam-row-notes" title={exam.notes}>
+                        {exam.notes}
+                      </p>
+                    ) : null}
                     <div className="mock-exam-row-actions">
                       <button
                         type="button"
-                        className="app-secondary-action"
+                        className="app-secondary-action mock-exam-edit-button"
                         onClick={() => {
                           setEditingExamId(exam.id);
                           setForm(formFromExam(exam));
@@ -622,7 +655,7 @@ export default function MockExamsPage() {
                       </button>
                       <button
                         type="button"
-                        className="app-secondary-action lessons-danger-action"
+                        className="app-secondary-action mock-exam-delete-button"
                         disabled={deleteMutation.isPending}
                         onClick={() => {
                           setFormError(null);
@@ -637,7 +670,7 @@ export default function MockExamsPage() {
                 ))}
               </div>
             ) : (
-              <div className="app-empty-card">
+              <div className="app-empty-card mock-exam-empty-state">
                 <strong>Nenhum simulado ainda.</strong>
                 <p>Comece registrando um resultado acima para construir sua linha de evolucao.</p>
               </div>

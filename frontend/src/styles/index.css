@@ -3616,18 +3616,37 @@ textarea {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.mock-exam-summary-card {
+  min-height: 8.75rem;
+}
+
 .mock-exams-layout {
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: start;
 }
 
 .mock-exams-chart-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mock-exams-chart-grid > :last-child {
+  grid-column: 1 / -1;
 }
 
 .mock-exams-form-panel textarea.app-input {
   min-height: 7rem;
   resize: vertical;
+}
+
+.mock-exam-form-note {
+  margin: 0;
+  border: 1px solid rgba(112, 133, 170, 0.24);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-soft) 82%, transparent);
+  padding: 0.72rem 0.8rem;
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  line-height: 1.55;
 }
 
 .mock-exams-table {
@@ -3640,12 +3659,23 @@ textarea {
   border-radius: 12px;
   background: var(--today-outline-bg);
   padding: 0.85rem 0.95rem;
+  box-shadow: 0 10px 24px rgba(10, 14, 24, 0.04);
+}
+
+.mock-exam-row-main {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
 }
 
 .mock-exam-row-main strong,
 .mock-exam-area-row strong {
   color: var(--app-text);
   font-size: 0.94rem;
+}
+
+.mock-exam-row-main strong {
+  display: block;
+  line-height: 1.35;
 }
 
 .mock-exam-row-main span,
@@ -3656,13 +3686,75 @@ textarea {
   font-size: 0.8rem;
 }
 
+.mock-exam-row-area-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(47, 169, 244, 0.25);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cta-blue) 16%, transparent);
+  padding: 0.3rem 0.62rem;
+  color: var(--app-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .mock-exam-row-metrics {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mock-exam-metric-pill {
+  display: grid;
+  gap: 0.18rem;
+  border: 1px solid rgba(112, 133, 170, 0.22);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-soft) 86%, transparent);
+  padding: 0.6rem 0.7rem;
+}
+
+.mock-exam-metric-pill span {
+  color: var(--muted-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.mock-exam-metric-pill strong {
+  color: var(--app-text);
+  font-size: 0.94rem;
+  line-height: 1.1;
+}
+
+.mock-exam-row-notes {
+  margin: 0;
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .mock-exam-row-actions {
   grid-template-columns: repeat(2, auto);
   justify-content: start;
+  align-items: center;
+}
+
+.mock-exam-edit-button,
+.mock-exam-delete-button {
+  min-width: 7rem;
+  justify-content: center;
+}
+
+.mock-exam-delete-button {
+  border-color: rgba(212, 93, 69, 0.35);
+  color: #d45d45;
+}
+
+.mock-exam-delete-button:hover {
+  background: rgba(212, 93, 69, 0.08);
 }
 
 .mock-exam-chart-scroll {
@@ -3773,11 +3865,22 @@ textarea {
 .mock-exam-empty-chart {
   min-height: 12rem;
   place-content: center;
+  border: 1px dashed rgba(112, 133, 170, 0.24);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+  padding: 1rem;
+  text-align: center;
 }
 
 .mock-exam-empty-chart strong {
   color: var(--app-text);
   font-size: 0.95rem;
+}
+
+.mock-exam-empty-state {
+  min-height: 11rem;
+  place-content: center;
+  text-align: center;
 }
 
 .free-study-shell {
@@ -4398,6 +4501,10 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .mock-exams-chart-grid > :last-child {
+    grid-column: auto;
+  }
+
   .mock-exams-layout {
     grid-template-columns: 1fr;
   }
@@ -4509,6 +4616,10 @@ textarea {
   .mock-exams-chart-grid,
   .mock-exam-row-metrics,
   .mock-exam-area-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mock-exam-row-main {
     grid-template-columns: 1fr;
   }
 
