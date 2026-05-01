@@ -185,7 +185,7 @@ def _question_correctness(
     return user_answer.strip().upper() == correct_answer.strip().upper()
 
 
-def _to_response(exam: MockExam) -> MockExamResponse:
+def _to_response(exam: MockExam, *, estimated_tri_score: float | None = None) -> MockExamResponse:
     return MockExamResponse(
         id=exam.id or 0,
         exam_date=exam.data.isoformat(),
@@ -198,7 +198,7 @@ def _to_response(exam: MockExam) -> MockExamResponse:
         accuracy=_accuracy(exam),
         tri_score=exam.tri_score,
         official_tri_score=exam.tri_score,
-        estimated_tri_score=exam.estimated_tri_score,
+        estimated_tri_score=estimated_tri_score if estimated_tri_score is not None else exam.estimated_tri_score,
         duration_minutes=exam.tempo_total_min,
         notes=exam.observacoes,
         started_at=exam.started_at.isoformat() if exam.started_at else None,
@@ -358,6 +358,32 @@ def _compute_estimated_tri(area: str, questions: list[MockExamQuestion]) -> floa
     return round(max(floor, min(ceiling, estimated)), 1)
 
 
+def _estimate_from_question_set(exam: MockExam, questions: list[MockExamQuestion]) -> float | None:
+    if not questions:
+        return None
+
+    grouped: dict[str, list[MockExamQuestion]] = {}
+    for question in questions:
+        area_key = question.area or question.discipline or exam.area or "Geral"
+        grouped.setdefault(area_key, []).append(question)
+
+    area_scores = [
+        _compute_estimated_tri(area, area_questions)
+        for area, area_questions in grouped.items()
+    ]
+    numeric_scores = [score for score in area_scores if score is not None]
+    return round(mean(numeric_scores), 1) if numeric_scores else None
+
+
+def _resolve_exam_estimated_tri(session: Session, exam: MockExam) -> float | None:
+    questions = _list_question_rows(session, exam.id or 0)
+    if questions:
+        question_estimate = _estimate_from_question_set(exam, questions)
+        if question_estimate is not None:
+            return question_estimate
+    return _estimate_score_from_exam(exam)
+
+
 def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
     questions = _list_question_rows(session, exam.id or 0)
     total_questions = len(questions)
@@ -399,7 +425,10 @@ def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
     overall_area_average_score = round(mean(area_scores), 1) if area_scores else None
 
     return MockExamResultsResponse(
-        exam=_to_response(exam),
+        exam=_to_response(
+            exam,
+            estimated_tri_score=overall_area_average_score if overall_area_average_score is not None else _estimate_score_from_exam(exam),
+        ),
         total_questions=total_questions,
         answered_count=len(answered_questions),
         skipped_count=len(skipped_questions),
@@ -417,11 +446,12 @@ def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
 
 def list_mock_exams(session: Session) -> list[MockExamResponse]:
     rows = session.exec(select(MockExam).order_by(MockExam.data.desc(), MockExam.id.desc())).all()
-    return [_to_response(row) for row in rows]
+    return [_to_response(row, estimated_tri_score=_resolve_exam_estimated_tri(session, row)) for row in rows]
 
 
 def get_mock_exam(session: Session, exam_id: int) -> MockExamResponse:
-    return _to_response(_get_exam_or_raise(session, exam_id))
+    exam = _get_exam_or_raise(session, exam_id)
+    return _to_response(exam, estimated_tri_score=_resolve_exam_estimated_tri(session, exam))
 
 
 def create_mock_exam(session: Session, payload: MockExamCreate) -> MockExamResponse:
@@ -500,10 +530,11 @@ def delete_mock_exam(session: Session, exam_id: int) -> None:
 
 def get_mock_exam_summary(session: Session) -> MockExamSummaryResponse:
     rows = session.exec(select(MockExam).order_by(MockExam.data.desc(), MockExam.id.desc())).all()
+    estimated_by_exam_id = {row.id or 0: _resolve_exam_estimated_tri(session, row) for row in rows}
 
-    tri_recent = [row.estimated_tri_score for row in rows if row.estimated_tri_score is not None][:3]
+    tri_recent = [estimated_by_exam_id[row.id or 0] for row in rows if estimated_by_exam_id[row.id or 0] is not None][:3]
     accuracy_recent = [_accuracy(row) for row in rows if row.total_questoes > 0][:3]
-    best_tri_values = [row.estimated_tri_score for row in rows if row.estimated_tri_score is not None]
+    best_tri_values = [estimated_by_exam_id[row.id or 0] for row in rows if estimated_by_exam_id[row.id or 0] is not None]
 
     by_area_map: dict[str, list[MockExam]] = {}
     for row in rows:
@@ -513,8 +544,8 @@ def get_mock_exam_summary(session: Session) -> MockExamSummaryResponse:
         MockExamAreaSummary(
             area=area,  # type: ignore[arg-type]
             total_exams=len(area_rows),
-            latest_tri_score=next((item.estimated_tri_score for item in area_rows if item.estimated_tri_score is not None), None),
-            best_tri_score=max((item.estimated_tri_score for item in area_rows if item.estimated_tri_score is not None), default=None),
+            latest_tri_score=next((estimated_by_exam_id[item.id or 0] for item in area_rows if estimated_by_exam_id[item.id or 0] is not None), None),
+            best_tri_score=max((estimated_by_exam_id[item.id or 0] for item in area_rows if estimated_by_exam_id[item.id or 0] is not None), default=None),
             average_accuracy=mean(_accuracy(item) for item in area_rows) if area_rows else None,
         )
         for area, area_rows in sorted(by_area_map.items(), key=lambda item: item[0])
@@ -527,7 +558,7 @@ def get_mock_exam_summary(session: Session) -> MockExamSummaryResponse:
         last_three_average_accuracy=mean(accuracy_recent) if accuracy_recent else None,
         best_tri_score=max(best_tri_values) if best_tri_values else None,
         by_area=by_area,
-        recent=[_to_response(row) for row in rows[:5]],
+        recent=[_to_response(row, estimated_tri_score=estimated_by_exam_id[row.id or 0]) for row in rows[:5]],
     )
 
 

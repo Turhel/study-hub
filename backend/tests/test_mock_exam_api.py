@@ -725,3 +725,46 @@ def test_manual_mock_exam_estimate_for_general_two_hits_in_ninety(monkeypatch) -
         assert payload["estimated_tri_score"] <= 400
     finally:
         _cleanup_context(context)
+
+
+def test_mock_exam_list_recomputes_stale_estimate_for_old_record(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        create_response = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Antigo 2/90",
+                "area": "Geral",
+                "total_questions": 90,
+                "correct_count": 2,
+                "tri_score": None,
+                "duration_minutes": 300,
+                "notes": None,
+            },
+        )
+        assert create_response.status_code == 200
+        exam_id = create_response.json()["id"]
+
+        with Session(context.engine, expire_on_commit=False) as session:
+            exam = session.get(MockExam, exam_id)
+            assert exam is not None
+            exam.estimated_tri_score = 549.0
+            session.add(exam)
+            session.commit()
+
+        list_response = client.get("/api/mock-exams")
+        assert list_response.status_code == 200
+        listed_exam = next(item for item in list_response.json() if item["id"] == exam_id)
+        assert listed_exam["estimated_tri_score"] <= 400
+        assert listed_exam["estimated_tri_score"] != 549.0
+
+        summary_response = client.get("/api/mock-exams/summary")
+        assert summary_response.status_code == 200
+        recent_exam = next(item for item in summary_response.json()["recent"] if item["id"] == exam_id)
+        assert recent_exam["estimated_tri_score"] == listed_exam["estimated_tri_score"]
+    finally:
+        _cleanup_context(context)
