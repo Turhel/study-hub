@@ -312,3 +312,220 @@ def test_mock_exam_execution_flow_and_results(monkeypatch) -> None:
         assert results["estimated_tri_score"] == results["exam"]["estimated_tri_score"]
     finally:
         _cleanup_context(context)
+
+
+def test_mock_exam_estimate_stays_low_for_two_hits_in_ninety(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        exam = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Simulado baixo desempenho",
+                "area": "Geral",
+                "mode": "external",
+                "total_questions": 90,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 300,
+                "notes": None,
+            },
+        ).json()
+
+        client.post(
+            f"/api/mock-exams/{exam['id']}/questions/generate-placeholders",
+            json={
+                "total_questions": 90,
+                "areas": [
+                    {"area": "Matematica", "start": 1, "end": 45},
+                    {"area": "Natureza", "start": 46, "end": 90},
+                ],
+            },
+        )
+        client.post(f"/api/mock-exams/{exam['id']}/start")
+        questions = client.get(f"/api/mock-exams/{exam['id']}/questions").json()
+
+        client.put(
+            f"/api/mock-exams/{exam['id']}/questions/{questions[0]['id']}",
+            json={"user_answer": "A", "correct_answer": "A", "difficulty_percent": 8, "time_seconds": 90},
+        )
+        client.put(
+            f"/api/mock-exams/{exam['id']}/questions/{questions[45]['id']}",
+            json={"user_answer": "B", "correct_answer": "B", "difficulty_percent": 12, "time_seconds": 95},
+        )
+
+        client.post(f"/api/mock-exams/{exam['id']}/finish")
+        results = client.get(f"/api/mock-exams/{exam['id']}/results").json()
+
+        assert results["correct_count"] == 2
+        assert results["overall_area_average_score"] is not None
+        assert results["overall_area_average_score"] <= 400
+        assert results["estimated_tri_score"] <= 400
+    finally:
+        _cleanup_context(context)
+
+
+def test_mock_exam_estimate_matches_low_math_reference_for_two_hits(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        exam = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Matematica 2 acertos",
+                "area": "Matematica",
+                "mode": "external",
+                "total_questions": 45,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 180,
+                "notes": None,
+            },
+        ).json()
+
+        client.post(
+            f"/api/mock-exams/{exam['id']}/questions/generate-placeholders",
+            json={"total_questions": 45, "areas": [{"area": "Matematica", "start": 1, "end": 45}]},
+        )
+        client.post(f"/api/mock-exams/{exam['id']}/start")
+        questions = client.get(f"/api/mock-exams/{exam['id']}/questions").json()
+
+        client.put(
+            f"/api/mock-exams/{exam['id']}/questions/{questions[0]['id']}",
+            json={"user_answer": "A", "correct_answer": "A", "difficulty_percent": 18, "time_seconds": 85},
+        )
+        client.put(
+            f"/api/mock-exams/{exam['id']}/questions/{questions[1]['id']}",
+            json={"user_answer": "B", "correct_answer": "B", "difficulty_percent": 22, "time_seconds": 88},
+        )
+
+        client.post(f"/api/mock-exams/{exam['id']}/finish")
+        results = client.get(f"/api/mock-exams/{exam['id']}/results").json()
+        math_score = results["by_area"][0]["estimated_tri_score"]
+
+        assert math_score is not None
+        assert math_score < 450
+        assert math_score >= 350
+    finally:
+        _cleanup_context(context)
+
+
+def test_mock_exam_estimate_puts_twelve_math_hits_near_530(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        exam = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Matematica 12 acertos",
+                "area": "Matematica",
+                "mode": "external",
+                "total_questions": 45,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 180,
+                "notes": None,
+            },
+        ).json()
+
+        client.post(
+            f"/api/mock-exams/{exam['id']}/questions/generate-placeholders",
+            json={"total_questions": 45, "areas": [{"area": "Matematica", "start": 1, "end": 45}]},
+        )
+        client.post(f"/api/mock-exams/{exam['id']}/start")
+        questions = client.get(f"/api/mock-exams/{exam['id']}/questions").json()
+
+        for question in questions[:12]:
+            client.put(
+                f"/api/mock-exams/{exam['id']}/questions/{question['id']}",
+                json={"user_answer": "A", "correct_answer": "A", "difficulty_percent": 40, "time_seconds": 80},
+            )
+
+        client.post(f"/api/mock-exams/{exam['id']}/finish")
+        results = client.get(f"/api/mock-exams/{exam['id']}/results").json()
+        math_score = results["by_area"][0]["estimated_tri_score"]
+
+        assert math_score is not None
+        assert 500 <= math_score <= 560
+    finally:
+        _cleanup_context(context)
+
+
+def test_mock_exam_difficulty_adjustment_stays_small(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        exam = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Ajuste de dificuldade",
+                "area": "Matematica",
+                "mode": "external",
+                "total_questions": 45,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 180,
+                "notes": None,
+            },
+        ).json()
+
+        client.post(
+            f"/api/mock-exams/{exam['id']}/questions/generate-placeholders",
+            json={"total_questions": 45, "areas": [{"area": "Matematica", "start": 1, "end": 45}]},
+        )
+        client.post(f"/api/mock-exams/{exam['id']}/start")
+        questions = client.get(f"/api/mock-exams/{exam['id']}/questions").json()
+
+        for question in questions[:12]:
+            client.put(
+                f"/api/mock-exams/{exam['id']}/questions/{question['id']}",
+                json={"user_answer": "A", "correct_answer": "A", "difficulty_percent": 10, "time_seconds": 80},
+            )
+        hard_results = client.post(f"/api/mock-exams/{exam['id']}/finish").json()
+        hard_score = hard_results["by_area"][0]["estimated_tri_score"]
+
+        exam_easy = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-02",
+                "title": "Ajuste facil",
+                "area": "Matematica",
+                "mode": "external",
+                "total_questions": 45,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 180,
+                "notes": None,
+            },
+        ).json()
+        client.post(
+            f"/api/mock-exams/{exam_easy['id']}/questions/generate-placeholders",
+            json={"total_questions": 45, "areas": [{"area": "Matematica", "start": 1, "end": 45}]},
+        )
+        client.post(f"/api/mock-exams/{exam_easy['id']}/start")
+        questions_easy = client.get(f"/api/mock-exams/{exam_easy['id']}/questions").json()
+        for question in questions_easy[:12]:
+            client.put(
+                f"/api/mock-exams/{exam_easy['id']}/questions/{question['id']}",
+                json={"user_answer": "A", "correct_answer": "A", "difficulty_percent": 90, "time_seconds": 80},
+            )
+        easy_results = client.post(f"/api/mock-exams/{exam_easy['id']}/finish").json()
+        easy_score = easy_results["by_area"][0]["estimated_tri_score"]
+
+        assert hard_score is not None and easy_score is not None
+        assert abs(hard_score - easy_score) <= 35
+        assert hard_score > easy_score
+    finally:
+        _cleanup_context(context)

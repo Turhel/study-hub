@@ -26,6 +26,80 @@ from app.schemas import (
     MockExamUpdate,
 )
 
+ENEM_2019_AVERAGE_SCORE_BY_CORRECT_COUNT: dict[str, dict[int, float]] = {
+    "matematica": {
+        0: 102.2,
+        2: 375.6,
+        5: 430.0,
+        8: 486.0,
+        10: 512.0,
+        12: 532.7,
+        15: 575.0,
+        20: 646.0,
+        25: 720.0,
+        30: 790.0,
+        35: 850.0,
+        40: 905.0,
+        45: 960.0,
+    },
+    "natureza": {
+        0: 230.0,
+        2: 341.7,
+        5: 378.0,
+        8: 418.0,
+        10: 446.0,
+        12: 475.0,
+        15: 515.0,
+        20: 573.0,
+        25: 630.0,
+        30: 680.0,
+        35: 725.0,
+        40: 770.0,
+        45: 820.0,
+    },
+    "humanas": {
+        0: 225.0,
+        2: 335.6,
+        5: 372.0,
+        8: 414.0,
+        10: 452.0,
+        12: 485.0,
+        15: 530.0,
+        20: 590.0,
+        25: 646.0,
+        30: 694.0,
+        35: 735.0,
+        40: 775.0,
+        45: 815.0,
+    },
+    "linguagens": {
+        0: 220.0,
+        2: 340.7,
+        5: 376.0,
+        8: 420.0,
+        10: 468.0,
+        12: 500.0,
+        15: 538.0,
+        20: 588.0,
+        25: 632.0,
+        30: 675.0,
+        35: 715.0,
+        40: 755.0,
+        45: 795.0,
+    },
+}
+
+AREA_ALIASES: dict[str, str] = {
+    "matematica": "matematica",
+    "matemática": "matematica",
+    "natureza": "natureza",
+    "humanas": "humanas",
+    "linguagens": "linguagens",
+    "redacao": "linguagens",
+    "redação": "linguagens",
+    "geral": "humanas",
+}
+
 
 def _utcnow() -> datetime:
     return datetime.utcnow()
@@ -180,30 +254,71 @@ def _list_question_rows(session: Session, exam_id: int) -> list[MockExamQuestion
     ).all()
 
 
-def _compute_estimated_tri(questions: list[MockExamQuestion]) -> float | None:
-    scored_questions = [question for question in questions if question.correct_answer or question.user_answer or question.skipped]
+def _normalize_area_key(area: str | None) -> str:
+    if not area:
+        return "humanas"
+    return AREA_ALIASES.get(area.strip().lower(), "humanas")
+
+
+def _interpolate_score(reference: dict[int, float], correct_count: int) -> float:
+    keys = sorted(reference.keys())
+    if correct_count <= keys[0]:
+        return reference[keys[0]]
+    if correct_count >= keys[-1]:
+        return reference[keys[-1]]
+
+    lower_key = keys[0]
+    upper_key = keys[-1]
+    for index, key in enumerate(keys):
+        if key == correct_count:
+            return reference[key]
+        if key < correct_count:
+            lower_key = key
+            continue
+        upper_key = key
+        break
+
+    lower_score = reference[lower_key]
+    upper_score = reference[upper_key]
+    span = upper_key - lower_key
+    ratio = (correct_count - lower_key) / span if span else 0.0
+    return lower_score + (upper_score - lower_score) * ratio
+
+
+def _difficulty_adjustment(questions: list[MockExamQuestion]) -> float:
+    scored_questions = [question for question in questions if question.difficulty_percent is not None]
     if not scored_questions:
+        return 0.0
+
+    adjustment = 0.0
+    for question in scored_questions:
+        difficulty = question.difficulty_percent or 0.0
+        hardness = (50 - difficulty) / 50
+        if question.is_correct is True:
+            adjustment += hardness * 3.2
+        elif question.is_correct is False or question.skipped:
+            easy_penalty = max(0.0, (difficulty - 50) / 50)
+            adjustment -= easy_penalty * 3.2
+
+    return max(-15.0, min(15.0, adjustment))
+
+
+def _compute_estimated_tri(area: str, questions: list[MockExamQuestion]) -> float | None:
+    if not questions:
         return None
 
-    score = 0.0
-    total_possible = 0.0
+    correct_count = sum(1 for question in questions if question.is_correct is True)
+    total_questions = len(questions)
+    normalized_correct = round((correct_count / total_questions) * 45) if total_questions > 0 else 0
+    normalized_correct = max(0, min(45, normalized_correct))
 
-    for question in scored_questions:
-        difficulty = question.difficulty_percent
-        hard_bonus = 0.0 if difficulty is None else max(0.0, min(0.35, (50 - difficulty) / 100))
-        easy_penalty = 0.0 if difficulty is None else max(0.0, min(0.35, (difficulty - 50) / 100))
-        question_ceiling = 1.0 + hard_bonus
-        total_possible += question_ceiling
-
-        if question.is_correct:
-            score += question_ceiling
-        elif question.skipped:
-            score -= easy_penalty * 0.5
-        else:
-            score -= easy_penalty
-
-    normalized = max(0.0, min(1.0, score / total_possible if total_possible else 0.0))
-    return round(300 + normalized * 500, 1)
+    reference = ENEM_2019_AVERAGE_SCORE_BY_CORRECT_COUNT[_normalize_area_key(area)]
+    base_score = _interpolate_score(reference, normalized_correct)
+    difficulty_adjustment = _difficulty_adjustment(questions) or 0.0
+    estimated = base_score + difficulty_adjustment
+    floor = min(reference.values())
+    ceiling = max(reference.values())
+    return round(max(floor, min(ceiling, estimated)), 1)
 
 
 def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
@@ -239,7 +354,7 @@ def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
                 avg_time_seconds=round(mean(area_timed), 1) if area_timed else None,
                 avg_time_correct_seconds=round(mean(area_timed_correct), 1) if area_timed_correct else None,
                 average_difficulty_percent=round(mean(area_difficulty), 1) if area_difficulty else None,
-                estimated_tri_score=_compute_estimated_tri(area_questions),
+                estimated_tri_score=_compute_estimated_tri(area, area_questions),
             )
         )
 

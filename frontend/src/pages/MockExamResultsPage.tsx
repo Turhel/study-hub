@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
@@ -48,6 +48,10 @@ function trendLabel(values: Array<number | null | undefined>): string {
   return "estavel";
 }
 
+function resolveArea(question: MockExamQuestion): string {
+  return question.area ?? question.discipline ?? "Geral";
+}
+
 export default function MockExamResultsPage() {
   const params = useParams<{ id: string }>();
   const examId = Number(params.id);
@@ -65,7 +69,7 @@ export default function MockExamResultsPage() {
   const filteredQuestions = useMemo(() => {
     const rows = [...(resultsQuery.data?.questions ?? [])];
     const visible = rows.filter((question) => {
-      if (areaFilter !== "all" && (question.area ?? question.discipline ?? "Geral") !== areaFilter) return false;
+      if (areaFilter !== "all" && resolveArea(question) !== areaFilter) return false;
       if (filterMode === "correct") return question.is_correct === true;
       if (filterMode === "wrong") return question.is_correct === false;
       if (filterMode === "skipped") return question.skipped;
@@ -111,7 +115,7 @@ export default function MockExamResultsPage() {
 
   const results = resultsQuery.data;
   const exam = results.exam;
-  const areas = ["all", ...Array.from(new Set(results.questions.map((question) => question.area ?? question.discipline ?? "Geral")))];
+  const areas = ["all", ...Array.from(new Set(results.questions.map(resolveArea)))];
   const timeTrend = trendLabel(results.by_area.map((item) => item.avg_time_seconds));
 
   return (
@@ -205,7 +209,7 @@ export default function MockExamResultsPage() {
                 <span>{question.question_code || `Q${question.question_number}`}</span>
                 <span>{question.correct_answer || "-"}</span>
                 <span>{question.skipped ? "Pulada" : question.user_answer || "Nao respondida"}</span>
-                <span>{question.area ?? question.discipline ?? "Geral"}</span>
+                <span>{resolveArea(question)}</span>
                 <span>{question.source_type === "internal" ? "Disponivel apos prova" : "-"}</span>
                 <span>{question.difficulty_percent == null ? "-" : `${Math.round(question.difficulty_percent)}%`}</span>
                 <span>{difficultyLabel(question.difficulty_percent)}</span>
@@ -223,4 +227,4 @@ export default function MockExamResultsPage() {
       </section>
     </main>
   );
-}
+}
