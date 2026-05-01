@@ -192,3 +192,123 @@ def test_mock_exam_summary_handles_null_tri(monkeypatch) -> None:
         assert payload["last_three_average_accuracy"] == 0.6
     finally:
         _cleanup_context(context)
+
+
+
+def test_mock_exam_execution_flow_and_results(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        create_response = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Simulado ENEM Dia 2",
+                "area": "Geral",
+                "mode": "external",
+                "total_questions": 6,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 300,
+                "notes": "Execucao de teste.",
+            },
+        )
+        assert create_response.status_code == 200
+        exam_id = create_response.json()["id"]
+
+        placeholders_response = client.post(
+            f"/api/mock-exams/{exam_id}/questions/generate-placeholders",
+            json={
+                "total_questions": 6,
+                "areas": [
+                    {"area": "Matematica", "start": 1, "end": 3},
+                    {"area": "Natureza", "start": 4, "end": 6},
+                ],
+            },
+        )
+        assert placeholders_response.status_code == 200
+        assert placeholders_response.json()["created_questions"] == 6
+
+        start_response = client.post(f"/api/mock-exams/{exam_id}/start")
+        assert start_response.status_code == 200
+        started = start_response.json()
+        assert started["exam"]["status"] == "in_progress"
+        assert started["questions_count"] == 6
+
+        questions_response = client.get(f"/api/mock-exams/{exam_id}/questions")
+        assert questions_response.status_code == 200
+        questions = questions_response.json()
+        assert len(questions) == 6
+
+        q1 = questions[0]["id"]
+        q2 = questions[1]["id"]
+        q4 = questions[3]["id"]
+
+        update_q1 = client.put(
+            f"/api/mock-exams/{exam_id}/questions/{q1}",
+            json={
+                "user_answer": "A",
+                "correct_answer": "A",
+                "difficulty_percent": 18,
+                "time_seconds": 92,
+                "notes": "Acertou.",
+            },
+        )
+        assert update_q1.status_code == 200
+        assert update_q1.json()["is_correct"] is True
+
+        update_q2 = client.put(
+            f"/api/mock-exams/{exam_id}/questions/{q2}",
+            json={
+                "user_answer": "B",
+                "correct_answer": "D",
+                "difficulty_percent": 72,
+                "time_seconds": 115,
+            },
+        )
+        assert update_q2.status_code == 200
+        assert update_q2.json()["is_correct"] is False
+
+        skip_q4 = client.put(
+            f"/api/mock-exams/{exam_id}/questions/{q4}",
+            json={
+                "skipped": True,
+                "difficulty_percent": 41,
+                "time_seconds": 64,
+            },
+        )
+        assert skip_q4.status_code == 200
+        assert skip_q4.json()["skipped"] is True
+        assert skip_q4.json()["is_correct"] is None
+
+        invalid_difficulty = client.put(
+            f"/api/mock-exams/{exam_id}/questions/{q4}",
+            json={"difficulty_percent": 120},
+        )
+        assert invalid_difficulty.status_code == 422
+
+        finish_response = client.post(f"/api/mock-exams/{exam_id}/finish")
+        assert finish_response.status_code == 200
+        finished = finish_response.json()
+        assert finished["exam"]["status"] == "finished"
+        assert finished["total_questions"] == 6
+        assert finished["answered_count"] == 2
+        assert finished["skipped_count"] == 1
+        assert finished["correct_count"] == 1
+        assert len(finished["by_area"]) == 2
+
+        results_response = client.get(f"/api/mock-exams/{exam_id}/results")
+        assert results_response.status_code == 200
+        results = results_response.json()
+        assert results["exam"]["status"] == "finished"
+        assert len(results["questions"]) == 6
+        assert len(results["by_area"]) == 2
+
+        area_scores = [item["estimated_tri_score"] for item in results["by_area"] if item["estimated_tri_score"] is not None]
+        assert len(area_scores) == 2
+        assert results["overall_area_average_score"] == round(sum(area_scores) / len(area_scores), 1)
+        assert results["estimated_tri_score"] == results["exam"]["estimated_tri_score"]
+    finally:
+        _cleanup_context(context)

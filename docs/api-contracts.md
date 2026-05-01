@@ -1684,6 +1684,87 @@ Entregar um resumo enxuto para cards e graficos simples da area de Simulados.
 - `best_tri_score` ignora `null`
 - `recent` volta ordenado por `exam_date desc`
 
+
+### GET `/api/mock-exams/{id}/questions`
+
+**Objetivo**
+
+Listar as questoes cadastradas para a execucao de um simulado.
+
+### POST `/api/mock-exams/{id}/questions/generate-placeholders`
+
+**Objetivo**
+
+Gerar placeholders numericos 1..N para simulados externos.
+
+**Payload**
+
+```json
+{
+  "total_questions": 90,
+  "areas": [
+    { "area": "Matematica", "start": 1, "end": 45 },
+    { "area": "Natureza", "start": 46, "end": 90 }
+  ]
+}
+```
+
+**Observacoes**
+
+- nao duplica placeholders se o simulado ja tiver questoes
+- usa `source_type = "external"`
+
+### PUT `/api/mock-exams/{id}/questions/{question_id}`
+
+**Objetivo**
+
+Atualizar uma questao individual com resposta, gabarito, dificuldade e tempo.
+
+**Payload exemplo**
+
+```json
+{
+  "user_answer": "A",
+  "correct_answer": "D",
+  "skipped": false,
+  "difficulty_percent": 12,
+  "time_seconds": 95,
+  "notes": "Duvida em interpretacao."
+}
+```
+
+### POST `/api/mock-exams/{id}/start`
+
+**Objetivo**
+
+Marcar o simulado como `in_progress`.
+
+### POST `/api/mock-exams/{id}/finish`
+
+**Objetivo**
+
+Finalizar o simulado e calcular o resumo de execucao.
+
+**Observacoes**
+
+- a nota geral por areas usa media, nao soma
+- qualquer nota calculada internamente aparece como `estimated_tri_score` e deve ser lida como **Estimativa TRI**
+- nao existe TRI oficial calculada pela API
+
+### GET `/api/mock-exams/{id}/results`
+
+**Objetivo**
+
+Buscar o resultado consolidado do simulado, com agregados por area e gabarito detalhado.
+
+**Campos principais**
+
+- `official_tri_score`
+- `estimated_tri_score`
+- `overall_area_average_score`
+- `by_area`
+- `questions`
+
 ## Observacoes Finais De Integracao
 
 - O smoke check atual cobre diretamente:

@@ -203,12 +203,45 @@ class MockExam(SQLModel, table=True):
     data: date = Field(default_factory=date.today, index=True)
     tipo: str
     area: str = Field(index=True)
+    mode: str = Field(default="external", index=True)
+    status: str = Field(default="draft", index=True)
     total_questoes: int = Field(ge=1)
     total_acertos: int = Field(ge=0)
     facil_erros: int = Field(default=0, ge=0)
     tri_score: float | None = Field(default=None, ge=0)
+    estimated_tri_score: float | None = Field(default=None, ge=0)
     tempo_total_min: int | None = Field(default=None, ge=0)
     observacoes: str | None = None
+    started_at: datetime | None = Field(default=None, index=True)
+    finished_at: datetime | None = Field(default=None, index=True)
+    result_json: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
+
+class MockExamQuestion(SQLModel, table=True):
+    __tablename__ = "mock_exam_questions"
+
+    id: int | None = Field(default=None, primary_key=True)
+    mock_exam_id: int = Field(foreign_key="mock_exams.id", index=True)
+    question_number: int = Field(index=True, ge=1)
+    question_code: str | None = Field(default=None, index=True)
+    area: str | None = Field(default=None, index=True)
+    discipline: str | None = Field(default=None, index=True)
+    subject_id: int | None = Field(default=None, foreign_key="subjects.id", index=True)
+    block_id: int | None = Field(default=None, foreign_key="blocks.id", index=True)
+    source_type: str = Field(default="external", index=True)
+    prompt_markdown: str | None = None
+    alternatives_json: str | None = None
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    is_correct: bool | None = Field(default=None, index=True)
+    skipped: bool = Field(default=False, index=True)
+    difficulty_percent: float | None = Field(default=None, ge=0, le=100)
+    time_seconds: int | None = Field(default=None, ge=0)
+    started_at: datetime | None = Field(default=None, index=True)
+    answered_at: datetime | None = Field(default=None, index=True)
+    notes: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
     updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
 

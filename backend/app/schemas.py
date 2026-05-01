@@ -406,13 +406,26 @@ class StatsMockExamAreaAverage(BaseModel):
     average_total_questions: float | None = None
 
 
-MockExamArea = Literal["Linguagens", "Humanas", "Natureza", "Matemática", "Redação", "Geral"]
+MockExamArea = Literal[
+    "Linguagens",
+    "Humanas",
+    "Natureza",
+    "Matematica",
+    "Matemática",
+    "Redacao",
+    "Redação",
+    "Geral",
+]
+MockExamMode = Literal["external", "internal"]
+MockExamStatus = Literal["draft", "in_progress", "finished"]
+MockExamQuestionSourceType = Literal["external", "internal"]
 
 
 class MockExamBase(BaseModel):
     exam_date: str
     title: str = Field(min_length=1)
     area: MockExamArea
+    mode: MockExamMode = "external"
     total_questions: int = Field(ge=1)
     correct_count: int = Field(ge=0)
     tri_score: float | None = Field(default=None, ge=0)
@@ -428,6 +441,7 @@ class MockExamUpdate(BaseModel):
     exam_date: str | None = None
     title: str | None = Field(default=None, min_length=1)
     area: MockExamArea | None = None
+    mode: MockExamMode | None = None
     total_questions: int | None = Field(default=None, ge=1)
     correct_count: int | None = Field(default=None, ge=0)
     tri_score: float | None = Field(default=None, ge=0)
@@ -440,12 +454,18 @@ class MockExamResponse(BaseModel):
     exam_date: str
     title: str
     area: MockExamArea
+    mode: MockExamMode
+    status: MockExamStatus
     total_questions: int
     correct_count: int
     accuracy: float
     tri_score: float | None = None
+    official_tri_score: float | None = None
+    estimated_tri_score: float | None = None
     duration_minutes: int | None = None
     notes: str | None = None
+    started_at: str | None = None
+    finished_at: str | None = None
     created_at: str
     updated_at: str
 
@@ -466,6 +486,139 @@ class MockExamSummaryResponse(BaseModel):
     best_tri_score: float | None = None
     by_area: list[MockExamAreaSummary] = Field(default_factory=list)
     recent: list[MockExamResponse] = Field(default_factory=list)
+
+
+class MockExamQuestionBase(BaseModel):
+    question_number: int = Field(ge=1)
+    question_code: str | None = None
+    area: str | None = None
+    discipline: str | None = None
+    subject_id: int | None = None
+    block_id: int | None = None
+    source_type: MockExamQuestionSourceType = "external"
+    prompt_markdown: str | None = None
+    alternatives: list[str] = Field(default_factory=list)
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    skipped: bool = False
+    difficulty_percent: float | None = Field(default=None, ge=0, le=100)
+    time_seconds: int | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
+class MockExamQuestionCreate(MockExamQuestionBase):
+    started_at: str | None = None
+    answered_at: str | None = None
+
+
+class MockExamQuestionBulkCreate(BaseModel):
+    questions: list[MockExamQuestionCreate] = Field(min_length=1)
+
+
+class MockExamQuestionUpdate(BaseModel):
+    question_code: str | None = None
+    area: str | None = None
+    discipline: str | None = None
+    subject_id: int | None = None
+    block_id: int | None = None
+    prompt_markdown: str | None = None
+    alternatives: list[str] | None = None
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    skipped: bool | None = None
+    difficulty_percent: float | None = Field(default=None, ge=0, le=100)
+    time_seconds: int | None = Field(default=None, ge=0)
+    started_at: str | None = None
+    answered_at: str | None = None
+    notes: str | None = None
+
+
+class MockExamQuestionResponse(BaseModel):
+    id: int
+    mock_exam_id: int
+    question_number: int
+    question_code: str | None = None
+    area: str | None = None
+    discipline: str | None = None
+    subject_id: int | None = None
+    block_id: int | None = None
+    source_type: MockExamQuestionSourceType
+    prompt_markdown: str | None = None
+    alternatives: list[str] = Field(default_factory=list)
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    is_correct: bool | None = None
+    skipped: bool
+    difficulty_percent: float | None = None
+    time_seconds: int | None = None
+    started_at: str | None = None
+    answered_at: str | None = None
+    notes: str | None = None
+    created_at: str
+    updated_at: str
+
+
+class MockExamPlaceholderAreaRange(BaseModel):
+    area: str
+    start: int = Field(ge=1)
+    end: int = Field(ge=1)
+
+
+class MockExamPlaceholderRequest(BaseModel):
+    total_questions: int = Field(ge=1)
+    areas: list[MockExamPlaceholderAreaRange] = Field(min_length=1)
+
+
+class MockExamPlaceholderResponse(BaseModel):
+    created_questions: int
+    total_questions: int
+    message: str
+
+
+class MockExamStartResponse(BaseModel):
+    exam: MockExamResponse
+    questions_count: int
+
+
+class MockExamAreaResult(BaseModel):
+    area: str
+    total_questions: int
+    answered_count: int
+    skipped_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_seconds: float | None = None
+    avg_time_correct_seconds: float | None = None
+    average_difficulty_percent: float | None = None
+    estimated_tri_score: float | None = None
+
+
+class MockExamFinishResponse(BaseModel):
+    exam: MockExamResponse
+    total_questions: int
+    answered_count: int
+    skipped_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_seconds: float | None = None
+    avg_time_correct_seconds: float | None = None
+    by_area: list[MockExamAreaResult] = Field(default_factory=list)
+
+
+class MockExamResultsResponse(BaseModel):
+    exam: MockExamResponse
+    total_questions: int
+    answered_count: int
+    skipped_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_seconds: float | None = None
+    avg_time_correct_seconds: float | None = None
+    official_tri_score: float | None = None
+    estimated_tri_score: float | None = None
+    overall_area_average_score: float | None = None
+    by_area: list[MockExamAreaResult] = Field(default_factory=list)
+    questions: list[MockExamQuestionResponse] = Field(default_factory=list)
 
 
 class StatsDisciplineSignal(BaseModel):

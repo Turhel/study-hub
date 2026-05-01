@@ -1,15 +1,24 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 import { createMockExam, deleteMockExam, getMockExams, getMockExamSummary, updateMockExam } from "../lib/api";
-import type { MockExam, MockExamArea, MockExamPayload } from "../lib/types";
+import type { MockExam, MockExamArea, MockExamMode, MockExamPayload } from "../lib/types";
 
-const areaOptions: MockExamArea[] = ["Geral", "Linguagens", "Humanas", "Natureza", "Matemática", "Redação"];
+const areaOptions: Array<{ value: MockExamArea; label: string }> = [
+  { value: "Geral", label: "Geral" },
+  { value: "Linguagens", label: "Linguagens" },
+  { value: "Humanas", label: "Humanas" },
+  { value: "Natureza", label: "Natureza" },
+  { value: "Matematica", label: "Matemática" },
+  { value: "Redacao", label: "Redação" },
+];
 
 type MockExamFormState = {
   exam_date: string;
   title: string;
   area: MockExamArea;
+  mode: MockExamMode;
   total_questions: string;
   correct_count: string;
   tri_score: string;
@@ -21,6 +30,7 @@ const emptyForm: MockExamFormState = {
   exam_date: new Date().toISOString().slice(0, 10),
   title: "",
   area: "Geral",
+  mode: "external",
   total_questions: "90",
   correct_count: "",
   tri_score: "",
@@ -51,7 +61,7 @@ function formatTri(value: number | null | undefined): string {
   if (value == null) {
     return "-";
   }
-  return value.toFixed(0);
+  return value.toFixed(1);
 }
 
 function formatDuration(minutes: number | null | undefined): string {
@@ -64,6 +74,20 @@ function formatDuration(minutes: number | null | undefined): string {
     return `${remaining}min`;
   }
   return `${hours}h${String(remaining).padStart(2, "0")}min`;
+}
+
+function formatMode(mode: MockExamMode): string {
+  return mode === "internal" ? "interno" : "externo";
+}
+
+function formatStatus(status: MockExam["status"]): string {
+  if (status === "finished") {
+    return "finalizado";
+  }
+  if (status === "in_progress") {
+    return "em andamento";
+  }
+  return "rascunho";
 }
 
 function MetricPill({ label, value }: MetricPillProps) {
@@ -83,6 +107,7 @@ function formFromExam(exam: MockExam | null): MockExamFormState {
     exam_date: exam.exam_date,
     title: exam.title,
     area: exam.area,
+    mode: exam.mode,
     total_questions: String(exam.total_questions),
     correct_count: String(exam.correct_count),
     tri_score: exam.tri_score == null ? "" : String(exam.tri_score),
@@ -96,6 +121,7 @@ function buildPayload(form: MockExamFormState): MockExamPayload {
     exam_date: form.exam_date,
     title: form.title.trim(),
     area: form.area,
+    mode: form.mode,
     total_questions: Number(form.total_questions),
     correct_count: Number(form.correct_count),
     tri_score: form.tri_score.trim() ? Number(form.tri_score) : null,
@@ -163,19 +189,18 @@ function MockExamLineChart({
 
   const maxValue = Math.max(...values.map((item) => item.value), 1);
   const height = 170;
-  const width = Math.max(values.length * 90, 320);
+  const width = Math.max(values.length * 88, 320);
   const paddingX = 20;
   const paddingTop = 16;
   const paddingBottom = 34;
   const chartHeight = height - paddingTop - paddingBottom;
   const stepX = values.length > 1 ? (width - paddingX * 2) / (values.length - 1) : 0;
 
-  const points = values
-    .map((item, index) => {
-      const x = paddingX + index * stepX;
-      const y = paddingTop + chartHeight - (item.value / maxValue) * chartHeight;
-      return { x, y, ...item };
-    });
+  const points = values.map((item, index) => {
+    const x = paddingX + index * stepX;
+    const y = paddingTop + chartHeight - (item.value / maxValue) * chartHeight;
+    return { x, y, ...item };
+  });
 
   const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
 
@@ -194,12 +219,7 @@ function MockExamLineChart({
           <path d={path} className={`mock-exam-line-path ${colorClassName}`} />
           {points.map((point) => (
             <g key={`${point.label}-${point.value}`}>
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r="4.5"
-                className={`mock-exam-line-point ${colorClassName}`}
-              >
+              <circle cx={point.x} cy={point.y} r="4.5" className={`mock-exam-line-point ${colorClassName}`}>
                 <title>{`${point.label}: ${formatter(point.value)}`}</title>
               </circle>
               <text x={point.x} y={height - 10} textAnchor="middle" className="mock-exam-chart-label">
@@ -213,11 +233,7 @@ function MockExamLineChart({
   );
 }
 
-function MockExamBarChart({
-  values,
-}: {
-  values: Array<{ label: string; value: number; title: string }>;
-}) {
+function MockExamBarChart({ values }: { values: Array<{ label: string; value: number; title: string }> }) {
   if (values.length === 0) {
     return (
       <section className="stats-chart-card mock-exam-chart-card">
@@ -249,11 +265,7 @@ function MockExamBarChart({
         {values.map((item) => (
           <div key={item.title} className="mock-exam-bar-item">
             <div className="mock-exam-bar-track">
-              <div
-                className="mock-exam-bar-fill"
-                style={{ height: `${Math.max((item.value / maxValue) * 100, 8)}%` }}
-                title={`${item.title}: ${item.value} acertos`}
-              />
+              <div className="mock-exam-bar-fill" style={{ height: `${Math.max((item.value / maxValue) * 100, 8)}%` }} title={`${item.title}: ${item.value} acertos`} />
             </div>
             <strong>{item.value}</strong>
             <span>{item.label}</span>
@@ -264,11 +276,7 @@ function MockExamBarChart({
   );
 }
 
-function MockExamAreaChart({
-  values,
-}: {
-  values: Array<{ area: string; accuracy: number | null; total: number }>;
-}) {
+function MockExamAreaChart({ values }: { values: Array<{ area: string; accuracy: number | null; total: number }> }) {
   if (values.length === 0) {
     return (
       <section className="stats-chart-card mock-exam-chart-card">
@@ -302,11 +310,7 @@ function MockExamAreaChart({
               <span>{item.total} simulados</span>
             </div>
             <div className="mock-exam-area-bar">
-              <div
-                className="mock-exam-area-bar-fill"
-                style={{ width: `${Math.max((item.accuracy ?? 0) * 100, 3)}%` }}
-                title={`${item.area}: ${formatPercent(item.accuracy)}`}
-              />
+              <div className="mock-exam-area-bar-fill" style={{ width: `${Math.max((item.accuracy ?? 0) * 100, 3)}%` }} title={`${item.area}: ${formatPercent(item.accuracy)}`} />
             </div>
             <strong>{formatPercent(item.accuracy)}</strong>
           </article>
@@ -317,23 +321,15 @@ function MockExamAreaChart({
 }
 
 export default function MockExamsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editingExamId, setEditingExamId] = useState<number | null>(null);
   const [form, setForm] = useState<MockExamFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const examsQuery = useQuery({
-    queryKey: ["mock-exams"],
-    queryFn: getMockExams,
-    retry: false,
-  });
-
-  const summaryQuery = useQuery({
-    queryKey: ["mock-exams-summary"],
-    queryFn: getMockExamSummary,
-    retry: false,
-  });
+  const examsQuery = useQuery({ queryKey: ["mock-exams"], queryFn: getMockExams, retry: false });
+  const summaryQuery = useQuery({ queryKey: ["mock-exams-summary"], queryFn: getMockExamSummary, retry: false });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -341,11 +337,8 @@ export default function MockExamsPage() {
       if (validation) {
         throw new Error(validation);
       }
-
       const payload = buildPayload(form);
-      return editingExamId == null
-        ? createMockExam(payload)
-        : updateMockExam(editingExamId, payload);
+      return editingExamId == null ? createMockExam(payload) : updateMockExam(editingExamId, payload);
     },
     onSuccess: async () => {
       setFeedback(editingExamId == null ? "Simulado salvo." : "Simulado atualizado.");
@@ -386,10 +379,7 @@ export default function MockExamsPage() {
         .filter((exam) => exam.tri_score != null)
         .slice()
         .reverse()
-        .map((exam) => ({
-          label: formatDate(exam.exam_date).slice(0, 5),
-          value: exam.tri_score as number,
-        })),
+        .map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.tri_score as number })),
     [examsQuery.data],
   );
 
@@ -398,21 +388,12 @@ export default function MockExamsPage() {
       (examsQuery.data ?? [])
         .slice(0, 6)
         .reverse()
-        .map((exam) => ({
-          label: formatDate(exam.exam_date).slice(0, 5),
-          value: exam.correct_count,
-          title: exam.title,
-        })),
+        .map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.correct_count, title: exam.title })),
     [examsQuery.data],
   );
 
   const areaChartValues = useMemo(
-    () =>
-      (summaryQuery.data?.by_area ?? []).map((item) => ({
-        area: item.area,
-        accuracy: item.average_accuracy,
-        total: item.total_exams,
-      })),
+    () => (summaryQuery.data?.by_area ?? []).map((item) => ({ area: item.area, accuracy: item.average_accuracy, total: item.total_exams })),
     [summaryQuery.data],
   );
 
@@ -422,8 +403,8 @@ export default function MockExamsPage() {
         <section className="today-panel mock-exams-hero-panel">
           <div>
             <p className="today-eyebrow">Simulados</p>
-            <h1>Registro manual de prova</h1>
-            <p>Guarde seus simulados aqui para enxergar evolucao de acerto, TRI informada por voce e comparacao por area.</p>
+            <h1>Registro e execucao de prova</h1>
+            <p>O v1 continua aqui para registro manual. O v2 adiciona o modo prova, com grade de questoes, tempo por item e resultados detalhados.</p>
           </div>
         </section>
 
@@ -471,7 +452,7 @@ export default function MockExamsPage() {
             <div className="today-section-heading">
               <div>
                 <p className="today-eyebrow">{editingExamId == null ? "Novo simulado" : "Editar simulado"}</p>
-                <h2>{editingExamId == null ? "Cadastrar resultado" : "Atualize este registro"}</h2>
+                <h2>{editingExamId == null ? "Cadastrar resultado ou prova" : "Atualize este simulado"}</h2>
               </div>
             </div>
 
@@ -487,107 +468,61 @@ export default function MockExamsPage() {
               <div className="today-form-grid">
                 <label className="today-form-field">
                   Titulo
-                  <input
-                    className="app-input"
-                    value={form.title}
-                    onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                    placeholder="Ex.: Simulado Natureza abril"
-                  />
+                  <input className="app-input" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ex.: Simulado Natureza abril" />
                 </label>
                 <label className="today-form-field">
                   Data
-                  <input
-                    type="date"
-                    className="app-input"
-                    value={form.exam_date}
-                    onChange={(event) => setForm((current) => ({ ...current, exam_date: event.target.value }))}
-                  />
+                  <input type="date" className="app-input" value={form.exam_date} onChange={(event) => setForm((current) => ({ ...current, exam_date: event.target.value }))} />
                 </label>
                 <label className="today-form-field">
                   Area
-                  <select
-                    className="app-input"
-                    value={form.area}
-                    onChange={(event) => setForm((current) => ({ ...current, area: event.target.value as MockExamArea }))}
-                  >
+                  <select className="app-input" value={form.area} onChange={(event) => setForm((current) => ({ ...current, area: event.target.value as MockExamArea }))}>
                     {areaOptions.map((area) => (
-                      <option key={area} value={area}>
-                        {area}
+                      <option key={area.value} value={area.value}>
+                        {area.label}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="today-form-field">
+                  Modo
+                  <select className="app-input" value={form.mode} onChange={(event) => setForm((current) => ({ ...current, mode: event.target.value as MockExamMode }))}>
+                    <option value="external">Externo</option>
+                    <option value="internal">Interno</option>
+                  </select>
+                </label>
+                <label className="today-form-field">
                   Total de questoes
-                  <input
-                    type="number"
-                    min={1}
-                    className="app-input"
-                    value={form.total_questions}
-                    onChange={(event) => setForm((current) => ({ ...current, total_questions: event.target.value }))}
-                  />
+                  <input type="number" min={1} className="app-input" value={form.total_questions} onChange={(event) => setForm((current) => ({ ...current, total_questions: event.target.value }))} />
                 </label>
                 <label className="today-form-field">
                   Acertos
-                  <input
-                    type="number"
-                    min={0}
-                    className="app-input"
-                    value={form.correct_count}
-                    onChange={(event) => setForm((current) => ({ ...current, correct_count: event.target.value }))}
-                  />
+                  <input type="number" min={0} className="app-input" value={form.correct_count} onChange={(event) => setForm((current) => ({ ...current, correct_count: event.target.value }))} />
                 </label>
                 <label className="today-form-field">
-                  Nota TRI
-                  <input
-                    type="number"
-                    min={0}
-                    className="app-input"
-                    value={form.tri_score}
-                    onChange={(event) => setForm((current) => ({ ...current, tri_score: event.target.value }))}
-                    placeholder="Opcional"
-                  />
+                  Nota TRI informada
+                  <input type="number" min={0} className="app-input" value={form.tri_score} onChange={(event) => setForm((current) => ({ ...current, tri_score: event.target.value }))} placeholder="Opcional" />
                 </label>
                 <label className="today-form-field">
                   Duracao (min)
-                  <input
-                    type="number"
-                    min={0}
-                    className="app-input"
-                    value={form.duration_minutes}
-                    onChange={(event) => setForm((current) => ({ ...current, duration_minutes: event.target.value }))}
-                    placeholder="Opcional"
-                  />
+                  <input type="number" min={0} className="app-input" value={form.duration_minutes} onChange={(event) => setForm((current) => ({ ...current, duration_minutes: event.target.value }))} placeholder="Opcional" />
                 </label>
               </div>
 
               <label className="today-form-field">
                 Observacoes
-                <textarea
-                  className="app-input"
-                  value={form.notes}
-                  onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-                  placeholder="Contexto do simulado, sensacao de prova, gargalos..."
-                />
+                <textarea className="app-input" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Contexto do simulado, sensacao de prova, gargalos..." />
               </label>
 
               {formError ? <p className="today-form-error">{formError}</p> : null}
 
               <p className="mock-exam-form-note">
-                TRI e duracao sao opcionais. O sistema nao calcula TRI real: ele apenas guarda a nota que voce informar.
+                No modo externo, a prova pode ser executada dentro do app com placeholders de questoes, gabarito, resposta, tempo e dificuldade. Nao existe calculo de TRI oficial: qualquer nota exibida como estimativa vem separada da nota informada por voce.
               </p>
 
               <div className="today-action-row">
                 {editingExamId != null ? (
-                  <button
-                    type="button"
-                    className="app-secondary-action"
-                    onClick={() => {
-                      setEditingExamId(null);
-                      setForm(emptyForm);
-                      setFormError(null);
-                    }}
-                  >
+                  <button type="button" className="app-secondary-action" onClick={() => { setEditingExamId(null); setForm(emptyForm); setFormError(null); }}>
                     Cancelar edicao
                   </button>
                 ) : null}
@@ -623,46 +558,30 @@ export default function MockExamsPage() {
                     <div className="mock-exam-row-main">
                       <div>
                         <strong>{exam.title}</strong>
-                        <span>
-                          {formatDate(exam.exam_date)} - {exam.area}
-                        </span>
+                        <span>{formatDate(exam.exam_date)} - {exam.area} - {formatMode(exam.mode)}</span>
                       </div>
-                      <span className="mock-exam-row-area-badge">{exam.area}</span>
+                      <div className="mock-exam-status-stack">
+                        <span className="mock-exam-row-area-badge">{exam.area}</span>
+                        <span className={`mock-exam-status-badge is-${exam.status}`}>{formatStatus(exam.status)}</span>
+                      </div>
                     </div>
                     <div className="mock-exam-row-metrics">
                       <MetricPill label="Acertos" value={`${exam.correct_count}/${exam.total_questions}`} />
                       <MetricPill label="Acuracia" value={formatPercent(exam.accuracy)} />
-                      <MetricPill label="TRI" value={formatTri(exam.tri_score)} />
-                      <MetricPill label="Duracao" value={formatDuration(exam.duration_minutes)} />
+                      <MetricPill label="TRI informada" value={formatTri(exam.tri_score)} />
+                      <MetricPill label="Estimativa" value={formatTri(exam.estimated_tri_score)} />
                     </div>
                     {exam.notes ? (
-                      <p className="mock-exam-row-notes" title={exam.notes}>
-                        {exam.notes}
-                      </p>
+                      <p className="mock-exam-row-notes" title={exam.notes}>{exam.notes}</p>
                     ) : null}
-                    <div className="mock-exam-row-actions">
-                      <button
-                        type="button"
-                        className="app-secondary-action mock-exam-edit-button"
-                        onClick={() => {
-                          setEditingExamId(exam.id);
-                          setForm(formFromExam(exam));
-                          setFormError(null);
-                          setFeedback(null);
-                        }}
-                      >
+                    <div className="mock-exam-row-actions mock-exam-row-actions-wide">
+                      <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/${exam.status === "finished" ? "results" : "run"}`)}>
+                        {exam.status === "finished" ? "Ver resultados" : exam.status === "in_progress" ? "Continuar prova" : "Iniciar prova"}
+                      </button>
+                      <button type="button" className="app-secondary-action mock-exam-edit-button" onClick={() => { setEditingExamId(exam.id); setForm(formFromExam(exam)); setFormError(null); setFeedback(null); }}>
                         Editar
                       </button>
-                      <button
-                        type="button"
-                        className="app-secondary-action mock-exam-delete-button"
-                        disabled={deleteMutation.isPending}
-                        onClick={() => {
-                          setFormError(null);
-                          setFeedback(null);
-                          deleteMutation.mutate(exam.id);
-                        }}
-                      >
+                      <button type="button" className="app-secondary-action mock-exam-delete-button" disabled={deleteMutation.isPending} onClick={() => { setFormError(null); setFeedback(null); deleteMutation.mutate(exam.id); }}>
                         Excluir
                       </button>
                     </div>
@@ -672,24 +591,18 @@ export default function MockExamsPage() {
             ) : (
               <div className="app-empty-card mock-exam-empty-state">
                 <strong>Nenhum simulado ainda.</strong>
-                <p>Comece registrando um resultado acima para construir sua linha de evolucao.</p>
+                <p>Comece registrando um resultado acima ou criando uma prova externa para executar no app.</p>
               </div>
             )}
           </section>
         </section>
 
         <section className="mock-exams-chart-grid">
-          <MockExamLineChart
-            title="Evolucao TRI"
-            subtitle="So usa a nota que voce informar manualmente."
-            values={triChartValues}
-            colorClassName="is-tri"
-            formatter={(value) => `${value.toFixed(0)} TRI`}
-          />
+          <MockExamLineChart title="Evolucao TRI" subtitle="So usa a nota que voce informar manualmente." values={triChartValues} colorClassName="is-tri" formatter={(value) => `${value.toFixed(0)} TRI`} />
           <MockExamBarChart values={correctChartValues} />
           <MockExamAreaChart values={areaChartValues} />
         </section>
       </section>
     </main>
   );
-}
+}

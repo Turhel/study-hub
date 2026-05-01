@@ -320,14 +320,21 @@ export type MockExamArea =
   | "Linguagens"
   | "Humanas"
   | "Natureza"
-  | "Matemática"
-  | "Redação"
+  | "Matematica"
+  | "Matem?tica"
+  | "Redacao"
+  | "Reda??o"
   | "Geral";
+
+export type MockExamMode = "external" | "internal";
+
+export type MockExamStatus = "draft" | "in_progress" | "finished";
 
 export type MockExamPayload = {
   exam_date: string;
   title: string;
   area: MockExamArea;
+  mode?: MockExamMode;
   total_questions: number;
   correct_count: number;
   tri_score?: number | null;
@@ -340,12 +347,18 @@ export type MockExam = {
   exam_date: string;
   title: string;
   area: MockExamArea;
+  mode: MockExamMode;
+  status: MockExamStatus;
   total_questions: number;
   correct_count: number;
   accuracy: number;
   tri_score: number | null;
+  official_tri_score: number | null;
+  estimated_tri_score: number | null;
   duration_minutes: number | null;
   notes: string | null;
+  started_at: string | null;
+  finished_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -366,6 +379,121 @@ export type MockExamSummaryResponse = {
   best_tri_score: number | null;
   by_area: MockExamSummaryArea[];
   recent: MockExam[];
+};
+
+export type MockExamQuestionSourceType = "external" | "internal";
+
+export type MockExamQuestion = {
+  id: number;
+  mock_exam_id: number;
+  question_number: number;
+  question_code: string | null;
+  area: string | null;
+  discipline: string | null;
+  subject_id: number | null;
+  block_id: number | null;
+  source_type: MockExamQuestionSourceType;
+  prompt_markdown: string | null;
+  alternatives: string[];
+  correct_answer: string | null;
+  user_answer: string | null;
+  is_correct: boolean | null;
+  skipped: boolean;
+  difficulty_percent: number | null;
+  time_seconds: number | null;
+  started_at: string | null;
+  answered_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MockExamQuestionPayload = {
+  question_code?: string | null;
+  area?: string | null;
+  discipline?: string | null;
+  subject_id?: number | null;
+  block_id?: number | null;
+  prompt_markdown?: string | null;
+  alternatives?: string[];
+  correct_answer?: string | null;
+  user_answer?: string | null;
+  skipped?: boolean | null;
+  difficulty_percent?: number | null;
+  time_seconds?: number | null;
+  started_at?: string | null;
+  answered_at?: string | null;
+  notes?: string | null;
+};
+
+export type MockExamQuestionsBulkPayload = {
+  questions: Array<
+    MockExamQuestionPayload & {
+      question_number: number;
+      source_type?: MockExamQuestionSourceType;
+    }
+  >;
+};
+
+export type MockExamPlaceholderRequest = {
+  total_questions: number;
+  areas: Array<{
+    area: string;
+    start: number;
+    end: number;
+  }>;
+};
+
+export type MockExamPlaceholderResponse = {
+  created_questions: number;
+  total_questions: number;
+  message: string;
+};
+
+export type MockExamStartResponse = {
+  exam: MockExam;
+  questions_count: number;
+};
+
+export type MockExamAreaResult = {
+  area: string;
+  total_questions: number;
+  answered_count: number;
+  skipped_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_seconds: number | null;
+  avg_time_correct_seconds: number | null;
+  average_difficulty_percent: number | null;
+  estimated_tri_score: number | null;
+};
+
+export type MockExamFinishResponse = {
+  exam: MockExam;
+  total_questions: number;
+  answered_count: number;
+  skipped_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_seconds: number | null;
+  avg_time_correct_seconds: number | null;
+  by_area: MockExamAreaResult[];
+};
+
+export type MockExamResultsResponse = {
+  exam: MockExam;
+  total_questions: number;
+  answered_count: number;
+  skipped_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_seconds: number | null;
+  avg_time_correct_seconds: number | null;
+  official_tri_score: number | null;
+  estimated_tri_score: number | null;
+  overall_area_average_score: number | null;
+  by_area: MockExamAreaResult[];
+  questions: MockExamQuestion[];
 };
 
 export type GamificationStreakResponse = {

@@ -9,6 +9,8 @@ import EssayPage from "./pages/EssayPage";
 import FreeStudyPage from "./pages/FreeStudyPage";
 import LessonsPage from "./pages/LessonsPage";
 import MockExamsPage from "./pages/MockExamsPage";
+import MockExamResultsPage from "./pages/MockExamResultsPage";
+import MockExamRunPage from "./pages/MockExamRunPage";
 import SettingsPage from "./pages/SettingsPage";
 import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
@@ -476,6 +478,8 @@ export default function App() {
             <Route path="/free-study" element={<FreeStudyPage />} />
             <Route path="/lessons" element={<LessonsPage />} />
             <Route path="/mock-exams" element={<MockExamsPage />} />
+            <Route path="/mock-exams/:id/run" element={<MockExamRunPage />} />
+            <Route path="/mock-exams/:id/results" element={<MockExamResultsPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/timer" element={<TimerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
