@@ -5,7 +5,7 @@ from datetime import date, datetime
 from statistics import mean
 from typing import Any
 
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 
 from app.models import MockExam, MockExamQuestion
 from app.schemas import (
@@ -448,8 +448,8 @@ def update_mock_exam(session: Session, exam_id: int, payload: MockExamUpdate) ->
 
 def delete_mock_exam(session: Session, exam_id: int) -> None:
     exam = _get_exam_or_raise(session, exam_id)
-    for question in _list_question_rows(session, exam_id):
-        session.delete(question)
+    session.exec(delete(MockExamQuestion).where(MockExamQuestion.mock_exam_id == exam_id))
+    session.flush()
     session.delete(exam)
     session.commit()
 
