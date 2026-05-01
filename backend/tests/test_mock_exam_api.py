@@ -768,3 +768,64 @@ def test_mock_exam_list_recomputes_stale_estimate_for_old_record(monkeypatch) ->
         assert recent_exam["estimated_tri_score"] == listed_exam["estimated_tri_score"]
     finally:
         _cleanup_context(context)
+
+
+def test_mock_exam_list_matches_results_for_stale_finished_exam(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        exam = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Executor antigo 2/90",
+                "area": "Geral",
+                "mode": "external",
+                "total_questions": 90,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 300,
+                "notes": None,
+            },
+        ).json()
+        exam_id = exam["id"]
+
+        client.post(
+            f"/api/mock-exams/{exam_id}/questions/generate-placeholders",
+            json={
+                "total_questions": 90,
+                "areas": [
+                    {"area": "Matematica", "start": 1, "end": 45},
+                    {"area": "Natureza", "start": 46, "end": 90},
+                ],
+            },
+        )
+        client.post(f"/api/mock-exams/{exam_id}/start")
+        questions = client.get(f"/api/mock-exams/{exam_id}/questions").json()
+        client.put(
+            f"/api/mock-exams/{exam_id}/questions/{questions[0]['id']}",
+            json={"user_answer": "A", "correct_answer": "A", "difficulty_percent": 8, "time_seconds": 90},
+        )
+        client.put(
+            f"/api/mock-exams/{exam_id}/questions/{questions[45]['id']}",
+            json={"user_answer": "B", "correct_answer": "B", "difficulty_percent": 12, "time_seconds": 95},
+        )
+        client.post(f"/api/mock-exams/{exam_id}/finish")
+
+        with Session(context.engine, expire_on_commit=False) as session:
+            stored_exam = session.get(MockExam, exam_id)
+            assert stored_exam is not None
+            stored_exam.estimated_tri_score = 529.0
+            session.add(stored_exam)
+            session.commit()
+
+        listed_exam = next(item for item in client.get("/api/mock-exams").json() if item["id"] == exam_id)
+        results_exam = client.get(f"/api/mock-exams/{exam_id}/results").json()
+
+        assert listed_exam["estimated_tri_score"] == results_exam["estimated_tri_score"]
+        assert listed_exam["estimated_tri_score"] <= 400
+        assert listed_exam["estimated_tri_score"] != 529.0
+    finally:
+        _cleanup_context(context)
