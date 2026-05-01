@@ -5,7 +5,8 @@ from datetime import date, datetime
 from statistics import mean
 from typing import Any
 
-from sqlmodel import Session, delete, select
+from sqlalchemy import text
+from sqlmodel import Session, select
 
 from app.models import MockExam, MockExamQuestion
 from app.schemas import (
@@ -447,10 +448,15 @@ def update_mock_exam(session: Session, exam_id: int, payload: MockExamUpdate) ->
 
 
 def delete_mock_exam(session: Session, exam_id: int) -> None:
-    exam = _get_exam_or_raise(session, exam_id)
-    session.exec(delete(MockExamQuestion).where(MockExamQuestion.mock_exam_id == exam_id))
-    session.flush()
-    session.delete(exam)
+    _get_exam_or_raise(session, exam_id)
+    session.execute(
+        text("DELETE FROM mock_exam_questions WHERE mock_exam_id = :exam_id"),
+        {"exam_id": exam_id},
+    )
+    session.execute(
+        text("DELETE FROM mock_exams WHERE id = :exam_id"),
+        {"exam_id": exam_id},
+    )
     session.commit()
 
 

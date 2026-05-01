@@ -355,6 +355,50 @@ def test_mock_exam_execution_flow_and_results(monkeypatch) -> None:
         _cleanup_context(context)
 
 
+def test_mock_exam_delete_also_removes_placeholder_questions(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        create_response = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Delete with questions",
+                "area": "Geral",
+                "mode": "external",
+                "total_questions": 4,
+                "correct_count": 0,
+                "tri_score": None,
+                "duration_minutes": 60,
+                "notes": None,
+            },
+        )
+        assert create_response.status_code == 200
+        exam_id = create_response.json()["id"]
+
+        placeholders_response = client.post(
+            f"/api/mock-exams/{exam_id}/questions/generate-placeholders",
+            json={
+                "total_questions": 4,
+                "areas": [
+                    {"area": "Matematica", "start": 1, "end": 2},
+                    {"area": "Natureza", "start": 3, "end": 4},
+                ],
+            },
+        )
+        assert placeholders_response.status_code == 200
+
+        delete_response = client.delete(f"/api/mock-exams/{exam_id}")
+        assert delete_response.status_code == 204
+
+        questions_response = client.get(f"/api/mock-exams/{exam_id}/questions")
+        assert questions_response.status_code == 404
+    finally:
+        _cleanup_context(context)
+
+
 def test_mock_exam_estimate_stays_low_for_two_hits_in_ninety(monkeypatch) -> None:
     context = _build_context()
     try:
