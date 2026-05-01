@@ -101,6 +101,8 @@ AREA_ALIASES: dict[str, str] = {
     "geral": "humanas",
 }
 
+REFERENCE_AREAS: tuple[str, ...] = ("matematica", "natureza", "humanas", "linguagens")
+
 
 def _utcnow() -> datetime:
     return datetime.utcnow()
@@ -261,6 +263,13 @@ def _normalize_area_key(area: str | None) -> str:
     return AREA_ALIASES.get(area.strip().lower(), "humanas")
 
 
+def _normalized_correct_count(correct_count: int, total_questions: int) -> int:
+    if total_questions <= 0:
+        return 0
+    normalized = round((correct_count / total_questions) * 45)
+    return max(0, min(45, normalized))
+
+
 def _interpolate_score(reference: dict[int, float], correct_count: int) -> float:
     keys = sorted(reference.keys())
     if correct_count <= keys[0]:
@@ -296,12 +305,34 @@ def _difficulty_adjustment(questions: list[MockExamQuestion]) -> float:
         difficulty = question.difficulty_percent or 0.0
         hardness = (50 - difficulty) / 50
         if question.is_correct is True:
-            adjustment += hardness * 3.2
+            adjustment += hardness * 1.6
         elif question.is_correct is False or question.skipped:
             easy_penalty = max(0.0, (difficulty - 50) / 50)
-            adjustment -= easy_penalty * 3.2
+            adjustment -= easy_penalty * 1.6
 
-    return max(-15.0, min(15.0, adjustment))
+    return max(-25.0, min(25.0, adjustment))
+
+
+def _estimate_reference_score(area_key: str, normalized_correct: int) -> float:
+    reference = ENEM_2019_AVERAGE_SCORE_BY_CORRECT_COUNT[area_key]
+    return _interpolate_score(reference, normalized_correct)
+
+
+def _estimate_score_from_counts(area: str | None, correct_count: int, total_questions: int) -> float | None:
+    if total_questions <= 0:
+        return None
+
+    normalized_correct = _normalized_correct_count(correct_count, total_questions)
+    area_key = _normalize_area_key(area)
+    if area_key != "humanas" or (area and area.strip().lower() not in {"geral"}):
+        return round(_estimate_reference_score(area_key, normalized_correct), 1)
+
+    general_scores = [_estimate_reference_score(reference_area, normalized_correct) for reference_area in REFERENCE_AREAS]
+    return round(mean(general_scores), 1)
+
+
+def _estimate_score_from_exam(exam: MockExam) -> float | None:
+    return _estimate_score_from_counts(exam.area, exam.total_acertos, exam.total_questoes)
 
 
 def _compute_estimated_tri(area: str, questions: list[MockExamQuestion]) -> float | None:
@@ -310,15 +341,20 @@ def _compute_estimated_tri(area: str, questions: list[MockExamQuestion]) -> floa
 
     correct_count = sum(1 for question in questions if question.is_correct is True)
     total_questions = len(questions)
-    normalized_correct = round((correct_count / total_questions) * 45) if total_questions > 0 else 0
-    normalized_correct = max(0, min(45, normalized_correct))
-
-    reference = ENEM_2019_AVERAGE_SCORE_BY_CORRECT_COUNT[_normalize_area_key(area)]
-    base_score = _interpolate_score(reference, normalized_correct)
+    base_score = _estimate_score_from_counts(area, correct_count, total_questions)
+    if base_score is None:
+        return None
     difficulty_adjustment = _difficulty_adjustment(questions) or 0.0
     estimated = base_score + difficulty_adjustment
-    floor = min(reference.values())
-    ceiling = max(reference.values())
+    area_key = _normalize_area_key(area)
+    reference_areas = REFERENCE_AREAS if area and area.strip().lower() == "geral" else (area_key,)
+    reference_values = [
+        value
+        for reference_area in reference_areas
+        for value in ENEM_2019_AVERAGE_SCORE_BY_CORRECT_COUNT[reference_area].values()
+    ]
+    floor = min(reference_values)
+    ceiling = max(reference_values)
     return round(max(floor, min(ceiling, estimated)), 1)
 
 
@@ -372,7 +408,7 @@ def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
         avg_time_seconds=round(mean(timed_questions), 1) if timed_questions else None,
         avg_time_correct_seconds=round(mean(timed_correct), 1) if timed_correct else None,
         official_tri_score=exam.tri_score,
-        estimated_tri_score=exam.estimated_tri_score,
+        estimated_tri_score=overall_area_average_score if overall_area_average_score is not None else exam.estimated_tri_score,
         overall_area_average_score=overall_area_average_score,
         by_area=by_area,
         questions=[_to_question_response(question) for question in questions],
@@ -402,12 +438,13 @@ def create_mock_exam(session: Session, payload: MockExamCreate) -> MockExamRespo
         total_questoes=payload.total_questions,
         total_acertos=payload.correct_count,
         tri_score=payload.tri_score,
-        estimated_tri_score=None,
+        estimated_tri_score=0.0,
         tempo_total_min=payload.duration_minutes,
         observacoes=payload.notes.strip() if payload.notes else None,
         created_at=now,
         updated_at=now,
     )
+    exam.estimated_tri_score = _estimate_score_from_exam(exam)
     session.add(exam)
     session.commit()
     session.refresh(exam)
@@ -440,6 +477,7 @@ def update_mock_exam(session: Session, exam_id: int, payload: MockExamUpdate) ->
     if "notes" in updates:
         exam.observacoes = payload.notes.strip() if payload.notes else None
 
+    exam.estimated_tri_score = _estimate_score_from_exam(exam)
     exam.updated_at = _utcnow()
     session.add(exam)
     session.commit()
@@ -463,9 +501,9 @@ def delete_mock_exam(session: Session, exam_id: int) -> None:
 def get_mock_exam_summary(session: Session) -> MockExamSummaryResponse:
     rows = session.exec(select(MockExam).order_by(MockExam.data.desc(), MockExam.id.desc())).all()
 
-    tri_recent = [row.tri_score for row in rows if row.tri_score is not None][:3]
+    tri_recent = [row.estimated_tri_score for row in rows if row.estimated_tri_score is not None][:3]
     accuracy_recent = [_accuracy(row) for row in rows if row.total_questoes > 0][:3]
-    best_tri_values = [row.tri_score for row in rows if row.tri_score is not None]
+    best_tri_values = [row.estimated_tri_score for row in rows if row.estimated_tri_score is not None]
 
     by_area_map: dict[str, list[MockExam]] = {}
     for row in rows:
@@ -475,8 +513,8 @@ def get_mock_exam_summary(session: Session) -> MockExamSummaryResponse:
         MockExamAreaSummary(
             area=area,  # type: ignore[arg-type]
             total_exams=len(area_rows),
-            latest_tri_score=next((item.tri_score for item in area_rows if item.tri_score is not None), None),
-            best_tri_score=max((item.tri_score for item in area_rows if item.tri_score is not None), default=None),
+            latest_tri_score=next((item.estimated_tri_score for item in area_rows if item.estimated_tri_score is not None), None),
+            best_tri_score=max((item.estimated_tri_score for item in area_rows if item.estimated_tri_score is not None), default=None),
             average_accuracy=mean(_accuracy(item) for item in area_rows) if area_rows else None,
         )
         for area, area_rows in sorted(by_area_map.items(), key=lambda item: item[0])
@@ -699,7 +737,7 @@ def finish_mock_exam(session: Session, exam_id: int) -> MockExamFinishResponse:
     exam.finished_at = _utcnow()
     exam.total_questoes = results.total_questions or exam.total_questoes
     exam.total_acertos = results.correct_count
-    exam.estimated_tri_score = results.overall_area_average_score
+    exam.estimated_tri_score = results.overall_area_average_score or _estimate_score_from_exam(exam)
     exam.result_json = json.dumps(results.model_dump(mode="json"), ensure_ascii=True, sort_keys=True)
     exam.updated_at = exam.finished_at
     session.add(exam)

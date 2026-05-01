@@ -122,11 +122,16 @@ def test_mock_exam_crud_and_summary(monkeypatch) -> None:
         summary = summary_response.json()
         assert summary["total_exams"] == 3
         assert summary["latest_exam_date"] == "2026-04-30"
-        assert summary["best_tri_score"] == 701.0
-        assert summary["last_three_average_tri"] == (640.0 + 672.5 + 701.0) / 3
+        assert summary["best_tri_score"] is not None
+        assert summary["best_tri_score"] > 700
+        assert summary["last_three_average_tri"] is not None
+        assert summary["last_three_average_tri"] > 650
         assert summary["last_three_average_accuracy"] is not None
         assert len(summary["by_area"]) == 2
         assert len(summary["recent"]) == 3
+        assert updated["official_tri_score"] == 640.0
+        assert updated["estimated_tri_score"] is not None
+        assert updated["estimated_tri_score"] != updated["official_tri_score"]
 
         delete_response = client.delete(f"/api/mock-exams/{exam_id}")
         assert delete_response.status_code == 204
@@ -228,8 +233,8 @@ def test_mock_exam_summary_handles_null_tri(monkeypatch) -> None:
         assert response.status_code == 200
         payload = response.json()
         assert payload["total_exams"] == 1
-        assert payload["last_three_average_tri"] is None
-        assert payload["best_tri_score"] is None
+        assert payload["last_three_average_tri"] is not None
+        assert payload["best_tri_score"] is not None
         assert payload["last_three_average_accuracy"] == 0.6
     finally:
         _cleanup_context(context)
@@ -496,7 +501,7 @@ def test_mock_exam_estimate_matches_low_math_reference_for_two_hits(monkeypatch)
 
         assert math_score is not None
         assert math_score < 450
-        assert math_score >= 350
+        assert 360 <= math_score <= 400
     finally:
         _cleanup_context(context)
 
@@ -540,7 +545,7 @@ def test_mock_exam_estimate_puts_twelve_math_hits_near_530(monkeypatch) -> None:
         math_score = results["by_area"][0]["estimated_tri_score"]
 
         assert math_score is not None
-        assert 500 <= math_score <= 560
+        assert 520 <= math_score <= 545
     finally:
         _cleanup_context(context)
 
@@ -612,5 +617,111 @@ def test_mock_exam_difficulty_adjustment_stays_small(monkeypatch) -> None:
         assert hard_score is not None and easy_score is not None
         assert abs(hard_score - easy_score) <= 35
         assert hard_score > easy_score
+    finally:
+        _cleanup_context(context)
+
+
+def test_manual_mock_exam_estimate_for_math_two_hits(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        response = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Manual Matematica 2/45",
+                "area": "Matematica",
+                "total_questions": 45,
+                "correct_count": 2,
+                "tri_score": None,
+                "duration_minutes": 180,
+                "notes": None,
+            },
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["official_tri_score"] is None
+        assert 360 <= payload["estimated_tri_score"] <= 400
+    finally:
+        _cleanup_context(context)
+
+
+def test_manual_mock_exam_estimate_for_math_twelve_hits(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        response = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Manual Matematica 12/45",
+                "area": "Matematica",
+                "total_questions": 45,
+                "correct_count": 12,
+                "tri_score": None,
+                "duration_minutes": 180,
+                "notes": None,
+            },
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert 525 <= payload["estimated_tri_score"] <= 540
+    finally:
+        _cleanup_context(context)
+
+
+def test_manual_mock_exam_estimate_for_natureza_two_hits(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        response = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Manual Natureza 2/45",
+                "area": "Natureza",
+                "total_questions": 45,
+                "correct_count": 2,
+                "tri_score": None,
+                "duration_minutes": 180,
+                "notes": None,
+            },
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert 330 <= payload["estimated_tri_score"] <= 360
+    finally:
+        _cleanup_context(context)
+
+
+def test_manual_mock_exam_estimate_for_general_two_hits_in_ninety(monkeypatch) -> None:
+    context = _build_context()
+    try:
+        monkeypatch.setattr("app.routes.mock_exams.get_session", _override_session_factory(context))
+        client = TestClient(app)
+
+        response = client.post(
+            "/api/mock-exams",
+            json={
+                "exam_date": "2026-05-01",
+                "title": "Manual Geral 2/90",
+                "area": "Geral",
+                "total_questions": 90,
+                "correct_count": 2,
+                "tri_score": None,
+                "duration_minutes": 300,
+                "notes": None,
+            },
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["estimated_tri_score"] is not None
+        assert payload["estimated_tri_score"] <= 400
     finally:
         _cleanup_context(context)

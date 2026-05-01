@@ -26,6 +26,7 @@ type MockExamFormState = {
   tri_score: string;
   duration_minutes: string;
   notes: string;
+  showAdvanced: boolean;
 };
 
 const emptyForm: MockExamFormState = {
@@ -38,6 +39,7 @@ const emptyForm: MockExamFormState = {
   tri_score: "",
   duration_minutes: "",
   notes: "",
+  showAdvanced: false,
 };
 
 function formatDate(value: string | null | undefined): string {
@@ -84,6 +86,7 @@ function formFromExam(exam: MockExam | null): MockExamFormState {
     tri_score: exam.tri_score == null ? "" : String(exam.tri_score),
     duration_minutes: exam.duration_minutes == null ? "" : String(exam.duration_minutes),
     notes: exam.notes ?? "",
+    showAdvanced: Boolean(exam.tri_score),
   };
 }
 
@@ -109,7 +112,7 @@ function validateForm(form: MockExamFormState): string | null {
   if (!Number.isFinite(totalQuestions) || totalQuestions <= 0) return "Total de questoes deve ser maior que zero.";
   if (!Number.isFinite(correctCount) || correctCount < 0) return "Acertos nao pode ser negativo.";
   if (correctCount > totalQuestions) return "Acertos nao pode ser maior que o total de questoes.";
-  if (form.tri_score.trim() && !Number.isFinite(Number(form.tri_score))) return "A nota TRI precisa ser numerica.";
+  if (form.tri_score.trim() && !Number.isFinite(Number(form.tri_score))) return "A nota oficial precisa ser numerica.";
   if (form.duration_minutes.trim() && !Number.isFinite(Number(form.duration_minutes))) return "A duracao precisa ser numerica.";
   return null;
 }
@@ -293,10 +296,19 @@ export default function MockExamsPage() {
     onError: (error) => setFormError(error instanceof Error ? error.message : "Nao foi possivel excluir o simulado."),
   });
 
-  const triChartValues = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.tri_score != null).slice().reverse().map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.tri_score as number })), [examsQuery.data]);
+  const estimatedTriChartValues = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.estimated_tri_score != null).slice().reverse().map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.estimated_tri_score as number })), [examsQuery.data]);
   const correctChartValues = useMemo(() => (examsQuery.data ?? []).slice(0, 6).reverse().map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.correct_count, title: exam.title })), [examsQuery.data]);
   const areaChartValues = useMemo(() => (summaryQuery.data?.by_area ?? []).map((item) => ({ area: item.area, accuracy: item.average_accuracy, total: item.total_exams })), [summaryQuery.data]);
   const draftOrRunning = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.status !== "finished"), [examsQuery.data]);
+  const estimatedRecent = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.estimated_tri_score != null).slice(0, 3), [examsQuery.data]);
+  const estimatedAverageRecent = useMemo(() => {
+    if (estimatedRecent.length === 0) return null;
+    return estimatedRecent.reduce((sum, exam) => sum + (exam.estimated_tri_score ?? 0), 0) / estimatedRecent.length;
+  }, [estimatedRecent]);
+  const bestEstimatedTri = useMemo(() => {
+    const values = (examsQuery.data ?? []).map((exam) => exam.estimated_tri_score).filter((value): value is number => value != null);
+    return values.length > 0 ? Math.max(...values) : null;
+  }, [examsQuery.data]);
 
   return (
     <main className="today-page mock-exams-page">
@@ -322,9 +334,9 @@ export default function MockExamsPage() {
 
         <section className="mock-exams-summary-grid mock-exams-summary-grid-v2">
           <SummaryCard label="Total de simulados" value={String(summaryQuery.data?.total_exams ?? 0)} description="base registrada" />
-          <SummaryCard label="Media TRI ultimos 3" value={summaryQuery.isLoading ? "..." : formatTri(summaryQuery.data?.last_three_average_tri)} description="somente notas preenchidas" />
+          <SummaryCard label="Estimativa TRI ultimos 3" value={summaryQuery.isLoading ? "..." : formatTri(estimatedAverageRecent)} description="calculada automaticamente" />
           <SummaryCard label="Media de acerto" value={summaryQuery.isLoading ? "..." : formatPercent(summaryQuery.data?.last_three_average_accuracy)} description="janela recente" />
-          <SummaryCard label="Melhor TRI" value={summaryQuery.isLoading ? "..." : formatTri(summaryQuery.data?.best_tri_score)} description="melhor nota informada" />
+          <SummaryCard label="Melhor estimativa" value={summaryQuery.isLoading ? "..." : formatTri(bestEstimatedTri)} description="melhor leitura automatica" />
         </section>
 
         <section className="today-panel mock-exams-mode-panel">
@@ -346,7 +358,7 @@ export default function MockExamsPage() {
           </div>
           <p className="mock-exams-mode-copy">
             {activeView === "quick"
-              ? "Lance um resultado de prova feita fora do app, com nota TRI informada quando existir."
+              ? "Lance um resultado de prova feita fora do app. Voce nao precisa saber a TRI: o app estima automaticamente a nota."
               : activeView === "run"
                 ? "Execute uma prova externa dentro do app com grade, tempo, resposta, gabarito e resultado detalhado."
                 : "Revise seus simulados recentes, compare acertos e acompanhe a evolucao por area."}
@@ -374,11 +386,33 @@ export default function MockExamsPage() {
                   <label className="today-form-field">Modo<select className="app-input" value={form.mode} onChange={(event) => setForm((current) => ({ ...current, mode: event.target.value as MockExamMode }))}><option value="external">Externo</option><option value="internal">Interno</option></select></label>
                   <label className="today-form-field">Total de questoes<input type="number" min={1} className="app-input" value={form.total_questions} onChange={(event) => setForm((current) => ({ ...current, total_questions: event.target.value }))} /></label>
                   <label className="today-form-field">Acertos<input type="number" min={0} className="app-input" value={form.correct_count} onChange={(event) => setForm((current) => ({ ...current, correct_count: event.target.value }))} /></label>
-                  <label className="today-form-field">Nota TRI informada<input type="number" min={0} className="app-input" value={form.tri_score} onChange={(event) => setForm((current) => ({ ...current, tri_score: event.target.value }))} placeholder="Opcional" /></label>
                   <label className="today-form-field">Duracao (min)<input type="number" min={0} className="app-input" value={form.duration_minutes} onChange={(event) => setForm((current) => ({ ...current, duration_minutes: event.target.value }))} placeholder="Opcional" /></label>
                 </div>
                 <label className="today-form-field">Observacoes<textarea className="app-input" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Contexto da prova, sensacao, gargalos..." /></label>
-                <p className="mock-exam-form-note">Modo externo = prova feita por PDF, plataforma ou caderno. Modo interno = preparado para quando as questoes existirem dentro do app. A estimativa TRI nao e nota oficial.</p>
+                <section className="mock-exam-advanced-shell">
+                  <button
+                    type="button"
+                    className="mock-exam-advanced-toggle"
+                    onClick={() => setForm((current) => ({ ...current, showAdvanced: !current.showAdvanced }))}
+                  >
+                    {form.showAdvanced ? "Fechar avancado" : "Avancado: tenho a nota oficial"}
+                  </button>
+                  {form.showAdvanced ? (
+                    <label className="today-form-field mock-exam-advanced-field">
+                      Nota oficial informada
+                      <input
+                        type="number"
+                        min={0}
+                        className="app-input"
+                        value={form.tri_score}
+                        onChange={(event) => setForm((current) => ({ ...current, tri_score: event.target.value }))}
+                        placeholder="Opcional"
+                      />
+                      <small>Use apenas se a plataforma do simulado ja forneceu a nota.</small>
+                    </label>
+                  ) : null}
+                </section>
+                <p className="mock-exam-form-note">Voce nao precisa saber a TRI. O app estima automaticamente a nota a partir dos acertos, da area e da dificuldade das questoes. A estimativa nao e TRI oficial.</p>
                 <div className="today-action-row">
                   {editingExamId != null ? <button type="button" className="app-secondary-action" onClick={() => { setEditingExamId(null); setForm(emptyForm); setFormOpen(false); setFormError(null); }}>Cancelar edicao</button> : null}
                   <button type="submit" className="app-primary-action app-primary-action-blue" disabled={saveMutation.isPending}>{saveMutation.isPending ? "Salvando..." : editingExamId == null ? "Salvar simulado" : "Atualizar simulado"}</button>
@@ -415,8 +449,8 @@ export default function MockExamsPage() {
                       <div className="mock-exam-row-metrics">
                         <MetricPill label="Acertos" value={`${exam.correct_count}/${exam.total_questions}`} />
                         <MetricPill label="Acuracia" value={formatPercent(exam.accuracy)} />
-                        <MetricPill label="TRI informada" value={formatTri(exam.tri_score)} />
-                        <MetricPill label="Estimativa" value={formatTri(exam.estimated_tri_score)} />
+                        <MetricPill label="Estimativa TRI" value={formatTri(exam.estimated_tri_score)} />
+                        <MetricPill label="Nota oficial" value={formatTri(exam.official_tri_score)} />
                       </div>
                       <div className="mock-exam-row-actions mock-exam-row-actions-wide">
                         <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/run`)}>{exam.status === "in_progress" ? "Continuar prova" : "Iniciar prova"}</button>
@@ -461,8 +495,8 @@ export default function MockExamsPage() {
                       <div className="mock-exam-row-metrics">
                         <MetricPill label="Acertos" value={`${exam.correct_count}/${exam.total_questions}`} />
                         <MetricPill label="Acuracia" value={formatPercent(exam.accuracy)} />
-                        <MetricPill label="TRI informada" value={formatTri(exam.tri_score)} />
-                        <MetricPill label="Estimativa" value={formatTri(exam.estimated_tri_score)} />
+                        <MetricPill label="Estimativa TRI" value={formatTri(exam.estimated_tri_score)} />
+                        <MetricPill label="Nota oficial" value={formatTri(exam.official_tri_score)} />
                       </div>
                       {exam.notes ? <p className="mock-exam-row-notes" title={exam.notes}>{exam.notes}</p> : null}
                       <div className="mock-exam-row-actions mock-exam-row-actions-wide">
@@ -482,7 +516,7 @@ export default function MockExamsPage() {
               )}
             </section>
             <section className="mock-exams-chart-grid">
-              <MockExamLineChart title="Evolucao TRI" subtitle="Acompanha apenas a nota informada manualmente." values={triChartValues} colorClassName="is-tri" formatter={(value) => `${value.toFixed(1)} TRI`} />
+              <MockExamLineChart title="Evolucao da estimativa TRI" subtitle="Leitura automatica em ordem cronologica." values={estimatedTriChartValues} colorClassName="is-tri" formatter={(value) => `${value.toFixed(1)} pts`} />
               <MockExamBarChart values={correctChartValues} />
               <MockExamAreaChart values={areaChartValues} />
             </section>

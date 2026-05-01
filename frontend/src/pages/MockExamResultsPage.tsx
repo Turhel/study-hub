@@ -135,10 +135,17 @@ export default function MockExamResultsPage() {
 
         <section className="mock-exam-results-score-grid">
           <article className="today-panel mock-exam-score-card is-main">
-            <span>{results.official_tri_score != null ? "Nota TRI informada" : "Estimativa TRI geral"}</span>
-            <strong>{formatTri(results.official_tri_score ?? results.overall_area_average_score)}</strong>
-            <small>{results.official_tri_score != null ? "valor informado manualmente" : "media das areas com nota"}</small>
+            <span>Estimativa TRI geral</span>
+            <strong>{formatTri(results.overall_area_average_score)}</strong>
+            <small>media das areas com nota. Nao e TRI oficial.</small>
           </article>
+          {results.official_tri_score != null ? (
+            <article className="today-panel mock-exam-score-card">
+              <span>Nota oficial informada</span>
+              <strong>{formatTri(results.official_tri_score)}</strong>
+              <small>valor externo informado manualmente</small>
+            </article>
+          ) : null}
           {results.by_area.map((item) => (
             <article key={item.area} className="today-panel mock-exam-score-card">
               <span>{item.area}</span>
@@ -147,6 +154,13 @@ export default function MockExamResultsPage() {
             </article>
           ))}
         </section>
+
+        {results.official_tri_score != null && results.overall_area_average_score != null ? (
+          <section className="today-panel mock-exam-results-delta">
+            <strong>Diferenca entre oficial e estimativa</strong>
+            <span>{formatTri(results.official_tri_score - results.overall_area_average_score)} pontos</span>
+          </section>
+        ) : null}
 
         <section className="today-panel mock-exam-results-summary-grid">
           <article className="mock-exam-metric-pill"><span>Acuracia geral</span><strong>{formatPercent(results.accuracy)}</strong></article>
