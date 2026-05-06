@@ -544,6 +544,54 @@ Se precisar apontar para outro backend, crie `frontend/.env`:
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
+## Deploy Backend No Render
+
+Configuracao recomendada:
+
+- Root Directory: `backend`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+Variaveis necessarias no Render:
+
+```text
+DATABASE_URL=postgresql+psycopg://postgres:senha@db.xxx.supabase.co:5432/postgres
+STUDY_HUB_MACHINE_PROFILE=notebook
+STUDY_HUB_LLM_ENABLED=false
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=false
+STUDY_HUB_ESSAY_STUDY_ENABLED=false
+STUDY_HUB_DB_ECHO=false
+STUDY_HUB_CORS_ORIGINS=https://SEU-APP.vercel.app,http://localhost:5173
+```
+
+Notas:
+
+- O backend FastAPI sobe no Render.
+- O frontend Vite/React sobe no Vercel.
+- O Supabase e o banco Postgres, nao o backend FastAPI.
+- `localhost` nao funciona em producao.
+
+## Deploy Frontend No Vercel
+
+Configuracao recomendada:
+
+- Root Directory: `frontend`
+- Framework: `Vite`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+Env necessaria no projeto:
+
+```text
+VITE_API_BASE_URL=https://SEU-BACKEND.onrender.com
+```
+
+Notas:
+
+- Vercel hospeda apenas o frontend.
+- O backend FastAPI precisa estar acessivel publicamente no Render.
+- O fallback de SPA para recarregar rotas como `/stats`, `/lessons`, `/essay`, `/free-study`, `/settings` e `/mock-exams` fica em `frontend/vercel.json`.
+
 ## Dados Do Today
 
 Sem `DATABASE_URL`, o banco local oficial do backend é:
