@@ -705,3 +705,22 @@ O MVP Streamlit foi movido para:
 ```text
 legacy_streamlit/
 ```
+
+## Testes
+
+Pytest offline por padrao:
+
+```powershell
+$env:PYTHONPATH='backend'
+python -m pytest .
+```
+
+Esse comando agora usa SQLite temporario/local na suite, sem depender de internet ou Supabase.
+
+Se voce quiser rodar explicitamente usando o `DATABASE_URL` ja configurado no ambiente:
+
+```powershell
+$env:PYTHONPATH='backend'
+$env:STUDY_HUB_TEST_USE_REMOTE='true'
+python -m pytest .
+```
