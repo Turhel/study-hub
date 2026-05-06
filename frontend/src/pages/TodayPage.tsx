@@ -445,6 +445,15 @@ function priorityFillPercent(value: number | null | undefined): number {
   return Math.max(0, Math.min(100, value * 100));
 }
 
+function priorityHue(value: number | null | undefined): number {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return 120;
+  }
+
+  const normalized = Math.max(0, Math.min(1, (value - 0.1) / 0.9));
+  return Math.round(120 - normalized * 120);
+}
+
 function ActivityMetric({
   label,
   value,
@@ -856,7 +865,7 @@ export default function TodayPage() {
                 const cardKey = focusCardKey(item);
                 const isPriorityExpanded = expandedPriorityKey === cardKey;
                 const priorityScoreText = formatOptional(item.priority_score);
-                const priorityFill = priorityFillPercent(item.priority_score);
+                const priorityHueValue = priorityHue(item.priority_score);
                 const priorityReasonText =
                   item.primary_reason ?? item.roadmap_reason ?? "Sem justificativa detalhada disponivel para este foco.";
 
@@ -886,10 +895,8 @@ export default function TodayPage() {
                         <span
                           className="today-score-pill"
                           aria-hidden="true"
-                          style={{ "--today-priority-fill": `${priorityFill}%` } as CSSProperties}
+                          style={{ "--today-priority-hue": `${priorityHueValue}` } as CSSProperties}
                         />
-                        <span className="today-score-value">{priorityScoreText}</span>
-                        <span className="today-score-info">{isPriorityExpanded ? "-" : "i"}</span>
                       </button>
                       <span>Prioridade</span>
                     </div>
