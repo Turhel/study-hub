@@ -517,7 +517,7 @@ Configuracao recomendada:
 Env necessaria no projeto:
 
 ```text
-VITE_API_BASE_URL=https://URL_DO_BACKEND
+VITE_API_BASE_URL=https://URL_PUBLICA_DO_BACKEND
 ```
 
 O fallback de SPA para recarregar rotas como `/stats`, `/lessons` e `/essay` fica em:
@@ -525,6 +525,12 @@ O fallback de SPA para recarregar rotas como `/stats`, `/lessons` e `/essay` fic
 ```text
 frontend/vercel.json
 ```
+
+Avisos:
+
+- Vercel hospeda apenas o frontend.
+- O backend FastAPI precisa estar acessivel publicamente em outro servico.
+- `localhost` nao funciona em producao no Vercel.
 
 Para o backend aceitar o frontend publicado, configure no `backend/.env`:
 
