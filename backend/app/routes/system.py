@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.db import get_database_backend
 from app.schemas import (
+    ResetStudyDataRequest,
+    ResetStudyDataResponse,
     SystemCapabilitiesDatabase,
     SystemCapabilitiesFeatures,
     SystemCapabilitiesLLM,
     SystemCapabilitiesResponse,
 )
+from app.db import get_session
 from app.settings import (
     get_essay_correction_enabled,
     get_essay_study_enabled,
@@ -17,6 +20,7 @@ from app.settings import (
     get_llm_provider_name,
     get_machine_profile,
 )
+from app.services.reset_service import reset_study_data
 
 
 router = APIRouter(prefix="/api/system")
@@ -42,3 +46,18 @@ def get_system_capabilities() -> SystemCapabilitiesResponse:
             essay_study_enabled=get_essay_study_enabled(),
         ),
     )
+
+
+@router.post("/reset-study-data", response_model=ResetStudyDataResponse)
+def reset_system_study_data(payload: ResetStudyDataRequest) -> ResetStudyDataResponse:
+    try:
+        with get_session() as session:
+            return reset_study_data(session, payload)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_confirmation_text",
+                "message": str(exc),
+            },
+        ) from exc

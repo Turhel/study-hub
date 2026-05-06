@@ -66,6 +66,23 @@ export type SystemCapabilitiesResponse = {
   };
 };
 
+export type ResetStudyDataPayload = {
+  confirmation_text: string;
+  dry_run: boolean;
+  reset_preferences: boolean;
+  include_essays: boolean;
+};
+
+export type ResetStudyDataResponse = {
+  dry_run: boolean;
+  deleted_counts: Record<string, number>;
+  reset_counts: Record<string, number>;
+  preserved_tables: string[];
+  preferences_reset: boolean;
+  essays_deleted: boolean;
+  warnings: string[];
+};
+
 export type StudyPlanSummary = {
   total_questions: number;
   focus_count: number;
@@ -123,6 +140,33 @@ export type StudyPlanRecalculateResponse = {
   plan: StudyPlanTodayResponse;
 };
 
+export type StudyTimerMode = "guided" | "free";
+
+export type StudyTimerContext = {
+  mode: StudyTimerMode;
+  discipline: string;
+  block_id: number | null;
+  block_name?: string | null;
+  subject_id: number;
+  subject_name: string;
+};
+
+export type StudyTimerSession = {
+  context: StudyTimerContext;
+  elapsed_seconds: number;
+  is_running: boolean;
+  is_paused: boolean;
+  started_at: number | null;
+  last_resumed_at: number | null;
+  accumulated_seconds: number;
+};
+
+export type StudyTimerPendingCompletion = {
+  context: StudyTimerContext;
+  elapsed_seconds: number;
+  finished_at: number;
+};
+
 export type QuestionAttemptBulkPayload = {
   date?: string | null;
   discipline: string;
@@ -132,7 +176,7 @@ export type QuestionAttemptBulkPayload = {
   quantity: number;
   correct_count: number;
   difficulty_bank: "facil" | "media" | "dificil";
-  difficulty_personal: "facil" | "media" | "dificil";
+  difficulty_personal?: "facil" | "media" | "dificil" | null;
   elapsed_seconds?: number | null;
   confidence?: "baixa" | "media" | "alta" | null;
   error_type?: string | null;
@@ -172,6 +216,20 @@ export type StatsOverviewResponse = {
   recent_activity_count: number;
 };
 
+export type StatsDisciplineItem = {
+  discipline: string;
+  strategic_discipline: string;
+  total_questions: number;
+  correct_questions: number;
+  accuracy: number;
+  questions_this_week: number;
+  questions_this_month: number;
+  average_time_correct_questions_seconds: number | null;
+  studied_subjects_count: number;
+  weak_subjects_count: number;
+  risk_blocks_count: number;
+};
+
 export type StatsSubjectPerformance = {
   subject_id: number;
   subject_name: string;
@@ -197,6 +255,245 @@ export type StatsDisciplineResponse = {
   review_due_count: number;
   blocks_in_progress: number;
   blocks_reviewable: number;
+};
+
+export type StatsHeatmapDay = {
+  date: string;
+  weekday: number;
+  questions_count: number;
+  correct_count: number;
+  accuracy: number;
+  studied: boolean;
+  intensity_level: number;
+};
+
+export type StatsHeatmapResponse = {
+  discipline: string | null;
+  start_date: string;
+  end_date: string;
+  max_questions_in_day: number;
+  total_questions: number;
+  active_days: number;
+  current_streak_days: number;
+  longest_streak_days: number;
+  days: StatsHeatmapDay[];
+};
+
+export type StatsTimeSeriesPoint = {
+  period: string;
+  start_date: string;
+  end_date: string;
+  questions_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_correct_questions_seconds: number | null;
+  active_days: number;
+};
+
+export type StatsTimeSeriesGroupBy = "day" | "week";
+
+export type StatsTimeSeriesResponse = {
+  discipline: string | null;
+  group_by: StatsTimeSeriesGroupBy;
+  points: StatsTimeSeriesPoint[];
+};
+
+export type StatsDisciplineSubjectItem = {
+  subject_id: number;
+  subject_name: string;
+  block_id: number | null;
+  questions_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_correct_questions_seconds: number | null;
+  last_studied_at: string | null;
+  mastery_score: number | null;
+  mastery_status: string | null;
+};
+
+export type StatsDisciplineSubjectsResponse = {
+  discipline: string;
+  subjects: StatsDisciplineSubjectItem[];
+};
+
+export type MockExamArea =
+  | "Linguagens"
+  | "Humanas"
+  | "Natureza"
+  | "Matematica"
+  | "Matem?tica"
+  | "Redacao"
+  | "Reda??o"
+  | "Geral";
+
+export type MockExamMode = "external" | "internal";
+
+export type MockExamStatus = "draft" | "in_progress" | "finished";
+
+export type MockExamPayload = {
+  exam_date: string;
+  title: string;
+  area: MockExamArea;
+  mode?: MockExamMode;
+  total_questions: number;
+  correct_count: number;
+  tri_score?: number | null;
+  duration_minutes?: number | null;
+  notes?: string | null;
+};
+
+export type MockExam = {
+  id: number;
+  exam_date: string;
+  title: string;
+  area: MockExamArea;
+  mode: MockExamMode;
+  status: MockExamStatus;
+  total_questions: number;
+  correct_count: number;
+  accuracy: number;
+  tri_score: number | null;
+  official_tri_score: number | null;
+  estimated_tri_score: number | null;
+  duration_minutes: number | null;
+  notes: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MockExamSummaryArea = {
+  area: MockExamArea;
+  total_exams: number;
+  latest_tri_score: number | null;
+  best_tri_score: number | null;
+  average_accuracy: number | null;
+};
+
+export type MockExamSummaryResponse = {
+  total_exams: number;
+  latest_exam_date: string | null;
+  last_three_average_tri: number | null;
+  last_three_average_accuracy: number | null;
+  best_tri_score: number | null;
+  by_area: MockExamSummaryArea[];
+  recent: MockExam[];
+};
+
+export type MockExamQuestionSourceType = "external" | "internal";
+
+export type MockExamQuestion = {
+  id: number;
+  mock_exam_id: number;
+  question_number: number;
+  question_code: string | null;
+  area: string | null;
+  discipline: string | null;
+  subject_id: number | null;
+  block_id: number | null;
+  source_type: MockExamQuestionSourceType;
+  prompt_markdown: string | null;
+  alternatives: string[];
+  correct_answer: string | null;
+  user_answer: string | null;
+  is_correct: boolean | null;
+  skipped: boolean;
+  difficulty_percent: number | null;
+  time_seconds: number | null;
+  started_at: string | null;
+  answered_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MockExamQuestionPayload = {
+  question_code?: string | null;
+  area?: string | null;
+  discipline?: string | null;
+  subject_id?: number | null;
+  block_id?: number | null;
+  prompt_markdown?: string | null;
+  alternatives?: string[];
+  correct_answer?: string | null;
+  user_answer?: string | null;
+  skipped?: boolean | null;
+  difficulty_percent?: number | null;
+  time_seconds?: number | null;
+  started_at?: string | null;
+  answered_at?: string | null;
+  notes?: string | null;
+};
+
+export type MockExamQuestionsBulkPayload = {
+  questions: Array<
+    MockExamQuestionPayload & {
+      question_number: number;
+      source_type?: MockExamQuestionSourceType;
+    }
+  >;
+};
+
+export type MockExamPlaceholderRequest = {
+  total_questions: number;
+  areas: Array<{
+    area: string;
+    start: number;
+    end: number;
+  }>;
+};
+
+export type MockExamPlaceholderResponse = {
+  created_questions: number;
+  total_questions: number;
+  message: string;
+};
+
+export type MockExamStartResponse = {
+  exam: MockExam;
+  questions_count: number;
+};
+
+export type MockExamAreaResult = {
+  area: string;
+  total_questions: number;
+  answered_count: number;
+  skipped_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_seconds: number | null;
+  avg_time_correct_seconds: number | null;
+  average_difficulty_percent: number | null;
+  estimated_tri_score: number | null;
+};
+
+export type MockExamFinishResponse = {
+  exam: MockExam;
+  total_questions: number;
+  answered_count: number;
+  skipped_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_seconds: number | null;
+  avg_time_correct_seconds: number | null;
+  by_area: MockExamAreaResult[];
+};
+
+export type MockExamResultsResponse = {
+  exam: MockExam;
+  total_questions: number;
+  answered_count: number;
+  skipped_count: number;
+  correct_count: number;
+  accuracy: number;
+  avg_time_seconds: number | null;
+  avg_time_correct_seconds: number | null;
+  official_tri_score: number | null;
+  estimated_tri_score: number | null;
+  overall_area_average_score: number | null;
+  by_area: MockExamAreaResult[];
+  questions: MockExamQuestion[];
 };
 
 export type GamificationStreakResponse = {
@@ -289,6 +586,45 @@ export type FreeStudyCatalogDiscipline = {
 
 export type FreeStudyCatalogResponse = {
   disciplines: FreeStudyCatalogDiscipline[];
+};
+
+export type FreeStudyRoadmapNodeBrief = {
+  node_id: string;
+  discipline: string;
+  strategic_discipline: string;
+  subject_area: string;
+  content: string;
+  subunit: string | null;
+  relation_type?: string | null;
+};
+
+export type FreeStudySubjectContextGuidedStatus =
+  | "entry"
+  | "available"
+  | "blocked_required"
+  | "blocked_cross_required"
+  | "reviewable"
+  | "unmapped"
+  | string;
+
+export type FreeStudySubjectContextResponse = {
+  subject_id: number;
+  subject_name: string;
+  discipline: string;
+  strategic_discipline: string | null;
+  subarea: string | null;
+  block_id: number | null;
+  block_name: string | null;
+  roadmap_node_id: string | null;
+  roadmap_mapped: boolean;
+  free_study_allowed: boolean;
+  guided_status: FreeStudySubjectContextGuidedStatus;
+  warning_level: FreeStudyWarningLevel;
+  warning_message: string | null;
+  direct_prerequisites: FreeStudyRoadmapNodeBrief[];
+  missing_required_nodes: FreeStudyRoadmapNodeBrief[];
+  missing_cross_required_nodes: FreeStudyRoadmapNodeBrief[];
+  missing_recommended_nodes: FreeStudyRoadmapNodeBrief[];
 };
 
 export type BlockProgressItem = {

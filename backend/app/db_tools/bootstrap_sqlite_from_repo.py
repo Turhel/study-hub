@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
-import tempfile
 from dataclasses import asdict, dataclass
 from datetime import date
-from pathlib import Path
+from typing import Any
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
-from app.db import create_db_engine, get_database_backend, get_database_target_display, get_session, init_db
+from app.db import DATABASE_URL, engine, get_database_target_display, init_db
 from app.models import (
     Block,
     BlockProgress,
@@ -23,14 +22,15 @@ from app.models import (
     Subject,
     SubjectProgress,
 )
-from app.services.capacity_service import get_or_create_capacity
 from app.services.progression_service import sync_progression
 from app.services.repo_seed_service import sync_structural_seed_into_session
+from app.services.roadmap_diff_service import get_roadmap_dry_run
 from app.services.roadmap_import_service import import_roadmap_from_csv
+from app.settings import is_sqlite_database_url
 
 
-@dataclass
-class TableCounts:
+@dataclass(frozen=True)
+class BootstrapCounts:
     subjects: int
     blocks: int
     block_subjects: int
@@ -40,113 +40,139 @@ class TableCounts:
     roadmap_rules: int
     block_progress: int
     subject_progress: int
-    study_capacity: int
 
 
-def _table_counts(session: Session) -> TableCounts:
-    return TableCounts(
-        subjects=len(session.exec(select(Subject)).all()),
-        blocks=len(session.exec(select(Block)).all()),
-        block_subjects=len(session.exec(select(BlockSubject)).all()),
-        roadmap_nodes=len(session.exec(select(RoadmapNode)).all()),
-        roadmap_edges=len(session.exec(select(RoadmapEdge)).all()),
-        roadmap_block_map=len(session.exec(select(RoadmapBlockMap)).all()),
-        roadmap_rules=len(session.exec(select(RoadmapRule)).all()),
-        block_progress=len(session.exec(select(BlockProgress)).all()),
-        subject_progress=len(session.exec(select(SubjectProgress)).all()),
-        study_capacity=len(session.exec(select(StudyCapacity)).all()),
+def _count(session: Session, model: type[Any]) -> int:
+    return int(session.exec(select(func.count()).select_from(model)).one() or 0)
+
+
+def _counts(session: Session) -> BootstrapCounts:
+    return BootstrapCounts(
+        subjects=_count(session, Subject),
+        blocks=_count(session, Block),
+        block_subjects=_count(session, BlockSubject),
+        roadmap_nodes=_count(session, RoadmapNode),
+        roadmap_edges=_count(session, RoadmapEdge),
+        roadmap_block_map=_count(session, RoadmapBlockMap),
+        roadmap_rules=_count(session, RoadmapRule),
+        block_progress=_count(session, BlockProgress),
+        subject_progress=_count(session, SubjectProgress),
     )
 
 
-def _build_report(session: Session, *, mode: str, target_database: str) -> dict[str, object]:
-    before_counts = _table_counts(session)
-    structural_summary = sync_structural_seed_into_session(session, apply_changes=True)
-    roadmap_summary = import_roadmap_from_csv(session=session, delete_missing=False)
-    capacity = get_or_create_capacity(session)
-    block_progress, subject_progress = sync_progression(session, date.today())
-    after_counts = _table_counts(session)
-
+def _capacity_snapshot(session: Session) -> dict[str, Any]:
+    capacity = session.exec(select(StudyCapacity).order_by(StudyCapacity.id)).first()
+    if capacity is None:
+        return {
+            "exists": False,
+            "include_new_content": None,
+            "max_focus_count": None,
+            "max_questions": None,
+            "daily_minutes": None,
+            "notes": ["preferences ainda nao existem; o endpoint cria defaults quando chamado"],
+        }
     return {
-        "mode": mode,
-        "database_backend": get_database_backend(),
-        "target_database": target_database,
-        "structural_seed": asdict(structural_summary),
-        "roadmap": roadmap_summary.model_dump(),
-        "progression": {
-            "block_progress_rows": len(block_progress),
-            "subject_progress_rows": len(subject_progress),
-            "capacity_id": capacity.id,
-        },
-        "counts_before": asdict(before_counts),
-        "counts_after": asdict(after_counts),
-        "warnings": [
-            "O bootstrap estrutural nao apaga subjects, blocks ou block_subjects existentes.",
-            "O roadmap foi importado em modo preservacao, sem deletar rows extras do banco local.",
-        ],
+        "exists": True,
+        "include_new_content": capacity.include_new_content,
+        "include_reviews": capacity.include_reviews,
+        "max_focus_count": capacity.max_focus_count,
+        "max_questions": capacity.max_questions,
+        "daily_minutes": capacity.daily_minutes,
+        "intensity": capacity.intensity,
+        "notes": [],
     }
 
 
-def _sqlite_path() -> Path:
-    target = Path(get_database_target_display())
-    return target.resolve()
+def _study_plan_diagnostics(session: Session) -> dict[str, Any]:
+    counts = _counts(session)
+    capacity = _capacity_snapshot(session)
+    focus_statuses = {"active", "ready_to_advance", "transition"}
+    focus_blocks = session.exec(select(BlockProgress).where(BlockProgress.status.in_(focus_statuses))).all()
+    available_subjects = session.exec(
+        select(SubjectProgress).where(SubjectProgress.status.in_({"available", "in_progress"}))
+    ).all()
+
+    reasons: list[str] = []
+    if counts.subjects == 0:
+        reasons.append("sem subjects")
+    if counts.blocks == 0:
+        reasons.append("sem blocks")
+    if counts.block_subjects == 0:
+        reasons.append("sem block_subjects")
+    if counts.block_progress == 0 or counts.subject_progress == 0:
+        reasons.append("sem progressao sincronizada")
+    if not focus_blocks:
+        reasons.append("sem blocos de foco elegiveis")
+    if not available_subjects:
+        reasons.append("sem subjects available/in_progress")
+    if capacity["exists"] and capacity["include_new_content"] is False:
+        reasons.append("preferences include_new_content=false")
+    if capacity["exists"] and int(capacity["max_focus_count"] or 0) <= 0:
+        reasons.append("preferences max_focus_count zerado")
+    if capacity["exists"] and int(capacity["max_questions"] or 0) <= 0:
+        reasons.append("preferences max_questions zerado")
+
+    return {
+        "focus_blocks": len(focus_blocks),
+        "available_subjects": len(available_subjects),
+        "capacity": capacity,
+        "empty_plan_reasons_if_any": reasons,
+    }
 
 
-def _assert_sqlite_target() -> None:
-    if get_database_backend() != "sqlite":
+def _ensure_sqlite() -> None:
+    if not is_sqlite_database_url(DATABASE_URL):
         raise SystemExit(
-            "Este bootstrap foi feito para o SQLite local. Remova DATABASE_URL ou aponte o ambiente atual para sqlite."
+            "Abortado: DATABASE_URL nao aponta para SQLite. "
+            "Este bootstrap e exclusivo do SQLite local e nao toca Supabase/Postgres."
         )
 
 
-def _dry_run_report(target_path: Path) -> dict[str, object]:
-    with tempfile.TemporaryDirectory(prefix="study_hub_sqlite_bootstrap_") as temp_dir:
-        temp_db_path = Path(temp_dir) / "study_hub_dry_run.db"
-        if target_path.exists():
-            shutil.copy2(target_path, temp_db_path)
-
-        temp_engine = create_db_engine(f"sqlite:///{temp_db_path.as_posix()}")
-        try:
-            init_db(temp_engine)
-            with Session(temp_engine, expire_on_commit=False) as session:
-                return _build_report(
-                    session,
-                    mode="dry-run",
-                    target_database=str(target_path),
-                )
-        finally:
-            temp_engine.dispose()
-
-
-def _apply_report(target_path: Path) -> dict[str, object]:
+def run_bootstrap(*, apply_changes: bool) -> dict[str, Any]:
+    _ensure_sqlite()
     init_db()
-    with get_session() as session:
-        return _build_report(
-            session,
-            mode="apply",
-            target_database=str(target_path),
-        )
 
+    with Session(engine, expire_on_commit=False) as session:
+        before = _counts(session)
+        structural_summary = sync_structural_seed_into_session(session, apply_changes=apply_changes)
+        roadmap_dry_run_before_apply = get_roadmap_dry_run(session)
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Popula o SQLite local com os CSVs estruturais versionados do repositório."
-    )
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--dry-run", action="store_true", help="Executa numa copia temporaria do SQLite local.")
-    group.add_argument("--apply", action="store_true", help="Aplica a carga estrutural no SQLite local real.")
-    return parser.parse_args()
+        roadmap_import_summary = None
+        progression_synced = False
+        if apply_changes:
+            roadmap_import_summary = import_roadmap_from_csv(session, delete_missing=False)
+            sync_progression(session, date.today())
+            progression_synced = True
+
+        after = _counts(session)
+        diagnostics = _study_plan_diagnostics(session)
+
+    return {
+        "mode": "apply" if apply_changes else "dry-run",
+        "database": {
+            "dialect": "sqlite",
+            "target": get_database_target_display(),
+        },
+        "counts_before": asdict(before),
+        "counts_after": asdict(after),
+        "structural_seed": asdict(structural_summary),
+        "roadmap_dry_run": roadmap_dry_run_before_apply.model_dump(),
+        "roadmap_import": roadmap_import_summary.model_dump() if roadmap_import_summary is not None else None,
+        "progression_synced": progression_synced,
+        "study_plan_diagnostics": diagnostics,
+    }
 
 
 def main() -> None:
-    args = parse_args()
-    _assert_sqlite_target()
-    target_path = _sqlite_path()
+    parser = argparse.ArgumentParser(
+        description="Popula o SQLite local com dados estruturais versionados no repositorio."
+    )
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--dry-run", action="store_true", help="Mostra o que seria sincronizado sem aplicar roadmap/progressao.")
+    mode.add_argument("--apply", action="store_true", help="Aplica seed estrutural, roadmap e progressao minima no SQLite.")
+    args = parser.parse_args()
 
-    if args.apply:
-        report = _apply_report(target_path)
-    else:
-        report = _dry_run_report(target_path)
-
+    report = run_bootstrap(apply_changes=args.apply)
     print(json.dumps(report, indent=2, ensure_ascii=False))
 
 

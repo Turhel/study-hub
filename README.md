@@ -13,6 +13,7 @@ Não há autenticação, multiusuário, Docker, Ollama, correção de redação,
 ## Documentação De Contratos
 
 - contratos principais de API para consumo do frontend: `docs/api-contracts.md`
+- handoff seguro para continuidade manual/OpenClaude: `docs/AI_HANDOFF.md`
 
 ## Rodar Backend
 
@@ -26,9 +27,61 @@ python -m uvicorn app.main:app --reload
 
 Por padrao, sem `DATABASE_URL`, o backend usa SQLite local em `backend/data/study_hub.db`.
 
-Modo faculdade/offline com SQLite local estruturado:
-`python -m app.db_tools.bootstrap_sqlite_from_repo --dry-run`
-`python -m app.db_tools.bootstrap_sqlite_from_repo --apply`
+### Modo faculdade/offline com SQLite local
+
+1. Comente `DATABASE_URL` em `backend/.env`.
+2. Simule o bootstrap estrutural:
+
+```powershell
+cd backend
+python -m app.db_tools.bootstrap_sqlite_from_repo --dry-run
+```
+
+3. Aplique o bootstrap no SQLite local:
+
+```powershell
+python -m app.db_tools.bootstrap_sqlite_from_repo --apply
+```
+
+4. Suba o backend:
+
+```powershell
+python -m uvicorn app.main:app --reload
+```
+
+5. Valide os endpoints principais:
+
+```powershell
+curl http://127.0.0.1:8000/api/system/capabilities
+curl http://127.0.0.1:8000/api/study-plan/today
+```
+
+O bootstrap offline usa apenas CSVs versionados em `docs/data_seed` e `docs/roadmap`, aborta se o banco ativo nao for SQLite e nao apaga dados existentes.
+
+### Modo faculdade/offline com snapshot local
+
+1. Em casa, com Supabase acessivel, gere um snapshot local:
+
+```powershell
+cd backend
+python -m app.db_tools.sync_remote_to_sqlite --dry-run
+python -m app.db_tools.sync_remote_to_sqlite --apply
+```
+
+2. Na faculdade, com a rede bloqueando o Supabase, comente `DATABASE_URL` em `backend/.env`.
+3. Suba o backend usando o SQLite local:
+
+```powershell
+python -m uvicorn app.main:app --reload
+```
+
+4. Valide que o backend entrou em modo local:
+
+```powershell
+curl http://127.0.0.1:8000/api/system/capabilities
+```
+
+O snapshot remoto faz apenas leitura no Postgres/Supabase, cria backup do SQLite destino antes da troca e escreve o novo banco local por substituicao segura.
 
 ## Banco De Dados: SQLite Ou Postgres
 

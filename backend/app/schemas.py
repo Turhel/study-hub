@@ -357,6 +357,23 @@ class SystemCapabilitiesResponse(BaseModel):
     features: SystemCapabilitiesFeatures
 
 
+class ResetStudyDataRequest(BaseModel):
+    confirmation_text: str
+    dry_run: bool = True
+    reset_preferences: bool = False
+    include_essays: bool = False
+
+
+class ResetStudyDataResponse(BaseModel):
+    dry_run: bool
+    deleted_counts: dict[str, int] = Field(default_factory=dict)
+    reset_counts: dict[str, int] = Field(default_factory=dict)
+    preserved_tables: list[str] = Field(default_factory=list)
+    preferences_reset: bool
+    essays_deleted: bool
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ActivityItem(BaseModel):
     type: Literal["question_attempt_bulk", "review_upsert", "daily_plan_generated", "block_progress_decision"]
     created_at: str
@@ -387,6 +404,221 @@ class StatsMockExamAreaAverage(BaseModel):
     average_accuracy: float | None = None
     average_correct: float | None = None
     average_total_questions: float | None = None
+
+
+MockExamArea = Literal[
+    "Linguagens",
+    "Humanas",
+    "Natureza",
+    "Matematica",
+    "Matemática",
+    "Redacao",
+    "Redação",
+    "Geral",
+]
+MockExamMode = Literal["external", "internal"]
+MockExamStatus = Literal["draft", "in_progress", "finished"]
+MockExamQuestionSourceType = Literal["external", "internal"]
+
+
+class MockExamBase(BaseModel):
+    exam_date: str
+    title: str = Field(min_length=1)
+    area: MockExamArea
+    mode: MockExamMode = "external"
+    total_questions: int = Field(ge=1)
+    correct_count: int = Field(ge=0)
+    tri_score: float | None = Field(default=None, ge=0)
+    duration_minutes: int | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
+class MockExamCreate(MockExamBase):
+    pass
+
+
+class MockExamUpdate(BaseModel):
+    exam_date: str | None = None
+    title: str | None = Field(default=None, min_length=1)
+    area: MockExamArea | None = None
+    mode: MockExamMode | None = None
+    total_questions: int | None = Field(default=None, ge=1)
+    correct_count: int | None = Field(default=None, ge=0)
+    tri_score: float | None = Field(default=None, ge=0)
+    duration_minutes: int | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
+class MockExamResponse(BaseModel):
+    id: int
+    exam_date: str
+    title: str
+    area: MockExamArea
+    mode: MockExamMode
+    status: MockExamStatus
+    total_questions: int
+    correct_count: int
+    accuracy: float
+    tri_score: float | None = None
+    official_tri_score: float | None = None
+    estimated_tri_score: float | None = None
+    duration_minutes: int | None = None
+    notes: str | None = None
+    started_at: str | None = None
+    finished_at: str | None = None
+    created_at: str
+    updated_at: str
+
+
+class MockExamAreaSummary(BaseModel):
+    area: MockExamArea
+    total_exams: int
+    latest_tri_score: float | None = None
+    best_tri_score: float | None = None
+    average_accuracy: float | None = None
+
+
+class MockExamSummaryResponse(BaseModel):
+    total_exams: int
+    latest_exam_date: str | None = None
+    last_three_average_tri: float | None = None
+    last_three_average_accuracy: float | None = None
+    best_tri_score: float | None = None
+    by_area: list[MockExamAreaSummary] = Field(default_factory=list)
+    recent: list[MockExamResponse] = Field(default_factory=list)
+
+
+class MockExamQuestionBase(BaseModel):
+    question_number: int = Field(ge=1)
+    question_code: str | None = None
+    area: str | None = None
+    discipline: str | None = None
+    subject_id: int | None = None
+    block_id: int | None = None
+    source_type: MockExamQuestionSourceType = "external"
+    prompt_markdown: str | None = None
+    alternatives: list[str] = Field(default_factory=list)
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    skipped: bool = False
+    difficulty_percent: float | None = Field(default=None, ge=0, le=100)
+    time_seconds: int | None = Field(default=None, ge=0)
+    notes: str | None = None
+
+
+class MockExamQuestionCreate(MockExamQuestionBase):
+    started_at: str | None = None
+    answered_at: str | None = None
+
+
+class MockExamQuestionBulkCreate(BaseModel):
+    questions: list[MockExamQuestionCreate] = Field(min_length=1)
+
+
+class MockExamQuestionUpdate(BaseModel):
+    question_code: str | None = None
+    area: str | None = None
+    discipline: str | None = None
+    subject_id: int | None = None
+    block_id: int | None = None
+    prompt_markdown: str | None = None
+    alternatives: list[str] | None = None
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    skipped: bool | None = None
+    difficulty_percent: float | None = Field(default=None, ge=0, le=100)
+    time_seconds: int | None = Field(default=None, ge=0)
+    started_at: str | None = None
+    answered_at: str | None = None
+    notes: str | None = None
+
+
+class MockExamQuestionResponse(BaseModel):
+    id: int
+    mock_exam_id: int
+    question_number: int
+    question_code: str | None = None
+    area: str | None = None
+    discipline: str | None = None
+    subject_id: int | None = None
+    block_id: int | None = None
+    source_type: MockExamQuestionSourceType
+    prompt_markdown: str | None = None
+    alternatives: list[str] = Field(default_factory=list)
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    is_correct: bool | None = None
+    skipped: bool
+    difficulty_percent: float | None = None
+    time_seconds: int | None = None
+    started_at: str | None = None
+    answered_at: str | None = None
+    notes: str | None = None
+    created_at: str
+    updated_at: str
+
+
+class MockExamPlaceholderAreaRange(BaseModel):
+    area: str
+    start: int = Field(ge=1)
+    end: int = Field(ge=1)
+
+
+class MockExamPlaceholderRequest(BaseModel):
+    total_questions: int = Field(ge=1)
+    areas: list[MockExamPlaceholderAreaRange] = Field(min_length=1)
+
+
+class MockExamPlaceholderResponse(BaseModel):
+    created_questions: int
+    total_questions: int
+    message: str
+
+
+class MockExamStartResponse(BaseModel):
+    exam: MockExamResponse
+    questions_count: int
+
+
+class MockExamAreaResult(BaseModel):
+    area: str
+    total_questions: int
+    answered_count: int
+    skipped_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_seconds: float | None = None
+    avg_time_correct_seconds: float | None = None
+    average_difficulty_percent: float | None = None
+    estimated_tri_score: float | None = None
+
+
+class MockExamFinishResponse(BaseModel):
+    exam: MockExamResponse
+    total_questions: int
+    answered_count: int
+    skipped_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_seconds: float | None = None
+    avg_time_correct_seconds: float | None = None
+    by_area: list[MockExamAreaResult] = Field(default_factory=list)
+
+
+class MockExamResultsResponse(BaseModel):
+    exam: MockExamResponse
+    total_questions: int
+    answered_count: int
+    skipped_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_seconds: float | None = None
+    avg_time_correct_seconds: float | None = None
+    official_tri_score: float | None = None
+    estimated_tri_score: float | None = None
+    overall_area_average_score: float | None = None
+    by_area: list[MockExamAreaResult] = Field(default_factory=list)
+    questions: list[MockExamQuestionResponse] = Field(default_factory=list)
 
 
 class StatsDisciplineSignal(BaseModel):
@@ -478,6 +710,63 @@ class StatsDisciplineResponse(BaseModel):
     review_due_count: int
     blocks_in_progress: int
     blocks_reviewable: int
+
+
+class StatsHeatmapDay(BaseModel):
+    date: str
+    weekday: int
+    questions_count: int
+    correct_count: int
+    accuracy: float
+    studied: bool
+    intensity_level: int
+
+
+class StatsHeatmapResponse(BaseModel):
+    discipline: str | None = None
+    start_date: str
+    end_date: str
+    max_questions_in_day: int
+    total_questions: int
+    active_days: int
+    current_streak_days: int
+    longest_streak_days: int
+    days: list[StatsHeatmapDay]
+
+
+class StatsTimeSeriesPoint(BaseModel):
+    period: str
+    start_date: str
+    end_date: str
+    questions_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_correct_questions_seconds: float | None = None
+    active_days: int
+
+
+class StatsTimeSeriesResponse(BaseModel):
+    discipline: str | None = None
+    group_by: Literal["day", "week"]
+    points: list[StatsTimeSeriesPoint]
+
+
+class StatsDisciplineSubjectItem(BaseModel):
+    subject_id: int
+    subject_name: str
+    block_id: int | None = None
+    questions_count: int
+    correct_count: int
+    accuracy: float
+    avg_time_correct_questions_seconds: float | None = None
+    last_studied_at: str | None = None
+    mastery_score: float | None = None
+    mastery_status: str | None = None
+
+
+class StatsDisciplineSubjectsResponse(BaseModel):
+    discipline: str
+    subjects: list[StatsDisciplineSubjectItem]
 
 
 class StatsDisciplineDetailResponse(BaseModel):

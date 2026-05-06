@@ -1,28 +1,24 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
+import { useStudyTimer } from "../components/StudyTimer";
 import {
   getRecentActivity,
   getStudyGuidePreferences,
   getStudyPlanToday,
   getSystemCapabilities,
   getTodayActivity,
-  recalculateStudyPlanToday,
   saveQuestionAttemptsBulk,
-  saveStudyGuidePreferences,
 } from "../lib/api";
 import type {
   ActivityItem,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
-  StudyGuideIntensity,
-  StudyGuidePreferencesPayload,
   StudyPlanItem,
 } from "../lib/types";
 
-type PreferencesForm = StudyGuidePreferencesPayload;
 type DisciplineIconKind = "languages" | "humanas" | "math" | "nature" | "writing" | "default";
 type MetricIconKind = "target" | "focus" | "questions" | "subjects";
 
@@ -38,15 +34,6 @@ type AttemptForm = {
   notes: string;
 };
 
-const defaultPreferences: PreferencesForm = {
-  daily_minutes: 90,
-  intensity: "normal",
-  max_focus_count: 3,
-  max_questions: 35,
-  include_reviews: true,
-  include_new_content: true,
-};
-
 const defaultAttemptForm: AttemptForm = {
   quantity: 10,
   correct_count: 0,
@@ -57,12 +44,6 @@ const defaultAttemptForm: AttemptForm = {
   confidence: "media",
   error_type: "",
   notes: "",
-};
-
-const intensityDescriptions: Record<StudyGuideIntensity, string> = {
-  leve: "Carga mais segura para manter consistencia sem se esmagar.",
-  normal: "Equilibrio entre volume, revisao e conteudo novo.",
-  forte: "Puxa mais questoes e focos quando voce quer acelerar.",
 };
 
 const disciplineVisualMap: Record<string, { icon: DisciplineIconKind; toneClassName: string }> = {
@@ -219,16 +200,6 @@ function SummaryCard({
   );
 }
 
-function GuideIcon() {
-  return (
-    <svg viewBox="0 0 48 48" aria-hidden="true">
-      <rect x="8" y="9" width="32" height="28" rx="8" className="today-icon-fill-gold" />
-      <path d="M15 18h18M15 24h18M15 30h10" className="today-icon-line-dark" />
-      <path d="M33 12v24" className="today-icon-line-soft" />
-    </svg>
-  );
-}
-
 function NextStepPanel({
   title,
   description,
@@ -280,6 +251,24 @@ function formatOptional(value: unknown): string {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Nao foi possivel completar a acao.";
+}
+
+function plannedModeLabel(value: string | null | undefined): string {
+  if (!value) return "Nao informado";
+  if (value === "aprendizado") return "Aprendizado";
+  if (value === "revisao") return "Revisao";
+  if (value === "consolidacao") return "Consolidacao";
+  return value;
+}
+
+function roadmapStatusLabel(value: string | null | undefined): string {
+  if (!value) return "Nao informado";
+  if (value === "entry") return "Entrada";
+  if (value === "available") return "Disponivel";
+  if (value === "blocked_required") return "Bloqueado por prerequisito";
+  if (value === "blocked_cross_required") return "Bloqueado por dependencia cruzada";
+  if (value === "reviewable") return "Revisavel";
+  return value;
 }
 
 function isActivityEmpty(activity?: ActivityItem[]): boolean {
@@ -474,12 +463,11 @@ function ActivityMetric({
 
 export default function TodayPage() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const [preferencesForm, setPreferencesForm] = useState<PreferencesForm>(defaultPreferences);
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [expandedPriorityKey, setExpandedPriorityKey] = useState<string | null>(null);
+  const { pendingCompletion, consumePendingCompletion, startTimer } = useStudyTimer();
 
   const planQuery = useQuery({
     queryKey: ["study-plan-today"],
@@ -507,53 +495,17 @@ export default function TodayPage() {
     retry: false,
   });
 
-  useEffect(() => {
-    if (preferencesQuery.data) {
-      const { updated_at: _updatedAt, ...payload } = preferencesQuery.data;
-      setPreferencesForm(payload);
-    }
-  }, [preferencesQuery.data]);
-
-  const savedPreferences = useMemo<PreferencesForm | null>(() => {
-    if (!preferencesQuery.data) {
-      return null;
-    }
-
-    const { updated_at: _updatedAt, ...payload } = preferencesQuery.data;
-    return payload;
-  }, [preferencesQuery.data]);
-
   const refreshTodayData = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["study-plan-today"] }),
-      queryClient.invalidateQueries({ queryKey: ["activity-today"] }),
-      queryClient.invalidateQueries({ queryKey: ["activity-recent"] }),
-      queryClient.invalidateQueries({ queryKey: ["gamification-summary"] }),
-      queryClient.invalidateQueries({ queryKey: ["stats-overview"] }),
-      queryClient.invalidateQueries({ queryKey: ["stats-discipline"] }),
+      queryClient.refetchQueries({ queryKey: ["study-plan-today"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["study-guide-preferences"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["activity-recent"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["gamification-summary"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["stats-overview"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["stats-discipline"], type: "active" }),
     ]);
   };
-
-  const savePreferencesMutation = useMutation({
-    mutationFn: saveStudyGuidePreferences,
-    onSuccess: (data) => {
-      const { updated_at: _updatedAt, ...payload } = data;
-      setPreferencesForm(payload);
-      setFeedback("Preferencias salvas. Recalcule o plano para aplicar agora.");
-      queryClient.setQueryData(["study-guide-preferences"], data);
-    },
-    onError: (error) => setFeedback(errorMessage(error)),
-  });
-
-  const recalculateMutation = useMutation({
-    mutationFn: recalculateStudyPlanToday,
-    onSuccess: async (data) => {
-      queryClient.setQueryData(["study-plan-today"], data.plan);
-      setFeedback(data.replaced_plan_id ? "Plano recalculado e substituido." : "Plano recalculado.");
-      await refreshTodayData();
-    },
-    onError: (error) => setFeedback(errorMessage(error)),
-  });
 
   const registerAttemptsMutation = useMutation({
     mutationFn: ({ item, form }: { item: StudyPlanItem; form: AttemptForm }) =>
@@ -583,21 +535,7 @@ export default function TodayPage() {
   const capabilities = capabilitiesQuery.data;
   const activityToday = activityTodayQuery.data;
   const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
-  const guideHasUnsavedChanges = useMemo(() => {
-    if (!savedPreferences) {
-      return false;
-    }
-
-    return (
-      savedPreferences.daily_minutes !== preferencesForm.daily_minutes ||
-      savedPreferences.intensity !== preferencesForm.intensity ||
-      savedPreferences.max_focus_count !== preferencesForm.max_focus_count ||
-      savedPreferences.max_questions !== preferencesForm.max_questions ||
-      savedPreferences.include_reviews !== preferencesForm.include_reviews ||
-      savedPreferences.include_new_content !== preferencesForm.include_new_content
-    );
-  }, [preferencesForm, savedPreferences]);
-  const guideBusy = savePreferencesMutation.isPending || recalculateMutation.isPending;
+  const savedPreferences = preferencesQuery.data;
 
   const backendOffline = planQuery.isError && capabilitiesQuery.isError && preferencesQuery.isError;
   const focusCards = useMemo(
@@ -639,11 +577,11 @@ export default function TodayPage() {
 
     if (!hasPlanItems) {
       return {
-        title: "Ajuste a carga e recalcule o plano",
-        description: "Quando nao ha focos, o proximo passo util e salvar as preferencias do guia e pedir um novo plano.",
-        primaryLabel: guideHasUnsavedChanges ? "Salvar e recalcular" : "Recalcular plano",
+        title: "Ajuste o guia nas configuracoes",
+        description: "Quando nao ha focos, o proximo passo util e revisar o Guia do Dia em Configuracoes e recalcular por la.",
+        primaryLabel: "Abrir configuracoes",
         onPrimary: () => {
-          void applyGuideChanges();
+          window.location.assign("/settings");
         },
         secondaryLabel: "Ir para aulas",
         secondaryTo: "/lessons",
@@ -675,43 +613,45 @@ export default function TodayPage() {
     activityToday?.question_attempts_registered,
     backendOffline,
     capabilitiesQuery,
-    guideHasUnsavedChanges,
     hasPlanItems,
     planItems,
     planQuery,
     preferencesQuery,
   ]);
   const guideSummary = useMemo(() => {
+    if (!savedPreferences) {
+      return "Defina seu ritmo em Configuracoes para ajustar tempo, intensidade e limites do plano.";
+    }
     const toggles = [
-      preferencesForm.include_reviews ? "com revisoes" : "sem revisoes",
-      preferencesForm.include_new_content ? "com conteudo novo" : "sem conteudo novo",
+      savedPreferences.include_reviews ? "com revisoes" : "sem revisoes",
+      savedPreferences.include_new_content ? "com conteudo novo" : "sem conteudo novo",
     ];
 
-    return `Hoje voce pediu ${preferencesForm.daily_minutes} min, intensidade ${preferencesForm.intensity}, ate ${preferencesForm.max_focus_count} focos e ate ${preferencesForm.max_questions} questoes, ${toggles.join(" e ")}.`;
-  }, [preferencesForm]);
+    return `Hoje voce pediu ${savedPreferences.daily_minutes} min, intensidade ${savedPreferences.intensity}, ate ${savedPreferences.max_focus_count} focos e ate ${savedPreferences.max_questions} questoes, ${toggles.join(" e ")}.`;
+  }, [savedPreferences]);
+  const guideResultSummary = useMemo(() => {
+    const focusCount = planSummary?.focus_count ?? 0;
+    const totalQuestions = planSummary?.total_questions ?? 0;
+    const focusLimit = savedPreferences?.max_focus_count ?? 0;
+    const questionLimit = savedPreferences?.max_questions ?? 0;
+    return {
+      focusMessage: `O guia selecionou ${focusCount} foco(s), dentro do limite de ate ${focusLimit}.`,
+      questionMessage: `Total sugerido: ${totalQuestions} questoes, limite configurado: ${questionLimit}.`,
+      fewerFocusesThanLimit:
+        focusCount > 0 && focusCount < focusLimit
+          ? "O plano pode sugerir menos focos quando ha poucos candidatos uteis ou para evitar carga desnecessaria."
+          : null,
+    };
+  }, [planSummary, savedPreferences]);
   const activitySummary = useMemo(() => activityHeadline(activityToday), [activityToday]);
 
-  function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
-    setPreferencesForm((current) => ({ ...current, [key]: value }));
-  }
-
-  async function applyGuideChanges() {
-    try {
-      if (guideHasUnsavedChanges) {
-        await savePreferencesMutation.mutateAsync(preferencesForm);
-      }
-      await recalculateMutation.mutateAsync();
-    } catch {
-      // Mutations already surface feedback to the UI.
-    }
-  }
-
-  function openAttemptModal(item: StudyPlanItem) {
+  function openAttemptModal(item: StudyPlanItem, elapsedSeconds?: number | null) {
     setSelectedItem(item);
     setAttemptForm({
       ...defaultAttemptForm,
       quantity: Math.max(item.remaining_today || item.planned_questions || 1, 1),
       correct_count: 0,
+      elapsed_seconds: elapsedSeconds && elapsedSeconds > 0 ? String(elapsedSeconds) : "",
     });
   }
 
@@ -731,26 +671,38 @@ export default function TodayPage() {
   }
 
   function openTrainingTimer(item: StudyPlanItem) {
-    navigate("/timer", {
-      state: {
-        timerPreset: {
-          discipline: item.discipline,
-          block: item.block_name,
-          subject: item.subject_name,
-          blockId: item.block_id,
-          subjectId: item.subject_id,
-          questionCount: Math.max(item.remaining_today || item.planned_questions || 1, 1),
-          targetSecondsPerQuestion: 180,
-          mode: "prova",
-          questionSource: "external",
-        },
-      },
+    startTimer({
+      mode: "guided",
+      discipline: item.discipline,
+      block_id: item.block_id,
+      block_name: item.block_name,
+      subject_id: item.subject_id,
+      subject_name: item.subject_name,
     });
+    setFeedback("Timer iniciado para este foco.");
   }
 
   function focusCardKey(item: StudyPlanItem) {
     return `${item.block_id ?? "no-block"}:${item.subject_id ?? "no-subject"}:${item.subject_name ?? "no-subject-name"}`;
   }
+
+  useEffect(() => {
+    if (!pendingCompletion || pendingCompletion.context.mode !== "guided") {
+      return;
+    }
+
+    const matchedItem =
+      planItems.find((item) => item.subject_id === pendingCompletion.context.subject_id) ??
+      planItems.find((item) => item.block_id === pendingCompletion.context.block_id);
+
+    if (!matchedItem) {
+      return;
+    }
+
+    openAttemptModal(matchedItem, pendingCompletion.elapsed_seconds);
+    setFeedback("Timer finalizado. O tempo foi levado para o registro manual.");
+    consumePendingCompletion();
+  }, [consumePendingCompletion, pendingCompletion, planItems]);
 
   return (
     <main className="today-page">
@@ -833,12 +785,9 @@ export default function TodayPage() {
                   </span>
                 </div>
                 <div className="today-focus-footer">
-                  <div className="today-focus-score-block">
-                    <div className="today-score-chip" aria-label="Prioridade indisponivel">
-                      <span className="today-score-pill" />
-                      <span className="today-score-info">i</span>
-                    </div>
-                    <span>Prioridade</span>
+                  <div className="today-focus-status-block">
+                    <strong>Plano aguardando dados</strong>
+                    <span>Quando houver focos, o guia mostra o modo e o status aqui.</span>
                   </div>
                   <div className="today-focus-count-block">
                     <strong>0</strong>
@@ -853,7 +802,7 @@ export default function TodayPage() {
                       </span>
                     </button>
                     <button type="button" className="today-register-button" disabled>
-                      Treinar
+                      Iniciar timer
                     </button>
                   </div>
                 </div>
@@ -915,7 +864,7 @@ export default function TodayPage() {
                         </span>
                       </Link>
                       <button type="button" className="today-register-button" onClick={() => openTrainingTimer(item)}>
-                        Treinar
+                        Iniciar timer
                       </button>
                     </div>
                   </div>
@@ -931,9 +880,19 @@ export default function TodayPage() {
 
                   <div className="today-focus-metrics">
                     <span>{item.planned_questions} planejadas</span>
+                    <span>{item.completed_today} feitas hoje</span>
                     <span>{item.remaining_today} restantes</span>
-                    <span>{item.planned_mode}</span>
-                    <span>score {priorityScoreText}</span>
+                    <span>progresso {Math.round(item.progress_ratio * 100)}%</span>
+                    <span>modo {plannedModeLabel(item.planned_mode)}</span>
+                    <span>status {roadmapStatusLabel(item.roadmap_status)}</span>
+                  </div>
+
+                  <div className="today-focus-explanation">
+                    <strong>Por que este foco</strong>
+                    <p>{formatOptional(item.primary_reason)}</p>
+                    {item.roadmap_reason && item.roadmap_reason !== item.primary_reason ? (
+                      <p className="today-focus-explanation-secondary">{item.roadmap_reason}</p>
+                    ) : null}
                   </div>
 
                   <div className="today-focus-secondary-row">
@@ -942,36 +901,35 @@ export default function TodayPage() {
                     </button>
                   </div>
 
-                  <dl className="today-roadmap-details">
-                    <div>
-                      <dt>Status roadmap</dt>
-                      <dd>{formatOptional(item.roadmap_status)}</dd>
-                    </div>
-                    <div>
-                      <dt>Node</dt>
-                      <dd>{formatOptional(item.roadmap_node_id)}</dd>
-                    </div>
-                    <div>
-                      <dt>Mapeado</dt>
-                      <dd>{formatOptional(item.roadmap_mapped)}</dd>
-                    </div>
-                    <div>
-                      <dt>Origem</dt>
-                      <dd>{formatOptional(item.roadmap_mapping_source)}</dd>
-                    </div>
-                    <div>
-                      <dt>Confianca</dt>
-                      <dd>{formatOptional(item.roadmap_mapping_confidence)}</dd>
-                    </div>
-                    <div className="today-roadmap-wide">
-                      <dt>Motivo</dt>
-                      <dd>{formatOptional(item.roadmap_reason || item.primary_reason)}</dd>
-                    </div>
-                    <div className="today-roadmap-wide">
-                      <dt>Mapeamento</dt>
-                      <dd>{formatOptional(item.roadmap_mapping_reason)}</dd>
-                    </div>
-                  </dl>
+                  <details className="today-focus-details">
+                    <summary>Detalhes tecnicos do foco</summary>
+                    <dl className="today-roadmap-details">
+                      <div>
+                        <dt>Node</dt>
+                        <dd>{formatOptional(item.roadmap_node_id)}</dd>
+                      </div>
+                      <div>
+                        <dt>Mapeado</dt>
+                        <dd>{formatOptional(item.roadmap_mapped)}</dd>
+                      </div>
+                      <div>
+                        <dt>Origem do mapeamento</dt>
+                        <dd>{formatOptional(item.roadmap_mapping_source)}</dd>
+                      </div>
+                      <div>
+                        <dt>Confianca</dt>
+                        <dd>{formatOptional(item.roadmap_mapping_confidence)}</dd>
+                      </div>
+                      <div className="today-roadmap-wide">
+                        <dt>Motivo do roadmap</dt>
+                        <dd>{formatOptional(item.roadmap_reason)}</dd>
+                      </div>
+                      <div className="today-roadmap-wide">
+                        <dt>Observacao de mapeamento</dt>
+                        <dd>{formatOptional(item.roadmap_mapping_reason)}</dd>
+                      </div>
+                    </dl>
+                  </details>
                 </article>
                 );
               })}
@@ -990,132 +948,33 @@ export default function TodayPage() {
 
               <div className="today-guide-overview">
                 <div>
-                  <strong>Defina o ritmo antes de estudar</strong>
-                  <p>Ajuste o volume e recalcule se quiser mudar o plano de hoje.</p>
+                  <strong>O plano de hoje usa as configuracoes salvas.</strong>
+                  <p>Tempo, intensidade e limites do guia agora ficam em Configuracoes.</p>
                 </div>
-                <span className="today-guide-icon" aria-hidden="true">
-                  <GuideIcon />
-                </span>
               </div>
 
               <div className="today-guide-summary">
                 <span className="today-guide-summary-label">Resumo atual</span>
                 <p>{guideSummary}</p>
-                {guideHasUnsavedChanges ? <small className="today-guide-dirty">Voce alterou o guia. Falta aplicar no plano.</small> : null}
               </div>
 
-              <div className="today-preferences-grid">
-                <PreferenceNumberInput
-                  label="Minutos"
-                  value={preferencesForm.daily_minutes}
-                  min={15}
-                  max={360}
-                  hint="Quanto tempo total voce quer dedicar hoje."
-                  onChange={(value) => updatePreference("daily_minutes", value)}
-                />
-                <PreferenceNumberInput
-                  label="Focos max."
-                  value={preferencesForm.max_focus_count}
-                  min={1}
-                  max={5}
-                  hint="Quantos assuntos diferentes podem entrar no plano."
-                  onChange={(value) => updatePreference("max_focus_count", value)}
-                />
-                <PreferenceNumberInput
-                  label="Questoes max."
-                  value={preferencesForm.max_questions}
-                  min={1}
-                  max={80}
-                  hint="Teto de questoes para o dia nao explodir."
-                  onChange={(value) => updatePreference("max_questions", value)}
-                />
+              <div className="today-guide-summary today-guide-summary-secondary">
+                <span className="today-guide-summary-label">Como isso afeta o plano</span>
+                <p>Minutos e intensidade influenciam a carga do dia, mas nao obrigam preencher todos os focos.</p>
+                <p>Focos max. significa ate esse numero de focos. Questoes max. funciona como teto de volume.</p>
               </div>
 
-              <div className="today-guide-section">
-                <div className="today-guide-section-copy">
-                  <strong>Intensidade</strong>
-                  <p>Escolha o ritmo geral do dia. Isso muda o quanto o plano pressiona sua carga.</p>
-                </div>
-                <div className="today-intensity-grid" role="radiogroup" aria-label="Intensidade do guia">
-                  {(["leve", "normal", "forte"] as StudyGuideIntensity[]).map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      className={`today-intensity-card ${preferencesForm.intensity === option ? "is-active" : ""}`}
-                      onClick={() => updatePreference("intensity", option)}
-                      aria-pressed={preferencesForm.intensity === option}
-                    >
-                      <strong>{option}</strong>
-                      <span>{intensityDescriptions[option]}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="today-guide-summary today-guide-summary-result">
+                <span className="today-guide-summary-label">Leitura do plano atual</span>
+                <p>{guideResultSummary.focusMessage}</p>
+                <p>{guideResultSummary.questionMessage}</p>
+                {guideResultSummary.fewerFocusesThanLimit ? <p>{guideResultSummary.fewerFocusesThanLimit}</p> : null}
               </div>
 
-              <div className="today-guide-section">
-                <div className="today-guide-section-copy">
-                  <strong>O que entra no plano</strong>
-                  <p>Use estes toggles para dizer se hoje o plano pode trazer revisoes, conteudo novo ou os dois.</p>
-                </div>
-                <div className="today-toggle-stack">
-                  <label className="today-toggle-card">
-                    <div>
-                      <strong>Incluir revisoes</strong>
-                      <span>Bom para consolidar e nao deixar materia vencer.</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferencesForm.include_reviews}
-                      onChange={(event) => updatePreference("include_reviews", event.target.checked)}
-                    />
-                  </label>
-                  <label className="today-toggle-card">
-                    <div>
-                      <strong>Conteudo novo</strong>
-                      <span>Bom quando voce quer continuar avancando na trilha.</span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={preferencesForm.include_new_content}
-                      onChange={(event) => updatePreference("include_new_content", event.target.checked)}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="today-guide-actions-note">
-                <p>
-                  {guideHasUnsavedChanges
-                    ? "Voce mudou o guia acima. Recalcular agora salva essas mudancas e reaplica o plano de hoje."
-                    : "Salvar guarda. Recalcular usa o que ja esta salvo para montar o plano de hoje."}
-                </p>
-              </div>
-
-              <div className="today-action-row">
-                <button
-                  type="button"
-                  className="app-secondary-action"
-                  disabled={guideBusy}
-                  onClick={() => savePreferencesMutation.mutate(preferencesForm)}
-                >
-                  {savePreferencesMutation.isPending ? "Salvando..." : "Salvar"}
-                </button>
-                <button
-                  type="button"
-                  className="app-primary-action app-primary-action-blue"
-                  disabled={guideBusy}
-                  onClick={() => {
-                    void applyGuideChanges();
-                  }}
-                >
-                  {recalculateMutation.isPending
-                    ? "Recalculando..."
-                    : savePreferencesMutation.isPending
-                      ? "Salvando..."
-                      : guideHasUnsavedChanges
-                        ? "Salvar e recalcular"
-                        : "Recalcular plano"}
-                </button>
+              <div className="today-guide-compact-actions">
+                <Link className="app-secondary-action app-guidance-link" to="/settings">
+                  Editar guia
+                </Link>
               </div>
             </section>
 

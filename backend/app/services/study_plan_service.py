@@ -77,6 +77,15 @@ def _latest_active_plan(session: Session, today: date) -> DailyStudyPlan | None:
     return None
 
 
+def _active_plans_for_day(session: Session, today: date) -> list[DailyStudyPlan]:
+    plans = session.exec(
+        select(DailyStudyPlan)
+        .where(DailyStudyPlan.status == "active")
+        .order_by(DailyStudyPlan.created_at.desc())
+    ).all()
+    return [plan for plan in plans if plan.created_at.date() == today]
+
+
 def _execution_progress(
     session: Session,
     today: date,
@@ -483,6 +492,9 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
         existing_items = _items_for_plan(session, existing_plan, today)
         if existing_items:
             return _response_from_items(existing_items)
+        existing_plan.status = "replaced"
+        session.add(existing_plan)
+        session.commit()
 
     capacity = get_or_create_capacity(session)
     if not capacity.include_new_content:
@@ -504,11 +516,12 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
 
 def recalculate_today_study_plan(session: Session) -> StudyPlanRecalculateResponse:
     today = date.today()
-    existing_plan = _latest_active_plan(session, today)
-    replaced_plan_id = existing_plan.id if existing_plan is not None else None
-    if existing_plan is not None:
-        existing_plan.status = "replaced"
-        session.add(existing_plan)
+    active_plans = _active_plans_for_day(session, today)
+    replaced_plan_id = active_plans[0].id if active_plans else None
+    if active_plans:
+        for plan in active_plans:
+            plan.status = "replaced"
+            session.add(plan)
         session.commit()
 
     plan_response = get_today_study_plan(session)

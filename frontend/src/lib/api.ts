@@ -8,14 +8,32 @@ import type {
   EssayStudySessionCloseResponse,
   EssayStudySessionListItem,
   EssayStudySessionResponse,
+  FreeStudySubjectContextResponse,
   FreeStudyCatalogResponse,
   GamificationSummaryResponse,
   LessonContent,
   LessonContentPayload,
+  MockExam,
+  MockExamFinishResponse,
+  MockExamPlaceholderRequest,
+  MockExamPlaceholderResponse,
+  MockExamPayload,
+  MockExamQuestion,
+  MockExamQuestionPayload,
+  MockExamResultsResponse,
+  MockExamStartResponse,
+  MockExamSummaryResponse,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
+  ResetStudyDataPayload,
+  ResetStudyDataResponse,
   StatsDisciplineResponse,
+  StatsDisciplineItem,
+  StatsDisciplineSubjectsResponse,
+  StatsHeatmapResponse,
   StatsOverviewResponse,
+  StatsTimeSeriesGroupBy,
+  StatsTimeSeriesResponse,
   StudyGuidePreferencesPayload,
   StudyGuidePreferencesResponse,
   StudyPlanRecalculateResponse,
@@ -82,6 +100,22 @@ export async function getSystemCapabilities(): Promise<SystemCapabilitiesRespons
   }
 
   return response.json() as Promise<SystemCapabilitiesResponse>;
+}
+
+export async function resetStudyData(payload: ResetStudyDataPayload): Promise<ResetStudyDataResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/system/reset-study-data`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel resetar os estudos.");
+  }
+
+  return response.json() as Promise<ResetStudyDataResponse>;
 }
 
 export async function getStudyGuidePreferences(): Promise<StudyGuidePreferencesResponse> {
@@ -152,6 +186,65 @@ export async function getStatsByDiscipline(discipline: string): Promise<StatsDis
   return response.json() as Promise<StatsDisciplineResponse>;
 }
 
+export async function getStatsDisciplines(): Promise<StatsDisciplineItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/stats/disciplines`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar as disciplinas.");
+  }
+
+  return response.json() as Promise<StatsDisciplineItem[]>;
+}
+
+export async function getStatsHeatmap(
+  days = 365,
+  discipline?: string | null,
+): Promise<StatsHeatmapResponse> {
+  const params = new URLSearchParams({ days: String(days) });
+  if (discipline) {
+    params.set("discipline", discipline);
+  }
+  const response = await fetch(`${API_BASE_URL}/api/stats/heatmap?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar o heatmap.");
+  }
+
+  return response.json() as Promise<StatsHeatmapResponse>;
+}
+
+export async function getStatsTimeSeries(
+  groupBy: StatsTimeSeriesGroupBy,
+  days = 180,
+  discipline?: string | null,
+): Promise<StatsTimeSeriesResponse> {
+  const params = new URLSearchParams({ group_by: groupBy, days: String(days) });
+  if (discipline) {
+    params.set("discipline", discipline);
+  }
+  const response = await fetch(`${API_BASE_URL}/api/stats/timeseries?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar a serie temporal.");
+  }
+
+  return response.json() as Promise<StatsTimeSeriesResponse>;
+}
+
+export async function getStatsDisciplineSubjects(
+  discipline: string,
+): Promise<StatsDisciplineSubjectsResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/stats/discipline/${encodeURIComponent(discipline)}/subjects`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar os assuntos da disciplina.");
+  }
+
+  return response.json() as Promise<StatsDisciplineSubjectsResponse>;
+}
+
 export async function getGamificationSummary(): Promise<GamificationSummaryResponse> {
   const response = await fetch(`${API_BASE_URL}/api/gamification/summary`);
 
@@ -166,10 +259,38 @@ export async function getFreeStudyCatalog(): Promise<FreeStudyCatalogResponse> {
   const response = await fetch(`${API_BASE_URL}/api/free-study/catalog`);
 
   if (!response.ok) {
-    throw new Error("Nao foi possivel carregar o catalogo de aulas.");
+    throw new Error("Nao foi possivel carregar o catalogo do modo livre.");
   }
 
   return response.json() as Promise<FreeStudyCatalogResponse>;
+}
+
+export async function getFreeStudySubjectContext(subjectId: number): Promise<FreeStudySubjectContextResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/free-study/subjects/${subjectId}/context`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar o contexto deste conteudo.");
+  }
+
+  return response.json() as Promise<FreeStudySubjectContextResponse>;
+}
+
+export async function saveFreeStudyQuestionAttemptsBulk(
+  payload: QuestionAttemptBulkPayload,
+): Promise<QuestionAttemptBulkResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/free-study/question-attempts/bulk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel registrar as questoes no modo livre.");
+  }
+
+  return response.json() as Promise<QuestionAttemptBulkResponse>;
 }
 
 export async function getBlockProgressByDiscipline(discipline: string): Promise<BlockProgressDisciplineResponse> {
@@ -191,6 +312,161 @@ export async function getLessonContents(publishedOnly = false): Promise<LessonCo
   }
 
   return response.json() as Promise<LessonContent[]>;
+}
+
+export async function getMockExams(): Promise<MockExam[]> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar os simulados.");
+  }
+
+  return response.json() as Promise<MockExam[]>;
+}
+
+export async function getMockExam(id: number): Promise<MockExam> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar o simulado.");
+  }
+
+  return response.json() as Promise<MockExam>;
+}
+
+export async function getMockExamSummary(): Promise<MockExamSummaryResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/summary`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar o resumo dos simulados.");
+  }
+
+  return response.json() as Promise<MockExamSummaryResponse>;
+}
+
+export async function createMockExam(payload: MockExamPayload): Promise<MockExam> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel salvar o simulado.");
+  }
+
+  return response.json() as Promise<MockExam>;
+}
+
+export async function updateMockExam(id: number, payload: Partial<MockExamPayload>): Promise<MockExam> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel atualizar o simulado.");
+  }
+
+  return response.json() as Promise<MockExam>;
+}
+
+export async function deleteMockExam(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel excluir o simulado.");
+  }
+}
+
+export async function getMockExamQuestions(id: number): Promise<MockExamQuestion[]> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/questions`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar as questoes do simulado.");
+  }
+
+  return response.json() as Promise<MockExamQuestion[]>;
+}
+
+export async function generateMockExamPlaceholders(
+  id: number,
+  payload: MockExamPlaceholderRequest,
+): Promise<MockExamPlaceholderResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/questions/generate-placeholders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel gerar as questoes placeholder.");
+  }
+
+  return response.json() as Promise<MockExamPlaceholderResponse>;
+}
+
+export async function updateMockExamQuestion(
+  examId: number,
+  questionId: number,
+  payload: MockExamQuestionPayload,
+): Promise<MockExamQuestion> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${examId}/questions/${questionId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel atualizar a questao do simulado.");
+  }
+
+  return response.json() as Promise<MockExamQuestion>;
+}
+
+export async function startMockExam(id: number): Promise<MockExamStartResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/start`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel iniciar o simulado.");
+  }
+
+  return response.json() as Promise<MockExamStartResponse>;
+}
+
+export async function finishMockExam(id: number): Promise<MockExamFinishResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/finish`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel finalizar o simulado.");
+  }
+
+  return response.json() as Promise<MockExamFinishResponse>;
+}
+
+export async function getMockExamResults(id: number): Promise<MockExamResultsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/results`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar os resultados do simulado.");
+  }
+
+  return response.json() as Promise<MockExamResultsResponse>;
 }
 
 export async function getLessonContentsBySubject(subjectId: number): Promise<LessonContent[]> {

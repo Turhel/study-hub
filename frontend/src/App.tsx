@@ -1,10 +1,17 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 
-import { getGamificationSummary } from "./lib/api";
+import { StudyTimerDock, StudyTimerProvider } from "./components/StudyTimer";
+import { getGamificationSummary, getRecentActivity } from "./lib/api";
+import type { ActivityItem } from "./lib/types";
 import EssayPage from "./pages/EssayPage";
+import FreeStudyPage from "./pages/FreeStudyPage";
 import LessonsPage from "./pages/LessonsPage";
+import MockExamsPage from "./pages/MockExamsPage";
+import MockExamResultsPage from "./pages/MockExamResultsPage";
+import MockExamRunPage from "./pages/MockExamRunPage";
+import SettingsPage from "./pages/SettingsPage";
 import StatsPage from "./pages/StatsPage";
 import TimerPage from "./pages/TimerPage";
 import TodayPage from "./pages/TodayPage";
@@ -13,7 +20,9 @@ type ThemeMode = "light" | "dark";
 
 const primaryNavigationItems = [
   { label: "Hoje", path: "/", icon: <FocusEmojiIcon /> },
+  { label: "Modo Livre", path: "/free-study", icon: <CompassEmojiIcon /> },
   { label: "Aulas", path: "/lessons", icon: <BooksEmojiIcon /> },
+  { label: "Simulados", path: "/mock-exams", icon: <StatsEmojiIcon /> },
   { label: "Stats", path: "/stats", icon: <StatsEmojiIcon /> },
 ];
 
@@ -29,17 +38,7 @@ const profileMenuItems = [
   { label: "Exportar progresso", icon: "📦" },
 ];
 
-const weekdays = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"];
-
-const weekdayLabels: Record<string, string> = {
-  seg: "Seg",
-  ter: "Ter",
-  qua: "Qua",
-  qui: "Qui",
-  sex: "Sex",
-  sab: "Sab",
-  dom: "Dom",
-};
+const streakWeekdayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"] as const;
 
 const masterySummaryItems = [
   { label: "Questoes", key: "question_mastery_stars" },
@@ -92,6 +91,19 @@ function BooksEmojiIcon() {
       <rect x="11.4" y="6.2" width="8.7" height="20" rx="2.5" fill="#FFCF59" />
       <rect x="18.4" y="7.2" width="8.8" height="19" rx="2.5" fill="#3AA0FF" />
       <path d="M6.8 11.3h4.2v1.45H6.8zm0 3.1h4.2v1.45H6.8zm6.4-4h5.2v1.45h-5.2zm0 3.1h5.2v1.45h-5.2zm7.2-1.2h4.8v1.45h-4.8zm0 3.1h4.8v1.45h-4.8z" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function CompassEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="11.5" fill="#EAF7FF" />
+      <circle cx="16" cy="16" r="8.8" fill="#FFFFFF" />
+      <circle cx="16" cy="16" r="1.9" fill="#1E2430" />
+      <path d="M22.7 9.3l-3.3 8.1-8.1 3.3 3.3-8.1 8.1-3.3z" fill="#FF8A34" />
+      <path d="M17.7 14.3l-3.4 3.4 1.4-3.4 3.4-1.4-1.4 3.4z" fill="#39AAF0" />
+      <path d="M16 5.8v2.1M16 24.1v2.1M26.2 16h-2.1M7.9 16H5.8" stroke="#5C516A" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -203,7 +215,59 @@ function formatDate(value?: string | null): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
 }
 
+function toDateKey(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function toRecentStudyDateKeys(activity: ActivityItem[] | undefined, studiedToday: boolean | undefined): Set<string> {
+  const keys = new Set<string>();
+
+  for (const item of activity ?? []) {
+    if (item.type === "daily_plan_generated") {
+      continue;
+    }
+
+    const parsed = new Date(item.created_at);
+    if (Number.isNaN(parsed.getTime())) {
+      continue;
+    }
+
+    keys.add(toDateKey(parsed));
+  }
+
+  if (studiedToday) {
+    keys.add(toDateKey(new Date()));
+  }
+
+  return keys;
+}
+
+function buildRollingStreakDays(activity: ActivityItem[] | undefined, studiedToday: boolean | undefined) {
+  const recentStudyDates = toRecentStudyDateKeys(activity, studiedToday);
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(base);
+    day.setDate(base.getDate() - (6 - index));
+    const key = toDateKey(day);
+
+    return {
+      key,
+      label: streakWeekdayLabels[day.getDay()],
+      shortDate: String(day.getDate()).padStart(2, "0"),
+      done: recentStudyDates.has(key),
+      isToday: index === 6,
+      fullDate: day.toLocaleDateString("pt-BR"),
+    };
+  });
+}
+
 export default function App() {
+  const navigate = useNavigate();
   const [theme, setTheme] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") {
       return "light";
@@ -221,14 +285,23 @@ export default function App() {
     queryFn: getGamificationSummary,
     retry: false,
   });
+  const recentActivityQuery = useQuery({
+    queryKey: ["activity-recent", 120],
+    queryFn: () => getRecentActivity(120),
+    retry: false,
+  });
 
   const streak = gamificationQuery.data?.streak;
   const mastery = gamificationQuery.data?.mastery;
-  const activeWeekdays = new Set(streak?.active_weekdays ?? []);
-  const streakDays = weekdays.map((day) => ({
-    label: weekdayLabels[day],
-    done: activeWeekdays.has(day),
-  }));
+  const streakDays = useMemo(
+    () => buildRollingStreakDays(recentActivityQuery.data, streak?.studied_today),
+    [recentActivityQuery.data, streak?.studied_today],
+  );
+  const hasRollingStreakData = (recentActivityQuery.data?.length ?? 0) > 0;
+  const profileMenuItems = [
+    { label: "Configuracoes", icon: "⚙️", onClick: () => navigate("/settings") },
+    { label: "Preferencias de estudo", icon: "🧠", onClick: () => navigate("/settings") },
+  ];
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -237,7 +310,8 @@ export default function App() {
   }, [theme]);
 
   return (
-    <div className="app-shell">
+    <StudyTimerProvider>
+      <div className="app-shell">
       <header className="app-topbar">
         <div className="app-topbar-row">
           <nav className="app-topbar-nav" aria-label="Principal">
@@ -292,12 +366,18 @@ export default function App() {
 
                 <div className="topbar-streak-row">
                   {streakDays.map((day) => (
-                    <div key={day.label} className="topbar-streak-day">
+                    <div key={day.key} className={`topbar-streak-day ${day.isToday ? "is-today" : ""}`} title={day.fullDate}>
                       <span>{day.label}</span>
+                      <small>{day.shortDate}</small>
                       <i className={day.done ? "is-active" : ""} />
                     </div>
                   ))}
                 </div>
+                <p className="topbar-stat-note">
+                  {hasRollingStreakData
+                    ? "Janela movel dos ultimos 7 dias corridos."
+                    : "Mostrando os ultimos 7 dias. Os marcadores acendem conforme voce registra estudo real."}
+                </p>
                 <p className="topbar-stat-note">Maior sequencia: {streak?.longest_streak_days ?? 0} dias</p>
               </section>
             </HoverPanelButton>
@@ -375,7 +455,7 @@ export default function App() {
                   </button>
 
                   {profileMenuItems.map((item) => (
-                    <button key={item.label} type="button" className="topbar-profile-item">
+                    <button key={item.label} type="button" className="topbar-profile-item" onClick={item.onClick}>
                       <span className="topbar-profile-item-icon" aria-hidden="true">
                         {item.icon}
                       </span>
@@ -392,16 +472,37 @@ export default function App() {
         </div>
       </header>
 
-      <div className="app-content">
-        <Routes>
-          <Route path="/" element={<TodayPage />} />
-          <Route path="/lessons" element={<LessonsPage />} />
-          <Route path="/stats" element={<StatsPage />} />
-          <Route path="/timer" element={<TimerPage />} />
-          <Route path="/essay" element={<EssayPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <div className="app-content">
+          <Routes>
+            <Route path="/" element={<TodayPage />} />
+            <Route path="/free-study" element={<FreeStudyPage />} />
+            <Route path="/lessons" element={<LessonsPage />} />
+            <Route path="/mock-exams" element={<MockExamsPage />} />
+            <Route path="/mock-exams/:id/run" element={<MockExamRunPage />} />
+            <Route path="/mock-exams/:id/results" element={<MockExamResultsPage />} />
+            <Route path="/stats" element={<StatsPage />} />
+            <Route path="/timer" element={<TimerPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/essay" element={<EssayPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+
+        <StudyTimerDock />
       </div>
-    </div>
+    </StudyTimerProvider>
+  );
+}
+
+function GearEmojiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="4.6" fill="#F5F7FB" />
+      <path
+        d="M28 17.9v-3.8l-3.12-.88a8.95 8.95 0 00-.77-1.86l1.63-2.83-2.69-2.69-2.83 1.63a8.95 8.95 0 00-1.86-.77L17.9 4h-3.8l-.88 3.12c-.64.15-1.27.41-1.86.77L8.53 6.26 5.84 8.95l1.63 2.83c-.36.59-.62 1.22-.77 1.86L4 14.1v3.8l3.12.88c.15.64.41 1.27.77 1.86l-1.63 2.83 2.69 2.69 2.83-1.63c.59.36 1.22.62 1.86.77l.46 3.12h3.8l.88-3.12c.64-.15 1.27-.41 1.86-.77l2.83 1.63 2.69-2.69-1.63-2.83c.36-.59.62-1.22.77-1.86L28 17.9z"
+        fill="#7CC8FF"
+      />
+      <circle cx="16" cy="16" r="2.25" fill="#1E2430" />
+    </svg>
   );
 }

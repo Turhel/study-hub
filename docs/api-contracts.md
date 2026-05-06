@@ -105,6 +105,86 @@ Expor perfil da maquina, tipo de banco em uso e flags relevantes para o frontend
 - o frontend deve tratar `llm.enabled=false` e `features.*=false` como bloqueio de UX para fluxos de redacao assistida
 - o provider/model sao informativos; o frontend nao deve assumir conectividade local com LM Studio
 
+## POST `/api/system/reset-study-data`
+
+**Objetivo**
+
+Executar um reset seguro dos dados de estudo, preservando a estrutura pedagogica do app.
+
+**Exemplo de request**
+
+```json
+{
+  "confirmation_text": "RESETAR ESTUDOS",
+  "dry_run": true,
+  "reset_preferences": false,
+  "include_essays": false
+}
+```
+
+**Exemplo de resposta**
+
+```json
+{
+  "dry_run": true,
+  "deleted_counts": {
+    "question_attempts": 12,
+    "reviews": 3,
+    "study_events": 9,
+    "daily_study_plan_items": 4,
+    "daily_study_plan": 2,
+    "timer_session_items": 8,
+    "timer_sessions": 2,
+    "mock_exams": 1,
+    "essay_study_messages": 0,
+    "essay_study_sessions": 0,
+    "essay_corrections": 0,
+    "essay_submissions": 0
+  },
+  "reset_counts": {
+    "block_mastery": 2,
+    "block_progress": 258,
+    "subject_progress": 572,
+    "study_capacity_rows": 1
+  },
+  "preserved_tables": [
+    "subjects",
+    "blocks",
+    "block_subjects",
+    "roadmap_nodes",
+    "roadmap_edges",
+    "roadmap_block_map",
+    "roadmap_rules",
+    "lesson_contents"
+  ],
+  "preferences_reset": false,
+  "essays_deleted": false,
+  "warnings": []
+}
+```
+
+**Regras importantes**
+
+- `confirmation_text` precisa ser exatamente `RESETAR ESTUDOS`
+- `dry_run=true` nao apaga nada; apenas retorna o relatorio
+- `dry_run=false` limpa dados de uso e ressincroniza a progressao minima
+- estrutura pedagogica e preservada
+- `reset_preferences=true` volta `study_capacity` para defaults seguros
+- `include_essays=true` tambem apaga `essay_submissions`, `essay_corrections`, `essay_study_sessions` e `essay_study_messages`
+
+**Erros comuns**
+
+- `400`:
+
+```json
+{
+  "detail": {
+    "code": "invalid_confirmation_text",
+    "message": "Digite exatamente RESETAR ESTUDOS para continuar."
+  }
+}
+```
+
 ## GET `/api/study-plan/today`
 
 **Objetivo**
@@ -396,6 +476,126 @@ Retornar agregados da disciplina ou area estrategica, aceitando variacoes com e 
 - assuntos fortes exigem pelo menos 3 tentativas e acuracia >= 75%
 - `review_due_count` considera revisoes vencidas da disciplina
 - `blocks_in_progress` e `blocks_reviewable` usam `block_progress` quando houver; caso contrario, caem para `blocks.status`
+
+## GET `/api/stats/heatmap?days=365`
+
+## GET `/api/stats/heatmap?discipline=Matematica&days=365`
+
+**Objetivo**
+
+Retornar uma serie diaria pronta para heatmap visual, com todos os dias do intervalo, inclusive os dias vazios.
+
+**Exemplo de resposta**
+
+```json
+{
+  "discipline": "Matematica",
+  "start_date": "2025-04-30",
+  "end_date": "2026-04-29",
+  "max_questions_in_day": 12,
+  "total_questions": 84,
+  "active_days": 18,
+  "current_streak_days": 2,
+  "longest_streak_days": 6,
+  "days": [
+    {
+      "date": "2026-04-27",
+      "weekday": 0,
+      "questions_count": 2,
+      "correct_count": 2,
+      "accuracy": 1.0,
+      "studied": true,
+      "intensity_level": 2
+    },
+    {
+      "date": "2026-04-28",
+      "weekday": 1,
+      "questions_count": 0,
+      "correct_count": 0,
+      "accuracy": 0.0,
+      "studied": false,
+      "intensity_level": 0
+    }
+  ]
+}
+```
+
+**Observacoes de integracao**
+
+- sempre retorna todos os dias do intervalo
+- `studied=true` exige estudo real com `question_attempts`; `daily_plan_generated` sozinho nao conta
+- `intensity_level` vai de `0` a `4`
+- `weekday` usa o padrao do Python (`0=segunda`, `6=domingo`)
+
+## GET `/api/stats/timeseries?group_by=week&days=180`
+
+## GET `/api/stats/timeseries?discipline=Matematica&group_by=week&days=180`
+
+**Objetivo**
+
+Retornar uma serie temporal agregada por dia ou por semana para desenhar barras e linhas.
+
+**Exemplo de resposta**
+
+```json
+{
+  "discipline": "Matematica",
+  "group_by": "week",
+  "points": [
+    {
+      "period": "2026-W17",
+      "start_date": "2026-04-20",
+      "end_date": "2026-04-26",
+      "questions_count": 4,
+      "correct_count": 3,
+      "accuracy": 0.75,
+      "avg_time_correct_questions_seconds": 90.0,
+      "active_days": 1
+    }
+  ]
+}
+```
+
+**Observacoes de integracao**
+
+- `group_by` v1 aceita `day` e `week`
+- o backend retorna periodos vazios com `questions_count=0` para manter o grafico estavel
+- `avg_time_correct_questions_seconds` considera apenas questoes corretas com tempo preenchido
+
+## GET `/api/stats/discipline/{discipline}/subjects`
+
+**Objetivo**
+
+Retornar o breakdown por assunto da disciplina selecionada.
+
+**Exemplo de resposta**
+
+```json
+{
+  "discipline": "Matematica",
+  "subjects": [
+    {
+      "subject_id": 17,
+      "subject_name": "Matematica Basica - As quatro operacoes",
+      "block_id": 10,
+      "questions_count": 25,
+      "correct_count": 18,
+      "accuracy": 0.72,
+      "avg_time_correct_questions_seconds": 103.0,
+      "last_studied_at": "2026-04-29T00:00:00",
+      "mastery_score": 0.65,
+      "mastery_status": "em_andamento"
+    }
+  ]
+}
+```
+
+**Observacoes de integracao**
+
+- aceita disciplina com ou sem acento no path
+- `mastery_score` vem de `block_mastery` quando houver
+- `mastery_status` usa `subject_progress.status` como prioridade, com fallback para `block_mastery.status`
+- a ordenacao v1 prioriza maior volume de questoes
 
 ## GET `/api/gamification/summary`
 
@@ -1374,6 +1574,196 @@ Enviar uma nova mensagem para a sessao de estudo assistido.
 
 - tambem depende de capabilities/LLM
 - `404` e usado quando a sessao nao existe
+
+## Simulados
+
+### GET `/api/mock-exams`
+
+**Objetivo**
+
+Listar os simulados registrados manualmente, em ordem da data mais recente para a mais antiga.
+
+**Campos principais**
+
+- `id`
+- `exam_date`
+- `title`
+- `area`
+- `total_questions`
+- `correct_count`
+- `accuracy`
+- `tri_score`
+- `duration_minutes`
+- `notes`
+- `created_at`
+- `updated_at`
+
+### POST `/api/mock-exams`
+
+**Objetivo**
+
+Criar um simulado manual.
+
+**Payload**
+
+```json
+{
+  "exam_date": "2026-04-30",
+  "title": "Simulado Natureza abril",
+  "area": "Natureza",
+  "total_questions": 45,
+  "correct_count": 31,
+  "tri_score": 672.5,
+  "duration_minutes": 180,
+  "notes": "Fui bem em Biologia, cai em Fisica."
+}
+```
+
+**Regras**
+
+- `total_questions` precisa ser maior que zero
+- `correct_count` nao pode ser maior que `total_questions`
+- `tri_score` e opcional
+- a API nao calcula TRI real; apenas armazena a nota informada
+
+### GET `/api/mock-exams/{id}`
+
+**Objetivo**
+
+Buscar um simulado especifico.
+
+### PUT `/api/mock-exams/{id}`
+
+**Objetivo**
+
+Editar um simulado existente.
+
+**Observacoes**
+
+- aceita atualizacao parcial
+- continua validando `correct_count <= total_questions`
+
+### DELETE `/api/mock-exams/{id}`
+
+**Objetivo**
+
+Excluir um simulado.
+
+### GET `/api/mock-exams/summary`
+
+**Objetivo**
+
+Entregar um resumo enxuto para cards e graficos simples da area de Simulados.
+
+**Resposta esperada**
+
+```json
+{
+  "total_exams": 3,
+  "latest_exam_date": "2026-04-30",
+  "last_three_average_tri": 671.2,
+  "last_three_average_accuracy": 0.71,
+  "best_tri_score": 701.0,
+  "by_area": [
+    {
+      "area": "Natureza",
+      "total_exams": 2,
+      "latest_tri_score": 672.5,
+      "best_tri_score": 672.5,
+      "average_accuracy": 0.72
+    }
+  ],
+  "recent": []
+}
+```
+
+**Observacoes**
+
+- `last_three_average_tri` usa os 3 simulados mais recentes com `tri_score` preenchido
+- `last_three_average_accuracy` usa os 3 simulados mais recentes com total valido
+- `best_tri_score` ignora `null`
+- `recent` volta ordenado por `exam_date desc`
+
+
+### GET `/api/mock-exams/{id}/questions`
+
+**Objetivo**
+
+Listar as questoes cadastradas para a execucao de um simulado.
+
+### POST `/api/mock-exams/{id}/questions/generate-placeholders`
+
+**Objetivo**
+
+Gerar placeholders numericos 1..N para simulados externos.
+
+**Payload**
+
+```json
+{
+  "total_questions": 90,
+  "areas": [
+    { "area": "Matematica", "start": 1, "end": 45 },
+    { "area": "Natureza", "start": 46, "end": 90 }
+  ]
+}
+```
+
+**Observacoes**
+
+- nao duplica placeholders se o simulado ja tiver questoes
+- usa `source_type = "external"`
+
+### PUT `/api/mock-exams/{id}/questions/{question_id}`
+
+**Objetivo**
+
+Atualizar uma questao individual com resposta, gabarito, dificuldade e tempo.
+
+**Payload exemplo**
+
+```json
+{
+  "user_answer": "A",
+  "correct_answer": "D",
+  "skipped": false,
+  "difficulty_percent": 12,
+  "time_seconds": 95,
+  "notes": "Duvida em interpretacao."
+}
+```
+
+### POST `/api/mock-exams/{id}/start`
+
+**Objetivo**
+
+Marcar o simulado como `in_progress`.
+
+### POST `/api/mock-exams/{id}/finish`
+
+**Objetivo**
+
+Finalizar o simulado e calcular o resumo de execucao.
+
+**Observacoes**
+
+- a nota geral por areas usa media, nao soma
+- qualquer nota calculada internamente aparece como `estimated_tri_score` e deve ser lida como **Estimativa TRI**
+- nao existe TRI oficial calculada pela API
+
+### GET `/api/mock-exams/{id}/results`
+
+**Objetivo**
+
+Buscar o resultado consolidado do simulado, com agregados por area e gabarito detalhado.
+
+**Campos principais**
+
+- `official_tri_score`
+- `estimated_tri_score`
+- `overall_area_average_score`
+- `by_area`
+- `questions`
 
 ## Observacoes Finais De Integracao
 
