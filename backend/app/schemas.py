@@ -93,6 +93,8 @@ class StudyPlanItem(BaseModel):
     progress_ratio: float
     execution_status: Literal["nao_iniciado", "em_andamento", "concluido"]
     priority_score: float
+    estimated_tri_score: float | None = None
+    estimated_tri_basis: Literal["subject", "discipline"] | None = None
     primary_reason: str
     planned_mode: str
     roadmap_node_id: str | None = None

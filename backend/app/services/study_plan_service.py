@@ -31,6 +31,7 @@ from app.models import (
 from app.schemas import StudyPlanItem, StudyPlanRecalculateResponse, StudyPlanSummary, StudyPlanTodayResponse
 from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load
 from app.services.discipline_normalization_service import normalize_discipline
+from app.services.mock_exam_service import _estimate_score_from_counts
 from app.services.progression_service import sync_progression
 from app.services.roadmap_progression_service import GuidedRoadmapOverview, build_guided_roadmap_overview
 from app.services.study_event_service import record_study_event
@@ -115,6 +116,35 @@ def _execution_progress(
     return completed_today, remaining_today, round(progress_ratio, 2), execution_status
 
 
+def _estimate_tri_for_focus(
+    session: Session,
+    *,
+    discipline: str,
+    subject_id: int,
+) -> tuple[float | None, str | None]:
+    subject_attempts = session.exec(
+        select(QuestionAttempt)
+        .where(QuestionAttempt.subject_id == subject_id)
+        .order_by(QuestionAttempt.data.desc(), QuestionAttempt.id.desc())
+        .limit(45)
+    ).all()
+    if len(subject_attempts) >= 5:
+        subject_correct = sum(1 for attempt in subject_attempts if attempt.acertou)
+        return _estimate_score_from_counts(discipline, subject_correct, len(subject_attempts)), "subject"
+
+    discipline_attempts = session.exec(
+        select(QuestionAttempt)
+        .where(QuestionAttempt.disciplina == discipline)
+        .order_by(QuestionAttempt.data.desc(), QuestionAttempt.id.desc())
+        .limit(45)
+    ).all()
+    if len(discipline_attempts) >= 5:
+        discipline_correct = sum(1 for attempt in discipline_attempts if attempt.acertou)
+        return _estimate_score_from_counts(discipline, discipline_correct, len(discipline_attempts)), "discipline"
+
+    return None, None
+
+
 def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list[StudyPlanItem]:
     block_progress, _ = sync_progression(session, today)
     roadmap_overview = build_guided_roadmap_overview(session, block_progress)
@@ -138,6 +168,11 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
             subject_id=row.subject_id,
             planned_questions=row.planned_questions,
         )
+        estimated_tri_score, estimated_tri_basis = _estimate_tri_for_focus(
+            session=session,
+            discipline=row.discipline,
+            subject_id=row.subject_id,
+        )
         items.append(
             StudyPlanItem(
                 discipline=row.discipline,
@@ -153,6 +188,8 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
                 progress_ratio=progress_ratio,
                 execution_status=execution_status,
                 priority_score=row.priority_score,
+                estimated_tri_score=estimated_tri_score,
+                estimated_tri_basis=estimated_tri_basis,
                 primary_reason=row.primary_reason,
                 planned_mode=row.planned_mode,
                 roadmap_node_id=subject_state.roadmap_node_id if subject_state is not None else None,

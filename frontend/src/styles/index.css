@@ -1468,6 +1468,7 @@ textarea {
 }
 
 .today-focus-status-block,
+.today-focus-score-block,
 .today-focus-count-block {
   display: grid;
   gap: 0.18rem;
@@ -1475,6 +1476,7 @@ textarea {
 }
 
 .today-focus-status-block > span,
+.today-focus-score-block > span,
 .today-focus-count-block span {
   color: var(--discipline-card-meta);
   font-size: 0.72rem;
@@ -1495,6 +1497,22 @@ textarea {
   font-size: 1.45rem;
   font-weight: 900;
   line-height: 1;
+}
+
+.today-focus-score-block strong {
+  margin: 0;
+  color: var(--discipline-count-text);
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.today-focus-score-block small {
+  color: var(--discipline-card-copy);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.82;
 }
 
 .today-focus-actions {

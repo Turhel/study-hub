@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useStudyTimer } from "../components/StudyTimer";
@@ -426,21 +426,21 @@ function activityHeadline(activityToday?: {
   };
 }
 
-function priorityFillPercent(value: number | null | undefined): number {
+function formatTri(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    return 0;
+    return "--";
   }
-
-  return Math.max(0, Math.min(100, value * 100));
+  return value.toFixed(1);
 }
 
-function priorityHue(value: number | null | undefined): number {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return 120;
+function triBasisLabel(value: "subject" | "discipline" | null | undefined): string {
+  if (value === "subject") {
+    return "estimada pelo foco";
   }
-
-  const normalized = Math.max(0, Math.min(1, (value - 0.1) / 0.9));
-  return Math.round(120 - normalized * 120);
+  if (value === "discipline") {
+    return "estimada pela disciplina";
+  }
+  return "base insuficiente ainda";
 }
 
 function ActivityMetric({
@@ -466,7 +466,6 @@ export default function TodayPage() {
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [expandedPriorityKey, setExpandedPriorityKey] = useState<string | null>(null);
   const { pendingCompletion, consumePendingCompletion, startTimer } = useStudyTimer();
 
   const planQuery = useQuery({
@@ -682,10 +681,6 @@ export default function TodayPage() {
     setFeedback("Timer iniciado para este foco.");
   }
 
-  function focusCardKey(item: StudyPlanItem) {
-    return `${item.block_id ?? "no-block"}:${item.subject_id ?? "no-subject"}:${item.subject_name ?? "no-subject-name"}`;
-  }
-
   useEffect(() => {
     if (!pendingCompletion || pendingCompletion.context.mode !== "guided") {
       return;
@@ -811,13 +806,6 @@ export default function TodayPage() {
 
             <div className="today-focus-list">
               {focusCards.map(({ item, visual }) => {
-                const cardKey = focusCardKey(item);
-                const isPriorityExpanded = expandedPriorityKey === cardKey;
-                const priorityScoreText = formatOptional(item.priority_score);
-                const priorityHueValue = priorityHue(item.priority_score);
-                const priorityReasonText =
-                  item.primary_reason ?? item.roadmap_reason ?? "Sem justificativa detalhada disponivel para este foco.";
-
                 return (
                 <article key={`${item.block_id}-${item.subject_id}`} className={`today-focus-card ${visual.toneClassName}`}>
                   <div className="today-focus-main">
@@ -833,21 +821,9 @@ export default function TodayPage() {
 
                   <div className="today-focus-footer">
                     <div className="today-focus-score-block">
-                      <button
-                        type="button"
-                        className="today-score-chip today-score-button"
-                        aria-label={`Prioridade ${priorityScoreText}`}
-                        aria-expanded={isPriorityExpanded}
-                        aria-controls={`today-priority-${cardKey}`}
-                        onClick={() => setExpandedPriorityKey((current) => (current === cardKey ? null : cardKey))}
-                      >
-                        <span
-                          className="today-score-pill"
-                          aria-hidden="true"
-                          style={{ "--today-priority-hue": `${priorityHueValue}` } as CSSProperties}
-                        />
-                      </button>
-                      <span>Prioridade</span>
+                      <strong>{formatTri(item.estimated_tri_score)}</strong>
+                      <span>TRI estimada</span>
+                      <small>{triBasisLabel(item.estimated_tri_basis)}</small>
                     </div>
 
                     <div className="today-focus-count-block">
@@ -868,15 +844,6 @@ export default function TodayPage() {
                       </button>
                     </div>
                   </div>
-
-                  {isPriorityExpanded ? (
-                    <div id={`today-priority-${cardKey}`} className="today-priority-explainer">
-                      <p>
-                        <strong>Score {priorityScoreText}</strong>
-                        {` - ${priorityReasonText}`}
-                      </p>
-                    </div>
-                  ) : null}
 
                   <div className="today-focus-metrics">
                     <span>{item.planned_questions} planejadas</span>

@@ -104,6 +104,8 @@ export type StudyPlanItem = {
   progress_ratio: number;
   execution_status: StudyPlanExecutionStatus;
   priority_score: number;
+  estimated_tri_score?: number | null;
+  estimated_tri_basis?: "subject" | "discipline" | null;
   primary_reason: string;
   planned_mode: string;
   roadmap_node_id?: string | null;
