@@ -505,6 +505,27 @@ Frontend:
 http://localhost:5173
 ```
 
+## Deploy Vercel
+
+Configuracao recomendada:
+
+- Framework: `Vite`
+- Root Directory: `frontend`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+Env necessaria no projeto:
+
+```text
+VITE_API_BASE_URL=https://URL_DO_BACKEND
+```
+
+O fallback de SPA para recarregar rotas como `/stats`, `/lessons` e `/essay` fica em:
+
+```text
+frontend/vercel.json
+```
+
 Se precisar apontar para outro backend, crie `frontend/.env`:
 
 ```text
