@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import {
@@ -437,6 +437,14 @@ function activityHeadline(activityToday?: {
   };
 }
 
+function priorityFillPercent(value: number | null | undefined): number {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, value * 100));
+}
+
 function ActivityMetric({
   label,
   value,
@@ -848,6 +856,7 @@ export default function TodayPage() {
                 const cardKey = focusCardKey(item);
                 const isPriorityExpanded = expandedPriorityKey === cardKey;
                 const priorityScoreText = formatOptional(item.priority_score);
+                const priorityFill = priorityFillPercent(item.priority_score);
                 const priorityReasonText =
                   item.primary_reason ?? item.roadmap_reason ?? "Sem justificativa detalhada disponivel para este foco.";
 
@@ -874,7 +883,11 @@ export default function TodayPage() {
                         aria-controls={`today-priority-${cardKey}`}
                         onClick={() => setExpandedPriorityKey((current) => (current === cardKey ? null : cardKey))}
                       >
-                        <span className="today-score-pill" />
+                        <span
+                          className="today-score-pill"
+                          aria-hidden="true"
+                          style={{ "--today-priority-fill": `${priorityFill}%` } as CSSProperties}
+                        />
                         <span className="today-score-value">{priorityScoreText}</span>
                         <span className="today-score-info">{isPriorityExpanded ? "-" : "i"}</span>
                       </button>

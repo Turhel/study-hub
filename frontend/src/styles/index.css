@@ -1671,10 +1671,26 @@ textarea {
 }
 
 .today-score-pill {
+  position: relative;
   width: 2.35rem;
   height: 1rem;
+  overflow: hidden;
   border-radius: 999px;
-  background: var(--discipline-score-pill);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.today-score-pill::after {
+  content: "";
+  position: absolute;
+  inset: 1px auto 1px 1px;
+  width: max(0px, calc(var(--today-priority-fill, 0%) - 2px));
+  max-width: calc(100% - 2px);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5fd96b 0%, #c9de4f 38%, #ffb347 68%, #ff6767 100%);
+  transition: width 180ms ease;
 }
 
 .today-score-value {
