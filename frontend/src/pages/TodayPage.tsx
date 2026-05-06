@@ -462,6 +462,7 @@ export default function TodayPage() {
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [expandedPriorityKey, setExpandedPriorityKey] = useState<string | null>(null);
 
   const planQuery = useQuery({
     queryKey: ["study-plan-today"],
@@ -730,6 +731,10 @@ export default function TodayPage() {
     });
   }
 
+  function focusCardKey(item: StudyPlanItem) {
+    return `${item.block_id ?? "no-block"}:${item.subject_id ?? "no-subject"}:${item.subject_name ?? "no-subject-name"}`;
+  }
+
   return (
     <main className="today-page">
       <motion.section
@@ -839,7 +844,14 @@ export default function TodayPage() {
             ) : null}
 
             <div className="today-focus-list">
-              {focusCards.map(({ item, visual }) => (
+              {focusCards.map(({ item, visual }) => {
+                const cardKey = focusCardKey(item);
+                const isPriorityExpanded = expandedPriorityKey === cardKey;
+                const priorityScoreText = formatOptional(item.priority_score);
+                const priorityReasonText =
+                  item.primary_reason ?? item.roadmap_reason ?? "Sem justificativa detalhada disponivel para este foco.";
+
+                return (
                 <article key={`${item.block_id}-${item.subject_id}`} className={`today-focus-card ${visual.toneClassName}`}>
                   <div className="today-focus-main">
                     <div className="today-focus-copy">
@@ -854,10 +866,18 @@ export default function TodayPage() {
 
                   <div className="today-focus-footer">
                     <div className="today-focus-score-block">
-                      <div className="today-score-chip" aria-label={`Prioridade ${formatOptional(item.priority_score)}`}>
+                      <button
+                        type="button"
+                        className="today-score-chip today-score-button"
+                        aria-label={`Prioridade ${priorityScoreText}`}
+                        aria-expanded={isPriorityExpanded}
+                        aria-controls={`today-priority-${cardKey}`}
+                        onClick={() => setExpandedPriorityKey((current) => (current === cardKey ? null : cardKey))}
+                      >
                         <span className="today-score-pill" />
-                        <span className="today-score-info">i</span>
-                      </div>
+                        <span className="today-score-value">{priorityScoreText}</span>
+                        <span className="today-score-info">{isPriorityExpanded ? "-" : "i"}</span>
+                      </button>
                       <span>Prioridade</span>
                     </div>
 
@@ -880,11 +900,20 @@ export default function TodayPage() {
                     </div>
                   </div>
 
+                  {isPriorityExpanded ? (
+                    <div id={`today-priority-${cardKey}`} className="today-priority-explainer">
+                      <p>
+                        <strong>Score {priorityScoreText}</strong>
+                        {` - ${priorityReasonText}`}
+                      </p>
+                    </div>
+                  ) : null}
+
                   <div className="today-focus-metrics">
                     <span>{item.planned_questions} planejadas</span>
                     <span>{item.remaining_today} restantes</span>
                     <span>{item.planned_mode}</span>
-                    <span>score {formatOptional(item.priority_score)}</span>
+                    <span>score {priorityScoreText}</span>
                   </div>
 
                   <div className="today-focus-secondary-row">
@@ -924,7 +953,8 @@ export default function TodayPage() {
                     </div>
                   </dl>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </section>
 

@@ -1649,6 +1649,25 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  color: var(--discipline-count-text);
+}
+
+.today-score-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 150ms ease, filter 150ms ease;
+}
+
+.today-score-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.today-score-button:focus-visible {
+  outline: 2px solid rgba(57, 170, 240, 0.72);
+  outline-offset: 3px;
 }
 
 .today-score-pill {
@@ -1656,6 +1675,14 @@ textarea {
   height: 1rem;
   border-radius: 999px;
   background: var(--discipline-score-pill);
+}
+
+.today-score-value {
+  min-width: 2rem;
+  color: var(--discipline-count-text);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .today-score-info {
@@ -1668,6 +1695,24 @@ textarea {
   color: var(--discipline-score-info-text);
   font-size: 0.62rem;
   font-weight: 900;
+}
+
+.today-priority-explainer {
+  border-top: 1px solid rgba(112, 133, 170, 0.24);
+  border-bottom: 1px solid rgba(112, 133, 170, 0.24);
+  background: rgba(11, 21, 42, 0.44);
+  padding: 0.8rem 1.35rem;
+}
+
+.today-priority-explainer p {
+  margin: 0;
+  color: rgba(233, 239, 248, 0.84);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.today-priority-explainer strong {
+  color: #f8fbff;
 }
 
 .today-discipline-footer-count {
