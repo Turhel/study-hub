@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useStudyTimer } from "../components/StudyTimer";
 import {
@@ -462,11 +462,12 @@ function ActivityMetric({
 }
 
 export default function TodayPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const { pendingCompletion, consumePendingCompletion, startTimer } = useStudyTimer();
+  const { pendingCompletion, consumePendingCompletion } = useStudyTimer();
 
   const planQuery = useQuery({
     queryKey: ["study-plan-today"],
@@ -670,15 +671,20 @@ export default function TodayPage() {
   }
 
   function openTrainingTimer(item: StudyPlanItem) {
-    startTimer({
-      mode: "guided",
-      discipline: item.discipline,
-      block_id: item.block_id,
-      block_name: item.block_name,
-      subject_id: item.subject_id,
-      subject_name: item.subject_name,
+    navigate("/timer", {
+      state: {
+        timerPreset: {
+          discipline: item.discipline,
+          block: item.block_name,
+          subject: item.subject_name,
+          questionCount: Math.max(item.remaining_today || item.planned_questions || 1, 1),
+          mode: "prova",
+          questionSource: "external",
+          blockId: item.block_id,
+          subjectId: item.subject_id,
+        },
+      },
     });
-    setFeedback("Timer iniciado para este foco.");
   }
 
   useEffect(() => {
