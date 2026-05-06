@@ -286,8 +286,8 @@ export default function App() {
     retry: false,
   });
   const recentActivityQuery = useQuery({
-    queryKey: ["activity-recent", 120],
-    queryFn: () => getRecentActivity(120),
+    queryKey: ["activity-recent", 100],
+    queryFn: () => getRecentActivity(100),
     retry: false,
   });
 
