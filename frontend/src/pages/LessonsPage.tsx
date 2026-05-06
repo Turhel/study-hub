@@ -252,7 +252,8 @@ export default function LessonsPage() {
     queryKey: ["block-progress", discipline?.discipline],
     queryFn: () => getBlockProgressByDiscipline(discipline!.discipline),
     enabled: Boolean(discipline?.discipline),
-    retry: false,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(600 * attemptIndex, 1200),
   });
 
   const subjectLessonsQuery = useQuery({
