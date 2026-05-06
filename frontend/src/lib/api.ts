@@ -294,7 +294,8 @@ export async function saveFreeStudyQuestionAttemptsBulk(
 }
 
 export async function getBlockProgressByDiscipline(discipline: string): Promise<BlockProgressDisciplineResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/block-progress/discipline/${encodeURIComponent(discipline)}`);
+  const params = new URLSearchParams({ discipline });
+  const response = await fetch(`${API_BASE_URL}/api/block-progress/discipline?${params.toString()}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar a progressao da disciplina.");

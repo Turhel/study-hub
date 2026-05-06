@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.db import get_session
 from app.schemas import (
@@ -34,6 +34,24 @@ def save_decision(payload: BlockProgressDecisionRequest) -> BlockProgressDecisio
             raise HTTPException(
                 status_code=status_code,
                 detail={"code": "block_decision_invalid", "message": message},
+            ) from exc
+
+
+@router.get(
+    "/discipline",
+    response_model=DisciplineBlockProgressSnapshotResponse,
+    responses={404: {"model": ApiErrorResponse}},
+)
+def get_discipline_snapshot_by_query(
+    discipline: str = Query(..., min_length=1),
+) -> DisciplineBlockProgressSnapshotResponse:
+    with get_session() as session:
+        try:
+            return get_discipline_progression_snapshot(session, discipline)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=404,
+                detail={"code": "discipline_not_found", "message": str(exc)},
             ) from exc
 
 
