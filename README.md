@@ -526,6 +526,12 @@ O fallback de SPA para recarregar rotas como `/stats`, `/lessons` e `/essay` fic
 frontend/vercel.json
 ```
 
+Para o backend aceitar o frontend publicado, configure no `backend/.env`:
+
+```text
+STUDY_HUB_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://SEU-APP.vercel.app
+```
+
 Se precisar apontar para outro backend, crie `frontend/.env`:
 
 ```text

@@ -21,7 +21,7 @@ from app.routes.stats import router as stats_router
 from app.routes.study_guide import router as study_guide_router
 from app.routes.study_plan import router as study_plan_router
 from app.routes.system import router as system_router
-from app.settings import get_auto_sync_structural_on_startup, load_env_file
+from app.settings import get_auto_sync_structural_on_startup, get_cors_origins, load_env_file
 from app.routes.today import router as today_router
 from app.routes.timer_sessions import router as timer_sessions_router
 
@@ -42,7 +42,7 @@ app = FastAPI(title="Study Hub API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=get_cors_origins(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

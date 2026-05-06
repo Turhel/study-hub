@@ -75,6 +75,15 @@ def get_env_bool(name: str, default: bool) -> bool:
     raise ValueError(f"{name} deve ser booleano.")
 
 
+def get_env_csv(name: str, default: list[str]) -> list[str]:
+    load_env_file()
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    values = [item.strip() for item in raw_value.split(",")]
+    return [item for item in values if item]
+
+
 @lru_cache(maxsize=1)
 def get_default_sqlite_db_path() -> Path:
     backend_root = get_backend_root()
@@ -144,3 +153,10 @@ def get_llm_model_name() -> str:
     from app.llm.config import DEFAULT_MODEL
 
     return get_env_str("STUDY_HUB_LLM_MODEL", DEFAULT_MODEL)
+
+
+def get_cors_origins() -> list[str]:
+    return get_env_csv(
+        "STUDY_HUB_CORS_ORIGINS",
+        ["http://localhost:5173", "http://127.0.0.1:5173"],
+    )
