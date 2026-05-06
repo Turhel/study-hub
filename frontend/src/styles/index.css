@@ -1648,21 +1648,28 @@ textarea {
 .today-score-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
   color: var(--discipline-count-text);
 }
 
 .today-score-button {
-  border: 0;
-  padding: 0;
-  background: transparent;
+  min-height: 2rem;
+  border: 1px solid rgba(112, 133, 170, 0.42);
+  border-radius: 999px;
+  padding: 0.28rem 0.42rem 0.28rem 0.34rem;
+  background: rgba(15, 23, 42, 0.46);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 4px rgba(4, 7, 13, 0.14);
   cursor: pointer;
-  transition: transform 150ms ease, filter 150ms ease;
+  transition: transform 150ms ease, filter 150ms ease, border-color 150ms ease, background 150ms ease;
 }
 
 .today-score-button:hover {
   transform: translateY(-1px);
   filter: brightness(1.04);
+  border-color: rgba(89, 170, 255, 0.56);
+  background: rgba(18, 29, 52, 0.58);
 }
 
 .today-score-button:focus-visible {
@@ -1672,8 +1679,8 @@ textarea {
 
 .today-score-pill {
   position: relative;
-  width: 2.35rem;
-  height: 1rem;
+  width: 3.15rem;
+  height: 0.9rem;
   overflow: hidden;
   border-radius: 999px;
   background:
@@ -1696,22 +1703,26 @@ textarea {
 }
 
 .today-score-value {
-  min-width: 2rem;
-  color: var(--discipline-count-text);
-  font-size: 0.74rem;
+  min-width: 2.2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.18rem 0.42rem;
+  color: #f8fbff;
+  font-size: 0.78rem;
   font-weight: 800;
   line-height: 1;
+  text-align: center;
 }
 
 .today-score-info {
   display: inline-grid;
   place-items: center;
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 5px;
-  background: var(--discipline-score-info-bg);
-  color: var(--discipline-score-info-text);
-  font-size: 0.62rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #f8fbff;
+  font-size: 0.68rem;
   font-weight: 900;
 }
 
