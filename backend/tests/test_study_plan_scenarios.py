@@ -10,7 +10,7 @@ import pytest
 from sqlmodel import Session, select
 
 from app.db import create_db_engine, init_db
-from app.models import DailyStudyPlan
+from app.models import DailyStudyPlan, MockExam
 from app.schemas import QuestionAttemptBulkCreate, StudyGuidePreferences
 from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load, update_study_guide_preferences
 from app.services.progression_service import sync_progression
@@ -87,6 +87,15 @@ def _selected_candidates_and_counts(
     focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
     selected = _select_candidates(candidates, focus_count)
     question_counts = _question_distribution(total_questions, len(selected))
+    return selected, question_counts
+
+
+def _create_plan_for_day(session: Session, plan_day: date) -> tuple[list, list[int]]:
+    selected, question_counts = _selected_candidates_and_counts(session, plan_day)
+    plan = _create_plan(session, selected, question_counts)
+    plan.created_at = datetime.combine(plan_day, datetime.min.time())
+    session.add(plan)
+    session.commit()
     return selected, question_counts
 
 
@@ -331,11 +340,7 @@ def test_calendar_returns_seven_days(seeded_context: SeededStudyPlanContext) -> 
 
 def test_calendar_today_reflects_active_plan(seeded_context: SeededStudyPlanContext) -> None:
     session = seeded_context.session
-    selected, question_counts = _selected_candidates_and_counts(session, seeded_context.base_day)
-    plan = _create_plan(session, selected, question_counts)
-    plan.created_at = datetime.combine(seeded_context.base_day, datetime.min.time())
-    session.add(plan)
-    session.commit()
+    selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
 
     calendar = build_study_plan_calendar(session, start_day=seeded_context.base_day, days=7)
 
@@ -358,11 +363,7 @@ def test_calendar_carry_over_when_today_has_pending(seeded_context: SeededStudyP
             include_new_content=True,
         ),
     )
-    selected, question_counts = _selected_candidates_and_counts(session, seeded_context.base_day)
-    plan = _create_plan(session, selected, question_counts)
-    plan.created_at = datetime.combine(seeded_context.base_day, datetime.min.time())
-    session.add(plan)
-    session.commit()
+    selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
 
     first_subject_id = selected[0].subject_id
     first_block_id = selected[0].block_id
@@ -425,3 +426,206 @@ def test_calendar_does_not_break_without_history(seeded_context: SeededStudyPlan
 
     assert calendar.days[0].reason
     assert all(day.items for day in calendar.days)
+
+
+def test_calendar_mock_exam_recommendation_skips_without_history(
+    seeded_context: SeededStudyPlanContext,
+) -> None:
+    selected, question_counts = _create_plan_for_day(seeded_context.session, seeded_context.base_day)
+    for candidate, planned_questions in zip(selected, question_counts):
+        register_question_attempts_bulk(
+            seeded_context.session,
+            QuestionAttemptBulkCreate(
+                date=seeded_context.base_day.isoformat(),
+                discipline=candidate.discipline,
+                block_id=candidate.block_id,
+                subject_id=candidate.subject_id,
+                source="pytest-mock-reco",
+                quantity=planned_questions,
+                correct_count=max(planned_questions - 2, 1),
+                difficulty_bank="media",
+                difficulty_personal="media",
+                study_mode="guided",
+            ),
+        )
+
+    calendar = build_study_plan_calendar(seeded_context.session, start_day=seeded_context.base_day, days=7)
+
+    assert all(not day.mock_exam_recommendation.recommended for day in calendar.days)
+    assert any(
+        marker in calendar.days[0].mock_exam_recommendation.reason.lower()
+        for marker in ("historico recente suficiente", "abaixo de 50 questoes")
+    )
+
+
+def test_calendar_mock_exam_recommendation_skips_with_recent_exam(
+    seeded_context: SeededStudyPlanContext,
+) -> None:
+    session = seeded_context.session
+    selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
+    for offset in range(7):
+        session_day = seeded_context.base_day - timedelta(days=offset)
+        register_question_attempts_bulk(
+            session,
+            QuestionAttemptBulkCreate(
+                date=session_day.isoformat(),
+                discipline=selected[0].discipline,
+                block_id=selected[0].block_id,
+                subject_id=selected[0].subject_id,
+                source="pytest-mock-reco",
+                quantity=10,
+                correct_count=7,
+                difficulty_bank="media",
+                difficulty_personal="media",
+                study_mode="guided",
+            ),
+        )
+    for candidate, planned_questions in zip(selected, question_counts):
+        register_question_attempts_bulk(
+            session,
+            QuestionAttemptBulkCreate(
+                date=seeded_context.base_day.isoformat(),
+                discipline=candidate.discipline,
+                block_id=candidate.block_id,
+                subject_id=candidate.subject_id,
+                source="pytest-mock-reco-plan",
+                quantity=planned_questions,
+                correct_count=max(planned_questions - 2, 1),
+                difficulty_bank="media",
+                difficulty_personal="media",
+                study_mode="guided",
+            ),
+        )
+    session.add(
+        MockExam(
+            data=seeded_context.base_day - timedelta(days=3),
+            tipo="TESTE_RECENTE",
+            area="Matematica",
+            mode="external",
+            status="finished",
+            total_questoes=45,
+            total_acertos=30,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+    )
+    session.commit()
+
+    calendar = build_study_plan_calendar(session, start_day=seeded_context.base_day, days=7)
+
+    assert all(not day.mock_exam_recommendation.recommended for day in calendar.days)
+    assert "ultimos 7 dias" in calendar.days[0].mock_exam_recommendation.reason.lower()
+
+
+def test_calendar_mock_exam_recommendation_suggests_area_when_ready(
+    seeded_context: SeededStudyPlanContext,
+) -> None:
+    session = seeded_context.session
+    update_study_guide_preferences(
+        session,
+        StudyGuidePreferences(
+            daily_minutes=120,
+            intensity="normal",
+            max_focus_count=3,
+            max_questions=35,
+            include_reviews=True,
+            include_new_content=True,
+        ),
+    )
+    selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
+    for offset in range(7):
+        session_day = seeded_context.base_day - timedelta(days=offset)
+        register_question_attempts_bulk(
+            session,
+            QuestionAttemptBulkCreate(
+                date=session_day.isoformat(),
+                discipline=selected[0].discipline,
+                block_id=selected[0].block_id,
+                subject_id=selected[0].subject_id,
+                source="pytest-mock-reco",
+                quantity=8,
+                correct_count=6,
+                difficulty_bank="media",
+                difficulty_personal="media",
+                study_mode="guided",
+            ),
+        )
+    for candidate, planned_questions in zip(selected, question_counts):
+        register_question_attempts_bulk(
+            session,
+            QuestionAttemptBulkCreate(
+                date=seeded_context.base_day.isoformat(),
+                discipline=candidate.discipline,
+                block_id=candidate.block_id,
+                subject_id=candidate.subject_id,
+                source="pytest-mock-reco-plan",
+                quantity=planned_questions,
+                correct_count=max(planned_questions - 1, 1),
+                difficulty_bank="media",
+                difficulty_personal="media",
+                study_mode="guided",
+            ),
+        )
+
+    calendar = build_study_plan_calendar(session, start_day=seeded_context.base_day, days=7)
+    recommended_days = [day for day in calendar.days if day.mock_exam_recommendation.recommended]
+
+    assert recommended_days
+    assert recommended_days[0].mock_exam_recommendation.kind == "area"
+
+
+def test_calendar_mock_exam_recommendation_limits_low_daily_minutes_to_mini(
+    seeded_context: SeededStudyPlanContext,
+) -> None:
+    session = seeded_context.session
+    update_study_guide_preferences(
+        session,
+        StudyGuidePreferences(
+            daily_minutes=60,
+            intensity="normal",
+            max_focus_count=3,
+            max_questions=35,
+            include_reviews=True,
+            include_new_content=True,
+        ),
+    )
+    selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
+    for offset in range(7):
+        session_day = seeded_context.base_day - timedelta(days=offset)
+        register_question_attempts_bulk(
+            session,
+            QuestionAttemptBulkCreate(
+                date=session_day.isoformat(),
+                discipline=selected[0].discipline,
+                block_id=selected[0].block_id,
+                subject_id=selected[0].subject_id,
+                source="pytest-mock-reco",
+                quantity=8,
+                correct_count=6,
+                difficulty_bank="media",
+                difficulty_personal="media",
+                study_mode="guided",
+            ),
+        )
+    for candidate, planned_questions in zip(selected, question_counts):
+        register_question_attempts_bulk(
+            session,
+            QuestionAttemptBulkCreate(
+                date=seeded_context.base_day.isoformat(),
+                discipline=candidate.discipline,
+                block_id=candidate.block_id,
+                subject_id=candidate.subject_id,
+                source="pytest-mock-reco-plan",
+                quantity=planned_questions,
+                correct_count=max(planned_questions - 1, 1),
+                difficulty_bank="media",
+                difficulty_personal="media",
+                study_mode="guided",
+            ),
+        )
+
+    calendar = build_study_plan_calendar(session, start_day=seeded_context.base_day, days=7)
+    recommended_days = [day for day in calendar.days if day.mock_exam_recommendation.recommended]
+
+    assert recommended_days
+    assert recommended_days[0].mock_exam_recommendation.kind == "mini"

@@ -127,6 +127,13 @@ class StudyPlanCalendarItem(BaseModel):
     reason: str
 
 
+class StudyPlanMockExamRecommendation(BaseModel):
+    recommended: bool
+    kind: Literal["mini", "area", "enem_day_1", "enem_day_2"] | None = None
+    title: str | None = None
+    reason: str
+
+
 class StudyPlanCalendarDay(BaseModel):
     date: str
     status: Literal["today", "projected", "adjusted"]
@@ -134,6 +141,7 @@ class StudyPlanCalendarDay(BaseModel):
     focus_count: int
     items: list[StudyPlanCalendarItem]
     reason: str
+    mock_exam_recommendation: StudyPlanMockExamRecommendation
 
 
 class StudyPlanCalendarResponse(BaseModel):

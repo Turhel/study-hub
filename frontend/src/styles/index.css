@@ -1052,6 +1052,40 @@ textarea {
   font-size: 0.95rem;
 }
 
+.today-calendar-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.24rem 0.5rem;
+  border: 1px solid rgba(255, 184, 79, 0.38);
+  border-radius: 999px;
+  background: rgba(255, 184, 79, 0.12);
+  color: #ffd184;
+  font-size: 0.69rem;
+  font-weight: 800;
+}
+
+.today-calendar-recommendation {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.85rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(255, 184, 79, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 184, 79, 0.08);
+}
+
+.today-calendar-recommendation strong {
+  color: #f8fbff;
+  font-size: 0.85rem;
+}
+
+.today-calendar-recommendation p {
+  margin: 0;
+  color: rgba(206, 217, 235, 0.8);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .today-calendar-detail-list {
   display: grid;
   gap: 0.7rem;

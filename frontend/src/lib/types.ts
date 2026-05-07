@@ -132,6 +132,13 @@ export type StudyPlanCalendarItem = {
   reason: string;
 };
 
+export type StudyPlanMockExamRecommendation = {
+  recommended: boolean;
+  kind?: "mini" | "area" | "enem_day_1" | "enem_day_2" | null;
+  title?: string | null;
+  reason: string;
+};
+
 export type StudyPlanCalendarDay = {
   date: string;
   status: "today" | "projected" | "adjusted";
@@ -139,6 +146,7 @@ export type StudyPlanCalendarDay = {
   focus_count: number;
   items: StudyPlanCalendarItem[];
   reason: string;
+  mock_exam_recommendation: StudyPlanMockExamRecommendation;
 };
 
 export type StudyPlanCalendarResponse = {

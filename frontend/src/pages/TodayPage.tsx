@@ -824,6 +824,9 @@ export default function TodayPage() {
                       <small>{calendarStatusLabel(day.status)}</small>
                     </div>
                     <strong>{label.dayMonth}</strong>
+                    {day.mock_exam_recommendation.recommended ? (
+                      <span className="today-calendar-badge">Simulado sugerido</span>
+                    ) : null}
                     <div className="today-calendar-card-metrics">
                       <span>{day.total_questions} q</span>
                       <span>{day.focus_count} foco(s)</span>
@@ -1257,6 +1260,15 @@ export default function TodayPage() {
               <span>{selectedCalendarDay.focus_count} foco(s)</span>
             </div>
             <p className="today-calendar-note">{selectedCalendarDay.reason}</p>
+
+            <div className="today-calendar-recommendation">
+              <strong>
+                {selectedCalendarDay.mock_exam_recommendation.recommended
+                  ? selectedCalendarDay.mock_exam_recommendation.title || "Simulado sugerido"
+                  : "Sem simulado sugerido agora"}
+              </strong>
+              <p>{selectedCalendarDay.mock_exam_recommendation.reason}</p>
+            </div>
 
             <div className="today-calendar-detail-list">
               {selectedCalendarDay.items.map((item, index) => (

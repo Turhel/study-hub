@@ -24,13 +24,16 @@ from app.models import (
     BlockSubject,
     DailyStudyPlan,
     DailyStudyPlanItem,
+    MockExam,
     QuestionAttempt,
+    Review,
     Subject,
     SubjectProgress,
 )
 from app.schemas import (
     StudyPlanCalendarDay,
     StudyPlanCalendarItem,
+    StudyPlanMockExamRecommendation,
     StudyPlanCalendarResponse,
     StudyPlanItem,
     StudyPlanRecalculateResponse,
@@ -75,6 +78,14 @@ class ProjectedCarryOverItem:
     subject_id: int
     subject_name: str
     planned_questions: int
+    reason: str
+
+
+@dataclass(frozen=True)
+class MockExamRecommendationSignal:
+    recommended: bool
+    kind: str | None
+    title: str | None
     reason: str
 
 
@@ -328,6 +339,182 @@ def _calendar_item_from_study_plan_item(item: StudyPlanItem) -> StudyPlanCalenda
     )
 
 
+def _empty_mock_exam_recommendation(reason: str) -> StudyPlanMockExamRecommendation:
+    return StudyPlanMockExamRecommendation(
+        recommended=False,
+        kind=None,
+        title=None,
+        reason=reason,
+    )
+
+
+def _mock_exam_area_hint(discipline: str) -> str:
+    normalized = normalize_discipline_name(discipline)
+    if "matem" in normalized or "fisic" in normalized or "quim" in normalized or "biolog" in normalized or "nature" in normalized:
+        return "enem_day_2"
+    return "enem_day_1"
+
+
+def _build_mock_exam_recommendation(
+    session: Session,
+    *,
+    reference_day: date,
+    capacity,
+    carry_over_items: list[ProjectedCarryOverItem],
+) -> MockExamRecommendationSignal:
+    if carry_over_items:
+        return MockExamRecommendationSignal(
+            recommended=False,
+            kind=None,
+            title=None,
+            reason="Ainda ha pendencias ou reforcos imediatos antes de encaixar um simulado.",
+        )
+
+    pending_reviews = int(
+        session.exec(
+            select(func.count(Review.id))
+            .where(Review.proxima_data <= reference_day)
+            .where(Review.status == "pendente")
+        ).one()
+        or 0
+    )
+    if pending_reviews >= 6:
+        return MockExamRecommendationSignal(
+            recommended=False,
+            kind=None,
+            title=None,
+            reason="Ha muitas revisoes pendentes no momento, entao estudo e manutencao seguem na frente.",
+        )
+
+    recent_attempts = session.exec(
+        select(QuestionAttempt)
+        .where(QuestionAttempt.data >= reference_day - timedelta(days=6))
+        .where(QuestionAttempt.data <= reference_day)
+        .order_by(QuestionAttempt.data.desc(), QuestionAttempt.id.desc())
+    ).all()
+    if len(recent_attempts) < 20:
+        return MockExamRecommendationSignal(
+            recommended=False,
+            kind=None,
+            title=None,
+            reason="Ainda nao ha historico recente suficiente para sugerir simulado com seguranca.",
+        )
+
+    if len(recent_attempts) < 50:
+        return MockExamRecommendationSignal(
+            recommended=False,
+            kind=None,
+            title=None,
+            reason="O volume recente ainda esta abaixo de 50 questoes na semana, entao vale consolidar estudo antes.",
+        )
+
+    latest_mock_exam = session.exec(
+        select(MockExam)
+        .order_by(MockExam.data.desc(), MockExam.id.desc())
+    ).first()
+    if latest_mock_exam is not None and (reference_day - latest_mock_exam.data).days < 7:
+        return MockExamRecommendationSignal(
+            recommended=False,
+            kind=None,
+            title=None,
+            reason="Ja houve simulado nos ultimos 7 dias, entao o proximo ainda pode esperar.",
+        )
+
+    accuracy = sum(1 for attempt in recent_attempts if attempt.acertou) / len(recent_attempts)
+    if capacity.daily_minutes < 90 or accuracy < 0.55:
+        return MockExamRecommendationSignal(
+            recommended=True,
+            kind="mini",
+            title="Mini-simulado sugerido",
+            reason=(
+                "O ritmo atual ja permite treino de prova, mas a recomendacao segue curta por carga diaria menor "
+                "ou acuracia recente abaixo de 55%."
+            ),
+        )
+
+    discipline_counts: dict[str, tuple[int, int]] = {}
+    for attempt in recent_attempts:
+        normalized = normalize_discipline(attempt.disciplina).strategic_discipline
+        total, correct = discipline_counts.get(normalized, (0, 0))
+        discipline_counts[normalized] = (total + 1, correct + (1 if attempt.acertou else 0))
+
+    weakest_discipline = min(
+        discipline_counts.items(),
+        key=lambda item: ((item[1][1] / item[1][0]) if item[1][0] else 1.0, -item[1][0]),
+    )[0]
+
+    if capacity.daily_minutes >= 150:
+        kind = _mock_exam_area_hint(weakest_discipline)
+        title = "ENEM Dia 2 sugerido" if kind == "enem_day_2" else "ENEM Dia 1 sugerido"
+        reason = (
+            "Ha volume recente suficiente e janela diaria longa. O app sugere um dia completo do ENEM pela area que mais merece calibracao."
+        )
+        return MockExamRecommendationSignal(
+            recommended=True,
+            kind=kind,
+            title=title,
+            reason=reason,
+        )
+
+    return MockExamRecommendationSignal(
+        recommended=True,
+        kind="area",
+        title="Simulado por area sugerido",
+        reason=f"Ha volume e acuracia suficientes para um simulado por area, com foco de calibracao em {weakest_discipline}.",
+    )
+
+
+def _attach_mock_exam_recommendation(
+    days_payload: list[StudyPlanCalendarDay],
+    recommendation: MockExamRecommendationSignal,
+) -> list[StudyPlanCalendarDay]:
+    if not days_payload:
+        return days_payload
+
+    updated_days = [
+        day.model_copy(
+            update={
+                "mock_exam_recommendation": _empty_mock_exam_recommendation(
+                    "Hoje o foco segue no plano atual."
+                    if index == 0
+                    else "Sem simulado sugerido para este dia."
+                )
+            }
+        )
+        for index, day in enumerate(days_payload)
+    ]
+
+    if not recommendation.recommended:
+        reason_payload = _empty_mock_exam_recommendation(recommendation.reason)
+        return [day.model_copy(update={"mock_exam_recommendation": reason_payload}) for day in updated_days]
+
+    preferred_offset = 2 if recommendation.kind == "mini" else (4 if recommendation.kind == "area" else 6)
+    target_index = None
+    for index in range(min(preferred_offset, len(updated_days) - 1), len(updated_days)):
+        if updated_days[index].status == "projected":
+            target_index = index
+            break
+    if target_index is None:
+        for index in range(1, len(updated_days)):
+            if updated_days[index].status == "projected":
+                target_index = index
+                break
+
+    recommendation_payload = StudyPlanMockExamRecommendation(
+        recommended=True,
+        kind=recommendation.kind,  # type: ignore[arg-type]
+        title=recommendation.title,
+        reason=recommendation.reason,
+    )
+    if target_index is None:
+        return [day.model_copy(update={"mock_exam_recommendation": _empty_mock_exam_recommendation(recommendation.reason)}) for day in updated_days]
+
+    updated_days[target_index] = updated_days[target_index].model_copy(
+        update={"mock_exam_recommendation": recommendation_payload}
+    )
+    return updated_days
+
+
 def _build_projected_day(
     session: Session,
     *,
@@ -398,6 +585,7 @@ def _build_projected_day(
                 )
             ],
             reason="Previsao baseada no estado atual, sem carga obrigatoria para este dia.",
+            mock_exam_recommendation=_empty_mock_exam_recommendation("Sem recomendacao de simulado para este dia."),
         )
 
     day_status = "adjusted" if carry_over_items else "projected"
@@ -414,6 +602,7 @@ def _build_projected_day(
         focus_count=len(selected_items),
         items=selected_items,
         reason=day_reason,
+        mock_exam_recommendation=_empty_mock_exam_recommendation("Sem recomendacao de simulado para este dia."),
     )
 
 
@@ -484,6 +673,7 @@ def build_study_plan_calendar(
             focus_count=today_plan.summary.focus_count,
             items=[_calendar_item_from_study_plan_item(item) for item in today_plan.items],
             reason="Plano ativo de hoje.",
+            mock_exam_recommendation=_empty_mock_exam_recommendation("Hoje o foco segue no plano atual."),
         )
     ]
 
@@ -497,6 +687,14 @@ def build_study_plan_calendar(
             carry_over_items=carry_over_items if offset == 1 else [],
         )
         days_payload.append(future_day)
+
+    recommendation = _build_mock_exam_recommendation(
+        session,
+        reference_day=start_day,
+        capacity=capacity,
+        carry_over_items=carry_over_items,
+    )
+    days_payload = _attach_mock_exam_recommendation(days_payload, recommendation)
 
     return StudyPlanCalendarResponse(
         start_date=start_day.isoformat(),
