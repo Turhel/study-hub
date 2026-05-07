@@ -918,6 +918,11 @@ textarea {
   padding: 1rem;
 }
 
+.today-capability-strip {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .today-status-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -966,7 +971,7 @@ textarea {
 
 .today-capability-row {
   justify-content: flex-end;
-  max-width: 20rem;
+  max-width: 100%;
 }
 
 .today-capability-row span,
@@ -980,6 +985,15 @@ textarea {
   padding: 0.28rem 0.55rem;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.today-capability-row span {
+  border-color: rgba(123, 150, 190, 0.22);
+  background: rgba(16, 26, 44, 0.46);
+  color: rgba(223, 232, 245, 0.78);
+  padding: 0.22rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .today-inline-error {
@@ -2347,6 +2361,7 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .today-capability-strip,
   .today-capability-row {
     justify-content: flex-start;
     max-width: none;

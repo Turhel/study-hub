@@ -762,19 +762,13 @@ export default function TodayPage() {
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="today-subjects-shell today-functional-shell"
       >
-        <section className="today-panel today-status-panel">
-          <div>
-            <p className="today-eyebrow">Foco do dia</p>
-            <h1>Seu estudo de hoje</h1>
-            <p>Ajuste a carga, execute os focos e registre o que fez.</p>
-          </div>
-
+        <div className="today-capability-strip" aria-label="Status do ambiente">
           <div className="today-capability-row">
-            <span>{capabilities ? `Perfil: ${capabilities.machine_profile}` : "Perfil indisponivel"}</span>
-            <span>{capabilities ? `Banco: ${capabilities.database.dialect}` : "Banco indisponivel"}</span>
-            <span>{capabilities ? `LLM: ${capabilities.llm.enabled ? "ligado" : "desligado"}` : "LLM indisponivel"}</span>
+            <span>{capabilities ? `Perfil ${capabilities.machine_profile}` : "Perfil indisponivel"}</span>
+            <span>{capabilities ? `Banco ${capabilities.database.dialect}` : "Banco indisponivel"}</span>
+            <span>{capabilities ? `LLM ${capabilities.llm.enabled ? "ligado" : "desligado"}` : "LLM indisponivel"}</span>
           </div>
-        </section>
+        </div>
 
         {backendOffline ? (
           <section className="today-panel today-error-panel">
