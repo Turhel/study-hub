@@ -736,6 +736,24 @@ export default function TodayPage() {
     consumePendingCompletion();
   }, [consumePendingCompletion, pendingCompletion, planItems]);
 
+  useEffect(() => {
+    if (!selectedItem && !selectedCalendarDay) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setSelectedItem(null);
+      setSelectedCalendarDay(null);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedCalendarDay, selectedItem]);
+
   return (
     <main className="today-page">
       <motion.section
