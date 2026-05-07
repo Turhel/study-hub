@@ -42,7 +42,7 @@ def _ensure_essay_correction_enabled() -> None:
                 "code": "essay_correction_disabled",
                 "message": (
                     "Correcao de redacao desabilitada nesta maquina por feature flag. "
-                    "Isso evita tentar conectar ao provider local quando ele nao existe."
+                    "Isso evita tentar conectar ao provider configurado quando ele nao esta disponivel."
                 ),
             },
         )

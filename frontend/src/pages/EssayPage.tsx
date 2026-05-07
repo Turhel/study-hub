@@ -203,7 +203,7 @@ export default function EssayPage() {
   const correctionEnabled = Boolean(capabilities?.llm.enabled && capabilities.features.essay_correction_enabled);
   const studyEnabled = Boolean(capabilities?.llm.enabled && capabilities.features.essay_study_enabled);
   const unavailableMessage = capabilities
-    ? "Correcao por IA esta indisponivel nesta maquina. Use o PC principal com LM Studio ligado."
+    ? "Correcao por IA esta indisponivel nesta maquina. Habilite um provider compatível nesta instalacao."
     : "Carregando capabilities da maquina...";
 
   const correctionMutation = useMutation({
@@ -567,7 +567,7 @@ export default function EssayPage() {
           </div>
 
           {!studyEnabled ? (
-            <p className="today-empty-copy">Estudo por IA indisponivel nesta maquina. Use o PC principal com LM Studio ligado.</p>
+            <p className="today-empty-copy">Estudo por IA indisponivel nesta maquina. Habilite um provider compativel nesta instalacao.</p>
           ) : !correction ? (
             <p className="today-empty-copy">Corrija uma redacao antes de abrir o estudo assistido.</p>
           ) : null}

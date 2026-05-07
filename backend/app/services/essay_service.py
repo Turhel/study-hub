@@ -449,11 +449,14 @@ def _run_essay_correction(payload: EssayCorrectionCreateRequest, prompt: PromptF
         )
     except LLMTaskTimeoutError as exc:
         raise EssayCorrectionTimeoutError(
-            "A correcao demorou mais do que o esperado no provider local. Tente novamente ou reduza o tamanho do texto."
+            "A correcao demorou mais do que o esperado no provider configurado. Tente novamente ou reduza o tamanho do texto."
         ) from exc
     except LLMTaskConnectionError as exc:
+        message = str(exc).strip()
+        if "OPENROUTER_API_KEY" in message:
+            raise EssayCorrectionUnavailableError(message) from exc
         raise EssayCorrectionUnavailableError(
-            "O LM Studio parece offline ou inacessivel no momento. Verifique se o servidor local esta ativo."
+            "O provider de IA configurado esta offline, inacessivel ou incompleto no momento. Verifique a conexao e as credenciais configuradas."
         ) from exc
     except LLMTaskResponseError as exc:
         raise EssayCorrectionInvalidResponseError(

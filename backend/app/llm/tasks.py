@@ -20,6 +20,10 @@ from app.llm.providers.lm_studio import (
     LMStudioProviderError,
     chat_completion,
 )
+from app.llm.providers.openrouter import (
+    OpenRouterProviderError,
+    chat_completion as openrouter_chat_completion,
+)
 from app.settings import get_env_float
 
 
@@ -96,22 +100,30 @@ def _run_messages(task_name: str, messages: list[LMStudioMessage], temperature: 
     settings = get_llm_settings()
     client = LLMHttpClient(settings)
 
-    if settings.provider != "lm_studio":
-        raise LLMTaskError(f"Provider LLM ainda nao implementado nesta etapa: {settings.provider}")
-
     try:
-        result = chat_completion(
-            client=client,
-            settings=settings,
-            messages=messages,
-            temperature=temperature,
-            timeout_seconds=_task_timeout_seconds(task_name),
-        )
+        if settings.provider == "lm_studio":
+            result = chat_completion(
+                client=client,
+                settings=settings,
+                messages=messages,
+                temperature=temperature,
+                timeout_seconds=_task_timeout_seconds(task_name),
+            )
+        elif settings.provider == "openrouter":
+            result = openrouter_chat_completion(
+                client=client,
+                settings=settings,
+                messages=messages,
+                temperature=temperature,
+                timeout_seconds=_task_timeout_seconds(task_name),
+            )
+        else:
+            raise LLMTaskError(f"Provider LLM ainda nao implementado nesta etapa: {settings.provider}")
     except LLMTimeoutError as exc:
         raise LLMTaskTimeoutError(str(exc)) from exc
     except LLMConnectionError as exc:
         raise LLMTaskConnectionError(str(exc)) from exc
-    except LMStudioProviderError as exc:
+    except (LMStudioProviderError, OpenRouterProviderError) as exc:
         message = str(exc)
         lowered = message.lower()
         if "tempo esgotado" in lowered:
@@ -121,6 +133,9 @@ def _run_messages(task_name: str, messages: list[LMStudioMessage], temperature: 
             "offline",
             "inacessivel",
             "encerrou a conexao",
+            "openrouter_api_key",
+            "api key",
+            "credencial",
         )
         if any(marker in lowered for marker in connection_markers):
             raise LLMTaskConnectionError(message) from exc

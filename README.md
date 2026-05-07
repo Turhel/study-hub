@@ -542,6 +542,30 @@ Outro teste com questao por texto:
 python -c "from app.llm.tasks import QuestionExplainTextPayload, question_explain_text; r = question_explain_text(QuestionExplainTextPayload(question_text='Se a funcao f(x)=2x+1, qual eh f(3)?', student_answer='6')); print(r.output_text)"
 ```
 
+## LLM Online Opcional Com OpenRouter
+
+O backend tambem pode usar OpenRouter em producao, sem quebrar o LM Studio local.
+
+Exemplo de env para Render:
+
+```text
+STUDY_HUB_MACHINE_PROFILE=render
+STUDY_HUB_LLM_ENABLED=true
+STUDY_HUB_ESSAY_CORRECTION_ENABLED=true
+STUDY_HUB_ESSAY_STUDY_ENABLED=true
+STUDY_HUB_LLM_PROVIDER=openrouter
+STUDY_HUB_LLM_BASE_URL=https://openrouter.ai/api/v1
+STUDY_HUB_LLM_MODEL=openai/gpt-4o-mini
+OPENROUTER_API_KEY=<secret>
+```
+
+Regras praticas:
+
+- no desktop local, mantenha `STUDY_HUB_LLM_PROVIDER=lm_studio` com `STUDY_HUB_LLM_BASE_URL=http://127.0.0.1:1234/v1`
+- no Render, ative OpenRouter apenas quando `OPENROUTER_API_KEY` estiver configurada
+- se a chave faltar, o backend continua de pe e a rota de redacao retorna erro estruturado e claro
+- o endpoint `GET /api/system/capabilities` passa a refletir corretamente `provider` e `model`
+
 ## Rodar Frontend
 
 Em outro terminal:

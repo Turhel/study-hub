@@ -45,7 +45,7 @@ def _ensure_essay_study_enabled() -> None:
                 "code": "essay_study_disabled",
                 "message": (
                     "Estudo assistido de redacao desabilitado nesta maquina por feature flag. "
-                    "Nenhuma tentativa de chamar o provider local sera feita."
+                    "Nenhuma tentativa de chamar o provider configurado sera feita."
                 ),
             },
         )

@@ -358,11 +358,14 @@ def create_study_message(session_id: int, content: str, session: Session | None 
             result = run_chat_messages(task_name="essay_study_chat", messages=llm_messages, temperature=0.2)
         except LLMTaskTimeoutError as exc:
             raise EssayStudyTimeoutError(
-                "A resposta do estudo de redacao demorou mais do que o esperado no provider local."
+                "A resposta do estudo de redacao demorou mais do que o esperado no provider configurado."
             ) from exc
         except LLMTaskConnectionError as exc:
+            message = str(exc).strip()
+            if "OPENROUTER_API_KEY" in message:
+                raise EssayStudyUnavailableError(message) from exc
             raise EssayStudyUnavailableError(
-                "O LM Studio parece offline ou inacessivel no momento. Verifique se o servidor local esta ativo."
+                "O provider de IA configurado esta offline, inacessivel ou incompleto no momento. Verifique a conexao e as credenciais configuradas."
             ) from exc
         except LLMTaskResponseError as exc:
             raise EssayStudyInvalidResponseError(
