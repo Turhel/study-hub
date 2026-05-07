@@ -93,7 +93,7 @@ def _selected_candidates_and_counts(
 def _create_plan_for_day(session: Session, plan_day: date) -> tuple[list, list[int]]:
     selected, question_counts = _selected_candidates_and_counts(session, plan_day)
     plan = _create_plan(session, selected, question_counts)
-    plan.created_at = datetime.combine(plan_day, datetime.min.time())
+    plan.created_at = datetime.combine(plan_day, datetime.min.time()).replace(hour=12)
     session.add(plan)
     session.commit()
     return selected, question_counts

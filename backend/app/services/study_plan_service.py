@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -96,7 +96,13 @@ def _subject_label(subject: Subject) -> str:
 
 
 def _current_plan_day() -> date:
-    return datetime.utcnow().date()
+    return date.today()
+
+
+def _created_at_local_day(value: datetime) -> date:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc).astimezone().date()
+    return value.astimezone().date()
 
 
 def _latest_active_plan(session: Session, today: date) -> DailyStudyPlan | None:
@@ -106,7 +112,7 @@ def _latest_active_plan(session: Session, today: date) -> DailyStudyPlan | None:
         .order_by(DailyStudyPlan.created_at.desc())
     ).all()
     for plan in plans:
-        if plan.created_at.date() == today:
+        if _created_at_local_day(plan.created_at) == today:
             return plan
     return None
 
@@ -117,7 +123,7 @@ def _active_plans_for_day(session: Session, today: date) -> list[DailyStudyPlan]
         .where(DailyStudyPlan.status == "active")
         .order_by(DailyStudyPlan.created_at.desc())
     ).all()
-    return [plan for plan in plans if plan.created_at.date() == today]
+    return [plan for plan in plans if _created_at_local_day(plan.created_at) == today]
 
 
 def _execution_progress(
