@@ -117,6 +117,31 @@ class StudyPlanTodayResponse(BaseModel):
     items: list[StudyPlanItem]
 
 
+class StudyPlanCalendarItem(BaseModel):
+    type: Literal["study_focus", "review", "mock_exam", "rest"]
+    discipline: str | None = None
+    block_id: int | None = None
+    subject_id: int | None = None
+    subject_name: str | None = None
+    planned_questions: int
+    reason: str
+
+
+class StudyPlanCalendarDay(BaseModel):
+    date: str
+    status: Literal["today", "projected", "adjusted"]
+    total_questions: int
+    focus_count: int
+    items: list[StudyPlanCalendarItem]
+    reason: str
+
+
+class StudyPlanCalendarResponse(BaseModel):
+    start_date: str
+    end_date: str
+    days: list[StudyPlanCalendarDay]
+
+
 class StudyGuidePreferences(BaseModel):
     daily_minutes: int = Field(ge=15, le=360)
     intensity: Literal["leve", "normal", "forte"]

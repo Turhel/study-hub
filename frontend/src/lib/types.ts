@@ -122,6 +122,31 @@ export type StudyPlanTodayResponse = {
   items: StudyPlanItem[];
 };
 
+export type StudyPlanCalendarItem = {
+  type: "study_focus" | "review" | "mock_exam" | "rest";
+  discipline?: string | null;
+  block_id?: number | null;
+  subject_id?: number | null;
+  subject_name?: string | null;
+  planned_questions: number;
+  reason: string;
+};
+
+export type StudyPlanCalendarDay = {
+  date: string;
+  status: "today" | "projected" | "adjusted";
+  total_questions: number;
+  focus_count: number;
+  items: StudyPlanCalendarItem[];
+  reason: string;
+};
+
+export type StudyPlanCalendarResponse = {
+  start_date: string;
+  end_date: string;
+  days: StudyPlanCalendarDay[];
+};
+
 export type StudyGuideIntensity = "leve" | "normal" | "forte";
 
 export type StudyGuidePreferencesPayload = {

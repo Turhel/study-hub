@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useStudyTimer } from "../components/StudyTimer";
 import {
   getRecentActivity,
+  getStudyPlanCalendar,
   getStudyGuidePreferences,
   getStudyPlanToday,
   getSystemCapabilities,
@@ -16,6 +17,7 @@ import type {
   ActivityItem,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
+  StudyPlanCalendarDay,
   StudyPlanItem,
 } from "../lib/types";
 
@@ -443,6 +445,27 @@ function triBasisLabel(value: "subject" | "discipline" | null | undefined): stri
   return "base insuficiente ainda";
 }
 
+function formatCalendarDayLabel(value: string): { weekday: string; dayMonth: string } {
+  const parsed = new Date(`${value}T12:00:00`);
+  return {
+    weekday: parsed.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+    dayMonth: parsed.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+  };
+}
+
+function calendarStatusLabel(value: "today" | "projected" | "adjusted"): string {
+  if (value === "today") return "Hoje";
+  if (value === "adjusted") return "Ajustado";
+  return "Previsto";
+}
+
+function calendarTypeLabel(value: string): string {
+  if (value === "study_focus") return "Foco";
+  if (value === "review") return "Revisao";
+  if (value === "mock_exam") return "Simulado";
+  return "Descanso";
+}
+
 function ActivityMetric({
   label,
   value,
@@ -465,6 +488,7 @@ export default function TodayPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState<StudyPlanCalendarDay | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
   const { pendingCompletion, consumePendingCompletion } = useStudyTimer();
@@ -477,6 +501,11 @@ export default function TodayPage() {
   const capabilitiesQuery = useQuery({
     queryKey: ["system-capabilities"],
     queryFn: getSystemCapabilities,
+    retry: false,
+  });
+  const calendarQuery = useQuery({
+    queryKey: ["study-plan-calendar", 7],
+    queryFn: () => getStudyPlanCalendar(7),
     retry: false,
   });
   const preferencesQuery = useQuery({
@@ -498,6 +527,7 @@ export default function TodayPage() {
   const refreshTodayData = async () => {
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ["study-plan-today"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["study-plan-calendar"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-guide-preferences"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-recent"], type: "active" }),
@@ -532,6 +562,7 @@ export default function TodayPage() {
   const planItems = planQuery.data?.items ?? [];
   const planSummary = planQuery.data?.summary;
   const hasPlanItems = planItems.length > 0;
+  const calendarDays = calendarQuery.data?.days ?? [];
   const capabilities = capabilitiesQuery.data;
   const activityToday = activityTodayQuery.data;
   const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
@@ -757,6 +788,56 @@ export default function TodayPage() {
           <SummaryCard label="Focos" value={planSummary?.focus_count ?? 0} detail="ativos" icon="focus" />
           <SummaryCard label="Registradas hoje" value={activityToday?.question_attempts_registered ?? 0} detail="questoes" icon="questions" />
           <SummaryCard label="Assuntos hoje" value={activityToday?.subjects_studied_today ?? 0} detail="estudados" icon="subjects" />
+        </section>
+
+        <section className="today-panel">
+          <div className="today-section-head">
+            <div>
+              <p className="today-eyebrow">Previsao</p>
+              <h2>Proximos 7 dias</h2>
+            </div>
+            {calendarQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
+          </div>
+          <p className="today-calendar-note">
+            Este calendario e uma previsao adaptativa. Ele muda conforme voce estuda.
+          </p>
+          <div className="today-calendar-grid">
+            {calendarQuery.isLoading && calendarDays.length === 0 ? (
+              Array.from({ length: 7 }).map((_, index) => (
+                <article key={`calendar-skeleton-${index}`} className="today-calendar-card is-loading">
+                  <strong>...</strong>
+                  <span>carregando</span>
+                </article>
+              ))
+            ) : calendarDays.length > 0 ? (
+              calendarDays.map((day) => {
+                const label = formatCalendarDayLabel(day.date);
+                return (
+                  <button
+                    type="button"
+                    key={day.date}
+                    className={`today-calendar-card status-${day.status}`}
+                    onClick={() => setSelectedCalendarDay(day)}
+                  >
+                    <div className="today-calendar-card-top">
+                      <span>{label.weekday}</span>
+                      <small>{calendarStatusLabel(day.status)}</small>
+                    </div>
+                    <strong>{label.dayMonth}</strong>
+                    <div className="today-calendar-card-metrics">
+                      <span>{day.total_questions} q</span>
+                      <span>{day.focus_count} foco(s)</span>
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <article className="today-calendar-card status-projected is-empty">
+                <strong>Sem previsao</strong>
+                <span>O calendario aparece quando o plano do dia estiver disponivel.</span>
+              </article>
+            )}
+          </div>
         </section>
 
         <section className="today-content-grid">
@@ -1152,6 +1233,45 @@ export default function TodayPage() {
               >
                 {registerAttemptsMutation.isPending ? "Registrando..." : "Salvar questoes"}
               </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {selectedCalendarDay ? (
+        <div className="today-modal-backdrop" role="dialog" aria-modal="true">
+          <section className="today-panel today-modal">
+            <div className="today-section-head">
+              <div>
+                <p className="today-eyebrow">Calendario adaptativo</p>
+                <h2>{formatCalendarDayLabel(selectedCalendarDay.date).dayMonth}</h2>
+              </div>
+              <button type="button" className="today-close-button" onClick={() => setSelectedCalendarDay(null)}>
+                Fechar
+              </button>
+            </div>
+
+            <div className="today-calendar-modal-summary">
+              <span>{calendarStatusLabel(selectedCalendarDay.status)}</span>
+              <span>{selectedCalendarDay.total_questions} questoes</span>
+              <span>{selectedCalendarDay.focus_count} foco(s)</span>
+            </div>
+            <p className="today-calendar-note">{selectedCalendarDay.reason}</p>
+
+            <div className="today-calendar-detail-list">
+              {selectedCalendarDay.items.map((item, index) => (
+                <article key={`${selectedCalendarDay.date}-${item.subject_id ?? index}`} className="today-calendar-detail-item">
+                  <div>
+                    <strong>{item.subject_name || calendarTypeLabel(item.type)}</strong>
+                    <p>{item.discipline || calendarTypeLabel(item.type)}</p>
+                  </div>
+                  <div className="today-calendar-detail-meta">
+                    <span>{calendarTypeLabel(item.type)}</span>
+                    <span>{item.planned_questions} questoes</span>
+                  </div>
+                  <p>{item.reason}</p>
+                </article>
+              ))}
             </div>
           </section>
         </div>

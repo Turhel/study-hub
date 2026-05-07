@@ -36,6 +36,7 @@ import type {
   StatsTimeSeriesResponse,
   StudyGuidePreferencesPayload,
   StudyGuidePreferencesResponse,
+  StudyPlanCalendarResponse,
   StudyPlanRecalculateResponse,
   StudyPlanTodayResponse,
   SystemCapabilitiesResponse,
@@ -78,6 +79,16 @@ export async function getStudyPlanToday(): Promise<StudyPlanTodayResponse> {
   }
 
   return response.json() as Promise<StudyPlanTodayResponse>;
+}
+
+export async function getStudyPlanCalendar(days = 7): Promise<StudyPlanCalendarResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/study-plan/calendar?days=${days}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar a previsao adaptativa.");
+  }
+
+  return response.json() as Promise<StudyPlanCalendarResponse>;
 }
 
 export async function recalculateStudyPlanToday(): Promise<StudyPlanRecalculateResponse> {

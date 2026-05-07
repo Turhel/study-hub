@@ -986,6 +986,99 @@ textarea {
   color: #d45d45;
 }
 
+.today-calendar-note {
+  margin: 0.55rem 0 0;
+  color: rgba(206, 217, 235, 0.78);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.today-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.today-calendar-card {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 7.1rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(112, 133, 170, 0.28);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.42);
+  color: #f8fbff;
+  text-align: left;
+}
+
+.today-calendar-card.status-today {
+  border-color: rgba(57, 170, 240, 0.55);
+  background: rgba(57, 170, 240, 0.1);
+}
+
+.today-calendar-card.status-adjusted {
+  border-color: rgba(255, 184, 79, 0.45);
+  background: rgba(255, 184, 79, 0.08);
+}
+
+.today-calendar-card.is-empty,
+.today-calendar-card.is-loading {
+  align-content: start;
+}
+
+.today-calendar-card-top,
+.today-calendar-card-metrics,
+.today-calendar-modal-summary,
+.today-calendar-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.today-calendar-card-top span,
+.today-calendar-card-top small,
+.today-calendar-card-metrics span,
+.today-calendar-modal-summary span,
+.today-calendar-detail-meta span {
+  color: rgba(206, 217, 235, 0.78);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.today-calendar-card strong {
+  font-size: 0.95rem;
+}
+
+.today-calendar-detail-list {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.today-calendar-detail-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(112, 133, 170, 0.26);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.42);
+}
+
+.today-calendar-detail-item strong {
+  color: #f8fbff;
+  font-size: 0.88rem;
+}
+
+.today-calendar-detail-item p {
+  margin: 0;
+  color: rgba(206, 217, 235, 0.8);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .today-error-panel {
   border-color: rgba(212, 93, 69, 0.35);
 }
@@ -1206,6 +1299,12 @@ textarea {
   color: rgba(206, 217, 235, 0.74);
   font-size: 0.72rem;
   line-height: 1.45;
+}
+
+@media (max-width: 1120px) {
+  .today-calendar-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .today-feedback {
@@ -4660,6 +4759,10 @@ textarea {
   .today-activity-metrics-grid,
   .today-intensity-grid {
     grid-template-columns: 1fr;
+  }
+
+  .today-calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .lessons-module {

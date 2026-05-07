@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 import tempfile
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -19,10 +19,12 @@ from app.services.repo_seed_service import sync_structural_seed_into_session
 from app.services.roadmap_import_service import import_roadmap_from_csv
 from app.services.roadmap_progression_service import build_guided_roadmap_overview
 from app.services.study_plan_service import (
+    _create_plan,
     _eligible_candidates,
     _focus_count_for_load,
     _question_distribution,
     _select_candidates,
+    build_study_plan_calendar,
     get_today_study_plan,
     recalculate_today_study_plan,
 )
@@ -71,6 +73,21 @@ def _build_preview(session: Session, today: date) -> PlanPreview:
         selected_primary_reasons=tuple(candidate.primary_reason for candidate in selected),
         selected_roadmap_reasons=tuple(candidate.roadmap_reason for candidate in selected),
     )
+
+
+def _selected_candidates_and_counts(
+    session: Session,
+    today: date,
+) -> tuple[list, list[int]]:
+    block_progress, subject_progress = sync_progression(session, today)
+    roadmap_overview = build_guided_roadmap_overview(session, block_progress)
+    candidates = _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
+    capacity = get_or_create_capacity(session)
+    total_questions = safe_daily_question_load(capacity)
+    focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
+    selected = _select_candidates(candidates, focus_count)
+    question_counts = _question_distribution(total_questions, len(selected))
+    return selected, question_counts
 
 
 @pytest.fixture()
@@ -298,3 +315,113 @@ def test_bad_chemistry_keeps_reinforcement_reason_next_day(seeded_context: Seede
         marker in combined_reason
         for marker in ("reforco", "desempenho", "contatos minimos", "aprendizado", "revis")
     )
+
+
+def test_calendar_returns_seven_days(seeded_context: SeededStudyPlanContext) -> None:
+    calendar = build_study_plan_calendar(
+        seeded_context.session,
+        start_day=seeded_context.base_day,
+        days=7,
+    )
+
+    assert len(calendar.days) == 7
+    assert calendar.start_date == seeded_context.base_day.isoformat()
+    assert calendar.end_date == (seeded_context.base_day + timedelta(days=6)).isoformat()
+
+
+def test_calendar_today_reflects_active_plan(seeded_context: SeededStudyPlanContext) -> None:
+    session = seeded_context.session
+    selected, question_counts = _selected_candidates_and_counts(session, seeded_context.base_day)
+    plan = _create_plan(session, selected, question_counts)
+    plan.created_at = datetime.combine(seeded_context.base_day, datetime.min.time())
+    session.add(plan)
+    session.commit()
+
+    calendar = build_study_plan_calendar(session, start_day=seeded_context.base_day, days=7)
+
+    assert calendar.days[0].status == "today"
+    assert calendar.days[0].total_questions == sum(question_counts)
+    assert calendar.days[0].focus_count == len(selected)
+    assert calendar.days[0].items[0].subject_id == selected[0].subject_id
+
+
+def test_calendar_carry_over_when_today_has_pending(seeded_context: SeededStudyPlanContext) -> None:
+    session = seeded_context.session
+    update_study_guide_preferences(
+        session,
+        StudyGuidePreferences(
+            daily_minutes=90,
+            intensity="normal",
+            max_focus_count=3,
+            max_questions=35,
+            include_reviews=True,
+            include_new_content=True,
+        ),
+    )
+    selected, question_counts = _selected_candidates_and_counts(session, seeded_context.base_day)
+    plan = _create_plan(session, selected, question_counts)
+    plan.created_at = datetime.combine(seeded_context.base_day, datetime.min.time())
+    session.add(plan)
+    session.commit()
+
+    first_subject_id = selected[0].subject_id
+    first_block_id = selected[0].block_id
+    first_discipline = selected[0].discipline
+    first_subject_name = selected[0].subject_name
+
+    register_question_attempts_bulk(
+        session,
+        QuestionAttemptBulkCreate(
+            date=seeded_context.base_day.isoformat(),
+            discipline=first_discipline,
+            block_id=first_block_id,
+            subject_id=first_subject_id,
+            source="pytest-calendar",
+            quantity=3,
+            correct_count=2,
+            difficulty_bank="media",
+            difficulty_personal="media",
+            study_mode="guided",
+        ),
+    )
+
+    calendar = build_study_plan_calendar(session, start_day=seeded_context.base_day, days=7)
+    tomorrow = calendar.days[1]
+
+    assert tomorrow.status == "adjusted"
+    assert any(item.subject_id == first_subject_id for item in tomorrow.items)
+    carry_over_item = next(item for item in tomorrow.items if item.subject_id == first_subject_id)
+    assert carry_over_item.subject_name == first_subject_name
+    assert "Pendencia" in carry_over_item.reason
+
+
+def test_calendar_light_preferences_limit_load(seeded_context: SeededStudyPlanContext) -> None:
+    session = seeded_context.session
+    update_study_guide_preferences(
+        session,
+        StudyGuidePreferences(
+            daily_minutes=15,
+            intensity="leve",
+            max_focus_count=1,
+            max_questions=5,
+            include_reviews=True,
+            include_new_content=True,
+        ),
+    )
+
+    calendar = build_study_plan_calendar(session, start_day=seeded_context.base_day, days=7)
+    tomorrow = calendar.days[1]
+
+    assert tomorrow.focus_count <= 1
+    assert tomorrow.total_questions <= 5
+
+
+def test_calendar_does_not_break_without_history(seeded_context: SeededStudyPlanContext) -> None:
+    calendar = build_study_plan_calendar(
+        seeded_context.session,
+        start_day=seeded_context.base_day,
+        days=7,
+    )
+
+    assert calendar.days[0].reason
+    assert all(day.items for day in calendar.days)

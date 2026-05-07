@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -28,7 +28,15 @@ from app.models import (
     Subject,
     SubjectProgress,
 )
-from app.schemas import StudyPlanItem, StudyPlanRecalculateResponse, StudyPlanSummary, StudyPlanTodayResponse
+from app.schemas import (
+    StudyPlanCalendarDay,
+    StudyPlanCalendarItem,
+    StudyPlanCalendarResponse,
+    StudyPlanItem,
+    StudyPlanRecalculateResponse,
+    StudyPlanSummary,
+    StudyPlanTodayResponse,
+)
 from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load
 from app.services.discipline_normalization_service import normalize_discipline
 from app.services.mock_exam_service import _estimate_score_from_counts
@@ -60,10 +68,24 @@ class StudyPlanCandidate:
     roadmap_reason: str | None = None
 
 
+@dataclass(frozen=True)
+class ProjectedCarryOverItem:
+    discipline: str
+    block_id: int
+    subject_id: int
+    subject_name: str
+    planned_questions: int
+    reason: str
+
+
 def _subject_label(subject: Subject) -> str:
     if subject.subassunto:
         return f"{subject.assunto} - {subject.subassunto}"
     return subject.assunto
+
+
+def _current_plan_day() -> date:
+    return datetime.utcnow().date()
 
 
 def _latest_active_plan(session: Session, today: date) -> DailyStudyPlan | None:
@@ -225,6 +247,266 @@ def _response_from_items(items: list[StudyPlanItem]) -> StudyPlanTodayResponse:
 
 def _empty_plan_response() -> StudyPlanTodayResponse:
     return _response_from_items([])
+
+
+def _recent_subject_accuracy(
+    session: Session,
+    *,
+    subject_id: int,
+    limit: int = 12,
+) -> tuple[int, int, float | None]:
+    attempts = session.exec(
+        select(QuestionAttempt)
+        .where(QuestionAttempt.subject_id == subject_id)
+        .order_by(QuestionAttempt.data.desc(), QuestionAttempt.id.desc())
+        .limit(limit)
+    ).all()
+    if not attempts:
+        return 0, 0, None
+    correct = sum(1 for attempt in attempts if attempt.acertou)
+    return len(attempts), correct, correct / len(attempts)
+
+
+def _carry_over_projection_items(
+    session: Session,
+    today_items: list[StudyPlanItem],
+) -> list[ProjectedCarryOverItem]:
+    projected: list[ProjectedCarryOverItem] = []
+
+    for item in today_items:
+        remaining_questions = max(item.remaining_today, 0)
+        attempts_count, _, accuracy = _recent_subject_accuracy(session, subject_id=item.subject_id)
+
+        if remaining_questions > 0:
+            reason = "Pendencia de hoje carregada automaticamente para o proximo dia."
+            if attempts_count >= 4 and accuracy is not None and accuracy < 0.5:
+                reason = f"{reason} Desempenho recente pede reforco antes do avancar."
+            projected.append(
+                ProjectedCarryOverItem(
+                    discipline=item.discipline,
+                    block_id=item.block_id,
+                    subject_id=item.subject_id,
+                    subject_name=item.subject_name,
+                    planned_questions=remaining_questions,
+                    reason=reason,
+                )
+            )
+            continue
+
+        if item.completed_today > 0 and attempts_count >= 4 and accuracy is not None and accuracy < 0.5:
+            reinforcement_questions = min(max(4, round(item.planned_questions * 0.45)), 8)
+            projected.append(
+                ProjectedCarryOverItem(
+                    discipline=item.discipline,
+                    block_id=item.block_id,
+                    subject_id=item.subject_id,
+                    subject_name=item.subject_name,
+                    planned_questions=reinforcement_questions,
+                    reason="Reforco mantido por desempenho recente abaixo do esperado.",
+                )
+            )
+
+    unique_items: list[ProjectedCarryOverItem] = []
+    seen_subject_ids: set[int] = set()
+    for item in projected:
+        if item.subject_id in seen_subject_ids:
+            continue
+        seen_subject_ids.add(item.subject_id)
+        unique_items.append(item)
+    return unique_items
+
+
+def _calendar_item_from_study_plan_item(item: StudyPlanItem) -> StudyPlanCalendarItem:
+    return StudyPlanCalendarItem(
+        type="study_focus",
+        discipline=item.discipline,
+        block_id=item.block_id,
+        subject_id=item.subject_id,
+        subject_name=item.subject_name,
+        planned_questions=item.planned_questions,
+        reason=item.primary_reason,
+    )
+
+
+def _build_projected_day(
+    session: Session,
+    *,
+    projection_date: date,
+    capacity,
+    candidates: list[StudyPlanCandidate],
+    carry_over_items: list[ProjectedCarryOverItem],
+) -> StudyPlanCalendarDay:
+    total_limit = safe_daily_question_load(capacity)
+    focus_limit = capacity.max_focus_count
+    selected_items: list[StudyPlanCalendarItem] = []
+    used_subject_ids: set[int] = set()
+    remaining_questions = total_limit
+
+    for item in carry_over_items:
+        if len(selected_items) >= focus_limit or remaining_questions <= 0:
+            break
+        planned_questions = min(item.planned_questions, remaining_questions)
+        if planned_questions <= 0:
+            continue
+        selected_items.append(
+            StudyPlanCalendarItem(
+                type="study_focus",
+                discipline=item.discipline,
+                block_id=item.block_id,
+                subject_id=item.subject_id,
+                subject_name=item.subject_name,
+                planned_questions=planned_questions,
+                reason=item.reason,
+            )
+        )
+        used_subject_ids.add(item.subject_id)
+        remaining_questions -= planned_questions
+
+    available_candidates = [
+        candidate for candidate in candidates if candidate.subject_id not in used_subject_ids
+    ]
+    remaining_slots = max(focus_limit - len(selected_items), 0)
+    projected_candidates = _select_candidates(available_candidates, remaining_slots)
+    question_counts = _question_distribution(max(remaining_questions, 0), len(projected_candidates))
+
+    for candidate, planned_questions in zip(projected_candidates, question_counts):
+        if planned_questions <= 0:
+            continue
+        selected_items.append(
+            StudyPlanCalendarItem(
+                type="study_focus",
+                discipline=candidate.discipline,
+                block_id=candidate.block_id,
+                subject_id=candidate.subject_id,
+                subject_name=candidate.subject_name,
+                planned_questions=planned_questions,
+                reason=candidate.primary_reason,
+            )
+        )
+
+    if not selected_items:
+        return StudyPlanCalendarDay(
+            date=projection_date.isoformat(),
+            status="projected",
+            total_questions=0,
+            focus_count=0,
+            items=[
+                StudyPlanCalendarItem(
+                    type="rest",
+                    planned_questions=0,
+                    reason="Sem candidatos uteis no estado atual. O dia fica leve ate surgir nova necessidade.",
+                )
+            ],
+            reason="Previsao baseada no estado atual, sem carga obrigatoria para este dia.",
+        )
+
+    day_status = "adjusted" if carry_over_items else "projected"
+    day_reason = (
+        "Previsao ajustada por pendencia ou reforco do dia anterior."
+        if carry_over_items
+        else "Previsao baseada no estado atual."
+    )
+    total_questions = sum(item.planned_questions for item in selected_items)
+    return StudyPlanCalendarDay(
+        date=projection_date.isoformat(),
+        status=day_status,
+        total_questions=total_questions,
+        focus_count=len(selected_items),
+        items=selected_items,
+        reason=day_reason,
+    )
+
+
+def build_study_plan_calendar(
+    session: Session,
+    *,
+    start_day: date,
+    days: int,
+) -> StudyPlanCalendarResponse:
+    normalized_days = max(1, min(days, 14))
+    current_plan_day = _current_plan_day()
+    today_plan = get_today_study_plan(session) if start_day == current_plan_day else _empty_plan_response()
+    if start_day != current_plan_day:
+        existing_plan = _latest_active_plan(session, start_day)
+        if existing_plan is not None and existing_plan.id is not None:
+            today_plan = _response_from_items(_items_for_plan(session, existing_plan, start_day))
+        else:
+            capacity = get_or_create_capacity(session)
+            if capacity.include_new_content:
+                block_progress, subject_progress = sync_progression(session, start_day)
+                roadmap_overview = build_guided_roadmap_overview(session, block_progress)
+                candidates = _eligible_candidates(session, start_day, block_progress, subject_progress, roadmap_overview)
+                total_questions = safe_daily_question_load(capacity)
+                focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
+                selected = _select_candidates(candidates, focus_count)
+                question_counts = _question_distribution(total_questions, len(selected))
+                today_plan = _response_from_items(
+                    [
+                        StudyPlanItem(
+                            discipline=candidate.discipline,
+                            strategic_discipline=candidate.strategic_discipline,
+                            subarea=candidate.subarea,
+                            block_id=candidate.block_id,
+                            block_name=candidate.block_name,
+                            subject_id=candidate.subject_id,
+                            subject_name=candidate.subject_name,
+                            planned_questions=planned_questions,
+                            completed_today=0,
+                            remaining_today=planned_questions,
+                            progress_ratio=0,
+                            execution_status="nao_iniciado",
+                            priority_score=candidate.priority_score,
+                            primary_reason=candidate.primary_reason,
+                            planned_mode=candidate.planned_mode,
+                            roadmap_node_id=candidate.roadmap_node_id,
+                            roadmap_mapped=candidate.roadmap_mapped,
+                            roadmap_mapping_source=candidate.roadmap_mapping_source,
+                            roadmap_mapping_confidence=candidate.roadmap_mapping_confidence,
+                            roadmap_mapping_reason=candidate.roadmap_mapping_reason,
+                            roadmap_status=candidate.roadmap_status,
+                            roadmap_reason=candidate.roadmap_reason,
+                        )
+                        for candidate, planned_questions in zip(selected, question_counts)
+                    ]
+                )
+
+    capacity = get_or_create_capacity(session)
+    block_progress, subject_progress = sync_progression(session, start_day)
+    roadmap_overview = build_guided_roadmap_overview(session, block_progress)
+    candidates = _eligible_candidates(session, start_day, block_progress, subject_progress, roadmap_overview)
+    carry_over_items = _carry_over_projection_items(session, today_plan.items)
+
+    days_payload: list[StudyPlanCalendarDay] = [
+        StudyPlanCalendarDay(
+            date=start_day.isoformat(),
+            status="today",
+            total_questions=today_plan.summary.total_questions,
+            focus_count=today_plan.summary.focus_count,
+            items=[_calendar_item_from_study_plan_item(item) for item in today_plan.items],
+            reason="Plano ativo de hoje.",
+        )
+    ]
+
+    for offset in range(1, normalized_days):
+        projection_date = start_day + timedelta(days=offset)
+        future_day = _build_projected_day(
+            session,
+            projection_date=projection_date,
+            capacity=capacity,
+            candidates=candidates,
+            carry_over_items=carry_over_items if offset == 1 else [],
+        )
+        days_payload.append(future_day)
+
+    return StudyPlanCalendarResponse(
+        start_date=start_day.isoformat(),
+        end_date=(start_day + timedelta(days=normalized_days - 1)).isoformat(),
+        days=days_payload,
+    )
+
+
+def get_study_plan_calendar(session: Session, days: int = 7) -> StudyPlanCalendarResponse:
+    return build_study_plan_calendar(session, start_day=_current_plan_day(), days=days)
 
 
 def _gap_weight(session: Session, subject_id: int) -> tuple[float, str]:
@@ -432,6 +714,9 @@ def _discipline_group(value: str) -> str:
 
 
 def _select_candidates(candidates: list[StudyPlanCandidate], focus_count: int) -> list[StudyPlanCandidate]:
+    if focus_count <= 0:
+        return []
+
     selected: list[StudyPlanCandidate] = []
     used_groups: set[str] = set()
 
@@ -523,7 +808,7 @@ def _create_plan(
 
 
 def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
-    today = date.today()
+    today = _current_plan_day()
     existing_plan = _latest_active_plan(session, today)
     if existing_plan is not None and existing_plan.id is not None:
         existing_items = _items_for_plan(session, existing_plan, today)
@@ -552,7 +837,7 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
 
 
 def recalculate_today_study_plan(session: Session) -> StudyPlanRecalculateResponse:
-    today = date.today()
+    today = _current_plan_day()
     active_plans = _active_plans_for_day(session, today)
     replaced_plan_id = active_plans[0].id if active_plans else None
     if active_plans:
