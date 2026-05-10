@@ -119,3 +119,108 @@ def test_essay_parser_contract_still_accepts_structured_json() -> None:
     assert parsed.weaknesses == ["Pode aprofundar repertorio"]
     assert parsed.improvement_plan == ["Treinar repertorio sociocultural"]
     assert parsed.confidence_note == "Estimativa assistida."
+
+
+def test_essay_parser_accepts_lowercase_competency_keys() -> None:
+    parsed = _parse_correction_output_defensive(
+        json.dumps(
+            {
+                "estimated_score_range": {"min": 600, "max": 640},
+                "competencies": {
+                    "c1": {"score": 120, "comment": "Norma suficiente."},
+                    "c2": {"score": 120, "comment": "Tema compreendido."},
+                    "c3": {"score": 120, "comment": "Argumentacao simples."},
+                    "c4": {"score": 120, "comment": "Coesao funcional."},
+                    "c5": {"score": 120, "comment": "Proposta basica."},
+                },
+                "strengths": ["Clareza"],
+                "weaknesses": ["Pouco repertorio"],
+                "improvement_plan": ["Detalhar proposta"],
+                "confidence_note": "Media.",
+            }
+        )
+    )
+
+    assert parsed.estimated_score_min == 600
+    assert parsed.competencies["C1"].score == 120
+    assert parsed.competencies["C5"].comment == "Proposta basica."
+
+
+def test_essay_parser_accepts_portuguese_competencias_key() -> None:
+    parsed = _parse_correction_output_defensive(
+        json.dumps(
+            {
+                "nota_estimada": {"min": 560, "max": 600},
+                "competencias": {
+                    "C1": {"nota": 120, "comentario": "Poucos desvios."},
+                    "C2": {"nota": 120, "comentario": "Tema atendido."},
+                    "C3": {"nota": 120, "comentario": "Projeto textual previsivel."},
+                    "C4": {"nota": 100, "comentario": "Coesao irregular."},
+                    "C5": {"nota": 100, "comentario": "Intervencao incompleta."},
+                },
+                "pontos_fortes": ["Atende ao tema"],
+                "pontos_fracos": ["Falta detalhamento"],
+                "plano_de_melhoria": ["Treinar C5"],
+                "confianca": "Media.",
+            },
+            ensure_ascii=False,
+        )
+    )
+
+    assert parsed.estimated_score_min == 560
+    assert parsed.competencies["C4"].score == 100
+    assert parsed.strengths == ["Atende ao tema"]
+    assert parsed.improvement_plan == ["Treinar C5"]
+
+
+def test_essay_parser_accepts_competencies_as_list() -> None:
+    parsed = _parse_correction_output_defensive(
+        json.dumps(
+            {
+                "score": 600,
+                "competencies": [
+                    {"id": "C1", "score": 120, "comment": "Norma adequada."},
+                    {"id": "C2", "score": 120, "comment": "Tema compreendido."},
+                    {"id": "C3", "score": 120, "comment": "Argumentos simples."},
+                    {"id": "C4", "score": 120, "comment": "Boa conexao."},
+                    {"id": "C5", "score": 120, "comment": "Proposta presente."},
+                ],
+                "strengths": "Texto claro.",
+                "weaknesses": "Pouca profundidade.",
+                "improvement_plan": "Adicionar repertorio.",
+                "confidence_note": "Media.",
+            }
+        )
+    )
+
+    assert parsed.estimated_score_min == 600
+    assert parsed.estimated_score_max == 600
+    assert parsed.competencies["C3"].comment == "Argumentos simples."
+    assert parsed.weaknesses == ["Pouca profundidade."]
+
+
+def test_essay_parser_extracts_json_with_surrounding_text() -> None:
+    parsed = _parse_correction_output_defensive(
+        "Segue a correcao:\n"
+        + json.dumps(
+            {
+                "estimated_score_range": {"min": 620, "max": 660},
+                "competencies": {
+                    "C1": {"score": 120, "comment": "Controle formal suficiente."},
+                    "C2": {"score": 120, "comment": "Recorte tematico claro."},
+                    "C3": {"score": 120, "comment": "Argumentacao basica."},
+                    "C4": {"score": 140, "comment": "Boa articulacao."},
+                    "C5": {"score": 120, "comment": "Proposta pertinente."},
+                },
+                "strengths": ["Boa organizacao"],
+                "weaknesses": ["Pouco desenvolvimento"],
+                "improvement_plan": ["Ampliar explicacao dos argumentos"],
+                "confidence_note": "Media.",
+            }
+        )
+        + "\nFim."
+    )
+
+    assert parsed.estimated_score_min == 620
+    assert parsed.competencies["C4"].score == 140
+    assert parsed.confidence_note == "Media."

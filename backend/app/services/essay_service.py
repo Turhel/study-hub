@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from typing import Literal
 
 from sqlmodel import Session, select
 
@@ -34,7 +33,7 @@ from app.settings import get_env_int
 
 
 VALID_COMPETENCY_KEYS = ("C1", "C2", "C3", "C4", "C5")
-DEFAULT_CONFIDENCE_NOTE = "Estimativa assistida por modelo local. Nao substitui correcao oficial."
+DEFAULT_CONFIDENCE_NOTE = "Estimativa assistida por modelo de IA configurado. Nao substitui correcao oficial."
 
 
 class EssayCorrectionError(ValueError):
@@ -96,6 +95,20 @@ def _clean_text(value: str) -> str:
 
 def _compose_correction_messages(prompt: PromptFile, payload: EssayCorrectionCreateRequest) -> list[LMStudioMessage]:
     student_goal = payload.student_goal.strip() if payload.student_goal else "Meta nao informada."
+    output_contract = (
+        "\n\nCONTRATO TECNICO OBRIGATORIO DA API:\n"
+        "- Retorne somente JSON valido, sem markdown e sem texto antes ou depois.\n"
+        "- Nao traduza os nomes das chaves JSON.\n"
+        "- A chave competencies deve ser um objeto, nao uma lista.\n"
+        "- competencies deve conter exatamente as chaves C1, C2, C3, C4 e C5.\n"
+        "- Cada competencia deve ter score numerico e comment textual.\n"
+        "- Use este esqueleto compacto:\n"
+        '{"estimated_score_range":{"min":0,"max":0},"competencies":'
+        '{"C1":{"score":0,"comment":""},"C2":{"score":0,"comment":""},'
+        '"C3":{"score":0,"comment":""},"C4":{"score":0,"comment":""},'
+        '"C5":{"score":0,"comment":""}},"strengths":[""],"weaknesses":[""],'
+        '"improvement_plan":[""],"confidence_note":""}'
+    )
     user_content = (
         "TEMA OFICIAL EXATO:\n"
         f"{payload.theme.strip()}\n\n"
@@ -107,7 +120,7 @@ def _compose_correction_messages(prompt: PromptFile, payload: EssayCorrectionCre
         f"{payload.mode}"
     )
     return [
-        LMStudioMessage(role="system", content=prompt.text),
+        LMStudioMessage(role="system", content=f"{prompt.text}{output_contract}"),
         LMStudioMessage(role="user", content=user_content),
     ]
 
@@ -232,11 +245,165 @@ def _parse_correction_output(raw_text: str) -> ParsedEssayCorrection:
     )
 
 
+def _canonical_json_key(value: str) -> str:
+    normalized = value.strip().casefold()
+    replacements = {
+        "á": "a",
+        "à": "a",
+        "â": "a",
+        "ã": "a",
+        "é": "e",
+        "ê": "e",
+        "í": "i",
+        "ó": "o",
+        "ô": "o",
+        "õ": "o",
+        "ú": "u",
+        "ç": "c",
+    }
+    for source, target in replacements.items():
+        normalized = normalized.replace(source, target)
+    return re.sub(r"[^a-z0-9]+", "_", normalized).strip("_")
+
+
+def _value_from_aliases(payload: dict, aliases: tuple[str, ...]) -> object | None:
+    canonical_aliases = {_canonical_json_key(alias) for alias in aliases}
+    for key, value in payload.items():
+        if _canonical_json_key(str(key)) in canonical_aliases:
+            return value
+    return None
+
+
+def _competency_key_from_value(value: object) -> str | None:
+    text = str(value or "").strip().upper()
+    match = re.search(r"\bC\s*([1-5])\b", text)
+    if match:
+        return f"C{match.group(1)}"
+    match = re.search(r"COMPET[ÊE]NCIA\s*([1-5])", text)
+    if match:
+        return f"C{match.group(1)}"
+    return text if text in VALID_COMPETENCY_KEYS else None
+
+
+def _normalize_string_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _normalize_competency_item(raw_item: object) -> dict[str, object] | None:
+    if not isinstance(raw_item, dict):
+        return None
+    score = _value_from_aliases(raw_item, ("score", "nota", "pontuacao", "pontuação"))
+    comment = _value_from_aliases(
+        raw_item,
+        ("comment", "comentario", "comentário", "feedback", "justificativa", "motivo", "analysis", "analise"),
+    )
+    if comment is None:
+        comment_parts = [
+            str(value).strip()
+            for key, value in raw_item.items()
+            if _canonical_json_key(str(key)) not in {"id", "name", "nome", "competencia", "score", "nota", "pontuacao"}
+            and str(value).strip()
+        ]
+        comment = " ".join(comment_parts)
+    return {"score": score, "comment": comment}
+
+
+def _normalize_competencies(raw_competencies: object) -> dict[str, dict[str, object]]:
+    normalized: dict[str, dict[str, object]] = {}
+    if isinstance(raw_competencies, dict):
+        for raw_key, raw_item in raw_competencies.items():
+            key = _competency_key_from_value(raw_key)
+            if key is None and isinstance(raw_item, dict):
+                key = _competency_key_from_value(
+                    _value_from_aliases(raw_item, ("id", "name", "nome", "competencia", "competência"))
+                )
+            item = _normalize_competency_item(raw_item)
+            if key is not None and item is not None:
+                normalized[key] = item
+    elif isinstance(raw_competencies, list):
+        for raw_item in raw_competencies:
+            if not isinstance(raw_item, dict):
+                continue
+            key = _competency_key_from_value(
+                _value_from_aliases(raw_item, ("id", "name", "nome", "competencia", "competência"))
+            )
+            item = _normalize_competency_item(raw_item)
+            if key is not None and item is not None:
+                normalized[key] = item
+    return normalized
+
+
+def _normalize_score_range(payload: dict, competencies: dict[str, dict[str, object]]) -> dict[str, int]:
+    raw_range = _value_from_aliases(
+        payload,
+        (
+            "estimated_score_range",
+            "score_range",
+            "nota_estimada",
+            "faixa_nota",
+            "faixa_de_nota",
+            "nota_final_estimada",
+            "nota",
+            "score",
+        ),
+    )
+    if isinstance(raw_range, dict):
+        minimum = _value_from_aliases(raw_range, ("min", "minimum", "minimo", "mínimo"))
+        maximum = _value_from_aliases(raw_range, ("max", "maximum", "maximo", "máximo"))
+        if minimum is not None or maximum is not None:
+            min_score = int(float(str(minimum if minimum is not None else maximum).strip()))
+            max_score = int(float(str(maximum if maximum is not None else minimum).strip()))
+            return {"min": min_score, "max": max_score}
+    if isinstance(raw_range, (int, float, str)):
+        score = int(float(str(raw_range).strip()))
+        return {"min": score, "max": score}
+
+    summed = 0
+    for item in competencies.values():
+        raw_score = _value_from_aliases(item, ("score", "nota", "pontuacao", "pontuação"))
+        if raw_score is not None:
+            summed += int(float(str(raw_score).strip()))
+    if summed > 0:
+        return {"min": summed, "max": summed}
+
+    raise EssayCorrectionInvalidResponseError("O modelo retornou JSON sem faixa de nota estimada utilizavel.")
+
+
+def _normalize_json_correction_payload(payload: dict) -> dict:
+    raw_competencies = _value_from_aliases(payload, ("competencies", "competencias", "competências"))
+    competencies = _normalize_competencies(raw_competencies)
+    score_range = _normalize_score_range(payload, competencies)
+    strengths = _value_from_aliases(payload, ("strengths", "pontos_fortes", "forcas", "forças"))
+    weaknesses = _value_from_aliases(payload, ("weaknesses", "pontos_fracos", "fragilidades"))
+    improvement_plan = _value_from_aliases(
+        payload,
+        ("improvement_plan", "plano_melhoria", "plano_de_melhoria", "recomendacoes", "recomendações"),
+    )
+    confidence_note = _value_from_aliases(
+        payload,
+        ("confidence_note", "observacao_confianca", "observação_confiança", "nota_de_confianca", "confianca"),
+    )
+    return {
+        "estimated_score_range": score_range,
+        "competencies": competencies,
+        "strengths": _normalize_string_list(strengths),
+        "weaknesses": _normalize_string_list(weaknesses),
+        "improvement_plan": _normalize_string_list(improvement_plan),
+        "confidence_note": str(confidence_note).strip() if confidence_note is not None else DEFAULT_CONFIDENCE_NOTE,
+    }
+
+
 def _parse_json_correction_output(raw_text: str) -> ParsedEssayCorrection | None:
     try:
         payload = parse_json_object(raw_text)
     except LLMParsingError:
         return None
+
+    payload = _normalize_json_correction_payload(payload)
 
     try:
         score_range = payload["estimated_score_range"]
@@ -525,21 +692,27 @@ def get_essay_correction(correction_id: int, session: Session | None = None) -> 
 
 
 def correct_essay(payload: EssayCorrectionRequest) -> EssayCorrectionResponse:
-    stored = create_essay_correction(
+    try:
+        prompt = load_prompt_file("essay_correction")
+    except PromptLoadError as exc:
+        raise EssayCorrectionPromptError(str(exc)) from exc
+
+    _, parsed = _run_essay_correction(
         EssayCorrectionCreateRequest(
             theme=payload.theme,
             essay_text=payload.essay_text,
             student_goal=payload.student_goal,
             mode=payload.mode,
-        )
+        ),
+        prompt,
     )
     return EssayCorrectionResponse(
-        estimated_score_range=stored.estimated_score_range,
-        competencies=stored.competencies,
-        strengths=stored.strengths,
-        weaknesses=stored.weaknesses,
-        improvement_plan=stored.improvement_plan,
-        confidence_note=stored.confidence_note,
+        estimated_score_range=EssayScoreRange(min=parsed.estimated_score_min, max=parsed.estimated_score_max),
+        competencies=parsed.competencies,
+        strengths=parsed.strengths,
+        weaknesses=parsed.weaknesses,
+        improvement_plan=parsed.improvement_plan,
+        confidence_note=parsed.confidence_note,
     )
 
 
