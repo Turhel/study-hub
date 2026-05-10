@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.llm.client import LLMClientError, LLMHttpClient
 from app.llm.config import LLMSettings
 from app.llm.providers.lm_studio import LMStudioCompletionResult, LMStudioMessage
+from app.settings import get_env_bool
 
 
 class OpenRouterProviderError(RuntimeError):
@@ -26,11 +27,21 @@ def chat_completion(
         "messages": [{"role": message.role, "content": message.content} for message in messages],
         "temperature": temperature,
     }
+    use_json_response_format = get_env_bool("STUDY_HUB_OPENROUTER_RESPONSE_FORMAT_JSON", True)
+    if use_json_response_format:
+        payload["response_format"] = {"type": "json_object"}
 
     try:
         response = client.post_json("/chat/completions", payload, timeout_seconds=timeout_seconds)
     except LLMClientError as exc:
-        raise OpenRouterProviderError(str(exc)) from exc
+        if use_json_response_format and "response_format" in str(exc).casefold():
+            payload.pop("response_format", None)
+            try:
+                response = client.post_json("/chat/completions", payload, timeout_seconds=timeout_seconds)
+            except LLMClientError as retry_exc:
+                raise OpenRouterProviderError(str(retry_exc)) from retry_exc
+        else:
+            raise OpenRouterProviderError(str(exc)) from exc
 
     choices = response.data.get("choices")
     if not isinstance(choices, list) or not choices:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from dataclasses import dataclass
 
@@ -29,11 +30,14 @@ from app.schemas import (
     EssayScoreRange,
     EssaySubmissionResponse,
 )
-from app.settings import get_env_int
+from app.settings import get_env_bool, get_env_int
 
 
 VALID_COMPETENCY_KEYS = ("C1", "C2", "C3", "C4", "C5")
 DEFAULT_CONFIDENCE_NOTE = "Estimativa assistida por modelo de IA configurado. Nao substitui correcao oficial."
+DEBUG_TEST_THEME = "TESTE_OPENROUTER_DELETE_ME"
+DEBUG_OUTPUT_LIMIT = 3000
+logger = logging.getLogger(__name__)
 
 
 class EssayCorrectionError(ValueError):
@@ -514,6 +518,37 @@ def _parse_correction_output_defensive(raw_text: str) -> ParsedEssayCorrection:
     )
 
 
+def _sanitize_llm_output_preview(output_text: str) -> str:
+    preview = output_text[:DEBUG_OUTPUT_LIMIT]
+    preview = re.sub(r"sk-or-v1-[A-Za-z0-9_-]+", "[REDACTED_OPENROUTER_KEY]", preview)
+    preview = re.sub(r"Bearer\s+[A-Za-z0-9._~+/=-]+", "Bearer [REDACTED]", preview, flags=re.IGNORECASE)
+    return preview
+
+
+def _log_debug_test_output(
+    *,
+    payload: EssayCorrectionCreateRequest,
+    result: LLMTaskResponse,
+    error: EssayCorrectionInvalidResponseError,
+) -> None:
+    if payload.theme.strip() != DEBUG_TEST_THEME:
+        return
+    if not get_env_bool("STUDY_HUB_LLM_DEBUG_TEST_OUTPUT", False):
+        return
+
+    output_text = result.output_text or ""
+    logger.warning(
+        "essay_correction_debug_test_output provider=%s model=%s finish_reason=%s output_length=%s output_empty=%s error=%s output_preview=%r",
+        result.provider,
+        result.model,
+        result.finish_reason,
+        len(output_text),
+        not bool(output_text.strip()),
+        str(error),
+        _sanitize_llm_output_preview(output_text),
+    )
+
+
 def _to_submission_response(submission: EssaySubmission) -> EssaySubmissionResponse:
     return EssaySubmissionResponse(
         id=submission.id or 0,
@@ -632,7 +667,8 @@ def _run_essay_correction(payload: EssayCorrectionCreateRequest, prompt: PromptF
 
     try:
         parsed = _parse_correction_output_defensive(result.output_text)
-    except EssayCorrectionInvalidResponseError:
+    except EssayCorrectionInvalidResponseError as exc:
+        _log_debug_test_output(payload=payload, result=result, error=exc)
         raise
     except Exception as exc:
         raise EssayCorrectionInvalidResponseError(
