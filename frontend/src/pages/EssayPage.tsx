@@ -6,6 +6,7 @@ import {
   closeEssayStudySession,
   createEssayCorrection,
   createEssayStudySession,
+  createManualEssayCorrection,
   getSystemCapabilities,
   sendEssayStudyMessage,
 } from "../lib/api";
@@ -13,6 +14,7 @@ import type {
   EssayCompetencyResult,
   EssayCorrectionMode,
   EssayCorrectionStoredResponse,
+  EssayExternalProvider,
   EssayStudyMessageResponse,
   EssayStudySessionResponse,
 } from "../lib/types";
@@ -22,6 +24,11 @@ const correctionModeOptions: Array<{ value: EssayCorrectionMode; label: string }
   { value: "score_only", label: "Nota rapida" },
   { value: "teach", label: "Modo estudo" },
 ];
+
+const externalProviderOptions: EssayExternalProvider[] = ["ChatGPT", "Gemini", "Claude", "DeepSeek", "Outro"];
+const allowedCompetencyScores = [0, 40, 80, 120, 160, 200];
+type EssayTab = "automatic" | "manual";
+type ManualScoreKey = "c1" | "c2" | "c3" | "c4" | "c5";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -49,6 +56,44 @@ function competencyLabel(key: string): string {
 
 function sortedCompetencies(competencies: Record<string, EssayCompetencyResult>) {
   return Object.entries(competencies).sort(([a], [b]) => a.localeCompare(b, "pt-BR", { numeric: true }));
+}
+
+function splitManualItems(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildExternalPrompt(theme: string, essayText: string, studentGoal: string): string {
+  return [
+    "Corrija a redacao abaixo como uma redacao do ENEM.",
+    "",
+    "Use os criterios das competencias C1, C2, C3, C4 e C5, cada uma com nota entre 0 e 200.",
+    "Aceite que o tema pode ser oficial, simulado ou proposto pelo usuario. A nota deve ser uma estimativa assistida, nao nota oficial do INEP.",
+    "",
+    `Tema: ${theme.trim() || "[cole o tema aqui]"}`,
+    `Objetivo do aluno: ${studentGoal.trim() || "Sem objetivo especifico informado."}`,
+    "",
+    "Texto da redacao:",
+    essayText.trim() || "[cole a redacao aqui]",
+    "",
+    "Responda em formato facil de copiar, com esta estrutura:",
+    "Nota total: [soma de C1-C5]",
+    "C1: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
+    "C2: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
+    "C3: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
+    "C4: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
+    "C5: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
+    "Pontos fortes:",
+    "- ...",
+    "Pontos fracos:",
+    "- ...",
+    "Plano de melhoria:",
+    "- ...",
+    "Observacoes:",
+    "- ...",
+  ].join("\n");
 }
 
 function ResultList({ title, items }: { title: string; items: string[] }) {
@@ -187,7 +232,22 @@ export default function EssayPage() {
   const [essayText, setEssayText] = useState("");
   const [studentGoal, setStudentGoal] = useState("");
   const [mode, setMode] = useState<EssayCorrectionMode>("detailed");
+  const [essayTab, setEssayTab] = useState<EssayTab>("automatic");
   const [formError, setFormError] = useState<string | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [manualProvider, setManualProvider] = useState<EssayExternalProvider>("ChatGPT");
+  const [manualScores, setManualScores] = useState<Record<ManualScoreKey, number>>({
+    c1: 160,
+    c2: 160,
+    c3: 160,
+    c4: 160,
+    c5: 160,
+  });
+  const [manualStrengths, setManualStrengths] = useState("");
+  const [manualWeaknesses, setManualWeaknesses] = useState("");
+  const [manualImprovementPlan, setManualImprovementPlan] = useState("");
+  const [manualNotes, setManualNotes] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [correction, setCorrection] = useState<EssayCorrectionStoredResponse | null>(null);
   const [studySession, setStudySession] = useState<EssayStudySessionResponse | null>(null);
   const [studyMessage, setStudyMessage] = useState("");
@@ -221,6 +281,33 @@ export default function EssayPage() {
     },
     onError: (error) => {
       setFormError(getErrorMessage(error, "Nao foi possivel corrigir a redacao."));
+    },
+  });
+
+  const manualCorrectionMutation = useMutation({
+    mutationFn: () =>
+      createManualEssayCorrection({
+        theme: theme.trim(),
+        essay_text: essayText.trim(),
+        external_provider: manualProvider,
+        c1: manualScores.c1,
+        c2: manualScores.c2,
+        c3: manualScores.c3,
+        c4: manualScores.c4,
+        c5: manualScores.c5,
+        strengths: splitManualItems(manualStrengths),
+        weaknesses: splitManualItems(manualWeaknesses),
+        improvement_plan: splitManualItems(manualImprovementPlan),
+        notes: manualNotes.trim() || null,
+      }),
+    onSuccess: (result) => {
+      setCorrection(result);
+      setStudySession(null);
+      setManualError(null);
+      setEssayTab("manual");
+    },
+    onError: (error) => {
+      setManualError(getErrorMessage(error, "Nao foi possivel registrar a correcao manual."));
     },
   });
 
@@ -279,6 +366,10 @@ export default function EssayPage() {
     () => essayText.trim().split(/\s+/).filter(Boolean).length,
     [essayText],
   );
+  const manualTotal = useMemo(
+    () => Object.values(manualScores).reduce((total, score) => total + score, 0),
+    [manualScores],
+  );
   const nextStep = !theme.trim() || !essayText.trim()
     ? {
         title: "Escreva a redacao primeiro",
@@ -293,11 +384,11 @@ export default function EssayPage() {
       }
     : !correctionEnabled
       ? {
-          title: "Guarde o texto e siga para as objetivas",
-          description: "Nesta maquina a IA esta desligada. Entao o melhor uso desta tela agora e deixar o texto pronto e continuar o estudo principal em Today.",
-          primaryLabel: "Voltar ao foco do dia",
+          title: "Use a correcao externa/manual",
+          description: "Se a IA automatica falhar ou estiver desligada, copie o prompt para outra IA e registre C1-C5 aqui para manter seu historico.",
+          primaryLabel: "Abrir modo manual",
           primaryAction: () => {
-            window.location.assign("/");
+            setEssayTab("manual");
           },
           secondaryLabel: "Ver estatisticas",
           secondaryTo: "/stats",
@@ -344,6 +435,47 @@ export default function EssayPage() {
       return;
     }
     correctionMutation.mutate();
+  }
+
+  async function copyExternalPrompt() {
+    setCopyFeedback(null);
+    const prompt = buildExternalPrompt(theme, essayText, studentGoal);
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopyFeedback("Prompt copiado.");
+    } catch {
+      setCopyFeedback("Nao foi possivel copiar automaticamente. Selecione o texto do prompt e copie manualmente.");
+    }
+  }
+
+  function submitManualCorrection() {
+    setManualError(null);
+    if (!theme.trim()) {
+      setManualError("Informe o tema da redacao.");
+      return;
+    }
+    if (!essayText.trim()) {
+      setManualError("Escreva a redacao antes de registrar a correcao.");
+      return;
+    }
+    const invalidScore = Object.entries(manualScores).find(([, score]) => !allowedCompetencyScores.includes(score));
+    if (invalidScore) {
+      setManualError("As notas C1-C5 devem ser 0, 40, 80, 120, 160 ou 200.");
+      return;
+    }
+    if (splitManualItems(manualStrengths).length === 0) {
+      setManualError("Informe pelo menos um ponto forte.");
+      return;
+    }
+    if (splitManualItems(manualWeaknesses).length === 0) {
+      setManualError("Informe pelo menos um ponto fraco.");
+      return;
+    }
+    if (splitManualItems(manualImprovementPlan).length === 0) {
+      setManualError("Informe pelo menos uma acao no plano de melhoria.");
+      return;
+    }
+    manualCorrectionMutation.mutate();
   }
 
   function submitStudyMessage() {
@@ -483,35 +615,159 @@ export default function EssayPage() {
                 />
               </label>
 
-              <label className="today-form-field">
-                Modo
-                <select className="app-input" value={mode} onChange={(event) => setMode(event.target.value as EssayCorrectionMode)}>
-                  {correctionModeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {formError ? <p className="today-form-error">{formError}</p> : null}
-
-              <div className="today-action-row">
+              <div className="essay-mode-tabs" role="tablist" aria-label="Modo de correcao">
                 <button
                   type="button"
-                  className="app-primary-action app-primary-action-blue"
-                  disabled={!correctionEnabled || correctionMutation.isPending}
-                  onClick={submitCorrection}
+                  className={essayTab === "automatic" ? "is-active" : ""}
+                  onClick={() => setEssayTab("automatic")}
                 >
-                  {correctionMutation.isPending ? "Corrigindo..." : "Corrigir com IA"}
+                  Automatica
+                </button>
+                <button
+                  type="button"
+                  className={essayTab === "manual" ? "is-active" : ""}
+                  onClick={() => setEssayTab("manual")}
+                >
+                  Externa/manual
                 </button>
               </div>
 
-              {correctionMutation.isPending ? (
-                <p className="essay-loading-copy">
-                  Correcao em andamento. Modelos locais podem demorar um pouco; pode deixar a pagina quietinha aqui.
-                </p>
-              ) : null}
+              {essayTab === "automatic" ? (
+                <section className="essay-mode-panel">
+                  <label className="today-form-field">
+                    Modo
+                    <select className="app-input" value={mode} onChange={(event) => setMode(event.target.value as EssayCorrectionMode)}>
+                      {correctionModeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {formError ? <p className="today-form-error">{formError}</p> : null}
+
+                  <div className="today-action-row">
+                    <button
+                      type="button"
+                      className="app-primary-action app-primary-action-blue"
+                      disabled={!correctionEnabled || correctionMutation.isPending}
+                      onClick={submitCorrection}
+                    >
+                      {correctionMutation.isPending ? "Corrigindo..." : "Corrigir com IA"}
+                    </button>
+                  </div>
+
+                  {correctionMutation.isPending ? (
+                    <p className="essay-loading-copy">
+                      Correcao em andamento. Modelos locais podem demorar um pouco; pode deixar a pagina quietinha aqui.
+                    </p>
+                  ) : null}
+                </section>
+              ) : (
+                <section className="essay-mode-panel essay-manual-panel">
+                  <div className="essay-manual-prompt-box">
+                    <div>
+                      <strong>Correcao em outra IA</strong>
+                      <p>Copie um prompt estruturado, cole no ChatGPT, Gemini, Claude ou DeepSeek e registre o resultado aqui.</p>
+                    </div>
+                    <button type="button" className="app-secondary-action" onClick={copyExternalPrompt}>
+                      Copiar prompt para IA externa
+                    </button>
+                  </div>
+                  {copyFeedback ? <p className="essay-loading-copy">{copyFeedback}</p> : null}
+
+                  <label className="today-form-field">
+                    Provider externo usado
+                    <select
+                      className="app-input"
+                      value={manualProvider}
+                      onChange={(event) => setManualProvider(event.target.value as EssayExternalProvider)}
+                    >
+                      {externalProviderOptions.map((provider) => (
+                        <option key={provider} value={provider}>
+                          {provider}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="essay-manual-score-grid">
+                    {(Object.keys(manualScores) as ManualScoreKey[]).map((key) => (
+                      <label key={key} className="today-form-field">
+                        {key.toUpperCase()}
+                        <select
+                          className="app-input"
+                          value={manualScores[key]}
+                          onChange={(event) =>
+                            setManualScores((current) => ({ ...current, [key]: Number(event.target.value) }))
+                          }
+                        >
+                          {allowedCompetencyScores.map((score) => (
+                            <option key={score} value={score}>
+                              {score}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                    <article className="essay-manual-total">
+                      <span>Total</span>
+                      <strong>{manualTotal}</strong>
+                    </article>
+                  </div>
+
+                  <label className="today-form-field">
+                    Pontos fortes
+                    <textarea
+                      className="app-input"
+                      value={manualStrengths}
+                      onChange={(event) => setManualStrengths(event.target.value)}
+                      placeholder="Um item por linha."
+                    />
+                  </label>
+                  <label className="today-form-field">
+                    Pontos fracos
+                    <textarea
+                      className="app-input"
+                      value={manualWeaknesses}
+                      onChange={(event) => setManualWeaknesses(event.target.value)}
+                      placeholder="Um item por linha."
+                    />
+                  </label>
+                  <label className="today-form-field">
+                    Plano de melhoria
+                    <textarea
+                      className="app-input"
+                      value={manualImprovementPlan}
+                      onChange={(event) => setManualImprovementPlan(event.target.value)}
+                      placeholder="Um item por linha."
+                    />
+                  </label>
+                  <label className="today-form-field">
+                    Observacoes
+                    <textarea
+                      className="app-input"
+                      value={manualNotes}
+                      onChange={(event) => setManualNotes(event.target.value)}
+                      placeholder="Opcional."
+                    />
+                  </label>
+
+                  {manualError ? <p className="today-form-error">{manualError}</p> : null}
+
+                  <div className="today-action-row">
+                    <button
+                      type="button"
+                      className="app-primary-action app-primary-action-blue"
+                      disabled={manualCorrectionMutation.isPending}
+                      onClick={submitManualCorrection}
+                    >
+                      {manualCorrectionMutation.isPending ? "Salvando..." : "Registrar correcao manual"}
+                    </button>
+                  </div>
+                </section>
+              )}
             </div>
           </section>
 
@@ -533,7 +789,7 @@ export default function EssayPage() {
               </article>
               <article className={`essay-state-card ${correction ? "is-done" : ""}`}>
                 <strong>Correcao</strong>
-                <span>{correction ? `id ${correction.id}` : "aguardando IA"}</span>
+                <span>{correction ? `id ${correction.id}` : "aguardando"}</span>
               </article>
               <article className={`essay-state-card ${studySession ? "is-done" : ""}`}>
                 <strong>Estudo</strong>

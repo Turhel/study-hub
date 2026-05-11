@@ -27,6 +27,7 @@ from app.schemas import (
     EssayCorrectionRequest,
     EssayCorrectionResponse,
     EssayCorrectionStoredResponse,
+    EssayManualCorrectionRequest,
     EssayScoreRange,
     EssaySubmissionResponse,
 )
@@ -34,6 +35,7 @@ from app.settings import get_env_bool, get_env_int
 
 
 VALID_COMPETENCY_KEYS = ("C1", "C2", "C3", "C4", "C5")
+VALID_MANUAL_SCORES = {0, 40, 80, 120, 160, 200}
 DEFAULT_CONFIDENCE_NOTE = "Estimativa assistida por modelo de IA configurado. Nao substitui correcao oficial."
 DEBUG_TEST_THEME = "TESTE_OPENROUTER_DELETE_ME"
 DEBUG_OUTPUT_LIMIT = 3000
@@ -814,6 +816,97 @@ def create_essay_correction(payload: EssayCorrectionCreateRequest, session: Sess
         db.refresh(submission)
 
         correction = _build_stored_correction(payload, llm_result, parsed, prompt, submission.id or 0)
+        db.add(correction)
+        db.commit()
+        db.refresh(correction)
+        return _to_stored_response(submission, correction)
+    finally:
+        if own_session:
+            db.close()
+
+
+def _clean_manual_items(items: list[str], field_label: str) -> list[str]:
+    cleaned = _dedupe_keep_order([str(item).strip() for item in items if str(item).strip()])
+    if not cleaned:
+        raise EssayCorrectionError(f"Informe pelo menos um item em {field_label}.")
+    return cleaned
+
+
+def _validate_manual_score(score: int, label: str) -> int:
+    if score not in VALID_MANUAL_SCORES:
+        allowed = ", ".join(str(value) for value in sorted(VALID_MANUAL_SCORES))
+        raise EssayCorrectionError(f"{label} deve ser uma das notas permitidas: {allowed}.")
+    return score
+
+
+def create_manual_essay_correction(
+    payload: EssayManualCorrectionRequest,
+    session: Session | None = None,
+) -> EssayCorrectionStoredResponse:
+    theme = payload.theme.strip()
+    essay_text = payload.essay_text.strip()
+    external_provider = payload.external_provider.strip()
+    if not theme:
+        raise EssayCorrectionError("Tema da redacao e obrigatorio.")
+    if not essay_text:
+        raise EssayCorrectionError("Texto da redacao e obrigatorio.")
+    if not external_provider:
+        raise EssayCorrectionError("Informe o provider externo usado na correcao.")
+
+    scores = {
+        "C1": _validate_manual_score(payload.c1, "C1"),
+        "C2": _validate_manual_score(payload.c2, "C2"),
+        "C3": _validate_manual_score(payload.c3, "C3"),
+        "C4": _validate_manual_score(payload.c4, "C4"),
+        "C5": _validate_manual_score(payload.c5, "C5"),
+    }
+    total_score = sum(scores.values())
+    strengths = _clean_manual_items(payload.strengths, "pontos fortes")
+    weaknesses = _clean_manual_items(payload.weaknesses, "pontos fracos")
+    improvement_plan = _clean_manual_items(payload.improvement_plan, "plano de melhoria")
+    notes = (payload.notes or "").strip()
+    note_suffix = f" Observacoes: {notes}" if notes else ""
+    competency_comment = f"Nota registrada manualmente a partir de correcao externa ({external_provider})."
+
+    own_session = session is None
+    db = session or get_session()
+    try:
+        submission = EssaySubmission(theme=theme, essay_text=essay_text)
+        db.add(submission)
+        db.commit()
+        db.refresh(submission)
+
+        correction = EssayCorrection(
+            essay_submission_id=submission.id or 0,
+            provider="manual_external",
+            model=external_provider,
+            prompt_name="manual_correction",
+            prompt_hash="manual",
+            mode="detailed",
+            estimated_score_min=total_score,
+            estimated_score_max=total_score,
+            c1_score=scores["C1"],
+            c1_comment=competency_comment,
+            c2_score=scores["C2"],
+            c2_comment=competency_comment,
+            c3_score=scores["C3"],
+            c3_comment=competency_comment,
+            c4_score=scores["C4"],
+            c4_comment=competency_comment,
+            c5_score=scores["C5"],
+            c5_comment=competency_comment,
+            strengths_json=json.dumps(strengths, ensure_ascii=True),
+            weaknesses_json=json.dumps(weaknesses, ensure_ascii=True),
+            improvement_plan_json=json.dumps(improvement_plan, ensure_ascii=True),
+            confidence_note=(
+                f"Correcao manual registrada pelo usuario a partir de {external_provider}. "
+                "Use como referencia de estudo; a qualidade depende da correcao externa informada."
+                f"{note_suffix}"
+            ),
+            tokens_input=0,
+            tokens_output=0,
+            tokens_total=0,
+        )
         db.add(correction)
         db.commit()
         db.refresh(correction)

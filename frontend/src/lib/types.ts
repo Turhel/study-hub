@@ -695,6 +695,23 @@ export type EssayCorrectionPayload = {
   mode?: EssayCorrectionMode;
 };
 
+export type EssayExternalProvider = "ChatGPT" | "Gemini" | "Claude" | "DeepSeek" | "Outro";
+
+export type EssayManualCorrectionPayload = {
+  theme: string;
+  essay_text: string;
+  external_provider: EssayExternalProvider;
+  c1: number;
+  c2: number;
+  c3: number;
+  c4: number;
+  c5: number;
+  strengths: string[];
+  weaknesses: string[];
+  improvement_plan: string[];
+  notes?: string | null;
+};
+
 export type EssayScoreRange = {
   min: number;
   max: number;

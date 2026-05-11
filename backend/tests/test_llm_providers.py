@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
+from app.db import create_db_engine, init_db
 from app.llm.config import DEFAULT_OPENROUTER_BASE_URL, get_llm_settings
 from app.main import app
 from app.services.essay_service import _parse_correction_output_defensive
@@ -90,6 +92,45 @@ def test_openrouter_without_api_key_returns_clear_error(monkeypatch) -> None:
     payload = response.json()
     assert payload["detail"]["code"] == "lm_unavailable"
     assert "OPENROUTER_API_KEY" in payload["detail"]["message"]
+
+
+def test_manual_essay_correction_endpoint_saves_without_llm(monkeypatch, tmp_path) -> None:
+    db_path = tmp_path / "manual_essay.db"
+    engine = create_db_engine(f"sqlite:///{db_path.as_posix()}")
+    init_db(engine)
+
+    def _session_factory() -> Session:
+        return Session(engine, expire_on_commit=False)
+
+    monkeypatch.setattr("app.services.essay_service.get_session", _session_factory)
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/essay/manual-corrections",
+            json={
+                "theme": "TESTE_MANUAL_REDACAO_DELETE_ME",
+                "essay_text": "Texto curto apenas para validar gravacao manual em banco temporario.",
+                "external_provider": "ChatGPT",
+                "c1": 160,
+                "c2": 120,
+                "c3": 120,
+                "c4": 160,
+                "c5": 120,
+                "strengths": ["Tema claro"],
+                "weaknesses": ["Argumentos ainda simples"],
+                "improvement_plan": ["Detalhar repertorio"],
+                "notes": "Teste automatizado temporario.",
+            },
+        )
+
+    engine.dispose()
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provider"] == "manual_external"
+    assert payload["model"] == "ChatGPT"
+    assert payload["estimated_score_range"] == {"min": 680, "max": 680}
+    assert payload["competencies"]["C1"]["score"] == 160
+    assert payload["strengths"] == ["Tema claro"]
+    assert payload["tokens_total"] == 0
 
 
 def test_essay_parser_contract_still_accepts_structured_json() -> None:

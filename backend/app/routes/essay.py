@@ -8,6 +8,7 @@ from app.schemas import (
     EssayCorrectionRequest,
     EssayCorrectionResponse,
     EssayCorrectionStoredResponse,
+    EssayManualCorrectionRequest,
 )
 from app.settings import get_essay_correction_enabled, get_llm_enabled
 from app.services.essay_service import (
@@ -16,6 +17,7 @@ from app.services.essay_service import (
     EssayCorrectionTokenLimitError,
     correct_essay,
     create_essay_correction,
+    create_manual_essay_correction,
     get_essay_correction,
 )
 
@@ -96,6 +98,18 @@ def create_essay_correction_route(payload: EssayCorrectionCreateRequest) -> Essa
             status_code=exc.status_code,
             detail={"code": exc.error_code, "message": str(exc)},
         ) from exc
+
+
+@router.post(
+    "/manual-corrections",
+    response_model=EssayCorrectionStoredResponse,
+    responses={400: {"model": ApiErrorResponse}},
+)
+def create_manual_essay_correction_route(payload: EssayManualCorrectionRequest) -> EssayCorrectionStoredResponse:
+    try:
+        return create_manual_essay_correction(payload)
+    except EssayCorrectionError as exc:
+        raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
 
 
 @router.get(

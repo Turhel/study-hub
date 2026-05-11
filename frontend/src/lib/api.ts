@@ -5,6 +5,7 @@ import type {
   EssayCorrectionPayload,
   EssayCorrectionResponse,
   EssayCorrectionStoredResponse,
+  EssayManualCorrectionPayload,
   EssayStudySessionCloseResponse,
   EssayStudySessionListItem,
   EssayStudySessionResponse,
@@ -572,6 +573,24 @@ export async function createEssayCorrection(
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel salvar a correcao da redacao.");
+  }
+
+  return response.json() as Promise<EssayCorrectionStoredResponse>;
+}
+
+export async function createManualEssayCorrection(
+  payload: EssayManualCorrectionPayload,
+): Promise<EssayCorrectionStoredResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/manual-corrections`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel registrar a correcao manual.");
   }
 
   return response.json() as Promise<EssayCorrectionStoredResponse>;

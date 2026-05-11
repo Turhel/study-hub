@@ -272,6 +272,21 @@ class EssayCorrectionCreateRequest(BaseModel):
     mode: Literal["score_only", "detailed", "teach"] = "detailed"
 
 
+class EssayManualCorrectionRequest(BaseModel):
+    theme: str
+    essay_text: str
+    external_provider: str
+    c1: int = Field(ge=0, le=200)
+    c2: int = Field(ge=0, le=200)
+    c3: int = Field(ge=0, le=200)
+    c4: int = Field(ge=0, le=200)
+    c5: int = Field(ge=0, le=200)
+    strengths: list[str]
+    weaknesses: list[str]
+    improvement_plan: list[str]
+    notes: str | None = None
+
+
 class EssaySubmissionResponse(BaseModel):
     id: int
     theme: str

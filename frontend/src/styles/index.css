@@ -4447,6 +4447,90 @@ textarea {
   gap: 0.75rem;
 }
 
+.essay-mode-tabs {
+  display: inline-flex;
+  gap: 0.35rem;
+  border: 2px solid rgba(88, 121, 164, 0.48);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.56);
+  padding: 0.25rem;
+}
+
+.essay-mode-tabs button {
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(206, 217, 235, 0.82);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.55rem 0.75rem;
+}
+
+.essay-mode-tabs button.is-active {
+  background: linear-gradient(180deg, #35b8ff 0%, #219bdd 100%);
+  color: #f8fbff;
+  box-shadow: 0 3px 0 rgba(4, 7, 13, 0.7);
+}
+
+.essay-mode-panel,
+.essay-manual-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.essay-manual-prompt-box,
+.essay-manual-total {
+  border: 2px solid rgba(112, 133, 170, 0.42);
+  border-radius: 12px;
+  background: rgba(11, 21, 42, 0.72);
+  padding: 0.85rem;
+}
+
+.essay-manual-prompt-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.essay-manual-prompt-box strong,
+.essay-manual-total strong {
+  display: block;
+  color: var(--app-text);
+  font-size: 0.95rem;
+}
+
+.essay-manual-prompt-box p {
+  margin: 0.2rem 0 0;
+  color: var(--muted-text);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.essay-manual-score-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.essay-manual-total {
+  min-height: 4.55rem;
+}
+
+.essay-manual-total span {
+  color: rgba(206, 217, 235, 0.78);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.essay-manual-total strong {
+  margin-top: 0.18rem;
+  font-size: 1.25rem;
+}
+
 .essay-textarea {
   min-height: 20rem;
   resize: vertical;
@@ -4737,6 +4821,15 @@ textarea {
   .essay-grid,
   .essay-result-columns {
     grid-template-columns: 1fr;
+  }
+
+  .essay-manual-score-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .essay-manual-prompt-box {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 
