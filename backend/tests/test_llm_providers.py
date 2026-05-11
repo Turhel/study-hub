@@ -244,3 +244,28 @@ def test_essay_parser_recovers_corrupted_openrouter_jsonish_output() -> None:
     assert parsed.competencies["C3"].score == 80
     assert "generica" in parsed.competencies["C3"].comment
     assert "parcialmente corrompido" in parsed.confidence_note
+
+
+def test_essay_parser_accepts_rubric_specific_comment_fields() -> None:
+    parsed = _parse_correction_output_defensive(
+        json.dumps(
+            {
+                "estimated_score_range": {"min": 560, "max": 560},
+                "competencies": {
+                    "C1": {"score": 160, "motivo_da_nota": "Poucos desvios formais."},
+                    "C2": {"score": 120, "ponto_forte_principal": "Compreende o tema."},
+                    "C3": {"score": 80, "falha_principal": "Argumentacao generica."},
+                    "C4": {"score": 120, "por_que_nao_recebeu_a_nota_acima": "Coesao simples."},
+                    "C5": {"score": 80, "justificativa": "Proposta pouco detalhada."},
+                },
+                "strengths": ["Boa clareza"],
+                "weaknesses": ["Pouco aprofundamento"],
+                "improvement_plan": ["Detalhar argumentos"],
+                "confidence_note": "Media.",
+            },
+            ensure_ascii=False,
+        )
+    )
+
+    assert parsed.competencies["C1"].comment == "Poucos desvios formais."
+    assert parsed.competencies["C3"].comment == "Argumentacao generica."

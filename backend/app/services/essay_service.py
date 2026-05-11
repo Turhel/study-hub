@@ -303,7 +303,20 @@ def _normalize_competency_item(raw_item: object) -> dict[str, object] | None:
     score = _value_from_aliases(raw_item, ("score", "nota", "pontuacao", "pontuação"))
     comment = _value_from_aliases(
         raw_item,
-        ("comment", "comentario", "comentário", "feedback", "justificativa", "motivo", "analysis", "analise"),
+        (
+            "comment",
+            "comentario",
+            "comentário",
+            "feedback",
+            "justificativa",
+            "motivo",
+            "motivo_da_nota",
+            "ponto_forte_principal",
+            "falha_principal",
+            "por_que_nao_recebeu_a_nota_acima",
+            "analysis",
+            "analise",
+        ),
     )
     if comment is None:
         comment_parts = [
@@ -445,7 +458,7 @@ def _extract_jsonish_competency_section(text: str, key: str) -> str:
 
 def _extract_jsonish_comment(section: str) -> str:
     comment_match = re.search(
-        r'"(?:comment|comentario|comentário|feedback|justificativa)"\s*:\s*"(.*?)"(?=\s*[,}])',
+        r'"(?:comment|comentario|comentário|feedback|justificativa|motivo_da_nota|ponto_forte_principal|falha_principal|por_que_nao_recebeu_a_nota_acima)"\s*:\s*"(.*?)"(?=\s*[,}])',
         section,
         flags=re.DOTALL | re.IGNORECASE,
     )
