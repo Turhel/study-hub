@@ -224,3 +224,23 @@ def test_essay_parser_extracts_json_with_surrounding_text() -> None:
     assert parsed.estimated_score_min == 620
     assert parsed.competencies["C4"].score == 140
     assert parsed.confidence_note == "Media."
+
+
+def test_essay_parser_recovers_corrupted_openrouter_jsonish_output() -> None:
+    parsed = _parse_correction_output_defensive(
+        (
+            '{"estimated_score_range":{"min":560,"max":560},"competencies":{'
+            '"C1":{"score":160,"comment":"Erros minimos e dominio formal adequado."},'
+            '"C2":{"score":120,"comment":"Texto compreende o tema, mas desenvolve-se de forma superficial."},'
+            '"C3\\":{\\"\n\n{"score\\":80,"comment\\":\\"Argumentacao fraca, generica e sem exemplos concretos.\\"},'
+            '"C4":{"score":120,"comment":"Coesao funcional, com articulacao simples."},'
+            '"C5":{"score":80,"comment":"Proposta presente, mas pouco detalhada."}'
+        )
+    )
+
+    assert parsed.estimated_score_min == 560
+    assert parsed.estimated_score_max == 560
+    assert parsed.competencies["C1"].score == 160
+    assert parsed.competencies["C3"].score == 80
+    assert "generica" in parsed.competencies["C3"].comment
+    assert "parcialmente corrompido" in parsed.confidence_note

@@ -401,6 +401,103 @@ def _normalize_json_correction_payload(payload: dict) -> dict:
     }
 
 
+def _jsonish_text(raw_text: str) -> str:
+    text = raw_text.replace('\\"', '"')
+    text = text.replace("\\n", "\n")
+    text = text.replace("\\r", "\n")
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text
+
+
+def _extract_jsonish_score_range(raw_text: str, competencies: dict[str, EssayCompetencyResult]) -> tuple[int, int]:
+    text = _jsonish_text(raw_text)
+    range_match = re.search(
+        r'"estimated_score_range"\s*:\s*\{.*?"min"\s*:\s*([0-9]{1,4}).*?"max"\s*:\s*([0-9]{1,4})',
+        text,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    if range_match:
+        return int(range_match.group(1)), int(range_match.group(2))
+
+    score_match = re.search(r'"(?:score|nota|nota_estimada)"\s*:\s*([0-9]{1,4})', text, flags=re.IGNORECASE)
+    if score_match:
+        score = int(score_match.group(1))
+        return score, score
+
+    summed = sum(item.score for item in competencies.values())
+    return summed, summed
+
+
+def _extract_jsonish_competency_section(text: str, key: str) -> str:
+    start_match = re.search(rf'"?{key}"?\s*:\s*\{{', text, flags=re.IGNORECASE)
+    if not start_match:
+        return ""
+
+    start = start_match.end()
+    next_patterns = [
+        re.search(rf'"?{next_key}"?\s*:\s*\{{', text[start:], flags=re.IGNORECASE)
+        for next_key in VALID_COMPETENCY_KEYS[VALID_COMPETENCY_KEYS.index(key) + 1 :]
+    ]
+    next_offsets = [match.start() for match in next_patterns if match is not None]
+    end = start + min(next_offsets) if next_offsets else len(text)
+    return text[start:end]
+
+
+def _extract_jsonish_comment(section: str) -> str:
+    comment_match = re.search(
+        r'"(?:comment|comentario|comentário|feedback|justificativa)"\s*:\s*"(.*?)"(?=\s*[,}])',
+        section,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    if comment_match:
+        return re.sub(r"\s+", " ", comment_match.group(1)).strip()
+
+    motive_match = re.search(
+        r'"(?:motivo|analysis|analise)"\s*:\s*"(.*?)"(?=\s*[,}])',
+        section,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    if motive_match:
+        return re.sub(r"\s+", " ", motive_match.group(1)).strip()
+    return ""
+
+
+def _parse_jsonish_correction_output(raw_text: str) -> ParsedEssayCorrection | None:
+    text = _jsonish_text(raw_text)
+    if "estimated_score_range" not in text and "competencies" not in text and "competencias" not in text:
+        return None
+
+    competencies: dict[str, EssayCompetencyResult] = {}
+    for key in VALID_COMPETENCY_KEYS:
+        section = _extract_jsonish_competency_section(text, key)
+        if not section:
+            return None
+
+        score_match = re.search(r'"(?:score|nota|pontuacao|pontuação)"\s*:\s*([0-9]{1,3})', section, flags=re.IGNORECASE)
+        comment = _extract_jsonish_comment(section)
+        if score_match is None or not comment:
+            return None
+
+        score = int(score_match.group(1))
+        if score < 0 or score > 200:
+            raise EssayCorrectionInvalidResponseError(f"O JSON quebrado trouxe nota fora da faixa para {key}.")
+        competencies[key] = EssayCompetencyResult(score=score, comment=comment)
+
+    estimated_min, estimated_max = _extract_jsonish_score_range(text, competencies)
+    if estimated_min < 0 or estimated_max > 1000 or estimated_max < estimated_min:
+        raise EssayCorrectionInvalidResponseError("O JSON quebrado trouxe faixa de nota fora da faixa esperada.")
+
+    return ParsedEssayCorrection(
+        estimated_score_min=estimated_min,
+        estimated_score_max=estimated_max,
+        competencies=competencies,
+        strengths=["A resposta do modelo veio com JSON corrompido; revise os comentarios por competencia."],
+        weaknesses=["A resposta precisou ser recuperada de forma defensiva por instabilidade no formato do modelo."],
+        improvement_plan=["Leia C1 a C5 e priorize a competencia com menor pontuacao na proxima reescrita."],
+        confidence_note=f"{DEFAULT_CONFIDENCE_NOTE} Resposta recuperada de JSON parcialmente corrompido.",
+    )
+
+
 def _parse_json_correction_output(raw_text: str) -> ParsedEssayCorrection | None:
     try:
         payload = parse_json_object(raw_text)
@@ -476,6 +573,10 @@ def _parse_correction_output_defensive(raw_text: str) -> ParsedEssayCorrection:
     json_parsed = _parse_json_correction_output(cleaned)
     if json_parsed is not None:
         return json_parsed
+
+    jsonish_parsed = _parse_jsonish_correction_output(cleaned)
+    if jsonish_parsed is not None:
+        return jsonish_parsed
 
     competencies = {key: _parse_competency_section(cleaned, key) for key in VALID_COMPETENCY_KEYS}
     final_section = _extract_section(cleaned, "NOTA FINAL ESTIMADA")
