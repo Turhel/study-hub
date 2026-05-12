@@ -15,6 +15,17 @@ Não há autenticação, multiusuário, Docker, Ollama, correção de redação,
 - contratos principais de API para consumo do frontend: `docs/api-contracts.md`
 - handoff seguro para continuidade manual/OpenClaude: `docs/AI_HANDOFF.md`
 
+## Estado Da v1
+
+- Frontend: publicado no Vercel em `https://study-hub-eight-alpha.vercel.app`.
+- Backend: publicado no Render em `https://study-hub-7fxk.onrender.com`.
+- Banco principal: Supabase/Postgres via `DATABASE_URL`.
+- SQLite local: suportado para desenvolvimento, fallback e modo offline/faculdade.
+- LLM/OpenRouter: experimental; a correcao automatica de redacao pode falhar dependendo do modelo.
+- Redacao manual: fluxo recomendado da v1 para correcao confiavel, usando IA externa e registro manual C1-C5.
+- Testes de fechamento: `python -m compileall backend\app`, `PYTHONPATH=backend python -m pytest .`, `npm --prefix frontend run typecheck` e `npm --prefix frontend run build`.
+- Modulos principais implementados: Today/foco do dia, guia de carga, registro de questoes, atividade, estatisticas, gamificacao, aulas, modo livre, simulados, timer, redacao automatica experimental e redacao manual.
+
 ## Rodar Backend
 
 ```powershell
