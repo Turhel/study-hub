@@ -6,6 +6,7 @@ import type {
   EssayCorrectionListItem,
   EssayCorrectionResponse,
   EssayCorrectionStoredResponse,
+  EssayExternalPromptTemplateResponse,
   EssayManualCorrectionPayload,
   EssayStudySessionCloseResponse,
   EssayStudySessionListItem,
@@ -595,6 +596,16 @@ export async function createManualEssayCorrection(
   }
 
   return response.json() as Promise<EssayCorrectionStoredResponse>;
+}
+
+export async function getEssayExternalPromptTemplate(): Promise<EssayExternalPromptTemplateResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/external-prompt-template`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar o prompt calibrado de redacao.");
+  }
+
+  return response.json() as Promise<EssayExternalPromptTemplateResponse>;
 }
 
 export async function getEssayCorrections(limit = 20): Promise<EssayCorrectionListItem[]> {

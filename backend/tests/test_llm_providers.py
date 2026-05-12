@@ -142,6 +142,17 @@ def test_manual_essay_correction_endpoint_saves_without_llm(monkeypatch, tmp_pat
     assert history[0]["c1"] == 160
 
 
+def test_external_prompt_template_endpoint_reads_calibrated_prompt() -> None:
+    with TestClient(app) as client:
+        response = client.get("/api/essay/external-prompt-template")
+
+    assert response.status_code == 200
+    template = response.json()["template"]
+    assert "MODO CALIBRADO, REALISTA" in template
+    assert "ANTISSUPERESTIMA" in template
+    assert "TEMA OFICIAL EXATO" in template
+
+
 def test_essay_parser_contract_still_accepts_structured_json() -> None:
     parsed = _parse_correction_output_defensive(
         json.dumps(

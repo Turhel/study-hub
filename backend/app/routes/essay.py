@@ -9,6 +9,7 @@ from app.schemas import (
     EssayCorrectionRequest,
     EssayCorrectionResponse,
     EssayCorrectionStoredResponse,
+    EssayExternalPromptTemplateResponse,
     EssayManualCorrectionRequest,
 )
 from app.settings import get_essay_correction_enabled, get_llm_enabled
@@ -19,6 +20,7 @@ from app.services.essay_service import (
     correct_essay,
     create_essay_correction,
     create_manual_essay_correction,
+    get_external_prompt_template,
     get_essay_correction,
     list_essay_corrections,
 )
@@ -112,6 +114,18 @@ def create_manual_essay_correction_route(payload: EssayManualCorrectionRequest) 
         return create_manual_essay_correction(payload)
     except EssayCorrectionError as exc:
         raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
+
+
+@router.get(
+    "/external-prompt-template",
+    response_model=EssayExternalPromptTemplateResponse,
+    responses={400: {"model": ApiErrorResponse}},
+)
+def get_external_prompt_template_route() -> EssayExternalPromptTemplateResponse:
+    try:
+        return get_external_prompt_template()
+    except EssayCorrectionError as exc:
+        raise HTTPException(status_code=400, detail={"code": "prompt_template_unavailable", "message": str(exc)}) from exc
 
 
 @router.get(

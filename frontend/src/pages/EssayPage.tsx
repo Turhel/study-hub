@@ -9,6 +9,7 @@ import {
   createManualEssayCorrection,
   getEssayCorrection,
   getEssayCorrections,
+  getEssayExternalPromptTemplate,
   getSystemCapabilities,
   sendEssayStudyMessage,
 } from "../lib/api";
@@ -82,35 +83,54 @@ function splitManualItems(value: string): string[] {
     .filter(Boolean);
 }
 
-function buildExternalPrompt(theme: string, essayText: string, studentGoal: string): string {
+function buildExternalPrompt(template: string, theme: string, essayText: string, studentGoal: string): string {
   return [
-    "Corrija a redacao abaixo como uma redacao do ENEM.",
+    template.trim(),
     "",
-    "Use os criterios das competencias C1, C2, C3, C4 e C5, cada uma com nota entre 0 e 200.",
-    "Aceite que o tema pode ser oficial, simulado ou proposto pelo usuario. A nota deve ser uma estimativa assistida, nao nota oficial do INEP.",
+    "==================================================",
+    "DADOS PARA CORREÇÃO",
+    "==================================================",
     "",
-    `Tema: ${theme.trim() || "[cole o tema aqui]"}`,
-    `Objetivo do aluno: ${studentGoal.trim() || "Sem objetivo especifico informado."}`,
+    "TEMA OFICIAL EXATO:",
+    theme.trim() || "[cole o tema aqui]",
     "",
-    "Texto da redacao:",
+    "REDAÇÃO COMPLETA:",
     essayText.trim() || "[cole a redacao aqui]",
     "",
-    "Responda em formato facil de copiar, com esta estrutura:",
-    "Nota total: [soma de C1-C5]",
-    "C1: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
-    "C2: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
-    "C3: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
-    "C4: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
-    "C5: [0, 40, 80, 120, 160 ou 200] - [comentario curto]",
-    "Pontos fortes:",
-    "- ...",
-    "Pontos fracos:",
-    "- ...",
-    "Plano de melhoria:",
-    "- ...",
-    "Observacoes:",
-    "- ...",
+    "OBJETIVO DO ALUNO:",
+    studentGoal.trim() || "Não informado.",
   ].join("\n");
+}
+
+async function writeClipboardText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await Promise.race([
+        navigator.clipboard.writeText(text),
+        new Promise((_, reject) => {
+          window.setTimeout(() => reject(new Error("clipboard_timeout")), 2000);
+        }),
+      ]);
+      return;
+    } catch {
+      // Fallback below keeps the external prompt usable in stricter browser contexts.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) {
+    throw new Error("clipboard_unavailable");
+  }
 }
 
 function ResultList({ title, items }: { title: string; items: string[] }) {
@@ -464,6 +484,22 @@ export default function EssayPage() {
     },
   });
 
+  const externalPromptMutation = useMutation({
+    mutationFn: getEssayExternalPromptTemplate,
+    onSuccess: async ({ template }) => {
+      const prompt = buildExternalPrompt(template, theme, essayText, studentGoal);
+      try {
+        await writeClipboardText(prompt);
+        setCopyFeedback("Prompt calibrado copiado.");
+      } catch {
+        setCopyFeedback("Nao foi possivel copiar automaticamente. Selecione o texto do prompt e copie manualmente.");
+      }
+    },
+    onError: (error) => {
+      setCopyFeedback(getErrorMessage(error, "Nao foi possivel carregar o prompt calibrado."));
+    },
+  });
+
   const wordCount = useMemo(
     () => essayText.trim().split(/\s+/).filter(Boolean).length,
     [essayText],
@@ -541,13 +577,7 @@ export default function EssayPage() {
 
   async function copyExternalPrompt() {
     setCopyFeedback(null);
-    const prompt = buildExternalPrompt(theme, essayText, studentGoal);
-    try {
-      await navigator.clipboard.writeText(prompt);
-      setCopyFeedback("Prompt copiado.");
-    } catch {
-      setCopyFeedback("Nao foi possivel copiar automaticamente. Selecione o texto do prompt e copie manualmente.");
-    }
+    externalPromptMutation.mutate();
   }
 
   function submitManualCorrection() {
@@ -774,7 +804,7 @@ export default function EssayPage() {
                       <p>Copie um prompt estruturado, cole no ChatGPT, Gemini, Claude ou DeepSeek e registre o resultado aqui.</p>
                     </div>
                     <button type="button" className="app-secondary-action" onClick={copyExternalPrompt}>
-                      Copiar prompt para IA externa
+                      {externalPromptMutation.isPending ? "Copiando..." : "Copiar prompt para IA externa"}
                     </button>
                   </div>
                   {copyFeedback ? <p className="essay-loading-copy">{copyFeedback}</p> : null}

@@ -712,6 +712,10 @@ export type EssayManualCorrectionPayload = {
   notes?: string | null;
 };
 
+export type EssayExternalPromptTemplateResponse = {
+  template: string;
+};
+
 export type EssayScoreRange = {
   min: number;
   max: number;

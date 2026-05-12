@@ -287,6 +287,10 @@ class EssayManualCorrectionRequest(BaseModel):
     notes: str | None = None
 
 
+class EssayExternalPromptTemplateResponse(BaseModel):
+    template: str
+
+
 class EssaySubmissionResponse(BaseModel):
     id: int
     theme: str

@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from sqlmodel import Session, select
 
@@ -28,6 +29,7 @@ from app.schemas import (
     EssayCorrectionRequest,
     EssayCorrectionResponse,
     EssayCorrectionStoredResponse,
+    EssayExternalPromptTemplateResponse,
     EssayManualCorrectionRequest,
     EssayScoreRange,
     EssaySubmissionResponse,
@@ -40,6 +42,7 @@ VALID_MANUAL_SCORES = {0, 40, 80, 120, 160, 200}
 DEFAULT_CONFIDENCE_NOTE = "Estimativa assistida por modelo de IA configurado. Nao substitui correcao oficial."
 DEBUG_TEST_THEME = "TESTE_OPENROUTER_DELETE_ME"
 DEBUG_OUTPUT_LIMIT = 3000
+EXTERNAL_PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parents[3] / "docs" / "prompts" / "redacao_correcao.txt"
 logger = logging.getLogger(__name__)
 
 
@@ -933,6 +936,17 @@ def get_essay_correction(correction_id: int, session: Session | None = None) -> 
     finally:
         if own_session:
             db.close()
+
+
+def get_external_prompt_template() -> EssayExternalPromptTemplateResponse:
+    if not EXTERNAL_PROMPT_TEMPLATE_PATH.exists():
+        raise EssayCorrectionError(
+            "Template de correcao externa nao encontrado em docs/prompts/redacao_correcao.txt."
+        )
+    template = EXTERNAL_PROMPT_TEMPLATE_PATH.read_text(encoding="utf-8").strip()
+    if not template:
+        raise EssayCorrectionError("Template de correcao externa esta vazio.")
+    return EssayExternalPromptTemplateResponse(template=template)
 
 
 def list_essay_corrections(limit: int = 20, session: Session | None = None) -> list[EssayCorrectionListItem]:
