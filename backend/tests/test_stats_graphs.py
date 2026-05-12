@@ -15,6 +15,7 @@ from app.services.stats_service import (
     get_stats_heatmap,
     get_stats_timeseries,
 )
+import app.services.stats_service as stats_service
 
 
 @dataclass
@@ -53,7 +54,7 @@ def _add_attempts(
     session.commit()
 
 
-def _build_context() -> StatsContext:
+def _build_context(today_override: date | None = None) -> StatsContext:
     temp_dir = Path(tempfile.mkdtemp(prefix="study-stats-graphs-"))
     db_path = temp_dir / "stats_graphs.db"
     engine = create_db_engine(f"sqlite:///{db_path.as_posix()}")
@@ -96,19 +97,19 @@ def _build_context() -> StatsContext:
         SubjectProgress(
             subject_id=math_subject.id or 0,
             status="available",
-            last_attempt_at=date.today(),
+            last_attempt_at=today_override or date.today(),
         )
     )
     session.add(
         SubjectProgress(
             subject_id=chemistry_subject.id or 0,
             status="reviewable",
-            last_attempt_at=date.today(),
+            last_attempt_at=today_override or date.today(),
         )
     )
     session.commit()
 
-    today = date.today()
+    today = today_override or date.today()
     _add_attempts(
         session,
         attempt_date=today - timedelta(days=6),
@@ -195,8 +196,10 @@ def test_heatmap_filters_by_discipline() -> None:
         _cleanup_context(context)
 
 
-def test_timeseries_week_aggregates_correctly() -> None:
-    context = _build_context()
+def test_timeseries_week_aggregates_correctly(monkeypatch) -> None:
+    fixed_today = date(2026, 5, 7)
+    monkeypatch.setattr(stats_service, "_today", lambda: fixed_today)
+    context = _build_context(today_override=fixed_today)
     try:
         payload = get_stats_timeseries(context.session, group_by="week", days=14, discipline="Matematica")
 
