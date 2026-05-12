@@ -23,6 +23,7 @@ Não há autenticação, multiusuário, Docker, Ollama, correção de redação,
 - SQLite local: suportado para desenvolvimento, fallback e modo offline/faculdade.
 - LLM/OpenRouter: experimental; a correcao automatica de redacao pode falhar dependendo do modelo.
 - Redacao manual: fluxo recomendado da v1 para correcao confiavel, usando IA externa e registro manual C1-C5.
+- Prompt calibrado de redacao: `docs/prompts/redacao_correcao.txt`.
 - Testes de fechamento: `python -m compileall backend\app`, `PYTHONPATH=backend python -m pytest .`, `npm --prefix frontend run typecheck` e `npm --prefix frontend run build`.
 - Modulos principais implementados: Today/foco do dia, guia de carga, registro de questoes, atividade, estatisticas, gamificacao, aulas, modo livre, simulados, timer, redacao automatica experimental e redacao manual.
 
