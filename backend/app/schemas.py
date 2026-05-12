@@ -314,6 +314,23 @@ class EssayCorrectionStoredResponse(BaseModel):
     created_at: str
 
 
+class EssayCorrectionListItem(BaseModel):
+    correction_id: int
+    submission_id: int
+    theme: str
+    created_at: str
+    source: Literal["automatic", "manual"]
+    provider: str
+    estimated_score_min: int
+    estimated_score_max: int
+    total_score: int | None = None
+    c1: int
+    c2: int
+    c3: int
+    c4: int
+    c5: int
+
+
 class EssayStudySessionCreateRequest(BaseModel):
     essay_correction_id: int
 

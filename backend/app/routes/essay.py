@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas import (
     ApiErrorResponse,
     EssayCorrectionCreateRequest,
+    EssayCorrectionListItem,
     EssayCorrectionRequest,
     EssayCorrectionResponse,
     EssayCorrectionStoredResponse,
@@ -19,6 +20,7 @@ from app.services.essay_service import (
     create_essay_correction,
     create_manual_essay_correction,
     get_essay_correction,
+    list_essay_corrections,
 )
 
 
@@ -108,6 +110,18 @@ def create_essay_correction_route(payload: EssayCorrectionCreateRequest) -> Essa
 def create_manual_essay_correction_route(payload: EssayManualCorrectionRequest) -> EssayCorrectionStoredResponse:
     try:
         return create_manual_essay_correction(payload)
+    except EssayCorrectionError as exc:
+        raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
+
+
+@router.get(
+    "/corrections",
+    response_model=list[EssayCorrectionListItem],
+    responses={400: {"model": ApiErrorResponse}},
+)
+def list_essay_corrections_route(limit: int = Query(default=20, ge=1, le=100)) -> list[EssayCorrectionListItem]:
+    try:
+        return list_essay_corrections(limit=limit)
     except EssayCorrectionError as exc:
         raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(exc)}) from exc
 

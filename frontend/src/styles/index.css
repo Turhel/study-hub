@@ -4335,6 +4335,7 @@ textarea {
 .essay-capabilities-panel,
 .essay-grid,
 .essay-result-panel,
+.essay-history-panel,
 .essay-study-panel,
 .essay-empty-result {
   grid-column: auto;
@@ -4437,6 +4438,7 @@ textarea {
 .essay-form-panel,
 .essay-side-panel,
 .essay-study-panel,
+.essay-history-panel,
 .essay-result-panel {
   display: grid;
   gap: 0.85rem;
@@ -4690,6 +4692,73 @@ textarea {
   white-space: pre-wrap;
 }
 
+.essay-history-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.essay-history-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(12rem, auto) auto;
+  gap: 0.75rem;
+  align-items: center;
+  border: 2px solid rgba(112, 133, 170, 0.34);
+  border-radius: 12px;
+  background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.12) 100%);
+  padding: 0.8rem;
+}
+
+.essay-history-card-main {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.essay-history-card-main span,
+.essay-history-card-main small,
+.essay-history-score span,
+.essay-history-competencies span {
+  color: rgba(206, 217, 235, 0.78);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.essay-history-card-main strong {
+  overflow: hidden;
+  color: var(--app-text);
+  font-size: 0.94rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.essay-history-score {
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+.essay-history-score strong {
+  display: block;
+  color: #f8fbff;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.essay-history-competencies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  justify-content: flex-end;
+}
+
+.essay-history-competencies span {
+  border: 1px solid rgba(112, 133, 170, 0.34);
+  border-radius: 999px;
+  background: rgba(11, 21, 42, 0.72);
+  padding: 0.22rem 0.42rem;
+}
+
 .essay-study-heading {
   align-items: flex-start;
 }
@@ -4830,6 +4899,17 @@ textarea {
   .essay-manual-prompt-box {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .essay-history-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .essay-history-score,
+  .essay-history-competencies {
+    justify-content: flex-start;
+    text-align: left;
   }
 }
 

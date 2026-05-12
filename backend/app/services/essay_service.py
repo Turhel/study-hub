@@ -24,6 +24,7 @@ from app.models import EssayCorrection, EssaySubmission
 from app.schemas import (
     EssayCompetencyResult,
     EssayCorrectionCreateRequest,
+    EssayCorrectionListItem,
     EssayCorrectionRequest,
     EssayCorrectionResponse,
     EssayCorrectionStoredResponse,
@@ -929,6 +930,47 @@ def get_essay_correction(correction_id: int, session: Session | None = None) -> 
             raise EssayCorrectionError("Redacao original da correcao nao encontrada.")
 
         return _to_stored_response(submission, correction)
+    finally:
+        if own_session:
+            db.close()
+
+
+def list_essay_corrections(limit: int = 20, session: Session | None = None) -> list[EssayCorrectionListItem]:
+    resolved_limit = max(1, min(limit, 100))
+    own_session = session is None
+    db = session or get_session()
+    try:
+        rows = db.exec(
+            select(EssayCorrection, EssaySubmission)
+            .join(EssaySubmission, EssaySubmission.id == EssayCorrection.essay_submission_id)
+            .order_by(EssayCorrection.created_at.desc())
+            .limit(resolved_limit)
+        ).all()
+        items: list[EssayCorrectionListItem] = []
+        for correction, submission in rows:
+            is_manual = correction.provider == "manual_external"
+            total_score = (
+                correction.c1_score + correction.c2_score + correction.c3_score + correction.c4_score + correction.c5_score
+            )
+            items.append(
+                EssayCorrectionListItem(
+                    correction_id=correction.id or 0,
+                    submission_id=submission.id or 0,
+                    theme=submission.theme,
+                    created_at=correction.created_at.isoformat(),
+                    source="manual" if is_manual else "automatic",
+                    provider=correction.model if is_manual else correction.provider,
+                    estimated_score_min=correction.estimated_score_min,
+                    estimated_score_max=correction.estimated_score_max,
+                    total_score=total_score if is_manual else None,
+                    c1=correction.c1_score,
+                    c2=correction.c2_score,
+                    c3=correction.c3_score,
+                    c4=correction.c4_score,
+                    c5=correction.c5_score,
+                )
+            )
+        return items
     finally:
         if own_session:
             db.close()

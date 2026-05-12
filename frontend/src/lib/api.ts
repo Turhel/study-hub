@@ -3,6 +3,7 @@ import type {
   ActivityItem,
   BlockProgressDisciplineResponse,
   EssayCorrectionPayload,
+  EssayCorrectionListItem,
   EssayCorrectionResponse,
   EssayCorrectionStoredResponse,
   EssayManualCorrectionPayload,
@@ -594,6 +595,16 @@ export async function createManualEssayCorrection(
   }
 
   return response.json() as Promise<EssayCorrectionStoredResponse>;
+}
+
+export async function getEssayCorrections(limit = 20): Promise<EssayCorrectionListItem[]> {
+  const response = await fetch(`${API_BASE_URL}/api/essay/corrections?limit=${limit}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar o historico de redacoes.");
+  }
+
+  return response.json() as Promise<EssayCorrectionListItem[]>;
 }
 
 export async function getEssayCorrection(correctionId: number): Promise<EssayCorrectionStoredResponse> {

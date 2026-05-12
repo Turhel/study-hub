@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import {
@@ -7,11 +7,14 @@ import {
   createEssayCorrection,
   createEssayStudySession,
   createManualEssayCorrection,
+  getEssayCorrection,
+  getEssayCorrections,
   getSystemCapabilities,
   sendEssayStudyMessage,
 } from "../lib/api";
 import type {
   EssayCompetencyResult,
+  EssayCorrectionListItem,
   EssayCorrectionMode,
   EssayCorrectionStoredResponse,
   EssayExternalProvider,
@@ -42,6 +45,13 @@ function formatScoreRange(result?: EssayCorrectionStoredResponse | null): string
   return min === max ? String(min) : `${min}-${max}`;
 }
 
+function formatHistoryScore(item: EssayCorrectionListItem): string {
+  if (item.estimated_score_min === item.estimated_score_max) {
+    return String(item.estimated_score_min);
+  }
+  return `${item.estimated_score_min}-${item.estimated_score_max}`;
+}
+
 function formatDateTime(value?: string | null): string {
   if (!value) {
     return "Sem data";
@@ -56,6 +66,13 @@ function competencyLabel(key: string): string {
 
 function sortedCompetencies(competencies: Record<string, EssayCompetencyResult>) {
   return Object.entries(competencies).sort(([a], [b]) => a.localeCompare(b, "pt-BR", { numeric: true }));
+}
+
+function correctionSourceLabel(item: EssayCorrectionListItem): string {
+  if (item.source === "manual") {
+    return `Manual externa (${item.provider})`;
+  }
+  return `Automatica (${item.provider})`;
 }
 
 function splitManualItems(value: string): string[] {
@@ -171,6 +188,71 @@ function CorrectionResult({ result }: { result: EssayCorrectionStoredResponse })
   );
 }
 
+function EssayHistory({
+  items,
+  isLoading,
+  isError,
+  isOpening,
+  onOpen,
+}: {
+  items: EssayCorrectionListItem[];
+  isLoading: boolean;
+  isError: boolean;
+  isOpening: boolean;
+  onOpen: (correctionId: number) => void;
+}) {
+  return (
+    <section className="today-panel essay-history-panel">
+      <div className="today-section-heading">
+        <div>
+          <p className="today-eyebrow">Historico</p>
+          <h2>Correcoes salvas</h2>
+          <p>Ultimas redacoes corrigidas, automaticas ou registradas manualmente.</p>
+        </div>
+      </div>
+
+      {isLoading ? <p className="today-empty-copy">Carregando historico...</p> : null}
+      {isError ? <p className="today-form-error">Nao foi possivel carregar o historico agora.</p> : null}
+      {!isLoading && !isError && items.length === 0 ? (
+        <p className="today-empty-copy">Nenhuma correcao salva ainda. Corrija uma redacao ou registre uma correcao externa.</p>
+      ) : null}
+
+      {items.length > 0 ? (
+        <div className="essay-history-list">
+          {items.map((item) => (
+            <article key={item.correction_id} className="essay-history-card">
+              <div className="essay-history-card-main">
+                <span>{correctionSourceLabel(item)}</span>
+                <strong>{item.theme}</strong>
+                <small>{formatDateTime(item.created_at)}</small>
+              </div>
+              <div className="essay-history-score">
+                <span>Nota</span>
+                <strong>{formatHistoryScore(item)}</strong>
+              </div>
+              <div className="essay-history-competencies" aria-label="Notas por competencia">
+                <span>C1 {item.c1}</span>
+                <span>C2 {item.c2}</span>
+                <span>C3 {item.c3}</span>
+                <span>C4 {item.c4}</span>
+                <span>C5 {item.c5}</span>
+              </div>
+              <button
+                type="button"
+                className="app-secondary-action lessons-small-action"
+                disabled={isOpening}
+                onClick={() => onOpen(item.correction_id)}
+              >
+                Ver detalhes
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function StudyMessage({ message }: { message: EssayStudyMessageResponse }) {
   return (
     <article className={`essay-chat-message essay-chat-message-${message.role}`}>
@@ -228,6 +310,7 @@ function EssayNextStep({
 }
 
 export default function EssayPage() {
+  const queryClient = useQueryClient();
   const [theme, setTheme] = useState("");
   const [essayText, setEssayText] = useState("");
   const [studentGoal, setStudentGoal] = useState("");
@@ -259,6 +342,12 @@ export default function EssayPage() {
     retry: false,
   });
 
+  const historyQuery = useQuery({
+    queryKey: ["essay-corrections-history", 20],
+    queryFn: () => getEssayCorrections(20),
+    retry: 1,
+  });
+
   const capabilities = capabilitiesQuery.data;
   const correctionEnabled = Boolean(capabilities?.llm.enabled && capabilities.features.essay_correction_enabled);
   const studyEnabled = Boolean(capabilities?.llm.enabled && capabilities.features.essay_study_enabled);
@@ -278,6 +367,7 @@ export default function EssayPage() {
       setCorrection(result);
       setStudySession(null);
       setFormError(null);
+      queryClient.invalidateQueries({ queryKey: ["essay-corrections-history"] });
     },
     onError: (error) => {
       setFormError(getErrorMessage(error, "Nao foi possivel corrigir a redacao."));
@@ -305,6 +395,7 @@ export default function EssayPage() {
       setStudySession(null);
       setManualError(null);
       setEssayTab("manual");
+      queryClient.invalidateQueries({ queryKey: ["essay-corrections-history"] });
     },
     onError: (error) => {
       setManualError(getErrorMessage(error, "Nao foi possivel registrar a correcao manual."));
@@ -359,6 +450,17 @@ export default function EssayPage() {
     },
     onError: (error) => {
       setStudyError(getErrorMessage(error, "Nao foi possivel fechar a sessao."));
+    },
+  });
+
+  const detailMutation = useMutation({
+    mutationFn: getEssayCorrection,
+    onSuccess: (result) => {
+      setCorrection(result);
+      setStudySession(null);
+    },
+    onError: (error) => {
+      setFormError(getErrorMessage(error, "Nao foi possivel abrir a correcao."));
     },
   });
 
@@ -805,6 +907,14 @@ export default function EssayPage() {
             <p>Quando a IA estiver disponivel, a correcao persistida aparece aqui com nota, competencias e plano.</p>
           </section>
         )}
+
+        <EssayHistory
+          items={historyQuery.data ?? []}
+          isLoading={historyQuery.isLoading}
+          isError={historyQuery.isError}
+          isOpening={detailMutation.isPending}
+          onOpen={(correctionId) => detailMutation.mutate(correctionId)}
+        />
 
         <section className="today-panel essay-study-panel">
           <div className="today-section-heading essay-study-heading">

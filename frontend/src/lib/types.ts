@@ -752,6 +752,23 @@ export type EssayCorrectionStoredResponse = EssayCorrectionResponse & {
   created_at: string;
 };
 
+export type EssayCorrectionListItem = {
+  correction_id: number;
+  submission_id: number;
+  theme: string;
+  created_at: string;
+  source: "automatic" | "manual";
+  provider: string;
+  estimated_score_min: number;
+  estimated_score_max: number;
+  total_score: number | null;
+  c1: number;
+  c2: number;
+  c3: number;
+  c4: number;
+  c5: number;
+};
+
 export type EssayStudyMessageResponse = {
   id: number;
   role: "system" | "user" | "assistant";

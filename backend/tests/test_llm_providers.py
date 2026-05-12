@@ -121,6 +121,7 @@ def test_manual_essay_correction_endpoint_saves_without_llm(monkeypatch, tmp_pat
                 "notes": "Teste automatizado temporario.",
             },
         )
+        list_response = client.get("/api/essay/corrections?limit=20")
 
     engine.dispose()
     assert response.status_code == 200
@@ -131,6 +132,14 @@ def test_manual_essay_correction_endpoint_saves_without_llm(monkeypatch, tmp_pat
     assert payload["competencies"]["C1"]["score"] == 160
     assert payload["strengths"] == ["Tema claro"]
     assert payload["tokens_total"] == 0
+    assert list_response.status_code == 200
+    history = list_response.json()
+    assert history[0]["correction_id"] == payload["id"]
+    assert history[0]["theme"] == "TESTE_MANUAL_REDACAO_DELETE_ME"
+    assert history[0]["source"] == "manual"
+    assert history[0]["provider"] == "ChatGPT"
+    assert history[0]["total_score"] == 680
+    assert history[0]["c1"] == 160
 
 
 def test_essay_parser_contract_still_accepts_structured_json() -> None:
