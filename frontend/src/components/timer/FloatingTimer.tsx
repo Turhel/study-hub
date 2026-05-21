@@ -869,7 +869,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               />
             </div>
 
-            <p className="mt-6 text-xs font-bold uppercase tracking-normal text-zinc-500">Dificuldade TRI da questao</p>
+            <p className="mt-6 text-xs font-bold uppercase tracking-normal text-zinc-500">Sua dificuldade</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               {quickDifficultyLabels.map((difficulty) => (
                 <button
