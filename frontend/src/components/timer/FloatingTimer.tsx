@@ -893,7 +893,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               Anterior
             </button>
             <button className="timer-primary-action py-3 text-base" onClick={handleRegisterTimeAndAdvance} disabled={isSavingSession}>
-              {canGoNext ? "Registrar Tempo e Avancar (Enter)" : "Finalizar e Ver Gabarito"}
+              {canGoNext ? "Avançar (Enter)" : "Finalizar e Ver Gabarito"}
             </button>
             <button className="timer-widget-button-danger py-3" onClick={finishSession} disabled={isSavingSession}>
               Finalizar
