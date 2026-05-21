@@ -23,6 +23,8 @@ def _parse_date(value: str | None) -> date:
 
 def _difficulty(value: str | None, default: str = "media") -> str:
     normalized = (value or default).strip().lower()
+    if normalized == "medio":
+        normalized = "media"
     if normalized not in VALID_DIFFICULTIES:
         return default
     return normalized

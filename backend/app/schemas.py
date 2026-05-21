@@ -176,7 +176,7 @@ class QuestionAttemptBulkCreate(BaseModel):
     source: str | None = None
     quantity: int
     correct_count: int
-    difficulty_bank: str = "media"
+    difficulty_bank: str = Field(default="media")
     difficulty_personal: str | None = None
     elapsed_seconds: int | None = None
     confidence: str | None = None
@@ -1275,3 +1275,13 @@ class RoadmapMappingDisciplineResponse(BaseModel):
     mapped_examples: list[RoadmapMappingSubjectAuditItem]
     unmapped_examples: list[RoadmapMappingSubjectAuditItem]
     ambiguous_examples: list[RoadmapMappingSubjectAuditItem]
+
+
+class QuickQuestionAttemptRecord(BaseModel):
+    discipline: str
+    block_id: int
+    subject_id: int
+    is_correct: bool
+    time_spent: int
+    difficulty: str = "media"
+    study_mode: str = "guided"
