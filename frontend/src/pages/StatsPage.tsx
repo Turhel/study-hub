@@ -685,12 +685,13 @@ function TimeTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
           {points.map((point, index) => {
             const coord = actualCoords[index];
             const showLabel = index % labelStep === 0 || index === points.length - 1;
+            const labelAnchor = index === 0 ? "start" : index === points.length - 1 ? "end" : "middle";
             return (
               <g key={point.period}>
                 {coord ? <circle cx={coord.x} cy={coord.y} r="3.5" className="stats-line-dot stats-line-accent-gold" /> : null}
                 <title>{`${formatWeekLabel(point.start_date, point.end_date)} - ${formatSecondsShort(point.avg_time_correct_questions_seconds)}`}</title>
                 {showLabel ? (
-                  <text x={buildX(index, points.length, left, right, width)} y={bottom + 14} textAnchor="middle" className="stats-line-axis-label">
+                  <text x={buildX(index, points.length, left, right, width)} y={bottom + 14} textAnchor={labelAnchor} className="stats-line-axis-label">
                     {formatWeekTick(point.start_date)}
                   </text>
                 ) : null}

@@ -80,17 +80,69 @@ def _average(values: list[int | float]) -> float | None:
     return round(sum(values) / len(values), 2)
 
 
+def _looks_like_legacy_timer_total_time(attempts: list[QuestionAttempt]) -> bool:
+    if len(attempts) <= 1:
+        return False
+    if not any(not attempt.acertou for attempt in attempts):
+        return False
+    if not all(attempt.tempo_segundos is not None for attempt in attempts):
+        return False
+    sources = {(attempt.source or "").strip().lower() for attempt in attempts}
+    if not any(source.startswith("timer-") for source in sources):
+        return False
+    times = {attempt.tempo_segundos for attempt in attempts}
+    return len(times) == 1
+
+
+def _average_correct_time_seconds(attempts: list[QuestionAttempt]) -> float | None:
+    grouped: dict[tuple[date, str | None, str, int | None, int | None, int | None, str | None], list[QuestionAttempt]] = defaultdict(list)
+    for attempt in attempts:
+        if attempt.tempo_segundos is None:
+            continue
+        grouped[
+            (
+                attempt.data,
+                attempt.source,
+                attempt.disciplina,
+                attempt.block_id,
+                attempt.subject_id,
+                attempt.tempo_segundos,
+                attempt.observacoes,
+            )
+        ].append(attempt)
+
+    total_seconds = 0.0
+    total_correct = 0
+    for group in grouped.values():
+        correct_count = sum(1 for attempt in group if attempt.acertou)
+        if correct_count <= 0:
+            continue
+
+        first_time = group[0].tempo_segundos
+        if first_time is None:
+            continue
+
+        if _looks_like_legacy_timer_total_time(group):
+            total_seconds += first_time
+        else:
+            total_seconds += sum(
+                attempt.tempo_segundos or 0
+                for attempt in group
+                if attempt.acertou
+            )
+        total_correct += correct_count
+
+    if total_correct <= 0:
+        return None
+    return round(total_seconds / total_correct, 2)
+
+
 def _attempt_stats(attempts: list[QuestionAttempt]) -> _AttemptStats:
     correct = sum(1 for attempt in attempts if attempt.acertou)
-    correct_times = [
-        attempt.tempo_segundos
-        for attempt in attempts
-        if attempt.acertou and attempt.tempo_segundos is not None
-    ]
     return _AttemptStats(
         total=len(attempts),
         correct=correct,
-        average_time_correct_questions_seconds=_average(correct_times),
+        average_time_correct_questions_seconds=_average_correct_time_seconds(attempts),
     )
 
 

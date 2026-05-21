@@ -326,6 +326,39 @@ def test_bulk_sessions_without_correct_questions_are_ignored_for_time(monkeypatc
         _cleanup_context(context)
 
 
+def test_legacy_timer_total_time_rows_are_not_treated_as_per_question_time(monkeypatch) -> None:
+    fixed_today = date(2026, 5, 21)
+    monkeypatch.setattr(stats_service, "_today", lambda: fixed_today)
+    context = _build_context(today_override=fixed_today)
+    try:
+        _clear_attempts(context)
+        for index in range(20):
+            context.session.add(
+                QuestionAttempt(
+                    data=fixed_today,
+                    source="timer-external",
+                    disciplina="MatemÃ¡tica",
+                    block_id=context.math_block_id,
+                    subject_id=context.math_subject_id,
+                    dificuldade_banco="media",
+                    dificuldade_pessoal="media",
+                    acertou=index < 18,
+                    tempo_segundos=40 * 60,
+                    observacoes="Treino via timer. Questoes puladas contam como incorretas.",
+                )
+            )
+        context.session.commit()
+
+        payload = get_stats_timeseries(context.session, group_by="day", days=1, discipline="Matematica")
+        point = payload.points[0]
+
+        assert point.questions_count == 20
+        assert point.correct_count == 18
+        assert point.avg_time_correct_questions_seconds == 133.33
+    finally:
+        _cleanup_context(context)
+
+
 def test_discipline_subject_breakdown_uses_counts_mastery_and_status() -> None:
     context = _build_context()
     try:
