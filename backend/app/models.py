@@ -177,6 +177,7 @@ class DailyStudyPlan(SQLModel, table=True):
     __tablename__ = "daily_study_plan"
 
     id: int | None = Field(default=None, primary_key=True)
+    plan_date: date = Field(index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
     total_planned_questions: int = Field(default=0, ge=0)
     status: str = Field(default="active", index=True)

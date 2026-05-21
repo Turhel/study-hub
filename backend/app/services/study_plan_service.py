@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlmodel import Session, select
 
 from app.core.rules import (
@@ -95,35 +96,43 @@ def _subject_label(subject: Subject) -> str:
     return subject.assunto
 
 
+def _study_timezone() -> ZoneInfo:
+    return ZoneInfo("America/Sao_Paulo")
+
+
 def _current_plan_day() -> date:
-    return date.today()
+    return datetime.now(_study_timezone()).date()
 
 
-def _created_at_local_day(value: datetime) -> date:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc).astimezone().date()
-    return value.astimezone().date()
+def _replace_stale_active_plans(session: Session, today: date) -> None:
+    session.exec(
+        update(DailyStudyPlan)
+        .where(DailyStudyPlan.status == "active")
+        .where(DailyStudyPlan.plan_date < today)
+        .values(status="replaced")
+    )
+    session.commit()
 
 
 def _latest_active_plan(session: Session, today: date) -> DailyStudyPlan | None:
-    plans = session.exec(
+    return session.exec(
         select(DailyStudyPlan)
         .where(DailyStudyPlan.status == "active")
+        .where(DailyStudyPlan.plan_date == today)
         .order_by(DailyStudyPlan.created_at.desc())
-    ).all()
-    for plan in plans:
-        if _created_at_local_day(plan.created_at) == today:
-            return plan
-    return None
+        .limit(1)
+    ).first()
 
 
 def _active_plans_for_day(session: Session, today: date) -> list[DailyStudyPlan]:
-    plans = session.exec(
-        select(DailyStudyPlan)
-        .where(DailyStudyPlan.status == "active")
-        .order_by(DailyStudyPlan.created_at.desc())
-    ).all()
-    return [plan for plan in plans if _created_at_local_day(plan.created_at) == today]
+    return list(
+        session.exec(
+            select(DailyStudyPlan)
+            .where(DailyStudyPlan.status == "active")
+            .where(DailyStudyPlan.plan_date == today)
+            .order_by(DailyStudyPlan.created_at.desc())
+        ).all()
+    )
 
 
 def _execution_progress(
@@ -987,7 +996,11 @@ def _create_plan(
     question_counts: list[int],
 ) -> DailyStudyPlan:
     total_questions = sum(question_counts)
-    plan = DailyStudyPlan(total_planned_questions=total_questions, status="active")
+    plan = DailyStudyPlan(
+        plan_date=_current_plan_day(),
+        total_planned_questions=total_questions,
+        status="active",
+    )
     session.add(plan)
     session.flush()
     session.refresh(plan)
@@ -1013,6 +1026,7 @@ def _create_plan(
 
 def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
     today = _current_plan_day()
+    _replace_stale_active_plans(session, today)
     existing_plan = _latest_active_plan(session, today)
     if existing_plan is not None and existing_plan.id is not None:
         existing_items = _items_for_plan(session, existing_plan, today)

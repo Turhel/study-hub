@@ -6,6 +6,7 @@ import os
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 from urllib.parse import urlparse
 
 from sqlmodel import Session, select
@@ -379,7 +380,13 @@ def _create_demo_plan(
     selection: DemoSelection,
     created_at: datetime,
 ) -> dict[str, Any]:
+    created_at_utc = (
+        created_at.replace(tzinfo=ZoneInfo("UTC"))
+        if created_at.tzinfo is None
+        else created_at.astimezone(ZoneInfo("UTC"))
+    )
     plan = DailyStudyPlan(
+        plan_date=created_at_utc.astimezone(ZoneInfo("America/Sao_Paulo")).date(),
         created_at=created_at,
         total_planned_questions=DEFAULT_PLAN_TOTAL,
         status="active",

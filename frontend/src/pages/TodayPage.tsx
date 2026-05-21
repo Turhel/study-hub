@@ -36,6 +36,10 @@ type AttemptForm = {
   notes: string;
 };
 
+function studyPlanTodayLocalDateKey(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
 const defaultAttemptForm: AttemptForm = {
   quantity: 10,
   correct_count: 0,
@@ -493,8 +497,13 @@ export default function TodayPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const { pendingCompletion, consumePendingCompletion } = useStudyTimer();
 
+  const studyPlanTodayQueryKey = useMemo(
+    () => ["study-plan-today", studyPlanTodayLocalDateKey()] as const,
+    [],
+  );
+
   const planQuery = useQuery({
-    queryKey: ["study-plan-today"],
+    queryKey: studyPlanTodayQueryKey,
     queryFn: getStudyPlanToday,
     retry: false,
   });
@@ -526,7 +535,7 @@ export default function TodayPage() {
 
   const refreshTodayData = async () => {
     await Promise.all([
-      queryClient.refetchQueries({ queryKey: ["study-plan-today"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: studyPlanTodayQueryKey, type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-plan-calendar"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-guide-preferences"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
