@@ -713,6 +713,22 @@ export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPaylo
   return response.json() as Promise<QuestionAttemptBulkResponse>;
 }
 
+export async function saveQuestionAttemptsQuickSync(payload: QuestionAttemptBulkPayload): Promise<QuestionAttemptBulkResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/question-attempts/quick-sync`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel sincronizar as questoes do timer.");
+  }
+
+  return response.json() as Promise<QuestionAttemptBulkResponse>;
+}
+
 export async function saveTimerSession(payload: TimerSessionPayload): Promise<{ id: number }> {
   const response = await fetch(`${API_BASE_URL}/api/timer-sessions`, {
     method: "POST",

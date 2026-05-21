@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { createSession, formatTime, getTimeTone } from "../../lib/timer";
-import type { QuestionEntry, SessionSetup, TimerLaunchPreset, TimerSession } from "../../lib/timerTypes";
+import { saveQuestionAttemptsQuickSync, saveTimerSession } from "../../lib/api";
+import { buildTimerSessionPayload, createSession, formatTime, getTimeTone, saveLocalSession } from "../../lib/timer";
+import type { QuestionEntry, SessionSetup, SessionSummaryForm, TimerLaunchPreset, TimerSession } from "../../lib/timerTypes";
 import QuestionProgress from "./QuestionProgress";
-import SessionSummaryModal from "./SessionSummaryModal";
 import TimerControls from "./TimerControls";
 
 type FloatingTimerProps = {
   preset?: TimerLaunchPreset | null;
+};
+
+type QuickAnswer = {
+  isCorrect: boolean | null;
+  difficulty: "facil" | "media" | "dificil";
 };
 
 const defaultSetup: SessionSetup = {
@@ -21,6 +27,12 @@ const defaultSetup: SessionSetup = {
   blockId: null,
   subjectId: null,
 };
+
+const quickDifficultyLabels: Array<{ value: QuickAnswer["difficulty"]; label: string }> = [
+  { value: "facil", label: "Facil" },
+  { value: "media", label: "Medio" },
+  { value: "dificil", label: "Dificil" },
+];
 
 function buildSetupFromPreset(preset?: TimerLaunchPreset | null): SessionSetup {
   if (!preset) {
@@ -92,12 +104,45 @@ function activateQuestion(question: QuestionEntry): QuestionEntry {
   };
 }
 
+function quickAnswerFor(current?: QuickAnswer): QuickAnswer {
+  return current ?? { isCorrect: null, difficulty: "media" };
+}
+
+function averageQuickDifficulty(answers: QuickAnswer[]): QuickAnswer["difficulty"] {
+  if (!answers.length) {
+    return "media";
+  }
+
+  const total = answers.reduce((sum, answer) => sum + (answer.difficulty === "dificil" ? 2 : answer.difficulty === "media" ? 1 : 0), 0);
+  const average = total / answers.length;
+
+  if (average >= 1.5) {
+    return "dificil";
+  }
+  if (average >= 0.65) {
+    return "media";
+  }
+  return "facil";
+}
+
+function sessionFormFromQuick(answers: QuickAnswer[]): SessionSummaryForm {
+  const difficulty = averageQuickDifficulty(answers);
+  return {
+    difficulty: difficulty === "dificil" ? "alta" : difficulty === "media" ? "media" : "baixa",
+    perceivedVolume: "ok",
+    notes: "Registro rapido do Timer V2.",
+  };
+}
+
 export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
+  const queryClient = useQueryClient();
   const [setup, setSetup] = useState<SessionSetup>(() => buildSetupFromPreset(preset));
   const [session, setSession] = useState<TimerSession | null>(null);
   const [showQuestionMap, setShowQuestionMap] = useState(true);
-  const [summarySession, setSummarySession] = useState<TimerSession | null>(null);
+  const [quickAnswers, setQuickAnswers] = useState<Record<number, QuickAnswer>>({});
   const [floatingMessage, setFloatingMessage] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isSavingSession, setIsSavingSession] = useState(false);
   const controllerWindowRef = useRef<Window | null>(null);
   const controllerModeRef = useRef<"pip" | "popup" | null>(null);
 
@@ -107,6 +152,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     }
     return session.questions[session.activeQuestionIndex] ?? null;
   }, [session]);
+
+  const activeQuickAnswer = activeQuestion ? quickAnswerFor(quickAnswers[activeQuestion.index]) : quickAnswerFor();
 
   useEffect(() => {
     if (!session) {
@@ -163,10 +210,21 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     });
   }
 
+  function updateQuickAnswer(index: number, patch: Partial<QuickAnswer>) {
+    setQuickAnswers((current) => ({
+      ...current,
+      [index]: {
+        ...quickAnswerFor(current[index]),
+        ...patch,
+      },
+    }));
+  }
+
   function startSession() {
-    setSummarySession(null);
+    setQuickAnswers({});
     setSession(createSession(setup));
     setFloatingMessage(null);
+    setSaveMessage(null);
   }
 
   function transitionToQuestion(nextIndex: number, currentStatus: "completed" | "skipped" | "auto" = "auto") {
@@ -196,7 +254,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     });
   }
 
-  function moveQuestion(offset: number) {
+  function moveQuestion(offset: number, currentStatus: "completed" | "skipped" | "auto" = "auto") {
     setSession((current) => {
       if (!current) {
         return current;
@@ -208,7 +266,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
 
       const questions = current.questions.map((question, index) => {
         if (index === current.activeQuestionIndex) {
-          return settleActiveQuestion(question, "auto");
+          return settleActiveQuestion(question, currentStatus);
         }
         if (index === nextIndex) {
           return activateQuestion(question);
@@ -268,6 +326,14 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
         return question;
       });
 
+      setQuickAnswers((answers) => ({
+        ...answers,
+        [currentIndex]: {
+          ...quickAnswerFor(answers[currentIndex]),
+          isCorrect: false,
+        },
+      }));
+
       return {
         ...current,
         questions,
@@ -276,8 +342,92 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     });
   }
 
+  function goToNextQuestion() {
+    if (!session || !activeQuestion) {
+      return;
+    }
+
+    if (!canGoNext) {
+      finishSession();
+      return;
+    }
+
+    if (activeQuickAnswer.isCorrect === null) {
+      moveQuestion(1, "auto");
+      return;
+    }
+
+    moveQuestion(1, "completed");
+  }
+
   function togglePause() {
     setSession((current) => (current ? { ...current, isPaused: !current.isPaused } : current));
+  }
+
+  async function persistFinishedSession(finishedSession: TimerSession) {
+    const answeredEntries = Object.entries(quickAnswers)
+      .map(([index, answer]) => ({ index: Number(index), answer }))
+      .filter(({ index, answer }) => Number.isFinite(index) && answer.isCorrect !== null && finishedSession.questions[index]);
+    const answered = answeredEntries.map(({ answer }) => answer);
+    const form = sessionFormFromQuick(answered);
+
+    saveLocalSession(finishedSession);
+    setIsSavingSession(true);
+    setSaveMessage("Salvando sessao...");
+
+    try {
+      const sessionResponse = await saveTimerSession(buildTimerSessionPayload(finishedSession, form));
+      let syncMessage = "Sem respostas rapidas para sincronizar com o guia.";
+
+      if (answeredEntries.length > 0) {
+        if (!finishedSession.setup.blockId || !finishedSession.setup.subjectId) {
+          syncMessage = "Sessao salva, mas sem block_id/subject_id o guia ainda nao consegue aprender com este treino.";
+        } else {
+          const totalSecondsSpent = answeredEntries.reduce(
+            (total, { index }) => total + (finishedSession.questions[index]?.elapsedSeconds ?? 0),
+            0,
+          );
+          const correctCount = answered.filter((answer) => answer.isCorrect).length;
+          const difficulty = averageQuickDifficulty(answered);
+          const response = await saveQuestionAttemptsQuickSync({
+            discipline: finishedSession.setup.discipline,
+            block_id: finishedSession.setup.blockId,
+            subject_id: finishedSession.setup.subjectId,
+            source: finishedSession.setup.questionSource === "db" ? "timer-v2-db" : "timer-v2-external",
+            quantity: answeredEntries.length,
+            correct_count: correctCount,
+            difficulty_bank: difficulty,
+            difficulty_personal: difficulty,
+            elapsed_seconds: totalSecondsSpent,
+            confidence: null,
+            error_type: answered.some((answer) => answer.isCorrect === false) ? "timer_v2_quick_miss" : null,
+            notes: "Timer V2 quick-sync. Respostas registradas durante o treino.",
+            study_mode: "guided",
+          });
+
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["study-plan-today"] }),
+            queryClient.invalidateQueries({ queryKey: ["activity-today"] }),
+            queryClient.invalidateQueries({ queryKey: ["activity-recent"] }),
+            queryClient.invalidateQueries({ queryKey: ["gamification-summary"] }),
+            queryClient.invalidateQueries({ queryKey: ["stats-overview"] }),
+            queryClient.invalidateQueries({ queryKey: ["stats-discipline"] }),
+          ]);
+
+          syncMessage = `${response.created_attempts} questoes sincronizadas. ${response.impact_message ?? ""}`.trim();
+        }
+      }
+
+      setSaveMessage(`Sessao #${sessionResponse.id} salva. ${syncMessage}`);
+      window.setTimeout(() => {
+        setSession(null);
+        setQuickAnswers({});
+      }, 900);
+    } catch {
+      setSaveMessage("Sessao salva localmente, mas o backend nao respondeu para finalizar o treino.");
+    } finally {
+      setIsSavingSession(false);
+    }
   }
 
   function finishSession() {
@@ -288,7 +438,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
 
       const questions = current.questions.map((question, index) =>
         index === current.activeQuestionIndex && question.status === "active"
-          ? settleActiveQuestion(question, "auto")
+          ? settleActiveQuestion(question, activeQuickAnswer.isCorrect === null ? "auto" : "completed")
           : question,
       );
 
@@ -300,7 +450,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
       };
 
       closeFloatingController();
-      window.setTimeout(() => setSummarySession(nextSession), 0);
+      void persistFinishedSession(nextSession);
       return nextSession;
     });
   }
@@ -312,9 +462,10 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     }
 
     closeFloatingController();
-    setSummarySession(null);
     setSession(null);
     setFloatingMessage(null);
+    setSaveMessage(null);
+    setQuickAnswers({});
     setSetup(buildSetupFromPreset(preset));
   }
 
@@ -379,7 +530,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     `;
 
     (controllerWindow.document.getElementById("previous") as HTMLButtonElement | null)?.addEventListener("click", () => moveQuestion(-1));
-    (controllerWindow.document.getElementById("next") as HTMLButtonElement | null)?.addEventListener("click", () => moveQuestion(1));
+    (controllerWindow.document.getElementById("next") as HTMLButtonElement | null)?.addEventListener("click", goToNextQuestion);
     (controllerWindow.document.getElementById("pause") as HTMLButtonElement | null)?.addEventListener("click", togglePause);
     (controllerWindow.document.getElementById("complete") as HTMLButtonElement | null)?.addEventListener("click", completeCurrentQuestion);
     (controllerWindow.document.getElementById("skip") as HTMLButtonElement | null)?.addEventListener("click", skipCurrentQuestion);
@@ -439,6 +590,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   const overtimeLabel = ratio === 0 ? "No alvo" : setup.mode === "prova" ? "Acima do alvo" : "Tempo extra";
   const canGoPrevious = Boolean(session && session.activeQuestionIndex > 0);
   const canGoNext = Boolean(session && session.activeQuestionIndex < session.questions.length - 1);
+  const answeredCount = Object.values(quickAnswers).filter((answer) => answer.isCorrect !== null).length;
+  const correctCount = Object.values(quickAnswers).filter((answer) => answer.isCorrect === true).length;
 
   if (!session) {
     return (
@@ -450,8 +603,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                 <p className="text-xs font-semibold uppercase tracking-normal text-sky-300">Treino guiado</p>
                 <h1 className="mt-1 text-3xl font-semibold text-zinc-50">Preparar foco</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-                  O treino ja pode sair do plano do dia com disciplina, assunto e quantidade recomendada. Antes de iniciar, voce ainda
-                  pode ajustar a quantidade, o modo e a origem das questoes.
+                  Ajuste o foco, inicie o timer e registre cada questao com dois toques: resultado e dificuldade.
                 </p>
               </div>
               <span className="timer-mode-badge">{setup.mode}</span>
@@ -495,7 +647,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               <label className="text-[11px] text-zinc-400">
                 Ritmo
-                <select className="timer-input mt-1" value={setup.mode} onChange={(event) => updateSetup("mode", event.target.value as SessionSetup["mode"])}>
+                <select className="timer-input mt-1 dark:bg-slate-900 dark:text-zinc-100 dark:border-slate-700" value={setup.mode} onChange={(event) => updateSetup("mode", event.target.value as SessionSetup["mode"])}>
                   <option value="prova">Modo prova</option>
                   <option value="livre">Modo livre</option>
                 </select>
@@ -504,12 +656,12 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               <label className="text-[11px] text-zinc-400">
                 Origem das questoes
                 <select
-                  className="timer-input mt-1"
+                  className="timer-input mt-1 dark:bg-slate-900 dark:text-zinc-100 dark:border-slate-700"
                   value={setup.questionSource}
                   onChange={(event) => updateSetup("questionSource", event.target.value as SessionSetup["questionSource"])}
                 >
                   <option value="external">PDF / livro / apostila / fora do DB</option>
-                  <option value="db">Banco de questoes (area pronta para integrar)</option>
+                  <option value="db">Banco de questoes</option>
                 </select>
               </label>
             </div>
@@ -541,12 +693,11 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           </div>
 
           <aside className="rounded-[20px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
-            <h2 className="text-lg font-semibold text-zinc-50">O que acontece depois</h2>
+            <h2 className="text-lg font-semibold text-zinc-50">Fluxo V2</h2>
             <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-400">
-              <p>1. O treino abre com a quantidade sugerida pelo foco do dia, mas voce pode editar.</p>
-              <p>2. O cronometro conta por questao e grava exatamente quanto tempo voce ficou em cada uma.</p>
-              <p>3. Se estiver resolvendo por PDF, abra o controle flutuante para manter tempo e navegacao na frente.</p>
-              <p>4. Ao finalizar, o app mostra os tempos por questao e, no modo fora do DB, abre o question maker.</p>
+              <p>1. Escolha acerto ou erro na questao atual.</p>
+              <p>2. Marque a dificuldade sentida.</p>
+              <p>3. Aperte proxima. No final, o guia recebe o lote consolidado.</p>
             </div>
           </aside>
         </section>
@@ -556,164 +707,147 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
 
   return (
     <main className="timer-shell px-4 py-6">
-      <section className="mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)]">
-        <div className="space-y-4">
-          <section className="rounded-[20px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-normal text-sky-300">Treino em andamento</p>
-                <h1 className="mt-1 text-3xl font-semibold text-zinc-50">
-                  {setup.discipline} - {setup.subject}
-                </h1>
-                <p className="mt-3 text-sm text-zinc-400">
-                  {setup.block} • {setup.questionCount} questoes •{" "}
-                  {setup.questionSource === "db" ? "Banco de questoes" : "PDF / livro / apostila"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="timer-widget-button-danger px-3 py-2" onClick={cancelTraining} aria-label="Cancelar treino">
-                  Cancelar
-                </button>
-                <button className="timer-close-button" onClick={finishSession} aria-label="Finalizar sessao">
-                  Finalizar
-                </button>
-              </div>
-            </div>
-
-            {showQuestionMap ? (
-              <div className="mt-5">
-                <QuestionProgress
-                  questions={session.questions}
-                  activeIndex={session.activeQuestionIndex}
-                  onSelectQuestion={(index) => transitionToQuestion(index, "auto")}
-                />
-              </div>
-            ) : null}
-          </section>
-
-          <section className="rounded-[20px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-              <button className="text-base font-semibold text-zinc-200 transition hover:text-white disabled:opacity-40" onClick={() => moveQuestion(-1)} disabled={!canGoPrevious}>
-                ← Anterior
-              </button>
-              <div className="text-center">
-                <p className="text-sm text-zinc-400">Questao {activeNumber} de {setup.questionCount}</p>
-                <strong className="mt-1 block text-2xl text-zinc-50">{formatTime(currentElapsed)}</strong>
-              </div>
-              <button className="text-base font-semibold text-zinc-200 transition hover:text-white disabled:opacity-40" onClick={() => moveQuestion(1)} disabled={!canGoNext}>
-                Proxima →
-              </button>
-            </div>
-
-            <div className="mt-5 rounded-[18px] border border-white/10 bg-black/20 p-5">
-              {setup.questionSource === "db" ? (
-                <div className="space-y-4">
-                  <p className="text-xs font-semibold uppercase tracking-normal text-amber-300">Integracao aguardando backend</p>
-                  <h2 className="text-xl font-semibold text-zinc-50">Area reservada para questao do banco</h2>
-                  <p className="max-w-3xl text-sm leading-6 text-zinc-400">
-                    O treino ja esta medindo tempo por questao e navegacao normalmente. Assim que existir um endpoint real para buscar
-                    questoes do DB, este bloco passa a renderizar enunciado, itens e recursos da questao atual.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-xs font-semibold uppercase tracking-normal text-sky-300">Resolva fora do app</p>
-                  <h2 className="text-xl font-semibold text-zinc-50">Use este treino junto com o PDF ou apostila</h2>
-                  <p className="max-w-3xl text-sm leading-6 text-zinc-400">
-                    Deixe o material aberto em outra janela. Aqui o app cuida do tempo por questao, da navegacao anterior/proxima e do
-                    fechamento da sessao. No final, voce descreve o que foi cada questao no question maker.
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <span className="text-xs font-semibold uppercase tracking-normal text-zinc-500">Questao atual</span>
-                      <strong className={`mt-2 block text-4xl font-semibold ${timeTone}`}>{formatTime(currentElapsed)}</strong>
-                      <p className="mt-2 text-sm text-zinc-400">
-                        {overtimeLabel} / meta {formatTime(setup.targetSecondsPerQuestion)}
-                      </p>
-                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className={
-                            setup.mode === "prova"
-                              ? "h-full rounded-full bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500"
-                              : "h-full rounded-full bg-zinc-400"
-                          }
-                          style={{ width: `${ratio * 100}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <span className="text-xs font-semibold uppercase tracking-normal text-zinc-500">Como usar</span>
-                      <ul className="mt-2 space-y-2 text-sm leading-6 text-zinc-400">
-                        <li>• Abra o PDF em outra janela ou tela.</li>
-                        <li>• Use o controle flutuante para manter o tempo sempre visivel.</li>
-                        <li>• Avance ou volte de questao conforme o material.</li>
-                        <li>• Finalize a sessao e preencha o question maker.</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-4">
-          <section className="rounded-[20px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
-            <div className="text-center">
-              <p className="text-xs font-semibold uppercase tracking-normal text-zinc-500">Tempo da questao</p>
-              <p className={`mt-3 text-6xl font-semibold leading-none tabular-nums transition-colors ${timeTone}`}>{formatTime(currentElapsed)}</p>
-              <p className="mt-3 text-sm text-zinc-400">
-                {session.isPaused ? "Sessao pausada" : "Sessao rodando"} • total {formatTime(session.totalElapsedSeconds)}
+      <section className="mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[minmax(0,0.7fr)_minmax(18rem,0.3fr)]">
+        <section className="space-y-4 rounded-[22px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-normal text-sky-300">Treino em andamento</p>
+              <h1 className="mt-1 text-2xl font-semibold text-zinc-50">
+                {setup.discipline} - {setup.subject}
+              </h1>
+              <p className="mt-2 text-sm text-zinc-400">
+                {setup.block} - {setup.questionSource === "db" ? "Banco de questoes" : "PDF / livro / apostila"}
               </p>
             </div>
+            <button className="timer-widget-button-danger px-3 py-2" onClick={cancelTraining} aria-label="Cancelar treino">
+              Cancelar
+            </button>
+          </div>
 
-            <div className="mt-5">
-              <TimerControls
-                hasSession
-                isRunning={Boolean(session.isRunning)}
-                isPaused={Boolean(session.isPaused)}
-                canGoPrevious={canGoPrevious}
-                canGoNext={canGoNext}
-                onStart={() => undefined}
-                onPause={togglePause}
-                onPrevious={() => moveQuestion(-1)}
-                onNext={() => moveQuestion(1)}
-                onComplete={completeCurrentQuestion}
-                onSkip={skipCurrentQuestion}
-                onToggleHistory={() => setShowQuestionMap((current) => !current)}
-                onOpenFloating={openFloatingController}
-                onFinish={finishSession}
+          {showQuestionMap ? (
+            <QuestionProgress
+              questions={session.questions}
+              activeIndex={session.activeQuestionIndex}
+              onSelectQuestion={(index) => transitionToQuestion(index, activeQuickAnswer.isCorrect === null ? "auto" : "completed")}
+            />
+          ) : null}
+
+          <div className="rounded-[24px] border border-sky-400/20 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Questao {activeNumber}</p>
+            <strong className={`mt-3 block text-7xl font-semibold leading-none tabular-nums ${timeTone}`}>{formatTime(currentElapsed)}</strong>
+            <p className="mt-3 text-sm text-zinc-400">
+              {overtimeLabel} - alvo {formatTime(setup.targetSecondsPerQuestion)}
+            </p>
+            <div className="mx-auto mt-4 h-2 max-w-md overflow-hidden rounded-full bg-white/10">
+              <div
+                className={
+                  setup.mode === "prova"
+                    ? "h-full rounded-full bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500"
+                    : "h-full rounded-full bg-zinc-400"
+                }
+                style={{ width: `${Math.max(4, ratio * 100)}%` }}
               />
             </div>
 
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                className={`rounded-2xl border px-5 py-5 text-lg font-black uppercase tracking-normal transition ${
+                  activeQuickAnswer.isCorrect === true
+                    ? "border-emerald-300 bg-emerald-400 text-slate-950 shadow-[0_0_24px_rgba(52,211,153,0.28)]"
+                    : "border-emerald-300/35 bg-emerald-400/10 text-emerald-100 opacity-75 hover:opacity-100"
+                }`}
+                onClick={() => activeQuestion && updateQuickAnswer(activeQuestion.index, { isCorrect: true })}
+              >
+                Acertei
+              </button>
+              <button
+                type="button"
+                className={`rounded-2xl border px-5 py-5 text-lg font-black uppercase tracking-normal transition ${
+                  activeQuickAnswer.isCorrect === false
+                    ? "border-rose-300 bg-rose-400 text-slate-950 shadow-[0_0_24px_rgba(251,113,133,0.25)]"
+                    : "border-rose-300/35 bg-rose-400/10 text-rose-100 opacity-75 hover:opacity-100"
+                }`}
+                onClick={() => activeQuestion && updateQuickAnswer(activeQuestion.index, { isCorrect: false })}
+              >
+                Errei
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {quickDifficultyLabels.map((difficulty) => (
+                <button
+                  key={difficulty.value}
+                  type="button"
+                  className={`rounded-2xl border px-4 py-3 text-sm font-bold transition dark:border-slate-700 dark:text-zinc-100 ${
+                    activeQuickAnswer.difficulty === difficulty.value
+                      ? "border-sky-300 bg-sky-400 text-slate-950 dark:bg-sky-400 dark:text-slate-950"
+                      : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06] dark:bg-slate-800 dark:text-zinc-100 dark:border-slate-700"
+                  }`}
+                  onClick={() => activeQuestion && updateQuickAnswer(activeQuestion.index, { difficulty: difficulty.value })}
+                >
+                  {difficulty.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[0.8fr_1.4fr_0.8fr]">
+            <button className="timer-widget-button py-3" onClick={() => moveQuestion(-1)} disabled={!canGoPrevious || isSavingSession}>
+              Anterior
+            </button>
+            <button className="timer-primary-action py-3 text-base" onClick={goToNextQuestion} disabled={isSavingSession}>
+              {canGoNext ? "Proxima ->" : "Finalizar treino"}
+            </button>
+            <button className="timer-widget-button-danger py-3" onClick={finishSession} disabled={isSavingSession}>
+              Finalizar
+            </button>
+          </div>
+        </section>
+
+        <aside className="space-y-4">
+          <section className="rounded-[22px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
+            <div className="grid gap-2">
+              <button className="timer-widget-button" onClick={togglePause}>
+                {session.isPaused ? "Retomar" : "Pausar"}
+              </button>
+              <button className="timer-widget-button" onClick={openFloatingController}>
+                Controle flutuante
+              </button>
+              <button className="timer-widget-button" onClick={() => setShowQuestionMap((current) => !current)}>
+                {showQuestionMap ? "Ocultar mapa" : "Mostrar mapa"}
+              </button>
+              <button className="timer-widget-button" onClick={skipCurrentQuestion} disabled={isSavingSession}>
+                Pular como erro
+              </button>
+            </div>
             {floatingMessage ? <p className="mt-4 text-xs leading-5 text-zinc-400">{floatingMessage}</p> : null}
+            {saveMessage ? <p className="mt-4 text-xs leading-5 text-zinc-300">{saveMessage}</p> : null}
           </section>
 
-          <section className="rounded-[20px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
-            <h2 className="text-lg font-semibold text-zinc-50">Leitura rapida</h2>
+          <section className="rounded-[22px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
+            <h2 className="text-lg font-semibold text-zinc-50">Sessao</h2>
             <div className="mt-4 grid gap-2">
+              <div className="timer-mini-stat">
+                <span>Respondidas</span>
+                <strong>{answeredCount}/{session.questions.length}</strong>
+              </div>
+              <div className="timer-mini-stat">
+                <span>Acertos</span>
+                <strong>{correctCount}</strong>
+              </div>
+              <div className="timer-mini-stat">
+                <span>Total</span>
+                <strong>{formatTime(session.totalElapsedSeconds)}</strong>
+              </div>
               <div className="timer-mini-stat">
                 <span>Modo</span>
                 <strong>{setup.mode}</strong>
-              </div>
-              <div className="timer-mini-stat">
-                <span>Origem</span>
-                <strong>{setup.questionSource === "db" ? "DB" : "Fora do DB"}</strong>
-              </div>
-              <div className="timer-mini-stat">
-                <span>Progresso</span>
-                <strong>
-                  {session.questions.filter((question) => question.status === "completed" || question.status === "skipped").length}/
-                  {session.questions.length}
-                </strong>
               </div>
             </div>
           </section>
         </aside>
       </section>
-
-      {summarySession ? <SessionSummaryModal session={summarySession} onClose={() => setSummarySession(null)} /> : null}
     </main>
   );
 }
