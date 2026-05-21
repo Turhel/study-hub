@@ -742,7 +742,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           </div>
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
-            <div className="grid grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr] gap-2 border-b border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold uppercase text-zinc-400">
+            <div className="hidden gap-2 border-b border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold uppercase text-zinc-400 sm:grid sm:grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr]">
               <span>Questao</span>
               <span>Tempo</span>
               <span>Resultado</span>
@@ -752,13 +752,17 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               {attemptedQuestions.map((question) => {
                 const answer = quickAnswerFor(quickAnswers[question.index]);
                 return (
-                  <div key={question.index} className="grid grid-cols-1 gap-3 px-3 py-3 sm:grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr] sm:items-center">
-                    <div>
-                      <p className="text-sm font-bold text-zinc-100">Questao {question.index + 1}</p>
-                      <p className="text-[11px] text-zinc-500">{question.status === "skipped" ? "Pulada no timer" : "Tempo registrado"}</p>
+                  <div key={question.index} className="grid grid-cols-1 gap-3 px-3 py-4 sm:grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr] sm:items-center sm:py-3">
+                    <div className="flex items-start justify-between gap-3 sm:block">
+                      <div>
+                        <p className="text-sm font-bold text-zinc-100">Questao {question.index + 1}</p>
+                        <p className="text-[11px] text-zinc-500">{question.status === "skipped" ? "Pulada no timer" : "Tempo registrado"}</p>
+                      </div>
+                      <strong className="text-lg tabular-nums text-zinc-100 sm:hidden">{formatTime(question.elapsedSeconds)}</strong>
                     </div>
-                    <strong className="text-sm tabular-nums text-zinc-200">{formatTime(question.elapsedSeconds)}</strong>
+                    <strong className="hidden text-sm tabular-nums text-zinc-200 sm:block">{formatTime(question.elapsedSeconds)}</strong>
                     <div className="grid grid-cols-2 gap-2">
+                      <span className="col-span-2 text-[11px] font-bold uppercase text-zinc-500 sm:hidden">Resultado</span>
                       <button
                         type="button"
                         className={`rounded-xl border px-3 py-2 text-xs font-black uppercase transition ${
@@ -782,13 +786,16 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                         Errei
                       </button>
                     </div>
-                    <input
-                      className="timer-input text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-zinc-100"
-                      value={answer.subtopic}
-                      disabled={answer.isCorrect !== false}
-                      onChange={(event) => updateQuickAnswer(question.index, { subtopic: event.target.value })}
-                      placeholder={answer.isCorrect === false ? "Ex: funcoes, estequiometria..." : "Opcional apenas se errou"}
-                    />
+                    <label className="grid gap-1">
+                      <span className="text-[11px] font-bold uppercase text-zinc-500 sm:hidden">Subassunto se errou</span>
+                      <input
+                        className="timer-input text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-zinc-100"
+                        value={answer.subtopic}
+                        disabled={answer.isCorrect !== false}
+                        onChange={(event) => updateQuickAnswer(question.index, { subtopic: event.target.value })}
+                        placeholder={answer.isCorrect === false ? "Ex: funcoes, estequiometria..." : "Opcional apenas se errou"}
+                      />
+                    </label>
                   </div>
                 );
               })}
