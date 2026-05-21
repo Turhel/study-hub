@@ -14,6 +14,7 @@ type FloatingTimerProps = {
 type QuickAnswer = {
   isCorrect: boolean | null;
   difficulty: "facil" | "media" | "dificil";
+  subtopic: string;
 };
 
 const defaultSetup: SessionSetup = {
@@ -105,7 +106,7 @@ function activateQuestion(question: QuestionEntry): QuestionEntry {
 }
 
 function quickAnswerFor(current?: QuickAnswer): QuickAnswer {
-  return current ?? { isCorrect: null, difficulty: "media" };
+  return current ?? { isCorrect: null, difficulty: "media", subtopic: "" };
 }
 
 function averageQuickDifficulty(answers: QuickAnswer[]): QuickAnswer["difficulty"] {
@@ -192,6 +193,27 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!session?.isRunning || session.isPaused) {
+      return undefined;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Enter") {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.tagName === "SELECT") {
+        return;
+      }
+      event.preventDefault();
+      handleRegisterTimeAndAdvance();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [session?.isRunning, session?.isPaused, session?.activeQuestionIndex, activeQuestion]);
 
   function updateSetup<T extends keyof SessionSetup>(key: T, value: SessionSetup[T]) {
     setSetup((current) => {
@@ -326,14 +348,6 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
         return question;
       });
 
-      setQuickAnswers((answers) => ({
-        ...answers,
-        [currentIndex]: {
-          ...quickAnswerFor(answers[currentIndex]),
-          isCorrect: false,
-        },
-      }));
-
       return {
         ...current,
         questions,
@@ -342,22 +356,15 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     });
   }
 
-  function goToNextQuestion() {
-    if (!session || !activeQuestion) {
+  function handleRegisterTimeAndAdvance() {
+    if (!session) {
       return;
     }
-
-    if (!canGoNext) {
-      finishSession();
+    if (canGoNext) {
+      completeCurrentQuestion();
       return;
     }
-
-    if (activeQuickAnswer.isCorrect === null) {
-      moveQuestion(1, "auto");
-      return;
-    }
-
-    moveQuestion(1, "completed");
+    finishSession();
   }
 
   function togglePause() {
@@ -389,6 +396,9 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           );
           const correctCount = answered.filter((answer) => answer.isCorrect).length;
           const difficulty = averageQuickDifficulty(answered);
+          const wrongSubtopics = answeredEntries
+            .filter(({ answer }) => answer.isCorrect === false && answer.subtopic.trim())
+            .map(({ index, answer }) => `Q${index + 1}: ${answer.subtopic.trim()}`);
           const response = await saveQuestionAttemptsQuickSync({
             discipline: finishedSession.setup.discipline,
             block_id: finishedSession.setup.blockId,
@@ -401,7 +411,12 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
             elapsed_seconds: totalSecondsSpent,
             confidence: null,
             error_type: answered.some((answer) => answer.isCorrect === false) ? "timer_v2_quick_miss" : null,
-            notes: "Timer V2 quick-sync. Respostas registradas durante o treino.",
+            notes: [
+              "Timer V2 quick-sync. Respostas conferidas no gabarito pos-sessao.",
+              wrongSubtopics.length ? `Subassuntos marcados em erros: ${wrongSubtopics.join("; ")}` : null,
+            ]
+              .filter(Boolean)
+              .join(" "),
             study_mode: "guided",
           });
 
@@ -438,7 +453,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
 
       const questions = current.questions.map((question, index) =>
         index === current.activeQuestionIndex && question.status === "active"
-          ? settleActiveQuestion(question, activeQuickAnswer.isCorrect === null ? "auto" : "completed")
+          ? settleActiveQuestion(question, "completed")
           : question,
       );
 
@@ -450,7 +465,6 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
       };
 
       closeFloatingController();
-      void persistFinishedSession(nextSession);
       return nextSession;
     });
   }
@@ -530,7 +544,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     `;
 
     (controllerWindow.document.getElementById("previous") as HTMLButtonElement | null)?.addEventListener("click", () => moveQuestion(-1));
-    (controllerWindow.document.getElementById("next") as HTMLButtonElement | null)?.addEventListener("click", goToNextQuestion);
+    (controllerWindow.document.getElementById("next") as HTMLButtonElement | null)?.addEventListener("click", handleRegisterTimeAndAdvance);
     (controllerWindow.document.getElementById("pause") as HTMLButtonElement | null)?.addEventListener("click", togglePause);
     (controllerWindow.document.getElementById("complete") as HTMLButtonElement | null)?.addEventListener("click", completeCurrentQuestion);
     (controllerWindow.document.getElementById("skip") as HTMLButtonElement | null)?.addEventListener("click", skipCurrentQuestion);
@@ -590,8 +604,12 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   const overtimeLabel = ratio === 0 ? "No alvo" : setup.mode === "prova" ? "Acima do alvo" : "Tempo extra";
   const canGoPrevious = Boolean(session && session.activeQuestionIndex > 0);
   const canGoNext = Boolean(session && session.activeQuestionIndex < session.questions.length - 1);
+  const attemptedQuestions = session?.questions.filter(
+    (question) => question.elapsedSeconds > 0 || question.status === "completed" || question.status === "skipped",
+  ) ?? [];
   const answeredCount = Object.values(quickAnswers).filter((answer) => answer.isCorrect !== null).length;
   const correctCount = Object.values(quickAnswers).filter((answer) => answer.isCorrect === true).length;
+  const unresolvedReviewCount = attemptedQuestions.filter((question) => quickAnswerFor(quickAnswers[question.index]).isCorrect === null).length;
 
   if (!session) {
     return (
@@ -603,7 +621,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                 <p className="text-xs font-semibold uppercase tracking-normal text-sky-300">Treino guiado</p>
                 <h1 className="mt-1 text-3xl font-semibold text-zinc-50">Preparar foco</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-                  Ajuste o foco, inicie o timer e registre cada questao com dois toques: resultado e dificuldade.
+                  Durante o treino, registre so o tempo e a dificuldade. Acertos e erros ficam para a conferencia do gabarito.
                 </p>
               </div>
               <span className="timer-mode-badge">{setup.mode}</span>
@@ -695,11 +713,113 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           <aside className="rounded-[20px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
             <h2 className="text-lg font-semibold text-zinc-50">Fluxo V2</h2>
             <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-400">
-              <p>1. Escolha acerto ou erro na questao atual.</p>
-              <p>2. Marque a dificuldade sentida.</p>
-              <p>3. Aperte proxima. No final, o guia recebe o lote consolidado.</p>
+              <p>1. Resolva a questao e marque a dificuldade.</p>
+              <p>2. Avance para registrar o tempo capturado.</p>
+              <p>3. No final, confira o gabarito e envie tudo em lote.</p>
             </div>
           </aside>
+        </section>
+      </main>
+    );
+  }
+
+  if (!session.isRunning) {
+    return (
+      <main className="timer-shell px-4 py-6">
+        <section className="mx-auto w-full max-w-5xl rounded-[22px] border border-white/10 bg-[#151a24] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.48)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-normal text-sky-300">Gabarito pos-sessao</p>
+              <h1 className="mt-1 text-3xl font-semibold text-zinc-50">Grade de Conferencia</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+                O relogio parou. Agora marque acertos e erros olhando para o gabarito fisico ou PDF.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+              <span className="rounded-full border border-white/10 px-3 py-1">{formatTime(session.totalElapsedSeconds)}</span>
+              <span className="rounded-full border border-white/10 px-3 py-1">{attemptedQuestions.length} questoes com tempo</span>
+            </div>
+          </div>
+
+          <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
+            <div className="grid grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr] gap-2 border-b border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold uppercase text-zinc-400">
+              <span>Questao</span>
+              <span>Tempo</span>
+              <span>Resultado</span>
+              <span>Subassunto se errou</span>
+            </div>
+            <div className="divide-y divide-white/10">
+              {attemptedQuestions.map((question) => {
+                const answer = quickAnswerFor(quickAnswers[question.index]);
+                return (
+                  <div key={question.index} className="grid grid-cols-1 gap-3 px-3 py-3 sm:grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr] sm:items-center">
+                    <div>
+                      <p className="text-sm font-bold text-zinc-100">Questao {question.index + 1}</p>
+                      <p className="text-[11px] text-zinc-500">{question.status === "skipped" ? "Pulada no timer" : "Tempo registrado"}</p>
+                    </div>
+                    <strong className="text-sm tabular-nums text-zinc-200">{formatTime(question.elapsedSeconds)}</strong>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        className={`rounded-xl border px-3 py-2 text-xs font-black uppercase transition ${
+                          answer.isCorrect === true
+                            ? "border-emerald-300 bg-emerald-400 text-slate-950"
+                            : "border-emerald-300/30 bg-emerald-400/10 text-emerald-100 opacity-80"
+                        }`}
+                        onClick={() => updateQuickAnswer(question.index, { isCorrect: true })}
+                      >
+                        Acertei
+                      </button>
+                      <button
+                        type="button"
+                        className={`rounded-xl border px-3 py-2 text-xs font-black uppercase transition ${
+                          answer.isCorrect === false
+                            ? "border-rose-300 bg-rose-400 text-slate-950"
+                            : "border-rose-300/30 bg-rose-400/10 text-rose-100 opacity-80"
+                        }`}
+                        onClick={() => updateQuickAnswer(question.index, { isCorrect: false })}
+                      >
+                        Errei
+                      </button>
+                    </div>
+                    <input
+                      className="timer-input text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-zinc-100"
+                      value={answer.subtopic}
+                      disabled={answer.isCorrect !== false}
+                      onChange={(event) => updateQuickAnswer(question.index, { subtopic: event.target.value })}
+                      placeholder={answer.isCorrect === false ? "Ex: funcoes, estequiometria..." : "Opcional apenas se errou"}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {attemptedQuestions.length === 0 ? (
+            <p className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-sm text-zinc-300">
+              Nenhuma questao recebeu tempo. Volte e inicie um treino antes de consolidar.
+            </p>
+          ) : null}
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_1.4fr]">
+            <button className="timer-widget-button" onClick={() => setSession(null)} disabled={isSavingSession}>
+              Voltar ao timer
+            </button>
+            <button
+              className="timer-primary-action py-3 text-base disabled:opacity-50"
+              onClick={() => void persistFinishedSession(session)}
+              disabled={isSavingSession || attemptedQuestions.length === 0 || unresolvedReviewCount > 0}
+            >
+              {isSavingSession ? "Enviando..." : "Consolidar e Enviar Relatorio"}
+            </button>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-zinc-400">
+            <span>{correctCount} acertos marcados</span>
+            <span>{answeredCount}/{attemptedQuestions.length} conferidas</span>
+            {unresolvedReviewCount > 0 ? <span>Faltam {unresolvedReviewCount} resultado(s)</span> : null}
+          </div>
+          {saveMessage ? <p className="mt-3 text-xs leading-5 text-zinc-300">{saveMessage}</p> : null}
         </section>
       </main>
     );
@@ -749,32 +869,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               />
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                className={`rounded-2xl border px-5 py-5 text-lg font-black uppercase tracking-normal transition ${
-                  activeQuickAnswer.isCorrect === true
-                    ? "border-emerald-300 bg-emerald-400 text-slate-950 shadow-[0_0_24px_rgba(52,211,153,0.28)]"
-                    : "border-emerald-300/35 bg-emerald-400/10 text-emerald-100 opacity-75 hover:opacity-100"
-                }`}
-                onClick={() => activeQuestion && updateQuickAnswer(activeQuestion.index, { isCorrect: true })}
-              >
-                Acertei
-              </button>
-              <button
-                type="button"
-                className={`rounded-2xl border px-5 py-5 text-lg font-black uppercase tracking-normal transition ${
-                  activeQuickAnswer.isCorrect === false
-                    ? "border-rose-300 bg-rose-400 text-slate-950 shadow-[0_0_24px_rgba(251,113,133,0.25)]"
-                    : "border-rose-300/35 bg-rose-400/10 text-rose-100 opacity-75 hover:opacity-100"
-                }`}
-                onClick={() => activeQuestion && updateQuickAnswer(activeQuestion.index, { isCorrect: false })}
-              >
-                Errei
-              </button>
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <p className="mt-6 text-xs font-bold uppercase tracking-normal text-zinc-500">Dificuldade TRI da questao</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
               {quickDifficultyLabels.map((difficulty) => (
                 <button
                   key={difficulty.value}
@@ -796,8 +892,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
             <button className="timer-widget-button py-3" onClick={() => moveQuestion(-1)} disabled={!canGoPrevious || isSavingSession}>
               Anterior
             </button>
-            <button className="timer-primary-action py-3 text-base" onClick={goToNextQuestion} disabled={isSavingSession}>
-              {canGoNext ? "Proxima ->" : "Finalizar treino"}
+            <button className="timer-primary-action py-3 text-base" onClick={handleRegisterTimeAndAdvance} disabled={isSavingSession}>
+              {canGoNext ? "Registrar Tempo e Avancar (Enter)" : "Finalizar e Ver Gabarito"}
             </button>
             <button className="timer-widget-button-danger py-3" onClick={finishSession} disabled={isSavingSession}>
               Finalizar
@@ -818,7 +914,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                 {showQuestionMap ? "Ocultar mapa" : "Mostrar mapa"}
               </button>
               <button className="timer-widget-button" onClick={skipCurrentQuestion} disabled={isSavingSession}>
-                Pular como erro
+                Pular questao
               </button>
             </div>
             {floatingMessage ? <p className="mt-4 text-xs leading-5 text-zinc-400">{floatingMessage}</p> : null}
@@ -829,12 +925,12 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
             <h2 className="text-lg font-semibold text-zinc-50">Sessao</h2>
             <div className="mt-4 grid gap-2">
               <div className="timer-mini-stat">
-                <span>Respondidas</span>
-                <strong>{answeredCount}/{session.questions.length}</strong>
+                <span>Tempos</span>
+                <strong>{attemptedQuestions.length}/{session.questions.length}</strong>
               </div>
               <div className="timer-mini-stat">
-                <span>Acertos</span>
-                <strong>{correctCount}</strong>
+                <span>Gabarito</span>
+                <strong>Depois</strong>
               </div>
               <div className="timer-mini-stat">
                 <span>Total</span>
