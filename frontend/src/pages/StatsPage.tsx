@@ -90,7 +90,7 @@ function clampNumber(value: number, min: number, max?: number): number {
 
 function formatSecondsShort(value?: number | null): string {
   if (value === null || value === undefined) {
-    return "0s";
+    return "sem tempo";
   }
   const rounded = Math.max(0, Math.round(value));
   const minutes = Math.floor(rounded / 60);
@@ -641,12 +641,18 @@ function TimeTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
   const right = 12;
   const top = 14;
   const bottom = 132;
-  const values = points.map((point) => point.avg_time_correct_questions_seconds ?? 0);
-  const scale = buildChartScale(values, { min: 0, minVisualMax: 180, paddingTopRatio: 0.15 });
-  const actualCoords = points.map((point, index) => ({
-    x: buildX(index, points.length, left, right, width),
-    y: scale.toY(point.avg_time_correct_questions_seconds ?? 0, top, bottom),
-  }));
+  const values = points.map((point) => point.avg_time_correct_questions_seconds);
+  const numericValues = values.filter((value): value is number => value !== null && value !== undefined && Number.isFinite(value));
+  const scale = buildChartScale(numericValues, { min: 0, minVisualMax: 180, paddingTopRatio: 0.15 });
+  const actualCoords = points.map((point, index) => {
+    if (point.avg_time_correct_questions_seconds === null || point.avg_time_correct_questions_seconds === undefined) {
+      return null;
+    }
+    return {
+      x: buildX(index, points.length, left, right, width),
+      y: scale.toY(point.avg_time_correct_questions_seconds, top, bottom),
+    };
+  });
   const regression = linearRegression(values);
   const trendCoords = regression
     ? points.map((_, index) => ({
@@ -674,17 +680,17 @@ function TimeTrendChart({ points }: { points: StatsTimeSeriesPoint[] }) {
             meta 3min
           </text>
           <line x1={left} x2={width - right} y1={bottom} y2={bottom} className="stats-axis-line" />
-          <path d={buildLinePath(actualCoords)} className="stats-line-path stats-line-accent-gold" />
+          <path d={buildLinePath(actualCoords.filter((coord): coord is { x: number; y: number } => coord !== null))} className="stats-line-path stats-line-accent-gold" />
           {regression ? <path d={buildLinePath(trendCoords)} className="stats-line-path stats-line-projection stats-line-accent-gold stats-line-trend-subtle" /> : null}
           {points.map((point, index) => {
             const coord = actualCoords[index];
             const showLabel = index % labelStep === 0 || index === points.length - 1;
             return (
               <g key={point.period}>
-                <circle cx={coord.x} cy={coord.y} r="3.5" className="stats-line-dot stats-line-accent-gold" />
+                {coord ? <circle cx={coord.x} cy={coord.y} r="3.5" className="stats-line-dot stats-line-accent-gold" /> : null}
                 <title>{`${formatWeekLabel(point.start_date, point.end_date)} - ${formatSecondsShort(point.avg_time_correct_questions_seconds)}`}</title>
                 {showLabel ? (
-                  <text x={coord.x} y={bottom + 14} textAnchor="middle" className="stats-line-axis-label">
+                  <text x={buildX(index, points.length, left, right, width)} y={bottom + 14} textAnchor="middle" className="stats-line-axis-label">
                     {formatWeekTick(point.start_date)}
                   </text>
                 ) : null}

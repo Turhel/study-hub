@@ -6,13 +6,17 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
+from sqlalchemy import delete
 from sqlmodel import Session
 
 from app.db import create_db_engine, init_db
 from app.models import Block, BlockMastery, BlockSubject, QuestionAttempt, Subject, SubjectProgress
+from app.schemas import QuestionAttemptBulkCreate
+from app.services.question_attempt_service import register_question_attempts_bulk
 from app.services.stats_service import (
     get_stats_discipline_subjects,
     get_stats_heatmap,
+    get_stats_overview,
     get_stats_timeseries,
 )
 import app.services.stats_service as stats_service
@@ -24,6 +28,7 @@ class StatsContext:
     engine: object
     temp_dir: Path
     today: date
+    math_block_id: int
     math_subject_id: int
     chemistry_subject_id: int
 
@@ -145,6 +150,7 @@ def _build_context(today_override: date | None = None) -> StatsContext:
         engine=engine,
         temp_dir=temp_dir,
         today=today,
+        math_block_id=math_block.id or 0,
         math_subject_id=math_subject.id or 0,
         chemistry_subject_id=chemistry_subject.id or 0,
     )
@@ -154,6 +160,34 @@ def _cleanup_context(context: StatsContext) -> None:
     context.session.close()
     context.engine.dispose()
     shutil.rmtree(context.temp_dir, ignore_errors=True)
+
+
+def _clear_attempts(context: StatsContext) -> None:
+    context.session.exec(delete(QuestionAttempt))
+    context.session.commit()
+
+
+def _register_bulk_session(
+    context: StatsContext,
+    *,
+    attempt_date: date,
+    quantity: int,
+    correct_count: int,
+    elapsed_seconds: int,
+) -> None:
+    register_question_attempts_bulk(
+        context.session,
+        QuestionAttemptBulkCreate(
+            date=attempt_date.isoformat(),
+            discipline="MatemÃ¡tica",
+            block_id=context.math_block_id,
+            subject_id=context.math_subject_id,
+            source="stats-test",
+            quantity=quantity,
+            correct_count=correct_count,
+            elapsed_seconds=elapsed_seconds,
+        ),
+    )
 
 
 def test_heatmap_returns_all_days_and_zero_day() -> None:
@@ -231,6 +265,63 @@ def test_timeseries_day_returns_stable_points() -> None:
         assert chemistry_day.questions_count == 5
         assert chemistry_day.correct_count == 2
         assert chemistry_day.active_days == 1
+    finally:
+        _cleanup_context(context)
+
+
+def test_bulk_total_elapsed_time_is_divided_per_correct_question(monkeypatch) -> None:
+    fixed_today = date(2026, 5, 21)
+    monkeypatch.setattr(stats_service, "_today", lambda: fixed_today)
+    context = _build_context(today_override=fixed_today)
+    try:
+        _clear_attempts(context)
+        _register_bulk_session(
+            context,
+            attempt_date=fixed_today - timedelta(days=1),
+            quantity=20,
+            correct_count=20,
+            elapsed_seconds=40 * 60,
+        )
+        _register_bulk_session(
+            context,
+            attempt_date=fixed_today,
+            quantity=10,
+            correct_count=10,
+            elapsed_seconds=30 * 60,
+        )
+
+        payload = get_stats_timeseries(context.session, group_by="day", days=2, discipline="Matematica")
+        points = {point.start_date: point for point in payload.points}
+
+        assert points[(fixed_today - timedelta(days=1)).isoformat()].avg_time_correct_questions_seconds == 120
+        assert points[fixed_today.isoformat()].avg_time_correct_questions_seconds == 180
+
+        overview = get_stats_overview(context.session)
+        assert overview.avg_time_correct_questions_seconds == 140
+    finally:
+        _cleanup_context(context)
+
+
+def test_bulk_sessions_without_correct_questions_are_ignored_for_time(monkeypatch) -> None:
+    fixed_today = date(2026, 5, 21)
+    monkeypatch.setattr(stats_service, "_today", lambda: fixed_today)
+    context = _build_context(today_override=fixed_today)
+    try:
+        _clear_attempts(context)
+        _register_bulk_session(
+            context,
+            attempt_date=fixed_today,
+            quantity=10,
+            correct_count=0,
+            elapsed_seconds=30 * 60,
+        )
+
+        payload = get_stats_timeseries(context.session, group_by="day", days=1, discipline="Matematica")
+        point = payload.points[0]
+
+        assert point.questions_count == 10
+        assert point.correct_count == 0
+        assert point.avg_time_correct_questions_seconds is None
     finally:
         _cleanup_context(context)
 

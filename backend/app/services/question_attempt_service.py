@@ -49,6 +49,12 @@ def _impact_message(status: str | None, score: float | None) -> str:
     return "Bloco avancou, mas ainda nao foi aprovado."
 
 
+def _seconds_per_correct_question(total_elapsed_seconds: int | None, correct_count: int) -> int | None:
+    if total_elapsed_seconds is None or total_elapsed_seconds <= 0 or correct_count <= 0:
+        return None
+    return round(total_elapsed_seconds / correct_count)
+
+
 def _subject_label(subject: Subject) -> str:
     if subject.subassunto:
         return f"{subject.assunto} - {subject.subassunto}"
@@ -74,6 +80,7 @@ def register_question_attempts_bulk(
     difficulty_bank = _difficulty(payload.difficulty_bank)
     difficulty_personal = _difficulty(payload.difficulty_personal, default=difficulty_bank)
     confidence = _confidence_value(payload.confidence)
+    seconds_per_correct_question = _seconds_per_correct_question(payload.elapsed_seconds, payload.correct_count)
     created_attempts: list[QuestionAttempt] = []
 
     for index in range(payload.quantity):
@@ -86,7 +93,7 @@ def register_question_attempts_bulk(
             dificuldade_banco=difficulty_bank,
             dificuldade_pessoal=difficulty_personal,
             acertou=index < payload.correct_count,
-            tempo_segundos=payload.elapsed_seconds,
+            tempo_segundos=seconds_per_correct_question if index < payload.correct_count else None,
             confianca=confidence,
             tipo_erro=None if index < payload.correct_count else payload.error_type,
             observacoes=payload.notes,
