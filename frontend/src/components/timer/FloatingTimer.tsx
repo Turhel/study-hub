@@ -19,6 +19,13 @@ type QuickAnswer = {
   subjectId: number | null;
 };
 
+type SavedQuestionDetail = {
+  markdownText: string;
+  userAlternative: string;
+  correctAlternative: string;
+  tacticalNote: string;
+};
+
 const defaultSetup: SessionSetup = {
   discipline: "Matematica",
   block: "Bloco 1",
@@ -137,6 +144,24 @@ function sessionFormFromQuick(answers: QuickAnswer[]): SessionSummaryForm {
   };
 }
 
+function emptyQuestionDetail(): SavedQuestionDetail {
+  return {
+    markdownText: "",
+    userAlternative: "",
+    correctAlternative: "",
+    tacticalNote: "",
+  };
+}
+
+function hasQuestionDetail(detail: SavedQuestionDetail): boolean {
+  return Boolean(
+    detail.markdownText.trim() ||
+      detail.userAlternative ||
+      detail.correctAlternative ||
+      detail.tacticalNote.trim(),
+  );
+}
+
 export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   const queryClient = useQueryClient();
   const [setup, setSetup] = useState<SessionSetup>(() => buildSetupFromPreset(preset));
@@ -144,6 +169,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   const [showQuestionMap, setShowQuestionMap] = useState(true);
   const [quickAnswers, setQuickAnswers] = useState<Record<number, QuickAnswer>>({});
   const [disciplineSubjects, setDisciplineSubjects] = useState<StatsDisciplineSubjectItem[]>([]);
+  const [activeDrawerIndex, setActiveDrawerIndex] = useState<number | null>(null);
+  const [savedQuestionsDetails, setSavedQuestionsDetails] = useState<Record<number, SavedQuestionDetail>>({});
   const [floatingMessage, setFloatingMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSavingSession, setIsSavingSession] = useState(false);
@@ -274,8 +301,21 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     }));
   }
 
+  function updateQuestionDetail(index: number, patch: Partial<SavedQuestionDetail>) {
+    setSavedQuestionsDetails((current) => ({
+      ...current,
+      [index]: {
+        ...emptyQuestionDetail(),
+        ...current[index],
+        ...patch,
+      },
+    }));
+  }
+
   function startSession() {
     setQuickAnswers({});
+    setSavedQuestionsDetails({});
+    setActiveDrawerIndex(null);
     setSession(createSession(setup));
     setFloatingMessage(null);
     setSaveMessage(null);
@@ -433,6 +473,11 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           const totalSecondsSpent = timesVector.reduce((total, seconds) => total + seconds, 0);
           const correctCount = resultsVector.filter(Boolean).length;
           const difficulty = averageQuickDifficulty(answered);
+          const savedItemsMeta = Object.fromEntries(
+            Object.entries(savedQuestionsDetails)
+              .map(([index, detail]) => [Number(index), detail] as const)
+              .filter(([, detail]) => hasQuestionDetail(detail)),
+          );
           const wrongSubtopics = answeredEntries
             .filter(({ answer }) => answer.isCorrect === false && answer.subtopic.trim())
             .map(({ index, answer }) => `Q${index + 1}: ${answer.subtopic.trim()}`);
@@ -446,6 +491,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
             results_vector: resultsVector,
             subject_ids_vector: subjectIdsVector,
             times_vector: timesVector,
+            saved_items_meta: Object.keys(savedItemsMeta).length ? savedItemsMeta : null,
             difficulty_bank: difficulty,
             difficulty_personal: difficulty,
             elapsed_seconds: totalSecondsSpent,
@@ -477,6 +523,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
       window.setTimeout(() => {
         setSession(null);
         setQuickAnswers({});
+        setSavedQuestionsDetails({});
+        setActiveDrawerIndex(null);
       }, 900);
     } catch {
       setSaveMessage("Sessao salva localmente, mas o backend nao respondeu para finalizar o treino.");
@@ -538,6 +586,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     setFloatingMessage(null);
     setSaveMessage(null);
     setQuickAnswers({});
+    setSavedQuestionsDetails({});
+    setActiveDrawerIndex(null);
     setSetup(buildSetupFromPreset(preset));
   }
 
@@ -668,6 +718,8 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   const answeredCount = Object.values(quickAnswers).filter((answer) => answer.isCorrect !== null).length;
   const correctCount = Object.values(quickAnswers).filter((answer) => answer.isCorrect === true).length;
   const unresolvedReviewCount = attemptedQuestions.filter((question) => quickAnswerFor(quickAnswers[question.index]).isCorrect === null).length;
+  const activeQuestionDetail = activeDrawerIndex !== null ? savedQuestionsDetails[activeDrawerIndex] ?? emptyQuestionDetail() : null;
+  const answerAlternatives = ["A", "B", "C", "D", "E"];
 
   if (!session) {
     return (
@@ -800,17 +852,19 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           </div>
 
           <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
-            <div className="hidden gap-2 border-b border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold uppercase text-zinc-400 sm:grid sm:grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr]">
+            <div className="hidden gap-2 border-b border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold uppercase text-zinc-400 sm:grid sm:grid-cols-[0.75fr_0.7fr_1.15fr_1.3fr_0.7fr]">
               <span>Questao</span>
               <span>Tempo</span>
               <span>Resultado</span>
               <span>Subassunto se errou</span>
+              <span>Salvar</span>
             </div>
             <div className="divide-y divide-white/10">
               {attemptedQuestions.map((question) => {
                 const answer = quickAnswerFor(quickAnswers[question.index]);
+                const hasDetail = hasQuestionDetail(savedQuestionsDetails[question.index] ?? emptyQuestionDetail());
                 return (
-                  <div key={question.index} className="grid grid-cols-1 gap-3 px-3 py-4 sm:grid-cols-[0.8fr_0.8fr_1.3fr_1.2fr] sm:items-center sm:py-3">
+                  <div key={question.index} className="grid grid-cols-1 gap-3 px-3 py-4 sm:grid-cols-[0.75fr_0.7fr_1.15fr_1.3fr_0.7fr] sm:items-center sm:py-3">
                     <div className="flex items-start justify-between gap-3 sm:block">
                       <div>
                         <p className="text-sm font-bold text-zinc-100">Questao {question.index + 1}</p>
@@ -876,6 +930,17 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                         />
                       )}
                     </label>
+                    <button
+                      type="button"
+                      className={`rounded-xl border px-3 py-2 text-xs font-black uppercase transition ${
+                        hasDetail
+                          ? "border-sky-300 bg-sky-400 text-slate-950"
+                          : "border-white/10 bg-white/[0.04] text-sky-100 hover:border-sky-300/60"
+                      }`}
+                      onClick={() => setActiveDrawerIndex(question.index)}
+                    >
+                      {hasDetail ? "Salvo" : "+ Salvar"}
+                    </button>
                   </div>
                 );
               })}
@@ -908,6 +973,93 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           </div>
           {saveMessage ? <p className="mt-3 text-xs leading-5 text-zinc-300">{saveMessage}</p> : null}
         </section>
+        {activeDrawerIndex !== null && activeQuestionDetail ? (
+          <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-96 overflow-y-auto border-l border-white/10 bg-slate-900 p-5 shadow-2xl transition-transform sm:w-96">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase text-sky-300">Question Maker Avancado</p>
+                <h2 className="mt-1 text-xl font-black text-zinc-50">Questao {activeDrawerIndex + 1}</h2>
+              </div>
+              <button
+                type="button"
+                className="rounded-xl border border-white/10 px-3 py-2 text-sm font-bold text-zinc-200 hover:border-sky-300/60"
+                onClick={() => setActiveDrawerIndex(null)}
+              >
+                Fechar
+              </button>
+            </div>
+
+            <label className="mt-5 grid gap-2">
+              <span className="text-xs font-bold uppercase text-zinc-400">Enunciado / estrutura em Markdown</span>
+              <textarea
+                className="min-h-44 rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm leading-6 text-white outline-none focus:border-sky-300 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                value={activeQuestionDetail.markdownText}
+                onChange={(event) => updateQuestionDetail(activeDrawerIndex, { markdownText: event.target.value })}
+                placeholder="Cole aqui o texto, imagens descritas, comandos e alternativas da questao."
+              />
+            </label>
+
+            <div className="mt-5 grid gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase text-zinc-400">Minha alternativa</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {answerAlternatives.map((alternative) => (
+                    <button
+                      key={`user-${alternative}`}
+                      type="button"
+                      className={`h-10 w-10 rounded-full border text-sm font-black ${
+                        activeQuestionDetail.userAlternative === alternative
+                          ? "border-sky-300 bg-sky-400 text-slate-950"
+                          : "border-slate-700 bg-slate-950 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                      }`}
+                      onClick={() => updateQuestionDetail(activeDrawerIndex, { userAlternative: alternative })}
+                    >
+                      {alternative}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase text-zinc-400">Alternativa correta</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {answerAlternatives.map((alternative) => (
+                    <button
+                      key={`correct-${alternative}`}
+                      type="button"
+                      className={`h-10 w-10 rounded-full border text-sm font-black ${
+                        activeQuestionDetail.correctAlternative === alternative
+                          ? "border-emerald-300 bg-emerald-400 text-slate-950"
+                          : "border-slate-700 bg-slate-950 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                      }`}
+                      onClick={() => updateQuestionDetail(activeDrawerIndex, { correctAlternative: alternative })}
+                    >
+                      {alternative}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <label className="mt-5 grid gap-2">
+              <span className="text-xs font-bold uppercase text-zinc-400">Onde foi a pegadinha / Qual foi o meu vacilo?</span>
+              <textarea
+                className="min-h-32 rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm leading-6 text-white outline-none focus:border-sky-300 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                value={activeQuestionDetail.tacticalNote}
+                onChange={(event) => updateQuestionDetail(activeDrawerIndex, { tacticalNote: event.target.value })}
+                placeholder="Ex: confundi unidade, ignorei excecao, chutei sem revisar o comando..."
+              />
+            </label>
+
+            <button
+              type="button"
+              className="mt-5 w-full rounded-xl bg-sky-400 px-4 py-3 text-sm font-black text-slate-950 shadow-[0_6px_0_rgba(3,105,161,0.75)]"
+              onClick={() => setActiveDrawerIndex(null)}
+            >
+              Salvar Metadados
+            </button>
+          </aside>
+        ) : null}
       </main>
     );
   }

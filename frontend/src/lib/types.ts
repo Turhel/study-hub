@@ -220,6 +220,15 @@ export type QuestionAttemptBulkPayload = {
   results_vector?: boolean[] | null;
   subject_ids_vector?: Array<number | null> | null;
   times_vector?: number[] | null;
+  saved_items_meta?: Record<
+    number,
+    {
+      markdownText: string;
+      userAlternative: string;
+      correctAlternative: string;
+      tacticalNote: string;
+    }
+  > | null;
 };
 
 export type QuestionAttemptBulkResponse = {
