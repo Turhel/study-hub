@@ -1,8 +1,8 @@
 ﻿import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
-import { getMockExamResults } from "../lib/api";
+import { getMockExamResults, updateMockExamQuestion } from "../lib/api";
 import type { MockExamQuestion } from "../lib/types";
 
 type SortMode = "question" | "difficulty" | "time" | "accuracy";
@@ -52,18 +52,90 @@ function resolveArea(question: MockExamQuestion): string {
   return question.area ?? question.discipline ?? "Geral";
 }
 
+function FatigueCurveChart({ questions }: { questions: MockExamQuestion[] }) {
+  const timedQuestions = questions
+    .filter((question) => question.time_seconds != null)
+    .sort((left, right) => left.question_number - right.question_number);
+
+  if (timedQuestions.length === 0) {
+    return (
+      <div className="mock-exam-empty-chart">
+        <strong>Sem telemetria de clique ainda.</strong>
+        <p>Quando o Modo Maratona registrar respostas, a curva aparece aqui.</p>
+      </div>
+    );
+  }
+
+  const width = Math.max(timedQuestions.length * 34, 420);
+  const height = 220;
+  const paddingX = 28;
+  const paddingTop = 22;
+  const paddingBottom = 42;
+  const chartHeight = height - paddingTop - paddingBottom;
+  const maxSeconds = Math.max(...timedQuestions.map((question) => question.time_seconds ?? 0), 1);
+  const stepX = timedQuestions.length > 1 ? (width - paddingX * 2) / (timedQuestions.length - 1) : 0;
+  const points = timedQuestions.map((question, index) => ({
+    question,
+    x: paddingX + stepX * index,
+    y: paddingTop + chartHeight - ((question.time_seconds ?? 0) / maxSeconds) * chartHeight,
+  }));
+  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+
+  return (
+    <div className="mock-exam-chart-scroll">
+      <svg className="mock-exam-line-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Curva de fadiga de endurance">
+        <line x1={paddingX} y1={paddingTop + chartHeight} x2={width - paddingX} y2={paddingTop + chartHeight} className="mock-exam-chart-axis" />
+        <path d={path} className="mock-exam-line-path is-tri" />
+        {points.map((point) => (
+          <g key={point.question.id}>
+            <circle cx={point.x} cy={point.y} r="4.5" className="mock-exam-line-point is-tri">
+              <title>{`Questao ${point.question.question_number}: ${formatSeconds(point.question.time_seconds)}`}</title>
+            </circle>
+            <text x={point.x} y={height - 12} textAnchor="middle" className="mock-exam-chart-label">
+              {point.question.question_number}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 export default function MockExamResultsPage() {
   const params = useParams<{ id: string }>();
   const examId = Number(params.id);
+  const queryClient = useQueryClient();
   const [sortMode, setSortMode] = useState<SortMode>("question");
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [areaFilter, setAreaFilter] = useState<string>("all");
+  const [externalAnswerSheet, setExternalAnswerSheet] = useState("");
 
   const resultsQuery = useQuery({
     queryKey: ["mock-exam-results", examId],
     queryFn: () => getMockExamResults(examId),
     enabled: Number.isFinite(examId) && examId > 0,
     retry: false,
+  });
+  const applyExternalAnswersMutation = useMutation({
+    mutationFn: async () => {
+      const questions = resultsQuery.data?.questions ?? [];
+      const answers = externalAnswerSheet.toUpperCase().match(/[A-E]/g) ?? [];
+      if (answers.length === 0) {
+        throw new Error("Cole pelo menos uma alternativa do gabarito externo.");
+      }
+      await Promise.all(
+        questions.slice(0, answers.length).map((question, index) =>
+          updateMockExamQuestion(examId, question.id, { correct_answer: answers[index] }),
+        ),
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["mock-exam-results", examId] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exams"] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exams-summary"] }),
+      ]);
+    },
   });
 
   const filteredQuestions = useMemo(() => {
@@ -117,6 +189,7 @@ export default function MockExamResultsPage() {
   const exam = results.exam;
   const areas = ["all", ...Array.from(new Set(results.questions.map(resolveArea)))];
   const timeTrend = trendLabel(results.by_area.map((item) => item.avg_time_seconds));
+  const externalAnswers = externalAnswerSheet.toUpperCase().match(/[A-E]/g) ?? [];
 
   return (
     <main className="today-page mock-exam-results-page">
@@ -168,6 +241,63 @@ export default function MockExamResultsPage() {
           <article className="mock-exam-metric-pill"><span>Puladas</span><strong>{results.skipped_count}</strong></article>
           <article className="mock-exam-metric-pill"><span>Tempo medio correto</span><strong>{formatSeconds(results.avg_time_correct_seconds)}</strong></article>
           <article className="mock-exam-metric-pill"><span>Leitura do tempo</span><strong>{timeTrend}</strong></article>
+        </section>
+
+        <section className="today-panel mock-exam-results-table-panel">
+          <div className="today-section-heading">
+            <div>
+              <p className="today-eyebrow">Endurance</p>
+              <h2>Curva de Fadiga de Endurance</h2>
+              <p>Eixo X por questao, eixo Y em segundos gastos ate o clique.</p>
+            </div>
+          </div>
+          <FatigueCurveChart questions={results.questions} />
+        </section>
+
+        <section className="today-panel mock-exam-results-table-panel">
+          <div className="today-section-heading">
+            <div>
+              <p className="today-eyebrow">Gabarito externo</p>
+              <h2>Folha de conferencia</h2>
+              <p>Use esta grade para conferir rapidamente provas feitas no papel ou PDF.</p>
+            </div>
+          </div>
+          <label className="today-form-field">
+            Lance um gabarito externo, se quiser comparar visualmente
+            <textarea
+              className="app-input"
+              value={externalAnswerSheet}
+              onChange={(event) => setExternalAnswerSheet(event.target.value)}
+              placeholder="Ex.: A B C D E A C..."
+            />
+          </label>
+          {applyExternalAnswersMutation.isError ? (
+            <p className="today-form-error">
+              {applyExternalAnswersMutation.error instanceof Error
+                ? applyExternalAnswersMutation.error.message
+                : "Nao foi possivel aplicar o gabarito externo."}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="app-primary-action app-primary-action-blue"
+            disabled={applyExternalAnswersMutation.isPending || externalAnswers.length === 0}
+            onClick={() => applyExternalAnswersMutation.mutate()}
+          >
+            {applyExternalAnswersMutation.isPending ? "Aplicando..." : "Aplicar gabarito externo"}
+          </button>
+          <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+            {results.questions.map((question, index) => {
+              const externalAnswer = externalAnswers[index];
+              return (
+                <article key={question.id} className={`rounded-xl border p-3 text-center ${question.skipped ? "border-amber-400/40 bg-amber-500/10" : question.is_correct === true ? "border-emerald-400/40 bg-emerald-500/10" : question.is_correct === false ? "border-red-400/40 bg-red-500/10" : "border-white/10 bg-slate-900/60"}`}>
+                  <strong className="block text-sm">Q{question.question_number}</strong>
+                  <span className="block text-xs text-slate-300">{question.skipped ? "pulou" : question.user_answer || "-"}</span>
+                  {externalAnswer ? <span className="mt-1 block text-xs text-sky-200">ext. {externalAnswer}</span> : null}
+                </article>
+              );
+            })}
+          </div>
         </section>
 
         <section className="today-panel mock-exam-results-table-panel">

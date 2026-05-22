@@ -377,7 +377,7 @@ export type MockExamArea =
 
 export type MockExamMode = "external" | "internal";
 
-export type MockExamStatus = "draft" | "in_progress" | "finished";
+export type MockExamStatus = "draft" | "in_progress" | "finished" | "em_andamento" | "pausado" | "finalizado";
 
 export type MockExamPayload = {
   exam_date: string;
@@ -408,6 +408,9 @@ export type MockExam = {
   notes: string | null;
   started_at: string | null;
   finished_at: string | null;
+  target_end_time: string | null;
+  is_paused: boolean;
+  paused_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -502,6 +505,19 @@ export type MockExamPlaceholderResponse = {
 export type MockExamStartResponse = {
   exam: MockExam;
   questions_count: number;
+};
+
+export type MockExamActiveResponse = {
+  exam: MockExam | null;
+  seconds_remaining: number;
+};
+
+export type MockExamRecordAnswerPayload = {
+  question_id?: number | null;
+  question_number?: number | null;
+  user_answer?: string | null;
+  skipped?: boolean;
+  time_seconds?: number | null;
 };
 
 export type MockExamAreaResult = {

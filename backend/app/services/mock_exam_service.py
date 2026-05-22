@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from statistics import mean
 from typing import Any
 
@@ -13,11 +13,13 @@ from app.schemas import (
     MockExamAreaResult,
     MockExamAreaSummary,
     MockExamCreate,
+    MockExamActiveResponse,
     MockExamFinishResponse,
     MockExamPlaceholderRequest,
     MockExamPlaceholderResponse,
     MockExamQuestionBulkCreate,
     MockExamQuestionCreate,
+    MockExamRecordAnswerRequest,
     MockExamQuestionResponse,
     MockExamQuestionUpdate,
     MockExamResponse,
@@ -179,7 +181,7 @@ def _question_correctness(
     skipped: bool,
 ) -> bool | None:
     if skipped:
-        return None
+        return False
     if not user_answer or not correct_answer:
         return None
     return user_answer.strip().upper() == correct_answer.strip().upper()
@@ -203,6 +205,9 @@ def _to_response(exam: MockExam, *, estimated_tri_score: float | None = None) ->
         notes=exam.observacoes,
         started_at=exam.started_at.isoformat() if exam.started_at else None,
         finished_at=exam.finished_at.isoformat() if exam.finished_at else None,
+        target_end_time=exam.target_end_time.isoformat() if exam.target_end_time else None,
+        is_paused=exam.is_paused,
+        paused_at=exam.paused_at.isoformat() if exam.paused_at else None,
         created_at=exam.created_at.isoformat(),
         updated_at=exam.updated_at.isoformat(),
     )
@@ -245,6 +250,18 @@ def _get_exam_or_raise(session: Session, exam_id: int) -> MockExam:
 def _get_question_or_raise(session: Session, exam_id: int, question_id: int) -> MockExamQuestion:
     question = session.get(MockExamQuestion, question_id)
     if question is None or question.mock_exam_id != exam_id:
+        raise ValueError("Questao do simulado nao encontrada.")
+    return question
+
+
+def _get_question_by_number_or_raise(session: Session, exam_id: int, question_number: int) -> MockExamQuestion:
+    question = session.exec(
+        select(MockExamQuestion)
+        .where(MockExamQuestion.mock_exam_id == exam_id)
+        .where(MockExamQuestion.question_number == question_number)
+        .order_by(MockExamQuestion.id.asc())
+    ).first()
+    if question is None:
         raise ValueError("Questao do simulado nao encontrada.")
     return question
 
@@ -447,6 +464,28 @@ def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
 def list_mock_exams(session: Session) -> list[MockExamResponse]:
     rows = session.exec(select(MockExam).order_by(MockExam.data.desc(), MockExam.id.desc())).all()
     return [_to_response(row, estimated_tri_score=_resolve_exam_estimated_tri(session, row)) for row in rows]
+
+
+def get_active_mock_exam(session: Session) -> MockExamActiveResponse:
+    now = _utcnow()
+    exam = session.exec(
+        select(MockExam)
+        .where(MockExam.status.in_(["em_andamento", "in_progress", "pausado"]))
+        .where(MockExam.target_end_time.is_not(None))
+        .order_by(MockExam.started_at.desc(), MockExam.id.desc())
+    ).first()
+    if exam is None or exam.target_end_time is None:
+        return MockExamActiveResponse()
+
+    seconds_remaining = max(0, round((exam.target_end_time - now).total_seconds()))
+    if exam.status != "pausado" and seconds_remaining <= 0:
+        finish_mock_exam(session, exam.id or 0)
+        return MockExamActiveResponse()
+
+    return MockExamActiveResponse(
+        exam=_to_response(exam, estimated_tri_score=_resolve_exam_estimated_tri(session, exam)),
+        seconds_remaining=seconds_remaining,
+    )
 
 
 def get_mock_exam(session: Session, exam_id: int) -> MockExamResponse:
@@ -748,9 +787,12 @@ def update_mock_exam_question(
 def start_mock_exam(session: Session, exam_id: int) -> MockExamStartResponse:
     exam = _get_exam_or_raise(session, exam_id)
     now = _utcnow()
-    if exam.started_at is None:
-        exam.started_at = now
-    exam.status = "in_progress"
+    exam.started_at = now
+    exam.finished_at = None
+    exam.is_paused = False
+    exam.paused_at = None
+    exam.target_end_time = now + timedelta(seconds=max(exam.total_questoes, 1) * 180)
+    exam.status = "em_andamento"
     exam.updated_at = now
     session.add(exam)
     session.commit()
@@ -758,14 +800,103 @@ def start_mock_exam(session: Session, exam_id: int) -> MockExamStartResponse:
     return MockExamStartResponse(exam=_to_response(exam), questions_count=len(_list_question_rows(session, exam_id)))
 
 
+def pause_mock_exam(session: Session, exam_id: int) -> MockExamStartResponse:
+    exam = _get_exam_or_raise(session, exam_id)
+    now = _utcnow()
+    if exam.status == "finalizado":
+        raise ValueError("Simulado ja finalizado.")
+    exam.is_paused = True
+    exam.paused_at = now
+    exam.status = "pausado"
+    exam.updated_at = now
+    session.add(exam)
+    session.commit()
+    session.refresh(exam)
+    return MockExamStartResponse(exam=_to_response(exam), questions_count=len(_list_question_rows(session, exam_id)))
+
+
+def resume_mock_exam(session: Session, exam_id: int) -> MockExamStartResponse:
+    exam = _get_exam_or_raise(session, exam_id)
+    now = _utcnow()
+    if exam.status == "finalizado":
+        raise ValueError("Simulado ja finalizado.")
+    if exam.is_paused and exam.paused_at is not None and exam.target_end_time is not None:
+        exam.target_end_time = exam.target_end_time + (now - exam.paused_at)
+    exam.is_paused = False
+    exam.paused_at = None
+    exam.status = "em_andamento"
+    exam.updated_at = now
+    session.add(exam)
+    session.commit()
+    session.refresh(exam)
+    return MockExamStartResponse(exam=_to_response(exam), questions_count=len(_list_question_rows(session, exam_id)))
+
+
+def record_mock_exam_answer(
+    session: Session,
+    exam_id: int,
+    payload: MockExamRecordAnswerRequest,
+) -> MockExamQuestionResponse:
+    exam = _get_exam_or_raise(session, exam_id)
+    if payload.question_id is None and payload.question_number is None:
+        raise ValueError("Informe question_id ou question_number.")
+
+    question = (
+        _get_question_or_raise(session, exam_id, payload.question_id)
+        if payload.question_id is not None
+        else _get_question_by_number_or_raise(session, exam_id, payload.question_number or 0)
+    )
+    now = _utcnow()
+    if question.started_at is None:
+        previous_answer = session.exec(
+            select(MockExamQuestion)
+            .where(MockExamQuestion.mock_exam_id == exam_id)
+            .where(MockExamQuestion.answered_at.is_not(None))
+            .order_by(MockExamQuestion.answered_at.desc(), MockExamQuestion.id.desc())
+        ).first()
+        question.started_at = previous_answer.answered_at if previous_answer and previous_answer.answered_at else (exam.started_at or now)
+
+    elapsed_seconds = payload.time_seconds
+    if elapsed_seconds is None:
+        elapsed_seconds = max(0, round((now - question.started_at).total_seconds())) if question.started_at else 0
+
+    question.user_answer = None if payload.skipped else (payload.user_answer.strip().upper() if payload.user_answer else None)
+    question.skipped = payload.skipped
+    question.time_seconds = elapsed_seconds
+    question.answered_at = now
+    question.is_correct = _question_correctness(
+        user_answer=question.user_answer,
+        correct_answer=question.correct_answer,
+        skipped=question.skipped,
+    )
+    question.updated_at = now
+    exam.updated_at = now
+    session.add(question)
+    session.add(exam)
+    session.commit()
+    session.refresh(question)
+    return _to_question_response(question)
+
+
 def finish_mock_exam(session: Session, exam_id: int) -> MockExamFinishResponse:
     exam = _get_exam_or_raise(session, exam_id)
     if exam.started_at is None:
         exam.started_at = _utcnow()
 
+    now = _utcnow()
+    for question in _list_question_rows(session, exam_id):
+        if not question.user_answer and not question.skipped:
+            question.skipped = True
+            question.is_correct = False
+            question.answered_at = question.answered_at or now
+            question.updated_at = now
+            session.add(question)
+
     results = _build_results(session, exam)
-    exam.status = "finished"
-    exam.finished_at = _utcnow()
+    exam.status = "finalizado"
+    exam.is_paused = False
+    exam.paused_at = None
+    exam.finished_at = now
     exam.total_questoes = results.total_questions or exam.total_questoes
     exam.total_acertos = results.correct_count
     exam.estimated_tri_score = results.overall_area_average_score or _estimate_score_from_exam(exam)

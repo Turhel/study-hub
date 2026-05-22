@@ -17,12 +17,14 @@ import type {
   LessonContent,
   LessonContentPayload,
   MockExam,
+  MockExamActiveResponse,
   MockExamFinishResponse,
   MockExamPlaceholderRequest,
   MockExamPlaceholderResponse,
   MockExamPayload,
   MockExamQuestion,
   MockExamQuestionPayload,
+  MockExamRecordAnswerPayload,
   MockExamResultsResponse,
   MockExamStartResponse,
   MockExamSummaryResponse,
@@ -359,6 +361,16 @@ export async function getMockExamSummary(): Promise<MockExamSummaryResponse> {
   return response.json() as Promise<MockExamSummaryResponse>;
 }
 
+export async function getActiveMockExam(): Promise<MockExamActiveResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/active`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel verificar simulado em andamento.");
+  }
+
+  return response.json() as Promise<MockExamActiveResponse>;
+}
+
 export async function createMockExam(payload: MockExamPayload): Promise<MockExam> {
   const response = await fetch(`${API_BASE_URL}/api/mock-exams`, {
     method: "POST",
@@ -460,6 +472,49 @@ export async function startMockExam(id: number): Promise<MockExamStartResponse> 
   }
 
   return response.json() as Promise<MockExamStartResponse>;
+}
+
+export async function pauseMockExam(id: number): Promise<MockExamStartResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/pause`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel pausar o simulado.");
+  }
+
+  return response.json() as Promise<MockExamStartResponse>;
+}
+
+export async function resumeMockExam(id: number): Promise<MockExamStartResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/resume`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel retomar o simulado.");
+  }
+
+  return response.json() as Promise<MockExamStartResponse>;
+}
+
+export async function recordMockExamAnswer(
+  id: number,
+  payload: MockExamRecordAnswerPayload,
+): Promise<MockExamQuestion> {
+  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/record-answer`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel registrar a resposta do simulado.");
+  }
+
+  return response.json() as Promise<MockExamQuestion>;
 }
 
 export async function finishMockExam(id: number): Promise<MockExamFinishResponse> {

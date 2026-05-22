@@ -7,23 +7,14 @@ import {
   generateMockExamPlaceholders,
   getMockExam,
   getMockExamQuestions,
+  pauseMockExam,
+  recordMockExamAnswer,
+  resumeMockExam,
   startMockExam,
-  updateMockExamQuestion,
 } from "../lib/api";
-import type { MockExamPlaceholderRequest, MockExamQuestion, MockExamQuestionPayload } from "../lib/types";
+import type { MockExam, MockExamPlaceholderRequest, MockExamQuestion } from "../lib/types";
 
 const answerOptions = ["A", "B", "C", "D", "E"] as const;
-
-type DraftState = {
-  question_code: string;
-  area: string;
-  discipline: string;
-  user_answer: string;
-  correct_answer: string;
-  skipped: boolean;
-  difficulty_percent: string;
-  notes: string;
-};
 
 type PlaceholderFormState = {
   total_questions: string;
@@ -35,56 +26,41 @@ type PlaceholderFormState = {
   second_end: string;
 };
 
+function parseBackendTime(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const normalized = /[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`;
+  const timestamp = new Date(normalized).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
 function formatDuration(totalSeconds: number): string {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
   if (hours > 0) {
     return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function statusLabel(status: string): string {
-  if (status === "finished") {
-    return "finalizado";
-  }
-  if (status === "in_progress") {
-    return "em andamento";
-  }
+function isRunning(exam: MockExam): boolean {
+  return exam.status === "em_andamento" || exam.status === "in_progress";
+}
+
+function isPaused(exam: MockExam): boolean {
+  return exam.status === "pausado" || exam.is_paused;
+}
+
+function isFinished(exam: MockExam): boolean {
+  return exam.status === "finalizado" || exam.status === "finished";
+}
+
+function statusLabel(status: MockExam["status"]): string {
+  if (status === "finalizado" || status === "finished") return "finalizado";
+  if (status === "pausado") return "pausado";
+  if (status === "em_andamento" || status === "in_progress") return "em andamento";
   return "rascunho";
-}
-
-function questionStateLabel(question: MockExamQuestion, current: boolean): string {
-  if (current) return "is-current";
-  if (question.skipped) return "is-skipped";
-  if (question.user_answer) return "is-answered";
-  return "is-empty";
-}
-
-function questionDraftFromRow(question: MockExamQuestion | null): DraftState {
-  if (!question) {
-    return {
-      question_code: "",
-      area: "",
-      discipline: "",
-      user_answer: "",
-      correct_answer: "",
-      skipped: false,
-      difficulty_percent: "",
-      notes: "",
-    };
-  }
-  return {
-    question_code: question.question_code ?? "",
-    area: question.area ?? "",
-    discipline: question.discipline ?? "",
-    user_answer: question.user_answer ?? "",
-    correct_answer: question.correct_answer ?? "",
-    skipped: question.skipped,
-    difficulty_percent: question.difficulty_percent == null ? "" : String(question.difficulty_percent),
-    notes: question.notes ?? "",
-  };
 }
 
 function buildPlaceholderDefault(totalQuestions: number, area: string): PlaceholderFormState {
@@ -100,62 +76,43 @@ function buildPlaceholderDefault(totalQuestions: number, area: string): Placehol
   };
 }
 
+function questionState(question: MockExamQuestion, current: boolean): string {
+  if (current) return "is-current";
+  if (question.skipped) return "is-skipped";
+  if (question.user_answer) return "is-answered";
+  return "is-empty";
+}
+
 export default function MockExamRunPage() {
   const params = useParams<{ id: string }>();
   const examId = Number(params.id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const storageKey = `mock-exam-run:${examId}`;
-  const hydratedRef = useRef(false);
-
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [questionEnteredAt, setQuestionEnteredAt] = useState<number | null>(null);
-  const [draft, setDraft] = useState<DraftState>(questionDraftFromRow(null));
+  const [nowTick, setNowTick] = useState(Date.now());
+  const [questionStartedAt, setQuestionStartedAt] = useState(Date.now());
+  const [placeholderForm, setPlaceholderForm] = useState<PlaceholderFormState | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [placeholderForm, setPlaceholderForm] = useState<PlaceholderFormState | null>(null);
+  const finishingRef = useRef(false);
 
-  const examQuery = useQuery({ queryKey: ["mock-exam", examId], queryFn: () => getMockExam(examId), enabled: Number.isFinite(examId) && examId > 0, retry: false });
-  const questionsQuery = useQuery({ queryKey: ["mock-exam-questions", examId], queryFn: () => getMockExamQuestions(examId), enabled: Number.isFinite(examId) && examId > 0, retry: false });
-
-  useEffect(() => {
-    if (!hydratedRef.current) {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved) as { currentIndex?: number; elapsedSeconds?: number; paused?: boolean };
-          if (typeof parsed.currentIndex === "number") setCurrentIndex(parsed.currentIndex);
-          if (typeof parsed.elapsedSeconds === "number") setElapsedSeconds(parsed.elapsedSeconds);
-          if (typeof parsed.paused === "boolean") setPaused(parsed.paused);
-        } catch {
-          // ignore corrupted local state
-        }
-      }
-      hydratedRef.current = true;
-    }
-  }, [storageKey]);
+  const examQuery = useQuery({
+    queryKey: ["mock-exam", examId],
+    queryFn: () => getMockExam(examId),
+    enabled: Number.isFinite(examId) && examId > 0,
+    retry: false,
+  });
+  const questionsQuery = useQuery({
+    queryKey: ["mock-exam-questions", examId],
+    queryFn: () => getMockExamQuestions(examId),
+    enabled: Number.isFinite(examId) && examId > 0,
+    retry: false,
+  });
 
   useEffect(() => {
-    if (!hydratedRef.current) return;
-    localStorage.setItem(storageKey, JSON.stringify({ currentIndex, elapsedSeconds, paused }));
-  }, [currentIndex, elapsedSeconds, paused, storageKey]);
-
-  useEffect(() => {
-    if (paused || examQuery.data?.status !== "in_progress") {
-      return;
-    }
-    const timer = window.setInterval(() => setElapsedSeconds((current) => current + 1), 1000);
+    const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [paused, examQuery.data?.status]);
-
-  const selectedQuestion = (questionsQuery.data ?? [])[currentIndex] ?? null;
-
-  useEffect(() => {
-    setDraft(questionDraftFromRow(selectedQuestion));
-    setQuestionEnteredAt(Date.now());
-  }, [selectedQuestion?.id]);
+  }, []);
 
   useEffect(() => {
     if (examQuery.data && !placeholderForm) {
@@ -163,39 +120,49 @@ export default function MockExamRunPage() {
     }
   }, [examQuery.data, placeholderForm]);
 
+  const selectedQuestion = (questionsQuery.data ?? [])[currentIndex] ?? null;
+  useEffect(() => {
+    setQuestionStartedAt(Date.now());
+  }, [selectedQuestion?.id]);
+
   const startMutation = useMutation({
     mutationFn: () => startMockExam(examId),
     onSuccess: async (payload) => {
-      setFeedback("Prova iniciada.");
-      setPaused(false);
-      await Promise.all([
-        queryClient.setQueryData(["mock-exam", examId], payload.exam),
-        queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] }),
-      ]);
+      setFeedback("Modo Maratona iniciado. O relogio agora segue a hora do sistema.");
+      setQuestionStartedAt(Date.now());
+      queryClient.setQueryData(["mock-exam", examId], payload.exam);
+      await queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] });
     },
-    onError: (mutationError) => {
-      setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel iniciar a prova.");
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel iniciar a prova."),
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: () => pauseMockExam(examId),
+    onSuccess: async (payload) => {
+      queryClient.setQueryData(["mock-exam", examId], payload.exam);
+      await queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] });
     },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel pausar a prova."),
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: () => resumeMockExam(examId),
+    onSuccess: async (payload) => {
+      setQuestionStartedAt(Date.now());
+      queryClient.setQueryData(["mock-exam", examId], payload.exam);
+      await queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] });
+    },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel retomar a prova."),
   });
 
   const placeholderMutation = useMutation({
     mutationFn: async () => {
-      if (!placeholderForm) {
-        throw new Error("Configure as faixas antes de gerar as questoes.");
-      }
+      if (!placeholderForm) throw new Error("Configure as faixas antes de gerar as questoes.");
       const payload: MockExamPlaceholderRequest = {
         total_questions: Number(placeholderForm.total_questions),
         areas: [
-          {
-            area: placeholderForm.first_area,
-            start: Number(placeholderForm.first_start),
-            end: Number(placeholderForm.first_end),
-          },
-          {
-            area: placeholderForm.second_area,
-            start: Number(placeholderForm.second_start),
-            end: Number(placeholderForm.second_end),
-          },
+          { area: placeholderForm.first_area, start: Number(placeholderForm.first_start), end: Number(placeholderForm.first_end) },
+          { area: placeholderForm.second_area, start: Number(placeholderForm.second_start), end: Number(placeholderForm.second_end) },
         ].filter((item) => item.area.trim()),
       };
       return generateMockExamPlaceholders(examId, payload);
@@ -208,55 +175,33 @@ export default function MockExamRunPage() {
         queryClient.invalidateQueries({ queryKey: ["mock-exams"] }),
       ]);
     },
-    onError: (mutationError) => {
-      setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel gerar as questoes.");
-    },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel gerar as questoes."),
   });
 
-  const saveCurrentQuestion = async (override?: Partial<DraftState>) => {
-    if (!selectedQuestion) return;
-    const source = { ...draft, ...override };
-    const extraSeconds =
-      paused || questionEnteredAt == null || examQuery.data?.status !== "in_progress"
-        ? 0
-        : Math.max(0, Math.round((Date.now() - questionEnteredAt) / 1000));
-    const nextTime = (selectedQuestion.time_seconds ?? 0) + extraSeconds;
-    const payload: MockExamQuestionPayload = {
-      question_code: source.question_code.trim() || null,
-      area: source.area.trim() || null,
-      discipline: source.discipline.trim() || null,
-      user_answer: source.user_answer || null,
-      correct_answer: source.correct_answer || null,
-      skipped: source.skipped,
-      difficulty_percent: source.difficulty_percent.trim() ? Number(source.difficulty_percent) : null,
-      time_seconds: nextTime,
-      notes: source.notes.trim() || null,
-    };
-    const updated = await updateMockExamQuestion(examId, selectedQuestion.id, payload);
-    queryClient.setQueryData<MockExamQuestion[]>(["mock-exam-questions", examId], (current = []) =>
-      current.map((item) => (item.id === updated.id ? updated : item)),
-    );
-    setDraft(questionDraftFromRow(updated));
-    setQuestionEnteredAt(Date.now());
-  };
-
-  const saveMutation = useMutation({
-    mutationFn: () => saveCurrentQuestion(),
-    onSuccess: () => setFeedback("Questao salva."),
-    onError: (mutationError) => {
-      setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel salvar a questao.");
+  const recordAnswerMutation = useMutation({
+    mutationFn: ({ question, answer, skipped }: { question: MockExamQuestion; answer?: string; skipped?: boolean }) =>
+      recordMockExamAnswer(examId, {
+        question_id: question.id,
+        user_answer: answer ?? null,
+        skipped: Boolean(skipped),
+        time_seconds: Math.max(0, Math.round((Date.now() - questionStartedAt) / 1000)),
+      }),
+    onSuccess: async (updated) => {
+      queryClient.setQueryData<MockExamQuestion[]>(["mock-exam-questions", examId], (current = []) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      const questions = questionsQuery.data ?? [];
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex((current) => current + 1);
+      }
+      setQuestionStartedAt(Date.now());
     },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel registrar a resposta."),
   });
 
   const finishMutation = useMutation({
-    mutationFn: async () => {
-      if (selectedQuestion) {
-        await saveCurrentQuestion();
-      }
-      return finishMockExam(examId);
-    },
+    mutationFn: () => finishMockExam(examId),
     onSuccess: async () => {
-      localStorage.removeItem(storageKey);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] }),
         queryClient.invalidateQueries({ queryKey: ["mock-exam-questions", examId] }),
@@ -267,83 +212,65 @@ export default function MockExamRunPage() {
       navigate(`/mock-exams/${examId}/results`);
     },
     onError: (mutationError) => {
+      finishingRef.current = false;
       setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel finalizar o simulado.");
     },
   });
 
-  const questionMeta = useMemo(() => {
-    const rows = questionsQuery.data ?? [];
-    return rows.map((question, index) => ({
-      ...question,
-      current: index === currentIndex,
-    }));
-  }, [currentIndex, questionsQuery.data]);
+  const exam = examQuery.data;
+  const questions = questionsQuery.data ?? [];
+  const targetEnd = parseBackendTime(exam?.target_end_time);
+  const remainingSeconds = targetEnd == null || !exam || isPaused(exam) || isFinished(exam)
+    ? 0
+    : Math.max(0, Math.ceil((targetEnd - nowTick) / 1000));
+
+  useEffect(() => {
+    if (!exam || !isRunning(exam) || targetEnd == null || remainingSeconds > 0 || finishingRef.current) return;
+    finishingRef.current = true;
+    finishMutation.mutate();
+  }, [exam, finishMutation, remainingSeconds, targetEnd]);
+
+  const answeredCount = useMemo(
+    () => questions.filter((question) => question.user_answer || question.skipped).length,
+    [questions],
+  );
 
   if (examQuery.isLoading || questionsQuery.isLoading) {
     return (
-      <main className="today-page mock-exam-run-page">
-        <section className="today-subjects-shell today-functional-shell mock-exams-shell">
-          <section className="today-panel app-empty-card">
-            <strong>Carregando prova...</strong>
-            <p>Estamos montando o executor do simulado.</p>
-          </section>
+      <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+        <section className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-900 p-6">
+          <strong>Carregando prova...</strong>
+          <p className="text-slate-300">Estamos montando o Modo Maratona.</p>
         </section>
       </main>
     );
   }
 
-  if (examQuery.isError || !examQuery.data) {
+  if (examQuery.isError || !exam) {
+    return (
+      <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+        <section className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-900 p-6">
+          <strong>Simulado indisponivel.</strong>
+          <p className="text-slate-300">Este registro nao respondeu agora.</p>
+          <Link className="mt-4 inline-flex rounded-xl border border-white/20 px-4 py-2" to="/mock-exams">
+            Voltar para simulados
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  if (questions.length === 0) {
     return (
       <main className="today-page mock-exam-run-page">
         <section className="today-subjects-shell today-functional-shell mock-exams-shell">
-          <section className="today-panel app-empty-card">
-            <strong>Simulado indisponivel.</strong>
-            <p>Este registro nao respondeu agora.</p>
-            <Link className="app-secondary-action" to="/mock-exams">
-              Voltar para simulados
-            </Link>
-          </section>
-        </section>
-      </main>
-    );
-  }
-
-  const exam = examQuery.data;
-  const questions = questionsQuery.data ?? [];
-
-  return (
-    <main className="today-page mock-exam-run-page">
-      <section className="today-subjects-shell today-functional-shell mock-exams-shell mock-exam-run-shell">
-        <section className="today-panel mock-exam-run-hero">
-          <div>
-            <p className="today-eyebrow">Simulado v2</p>
-            <h1>{exam.title}</h1>
-            <p>{exam.area} · modo {exam.mode === "external" ? "externo" : "interno"}</p>
-          </div>
-          <div className="mock-exam-run-hero-actions">
-            <span className={`mock-exam-status-badge is-${exam.status}`}>{statusLabel(exam.status)}</span>
-            <Link className="app-secondary-action" to="/mock-exams">Voltar</Link>
-            {exam.status === "finished" ? (
-              <Link className="app-primary-action app-primary-action-blue" to={`/mock-exams/${exam.id}/results`}>Resultados</Link>
-            ) : null}
-          </div>
-        </section>
-
-        {feedback ? <section className="today-feedback"><span>{feedback}</span><button type="button" onClick={() => setFeedback(null)}>Fechar</button></section> : null}
-        {error ? <section className="today-error-panel"><strong>Algo travou.</strong><p>{error}</p></section> : null}
-
-        {questions.length === 0 ? (
           <section className="today-panel mock-exam-placeholder-panel">
-            <div className="today-section-heading">
-              <div>
-                <p className="today-eyebrow">Configurar prova externa</p>
-                <h2>Gerar grade de questoes</h2>
-              </div>
-            </div>
-            <p className="mock-exam-form-note">Para o modo externo, criamos uma grade 1..N com areas por faixa. Depois disso voce ja pode iniciar e responder dentro do app.</p>
+            <p className="today-eyebrow">Configurar prova externa</p>
+            <h1>Gerar grade de questoes</h1>
+            <p className="mock-exam-form-note">Criamos uma grade 1..N por faixa de area. Depois disso o Modo Maratona fica disponivel.</p>
             {placeholderForm ? (
               <div className="today-form-grid">
-                <label className="today-form-field">Total de questoes<input className="app-input" type="number" min={1} value={placeholderForm.total_questions} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, total_questions: event.target.value } : current)} /></label>
+                <label className="today-form-field">Total<input className="app-input" type="number" min={1} value={placeholderForm.total_questions} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, total_questions: event.target.value } : current)} /></label>
                 <label className="today-form-field">Area 1<input className="app-input" value={placeholderForm.first_area} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_area: event.target.value } : current)} /></label>
                 <label className="today-form-field">Inicio 1<input className="app-input" type="number" min={1} value={placeholderForm.first_start} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_start: event.target.value } : current)} /></label>
                 <label className="today-form-field">Fim 1<input className="app-input" type="number" min={1} value={placeholderForm.first_end} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_end: event.target.value } : current)} /></label>
@@ -352,116 +279,134 @@ export default function MockExamRunPage() {
                 <label className="today-form-field">Fim 2<input className="app-input" type="number" min={1} value={placeholderForm.second_end} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, second_end: event.target.value } : current)} /></label>
               </div>
             ) : null}
+            {error ? <p className="today-form-error">{error}</p> : null}
+            {feedback ? <p className="today-feedback">{feedback}</p> : null}
             <div className="today-action-row">
-              <button type="button" className="app-primary-action app-primary-action-blue" disabled={placeholderMutation.isPending} onClick={() => { setError(null); setFeedback(null); placeholderMutation.mutate(); }}>
+              <Link className="app-secondary-action" to="/mock-exams">Voltar</Link>
+              <button type="button" className="app-primary-action app-primary-action-blue" disabled={placeholderMutation.isPending} onClick={() => placeholderMutation.mutate()}>
                 {placeholderMutation.isPending ? "Gerando..." : "Gerar placeholders"}
               </button>
             </div>
           </section>
-        ) : (
-          <>
-            <section className="mock-exam-run-layout">
-              <section className="today-panel mock-exam-grid-panel">
-                <div className="today-section-heading">
-                  <div>
-                    <p className="today-eyebrow">Gabarito de questoes</p>
-                    <h2>Questoes {questions.length > 0 ? `1 a ${questions.length}` : "sem grade"}</h2>
-                  </div>
-                </div>
-                <div className="mock-exam-question-grid">
-                  {questionMeta.map((question, index) => (
-                    <button
-                      key={question.id}
-                      type="button"
-                      className={`mock-exam-question-chip ${questionStateLabel(question, question.current)}`}
-                      onClick={async () => {
-                        if (index === currentIndex) return;
-                        try {
-                          await saveCurrentQuestion();
-                          setCurrentIndex(index);
-                          setError(null);
-                        } catch (saveError) {
-                          setError(saveError instanceof Error ? saveError.message : "Nao foi possivel trocar de questao.");
-                        }
-                      }}
-                      title={`Questao ${question.question_number}`}
-                    >
-                      {question.question_number}
-                    </button>
-                  ))}
-                </div>
-              </section>
+        </section>
+      </main>
+    );
+  }
 
-              <aside className="today-panel mock-exam-timer-panel">
-                <span className="today-eyebrow">Tempo total</span>
-                <strong>{formatDuration(elapsedSeconds)}</strong>
-                <p>{paused ? "Pausado" : "Cronometro rodando"}</p>
-                {exam.status === "draft" ? (
-                  <button type="button" className="app-primary-action app-primary-action-blue" disabled={startMutation.isPending} onClick={() => { setError(null); setFeedback(null); startMutation.mutate(); }}>
-                    {startMutation.isPending ? "Iniciando..." : "Iniciar prova"}
-                  </button>
-                ) : null}
-                {exam.status !== "finished" ? (
-                  <>
-                    <button type="button" className="app-secondary-action" onClick={() => setPaused((current) => !current)}>
-                      {paused ? "Retomar" : "Pausar"}
-                    </button>
-                    <button type="button" className="app-primary-action app-primary-action-blue" disabled={finishMutation.isPending} onClick={() => { setError(null); setFeedback(null); finishMutation.mutate(); }}>
-                      {finishMutation.isPending ? "Finalizando..." : "Finalizar"}
-                    </button>
-                  </>
-                ) : null}
-              </aside>
-            </section>
+  const canAnswer = isRunning(exam) && !recordAnswerMutation.isPending && selectedQuestion;
 
-            {selectedQuestion ? (
-              <section className="today-panel mock-exam-question-panel">
-                <div className="mock-exam-question-nav">
-                  <button type="button" className="app-secondary-action" disabled={currentIndex <= 0} onClick={async () => { try { await saveCurrentQuestion(); setCurrentIndex((current) => Math.max(0, current - 1)); } catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Nao foi possivel voltar."); } }}>Anterior</button>
-                  <strong>Questao {selectedQuestion.question_number} de {questions.length}</strong>
-                  <button type="button" className="app-secondary-action" disabled={currentIndex >= questions.length - 1} onClick={async () => { try { await saveCurrentQuestion(); setCurrentIndex((current) => Math.min(questions.length - 1, current + 1)); } catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Nao foi possivel avancar."); } }}>Proxima</button>
-                </div>
-
-                <div className="today-form-grid">
-                  <label className="today-form-field">Codigo<input className="app-input" value={draft.question_code} onChange={(event) => setDraft((current) => ({ ...current, question_code: event.target.value }))} placeholder="Opcional" /></label>
-                  <label className="today-form-field">Area<input className="app-input" value={draft.area} onChange={(event) => setDraft((current) => ({ ...current, area: event.target.value }))} placeholder="Ex.: Matematica" /></label>
-                  <label className="today-form-field">Disciplina<input className="app-input" value={draft.discipline} onChange={(event) => setDraft((current) => ({ ...current, discipline: event.target.value }))} placeholder="Ex.: Algebra" /></label>
-                  <label className="today-form-field">Dificuldade (% acertaram)<input className="app-input" type="number" min={0} max={100} value={draft.difficulty_percent} onChange={(event) => setDraft((current) => ({ ...current, difficulty_percent: event.target.value }))} /></label>
-                </div>
-
-                {exam.mode === "internal" && selectedQuestion.prompt_markdown ? (
-                  <article className="mock-exam-question-content">
-                    <h3>Enunciado</h3>
-                    <pre>{selectedQuestion.prompt_markdown}</pre>
-                    {selectedQuestion.alternatives.length > 0 ? (
-                      <div className="mock-exam-alternatives">
-                        {selectedQuestion.alternatives.map((alternative, index) => (
-                          <div key={`${selectedQuestion.id}-${index}`} className="mock-exam-alternative-item">{alternative}</div>
-                        ))}
-                      </div>
-                    ) : null}
-                  </article>
-                ) : null}
-
-                <div className="mock-exam-answer-grid">
-                  <label className="today-form-field">Sua resposta<select className="app-input" value={draft.user_answer} onChange={(event) => setDraft((current) => ({ ...current, skipped: false, user_answer: event.target.value }))}><option value="">Nao responder agora</option>{answerOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
-                  <label className="today-form-field">Gabarito<select className="app-input" value={draft.correct_answer} onChange={(event) => setDraft((current) => ({ ...current, correct_answer: event.target.value }))}><option value="">Ainda nao sei</option>{answerOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>
-                </div>
-
-                <label className="today-form-field">
-                  Observacoes
-                  <textarea className="app-input" value={draft.notes} onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="Duvida de leitura, erro de conta, chute..." />
-                </label>
-
-                <div className="today-action-row">
-                  <button type="button" className="app-secondary-action" onClick={async () => { try { await saveCurrentQuestion({ skipped: true, user_answer: "" }); setFeedback(`Questao ${selectedQuestion.question_number} marcada como pulada.`); } catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Nao foi possivel pular a questao."); } }}>Pular</button>
-                  <button type="button" className="app-secondary-action" disabled={saveMutation.isPending} onClick={() => { setError(null); setFeedback(null); saveMutation.mutate(); }}>Salvar questao</button>
-                </div>
-              </section>
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#172554_0,#020617_48%,#020617_100%)] px-4 py-6 text-white">
+      <section className="mx-auto flex min-h-[calc(100vh-48px)] max-w-5xl flex-col gap-5">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-400/30 bg-slate-950/80 p-4 shadow-2xl">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Modo Maratona</p>
+            <h1 className="text-2xl font-black">{exam.title}</h1>
+            <p className="text-sm text-slate-300">{exam.area} · {answeredCount}/{questions.length} preenchidas · {statusLabel(exam.status)}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-slate-200" to="/mock-exams">
+              Sair
+            </Link>
+            {isFinished(exam) ? (
+              <Link className="rounded-xl bg-sky-400 px-4 py-2 text-sm font-black text-slate-950" to={`/mock-exams/${exam.id}/results`}>
+                Resultados
+              </Link>
             ) : null}
-          </>
-        )}
+          </div>
+        </header>
+
+        {error ? <div className="rounded-2xl border border-red-400/40 bg-red-950/60 p-4 text-red-100">{error}</div> : null}
+        {feedback ? <div className="rounded-2xl border border-sky-400/30 bg-sky-950/40 p-4 text-sky-100">{feedback}</div> : null}
+
+        <section className="grid flex-1 gap-5 lg:grid-cols-[1fr_300px]">
+          <div className="flex flex-col justify-center rounded-3xl border border-white/10 bg-slate-950/70 p-6 text-center shadow-2xl">
+            <span className="text-sm font-black uppercase tracking-[0.25em] text-slate-400">Tempo restante</span>
+            <strong className={`mt-2 font-mono text-6xl font-black md:text-8xl ${remainingSeconds <= 300 && isRunning(exam) ? "text-red-300" : "text-yellow-300"}`}>
+              {isPaused(exam) ? "PAUSA" : formatDuration(remainingSeconds)}
+            </strong>
+            <p className="mt-3 text-slate-300">
+              {isRunning(exam) ? "Relogio sincronizado pelo horario do sistema." : isPaused(exam) ? "Prova congelada. Ao retomar, o backend ajusta o fim." : "Inicie para abrir o lancamento cego."}
+            </p>
+
+            <div className="mt-8 rounded-3xl border border-sky-400/20 bg-slate-900/80 p-5">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Questao atual</p>
+              <h2 className="mt-1 text-4xl font-black">Q{selectedQuestion?.question_number ?? currentIndex + 1}</h2>
+              <div className="mt-6 grid grid-cols-5 gap-3">
+                {answerOptions.map((answer) => (
+                  <button
+                    key={answer}
+                    type="button"
+                    disabled={!canAnswer}
+                    className="aspect-square rounded-full border border-sky-300/50 bg-sky-500/15 text-2xl font-black text-white shadow-lg shadow-sky-950/40 transition hover:bg-sky-400 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-35"
+                    onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, answer })}
+                  >
+                    {answer}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                disabled={!canAnswer}
+                className="mt-5 w-full rounded-2xl border border-amber-300/50 bg-amber-400/10 px-5 py-4 text-lg font-black text-amber-100 transition hover:bg-amber-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-35"
+                onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, skipped: true })}
+              >
+                Pular questao
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              {exam.status === "draft" ? (
+                <button type="button" className="rounded-2xl bg-sky-400 px-6 py-3 font-black text-slate-950" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
+                  {startMutation.isPending ? "Iniciando..." : "Iniciar Modo Maratona"}
+                </button>
+              ) : null}
+              {isRunning(exam) ? (
+                <button type="button" className="rounded-2xl border border-white/20 px-6 py-3 font-black" disabled={pauseMutation.isPending} onClick={() => pauseMutation.mutate()}>
+                  Pausar prova
+                </button>
+              ) : null}
+              {isPaused(exam) ? (
+                <button type="button" className="rounded-2xl bg-emerald-400 px-6 py-3 font-black text-slate-950" disabled={resumeMutation.isPending} onClick={() => resumeMutation.mutate()}>
+                  Retomar prova
+                </button>
+              ) : null}
+              {!isFinished(exam) ? (
+                <button type="button" className="rounded-2xl border border-red-400/50 px-6 py-3 font-black text-red-100" disabled={finishMutation.isPending} onClick={() => finishMutation.mutate()}>
+                  Finalizar agora
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <aside className="rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-2xl">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Mapa cego</p>
+            <div className="mt-4 grid max-h-[65vh] grid-cols-5 gap-2 overflow-y-auto pr-1">
+              {questions.map((question, index) => (
+                <button
+                  key={question.id}
+                  type="button"
+                  className={`rounded-xl border px-2 py-3 text-sm font-black ${questionState(question, index === currentIndex)} ${
+                    index === currentIndex
+                      ? "border-sky-300 bg-sky-400 text-slate-950"
+                      : question.user_answer
+                        ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
+                        : question.skipped
+                          ? "border-amber-400/40 bg-amber-500/15 text-amber-100"
+                          : "border-white/10 bg-slate-900 text-slate-300"
+                  }`}
+                  onClick={() => {
+                    setCurrentIndex(index);
+                    setQuestionStartedAt(Date.now());
+                  }}
+                >
+                  {question.question_number}
+                </button>
+              ))}
+            </div>
+          </aside>
+        </section>
       </section>
     </main>
   );
-}
+}

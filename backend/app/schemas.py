@@ -493,7 +493,7 @@ MockExamArea = Literal[
     "Geral",
 ]
 MockExamMode = Literal["external", "internal"]
-MockExamStatus = Literal["draft", "in_progress", "finished"]
+MockExamStatus = Literal["draft", "in_progress", "finished", "em_andamento", "finalizado", "pausado"]
 MockExamQuestionSourceType = Literal["external", "internal"]
 
 
@@ -542,6 +542,9 @@ class MockExamResponse(BaseModel):
     notes: str | None = None
     started_at: str | None = None
     finished_at: str | None = None
+    target_end_time: str | None = None
+    is_paused: bool = False
+    paused_at: str | None = None
     created_at: str
     updated_at: str
 
@@ -607,6 +610,19 @@ class MockExamQuestionUpdate(BaseModel):
     started_at: str | None = None
     answered_at: str | None = None
     notes: str | None = None
+
+
+class MockExamRecordAnswerRequest(BaseModel):
+    question_id: int | None = None
+    question_number: int | None = Field(default=None, ge=1)
+    user_answer: str | None = None
+    skipped: bool = False
+    time_seconds: int | None = Field(default=None, ge=0)
+
+
+class MockExamActiveResponse(BaseModel):
+    exam: MockExamResponse | None = None
+    seconds_remaining: int = 0
 
 
 class MockExamQuestionResponse(BaseModel):

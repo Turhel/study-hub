@@ -5302,13 +5302,21 @@ textarea {
   border-color: rgba(112, 133, 170, 0.26);
 }
 
-.mock-exam-status-badge.is-in_progress {
+.mock-exam-status-badge.is-in_progress,
+.mock-exam-status-badge.is-em_andamento {
   border-color: rgba(47, 169, 244, 0.35);
   background: rgba(47, 169, 244, 0.12);
   color: #2fa9f4;
 }
 
-.mock-exam-status-badge.is-finished {
+.mock-exam-status-badge.is-pausado {
+  border-color: rgba(255, 190, 66, 0.36);
+  background: rgba(255, 190, 66, 0.12);
+  color: #ffc247;
+}
+
+.mock-exam-status-badge.is-finished,
+.mock-exam-status-badge.is-finalizado {
   border-color: rgba(76, 203, 99, 0.36);
   background: rgba(76, 203, 99, 0.12);
   color: #4ccb63;

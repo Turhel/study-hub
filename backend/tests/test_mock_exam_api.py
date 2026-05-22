@@ -280,8 +280,15 @@ def test_mock_exam_execution_flow_and_results(monkeypatch) -> None:
         start_response = client.post(f"/api/mock-exams/{exam_id}/start")
         assert start_response.status_code == 200
         started = start_response.json()
-        assert started["exam"]["status"] == "in_progress"
+        assert started["exam"]["status"] == "em_andamento"
+        assert started["exam"]["target_end_time"] is not None
+        assert started["exam"]["is_paused"] is False
         assert started["questions_count"] == 6
+
+        active_response = client.get("/api/mock-exams/active")
+        assert active_response.status_code == 200
+        assert active_response.json()["exam"]["id"] == exam_id
+        assert active_response.json()["seconds_remaining"] > 0
 
         questions_response = client.get(f"/api/mock-exams/{exam_id}/questions")
         assert questions_response.status_code == 200
@@ -327,7 +334,25 @@ def test_mock_exam_execution_flow_and_results(monkeypatch) -> None:
         )
         assert skip_q4.status_code == 200
         assert skip_q4.json()["skipped"] is True
-        assert skip_q4.json()["is_correct"] is None
+        assert skip_q4.json()["is_correct"] is False
+
+        pause_response = client.post(f"/api/mock-exams/{exam_id}/pause")
+        assert pause_response.status_code == 200
+        assert pause_response.json()["exam"]["status"] == "pausado"
+        assert pause_response.json()["exam"]["is_paused"] is True
+
+        resume_response = client.post(f"/api/mock-exams/{exam_id}/resume")
+        assert resume_response.status_code == 200
+        assert resume_response.json()["exam"]["status"] == "em_andamento"
+        assert resume_response.json()["exam"]["is_paused"] is False
+
+        record_q3 = client.post(
+            f"/api/mock-exams/{exam_id}/record-answer",
+            json={"question_number": 3, "user_answer": "C", "time_seconds": 111},
+        )
+        assert record_q3.status_code == 200
+        assert record_q3.json()["user_answer"] == "C"
+        assert record_q3.json()["time_seconds"] == 111
 
         invalid_difficulty = client.put(
             f"/api/mock-exams/{exam_id}/questions/{q4}",
@@ -338,17 +363,17 @@ def test_mock_exam_execution_flow_and_results(monkeypatch) -> None:
         finish_response = client.post(f"/api/mock-exams/{exam_id}/finish")
         assert finish_response.status_code == 200
         finished = finish_response.json()
-        assert finished["exam"]["status"] == "finished"
+        assert finished["exam"]["status"] == "finalizado"
         assert finished["total_questions"] == 6
-        assert finished["answered_count"] == 2
-        assert finished["skipped_count"] == 1
+        assert finished["answered_count"] == 3
+        assert finished["skipped_count"] == 3
         assert finished["correct_count"] == 1
         assert len(finished["by_area"]) == 2
 
         results_response = client.get(f"/api/mock-exams/{exam_id}/results")
         assert results_response.status_code == 200
         results = results_response.json()
-        assert results["exam"]["status"] == "finished"
+        assert results["exam"]["status"] == "finalizado"
         assert len(results["questions"]) == 6
         assert len(results["by_area"]) == 2
 

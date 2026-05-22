@@ -5,10 +5,12 @@ from fastapi import APIRouter, HTTPException
 from app.db import get_session
 from app.schemas import (
     MockExamCreate,
+    MockExamActiveResponse,
     MockExamFinishResponse,
     MockExamPlaceholderRequest,
     MockExamPlaceholderResponse,
     MockExamQuestionBulkCreate,
+    MockExamRecordAnswerRequest,
     MockExamQuestionResponse,
     MockExamQuestionUpdate,
     MockExamResponse,
@@ -23,11 +25,15 @@ from app.services.mock_exam_service import (
     delete_mock_exam,
     finish_mock_exam,
     generate_mock_exam_placeholders,
+    get_active_mock_exam,
     get_mock_exam,
     get_mock_exam_results,
     get_mock_exam_summary,
     list_mock_exam_questions,
     list_mock_exams,
+    pause_mock_exam,
+    record_mock_exam_answer,
+    resume_mock_exam,
     start_mock_exam,
     update_mock_exam_question,
     update_mock_exam,
@@ -47,6 +53,12 @@ def read_mock_exams() -> list[MockExamResponse]:
 def read_mock_exam_summary() -> MockExamSummaryResponse:
     with get_session() as session:
         return get_mock_exam_summary(session)
+
+
+@router.get("/active", response_model=MockExamActiveResponse)
+def read_active_mock_exam() -> MockExamActiveResponse:
+    with get_session() as session:
+        return get_active_mock_exam(session)
 
 
 @router.get("/{exam_id}/questions", response_model=list[MockExamQuestionResponse])
@@ -105,6 +117,38 @@ def start_mock_exam_route(exam_id: int) -> MockExamStartResponse:
             return start_mock_exam(session, exam_id)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/{exam_id}/pause", response_model=MockExamStartResponse)
+def pause_mock_exam_route(exam_id: int) -> MockExamStartResponse:
+    with get_session() as session:
+        try:
+            return pause_mock_exam(session, exam_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/{exam_id}/resume", response_model=MockExamStartResponse)
+def resume_mock_exam_route(exam_id: int) -> MockExamStartResponse:
+    with get_session() as session:
+        try:
+            return resume_mock_exam(session, exam_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/{exam_id}/record-answer", response_model=MockExamQuestionResponse)
+def record_mock_exam_answer_route(
+    exam_id: int,
+    payload: MockExamRecordAnswerRequest,
+) -> MockExamQuestionResponse:
+    with get_session() as session:
+        try:
+            return record_mock_exam_answer(session, exam_id, payload)
+        except ValueError as exc:
+            message = str(exc)
+            status_code = 404 if "nao encontrada" in message or "nao encontrado" in message else 400
+            raise HTTPException(status_code=status_code, detail=message) from exc
 
 
 @router.post("/{exam_id}/finish", response_model=MockExamFinishResponse)

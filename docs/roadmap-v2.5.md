@@ -80,37 +80,37 @@
 
 ### Reformulacao completa de `MockExamRunPage.tsx`
 
-- [ ] Cronometro regressivo unificado:
-  - [ ] Bloquear o tempo crescente antigo.
-  - [ ] Fixar tempo regressivo rigido baseado em 3 minutos por questao escolhida.
-  - [ ] Estouro compulsorio: zerando o tempo, a prova fecha instantaneamente e computa apenas o que foi preenchido.
+- [x] Cronometro regressivo unificado:
+  - [x] Bloquear o tempo crescente antigo.
+  - [x] Fixar tempo regressivo rigido baseado em 3 minutos por questao escolhida.
+  - [x] Estouro compulsorio: zerando o tempo, a prova fecha instantaneamente e computa apenas o que foi preenchido.
 
-- [ ] Interface limpa de lancamento cego:
-  - [ ] Exibir apenas o relogio regressivo, os botoes `[A] [B] [C] [D] [E]` e o botao `[Pular Questao]`.
-  - [ ] Zero feedback de acerto/erro durante a execucao.
-  - [ ] Gaveta lateral do Question Maker bloqueada.
+- [x] Interface limpa de lancamento cego:
+  - [x] Exibir apenas o relogio regressivo, os botoes `[A] [B] [C] [D] [E]` e o botao `[Pular Questao]`.
+  - [x] Zero feedback de acerto/erro durante a execucao.
+  - [x] Gaveta lateral do Question Maker bloqueada.
 
-- [ ] Pausa humana controlada:
-  - [ ] Botao `[Pausar Prova]` congela o relogio e ajusta o timestamp final proporcionalmente ao retomar.
+- [x] Pausa humana controlada:
+  - [x] Botao `[Pausar Prova]` congela o relogio e ajusta o timestamp final proporcionalmente ao retomar.
 
-- [ ] Regra da questao pulada:
-  - [ ] Itens pulados ou deixados em branco por estouro de tempo ganham a flag `skipped` no banco.
-  - [ ] Computar como erro por falta de conviccao/chute, limpando falsos positivos na proficiencia.
+- [x] Regra da questao pulada:
+  - [x] Itens pulados ou deixados em branco por estouro de tempo ganham a flag `skipped` no banco.
+  - [x] Computar como erro por falta de conviccao/chute, limpando falsos positivos na proficiencia.
 
-- [ ] Gabarito externo consolidado:
-  - [ ] Permitir ao usuario rodar a prova no papel/PDF e lancar as respostas corretas de uma vez no final antes de gerar a nota.
+- [x] Gabarito externo consolidado:
+  - [x] Permitir ao usuario rodar a prova no papel/PDF e lancar as respostas corretas de uma vez no final para recalcular a leitura.
 
 ### Sistema de Seguranca Antifechamento (Fallback de Inicializacao)
 
-- [ ] Persistencia de estado por clique:
-  - [ ] Cada clique de alternativa salva o progresso imediatamente no banco de dados local.
+- [x] Persistencia de estado por clique:
+  - [x] Cada clique de alternativa salva o progresso imediatamente no banco de dados local.
 
-- [ ] Ancora por hora do sistema:
-  - [ ] O calculo do tempo restante baseia-se na hora real do sistema operacional.
-  - [ ] Se fechar o navegador, o tempo continua correndo.
+- [x] Ancora por hora do sistema:
+  - [x] O calculo do tempo restante baseia-se na hora real do sistema operacional.
+  - [x] Se fechar o navegador, o tempo continua correndo.
 
-- [ ] Interceptador de pagina inicial:
-  - [ ] Se o app for reaberto e houver um simulado ativo, o acesso a TodayPage e totalmente bloqueado por um pop-up prioritario forcando o retorno a tela de prova (`[VOLTAR PARA A TELA DO SIMULADO]`).
+- [x] Interceptador de pagina inicial:
+  - [x] Se o app for reaberto e houver um simulado ativo, o acesso a TodayPage e totalmente bloqueado por um pop-up prioritario forcando o retorno a tela de prova (`[VOLTAR PARA A TELA DO SIMULADO]`).
 
 ## 5. Interface do Painel de Controle de Energia (UX)
 
@@ -124,8 +124,8 @@
   - [ ] Se o toggle de provas academicas estiver ligado, pausar 100% o avanco do edital para nao acumular bola de neve.
   - [ ] Gatilho temporizado: apos 7 dias corridos com o modo ativado, injetar um pop-up de confirmacao logo na inicializacao perguntando se o usuario deseja desativar o modo de protecao para retomar o edital.
 
-- [ ] Feedback do pos-prova (curva de fadiga):
-  - [ ] Na tela final de resultados do simulado, renderizar grafico de linha mapeando o tempo medio de reacao (`Tmu`) ao longo do avanco das questoes para diagnosticar visualmente a perda de resistencia cognitiva (endurance).
+- [x] Feedback do pos-prova (curva de fadiga):
+  - [x] Na tela final de resultados do simulado, renderizar grafico de linha mapeando o tempo medio de reacao (`Tmu`) ao longo do avanco das questoes para diagnosticar visualmente a perda de resistencia cognitiva (endurance).
 
 ## 6. Suite de Testes e Validacao de Regressao
 
@@ -143,7 +143,7 @@ python -m compileall backend\app
 $env:PYTHONPATH='backend'; .\backend\.venv\Scripts\python.exe -m pytest backend/tests/
 ```
 
-- [ ] Validar a integridade das tipagens do TypeScript e compilacao React:
+- [x] Validar a integridade das tipagens do TypeScript e compilacao React:
 
 ```powershell
 npm --prefix frontend run typecheck

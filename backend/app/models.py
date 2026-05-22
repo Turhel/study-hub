@@ -219,7 +219,7 @@ class MockExam(SQLModel, table=True):
     tipo: str
     area: str = Field(index=True)
     mode: str = Field(default="external", index=True)
-    status: str = Field(default="draft", index=True)
+    status: str = Field(default="em_andamento", index=True)
     total_questoes: int = Field(ge=1)
     total_acertos: int = Field(ge=0)
     facil_erros: int = Field(default=0, ge=0)
@@ -229,6 +229,9 @@ class MockExam(SQLModel, table=True):
     observacoes: str | None = None
     started_at: datetime | None = Field(default=None, index=True)
     finished_at: datetime | None = Field(default=None, index=True)
+    target_end_time: datetime | None = Field(default=None, index=True)
+    is_paused: bool = Field(default=False, index=True)
+    paused_at: datetime | None = Field(default=None, index=True)
     result_json: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
     updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)

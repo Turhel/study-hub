@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useStudyTimer } from "../components/StudyTimer";
 import {
+  getActiveMockExam,
   getRecentActivity,
   getStudyPlanCalendar,
   getStudyGuidePreferences,
@@ -529,6 +530,12 @@ export default function TodayPage() {
     queryFn: () => getRecentActivity(30),
     retry: false,
   });
+  const activeMockExamQuery = useQuery({
+    queryKey: ["mock-exam-active"],
+    queryFn: getActiveMockExam,
+    retry: false,
+    refetchInterval: 15000,
+  });
 
   const refreshTodayData = async () => {
     await Promise.all([
@@ -759,6 +766,44 @@ export default function TodayPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedCalendarDay, selectedItem]);
+
+  const activeMockExam = activeMockExamQuery.data?.exam ?? null;
+  const activeMockExamSeconds = activeMockExamQuery.data?.seconds_remaining ?? 0;
+  const shouldBlockForMockExam = Boolean(
+    activeMockExam
+      && (activeMockExam.status === "em_andamento" || activeMockExam.status === "in_progress")
+      && activeMockExamSeconds > 0,
+  );
+
+  if (shouldBlockForMockExam && activeMockExam) {
+    const minutes = Math.floor(activeMockExamSeconds / 60);
+    const seconds = activeMockExamSeconds % 60;
+    const formattedRemaining = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+    return (
+      <main className="today-page">
+        <section className="today-subjects-shell today-functional-shell">
+          <section className="today-panel today-modal today-modal-priority">
+            <p className="today-eyebrow">Simulado em andamento</p>
+            <h1>Voce saiu da tela de prova</h1>
+            <p>
+              Detectamos um simulado ativo. O relogio do ENEM continua correndo.
+              Tempo restante: <strong>{formattedRemaining}</strong>.
+            </p>
+            <div className="today-action-row">
+              <button
+                type="button"
+                className="app-primary-action app-primary-action-blue"
+                onClick={() => navigate(`/mock-exams/${activeMockExam.id}/run`)}
+              >
+                Voltar para a tela do simulado
+              </button>
+            </div>
+          </section>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="today-page">

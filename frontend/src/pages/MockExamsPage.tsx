@@ -69,9 +69,18 @@ function formatMode(mode: MockExamMode): string {
 }
 
 function formatStatus(status: MockExam["status"]): string {
-  if (status === "finished") return "finalizado";
-  if (status === "in_progress") return "em andamento";
+  if (status === "finished" || status === "finalizado") return "finalizado";
+  if (status === "pausado") return "pausado";
+  if (status === "in_progress" || status === "em_andamento") return "em andamento";
   return "rascunho";
+}
+
+function isExamFinished(exam: MockExam): boolean {
+  return exam.status === "finished" || exam.status === "finalizado";
+}
+
+function isExamRunning(exam: MockExam): boolean {
+  return exam.status === "in_progress" || exam.status === "em_andamento" || exam.status === "pausado";
 }
 
 function formFromExam(exam: MockExam | null): MockExamFormState {
@@ -299,7 +308,7 @@ export default function MockExamsPage() {
   const estimatedTriChartValues = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.estimated_tri_score != null).slice().reverse().map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.estimated_tri_score as number })), [examsQuery.data]);
   const correctChartValues = useMemo(() => (examsQuery.data ?? []).slice(0, 6).reverse().map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.correct_count, title: exam.title })), [examsQuery.data]);
   const areaChartValues = useMemo(() => (summaryQuery.data?.by_area ?? []).map((item) => ({ area: item.area, accuracy: item.average_accuracy, total: item.total_exams })), [summaryQuery.data]);
-  const draftOrRunning = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.status !== "finished"), [examsQuery.data]);
+  const draftOrRunning = useMemo(() => (examsQuery.data ?? []).filter((exam) => !isExamFinished(exam)), [examsQuery.data]);
   const estimatedRecent = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.estimated_tri_score != null).slice(0, 3), [examsQuery.data]);
   const estimatedAverageRecent = useMemo(() => {
     if (estimatedRecent.length === 0) return null;
@@ -453,8 +462,8 @@ export default function MockExamsPage() {
                         <MetricPill label="Nota oficial" value={formatTri(exam.official_tri_score)} />
                       </div>
                       <div className="mock-exam-row-actions mock-exam-row-actions-wide">
-                        <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/run`)}>{exam.status === "in_progress" ? "Continuar prova" : "Iniciar prova"}</button>
-                        <button type="button" className="app-secondary-action mock-exam-edit-button" onClick={() => navigate(`/mock-exams/${exam.id}/results`)} disabled={exam.status !== "finished"}>Ver resultados</button>
+                        <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/run`)}>{isExamRunning(exam) ? "Continuar prova" : "Iniciar prova"}</button>
+                        <button type="button" className="app-secondary-action mock-exam-edit-button" onClick={() => navigate(`/mock-exams/${exam.id}/results`)} disabled={!isExamFinished(exam)}>Ver resultados</button>
                       </div>
                     </article>
                   ))}
@@ -500,7 +509,7 @@ export default function MockExamsPage() {
                       </div>
                       {exam.notes ? <p className="mock-exam-row-notes" title={exam.notes}>{exam.notes}</p> : null}
                       <div className="mock-exam-row-actions mock-exam-row-actions-wide">
-                        <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/${exam.status === "finished" ? "results" : "run"}`)}>{exam.status === "finished" ? "Ver resultados" : exam.status === "in_progress" ? "Continuar prova" : "Iniciar prova"}</button>
+                        <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/${isExamFinished(exam) ? "results" : "run"}`)}>{isExamFinished(exam) ? "Ver resultados" : isExamRunning(exam) ? "Continuar prova" : "Iniciar prova"}</button>
                         <button type="button" className="app-secondary-action mock-exam-edit-button" onClick={() => { setEditingExamId(exam.id); setForm(formFromExam(exam)); setFormOpen(true); setActiveView("quick"); setFormError(null); setFeedback(null); }}>Editar</button>
                         <button type="button" className="app-secondary-action mock-exam-delete-button" disabled={deleteMutation.isPending} onClick={() => { setFormError(null); setFeedback(null); deleteMutation.mutate(exam.id); }}>Excluir</button>
                       </div>
