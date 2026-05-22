@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
-from app.models import Block, QuestionAttempt, Subject
+from app.models import Block, MockExam, MockExamQuestion, QuestionAttempt, Subject
 from app.schemas import QuestionAttemptBulkCreate, QuestionAttemptBulkCreateResponse
 from app.services.free_study_service import get_free_study_subject_context
 from app.services.mastery_service import recalculate_block_mastery
@@ -63,6 +64,28 @@ def _subject_label(subject: Subject) -> str:
     return subject.assunto
 
 
+def _get_saved_bank_mock_exam_id(session: Session, discipline: str) -> int:
+    saved_bank = session.exec(
+        select(MockExam).where(MockExam.tipo == "saved_bank", MockExam.mode == "saved_bank", MockExam.area == discipline),
+    ).first()
+    if saved_bank is None:
+        saved_bank = MockExam(
+            tipo="saved_bank",
+            area=discipline,
+            mode="saved_bank",
+            status="active",
+            total_questoes=1,
+            total_acertos=0,
+            observacoes="Banco global de questoes salvas pelo Timer V2.",
+        )
+        session.add(saved_bank)
+        session.flush()
+        session.refresh(saved_bank)
+    if saved_bank.id is None:
+        raise ValueError("Banco de questoes salvas nao foi inicializado.")
+    return saved_bank.id
+
+
 def register_question_attempts_bulk(
     session: Session,
     payload: QuestionAttemptBulkCreate,
@@ -84,6 +107,7 @@ def register_question_attempts_bulk(
     confidence = _confidence_value(payload.confidence)
     seconds_per_correct_question = _seconds_per_correct_question(payload.elapsed_seconds, payload.correct_count)
     created_attempts: list[QuestionAttempt] = []
+    saved_bank_mock_exam_id: int | None = None
 
     for index in range(payload.quantity):
         # A grade de gabarito da V2 pode enviar telemetria item a item.
@@ -101,6 +125,29 @@ def register_question_attempts_bulk(
         if payload.times_vector and index < len(payload.times_vector):
             item_time = payload.times_vector[index]
 
+        item_notes = payload.notes
+        if payload.saved_items_meta and str(index) in payload.saved_items_meta:
+            meta = payload.saved_items_meta[str(index)]
+            item_notes = f"Questao favoritada e arquivada no banco de revisoes. Nota tatica: {meta.get('tacticalNote', '')}"
+            if saved_bank_mock_exam_id is None:
+                saved_bank_mock_exam_id = _get_saved_bank_mock_exam_id(session, payload.discipline)
+
+            saved_q = MockExamQuestion(
+                mock_exam_id=saved_bank_mock_exam_id,
+                question_number=index + 1,
+                source_type="saved_bank",
+                discipline=payload.discipline,
+                subject_id=item_subject_id,
+                block_id=payload.block_id,
+                prompt_markdown=json.dumps(meta.get("blocks", []), ensure_ascii=False),
+                correct_answer=meta.get("correctAlternative"),
+                user_answer=meta.get("userAlternative"),
+                is_correct=is_correct,
+                time_seconds=item_time,
+                notes=meta.get("tacticalNote"),
+            )
+            session.add(saved_q)
+
         attempt = QuestionAttempt(
             data=attempt_date,
             source=payload.source,
@@ -113,7 +160,7 @@ def register_question_attempts_bulk(
             tempo_segundos=item_time,
             confianca=confidence,
             tipo_erro=None if is_correct else payload.error_type,
-            observacoes=payload.notes,
+            observacoes=item_notes,
         )
         session.add(attempt)
         created_attempts.append(attempt)

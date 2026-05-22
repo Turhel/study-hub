@@ -11,7 +11,7 @@ from sqlalchemy import delete
 from sqlmodel import Session, select
 
 from app.db import create_db_engine, init_db
-from app.models import Block, BlockMastery, BlockSubject, QuestionAttempt, StudyEvent, Subject, SubjectProgress
+from app.models import Block, BlockMastery, BlockSubject, MockExamQuestion, QuestionAttempt, StudyEvent, Subject, SubjectProgress
 from app.schemas import QuestionAttemptBulkCreate
 from app.services.question_attempt_service import register_question_attempts_bulk
 from app.services.stats_service import (
@@ -209,6 +209,17 @@ def test_bulk_attempts_accept_v2_vectors() -> None:
                 results_vector=[True, False, True],
                 subject_ids_vector=[context.math_subject_id, context.chemistry_subject_id, None],
                 times_vector=[85, 210, 45],
+                saved_items_meta={
+                    "1": {
+                        "blocks": [
+                            {"type": "text", "content": "Texto de apoio"},
+                            {"type": "enunciado", "content": "Assinale a correta."},
+                        ],
+                        "userAlternative": "A",
+                        "correctAlternative": "B",
+                        "tacticalNote": "Confundi o comando.",
+                    }
+                },
             ),
         )
 
@@ -220,6 +231,22 @@ def test_bulk_attempts_accept_v2_vectors() -> None:
             context.math_subject_id,
         ]
         assert [attempt.tempo_segundos for attempt in attempts] == [85, 210, 45]
+        assert attempts[1].observacoes == "Questao favoritada e arquivada no banco de revisoes. Nota tatica: Confundi o comando."
+
+        saved_question = context.session.exec(select(MockExamQuestion).where(MockExamQuestion.source_type == "saved_bank")).one()
+        assert saved_question.question_number == 2
+        assert saved_question.discipline == "Matematica"
+        assert saved_question.subject_id == context.chemistry_subject_id
+        assert saved_question.block_id == context.math_block_id
+        assert json.loads(saved_question.prompt_markdown or "[]") == [
+            {"type": "text", "content": "Texto de apoio"},
+            {"type": "enunciado", "content": "Assinale a correta."},
+        ]
+        assert saved_question.correct_answer == "B"
+        assert saved_question.user_answer == "A"
+        assert saved_question.is_correct is False
+        assert saved_question.time_seconds == 210
+        assert saved_question.notes == "Confundi o comando."
 
         event = context.session.exec(select(StudyEvent).order_by(StudyEvent.id.desc())).first()
         assert event is not None

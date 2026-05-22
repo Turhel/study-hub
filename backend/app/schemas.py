@@ -187,6 +187,7 @@ class QuestionAttemptBulkCreate(BaseModel):
     results_vector: list[bool] | None = None
     subject_ids_vector: list[int | None] | None = None
     times_vector: list[int] | None = None
+    saved_items_meta: dict[str, dict[str, Any]] | None = None
 
 
 class QuestionAttemptBulkCreateResponse(BaseModel):
