@@ -224,8 +224,10 @@ export type QuestionAttemptBulkPayload = {
     number,
     {
       blocks: Array<{ type: "text" | "image" | "enunciado"; content: string }>;
-      userAlternative: string;
-      correctAlternative: string;
+      alternatives: Array<{ letter: string; text: string }>;
+      userAlternativeLetter: string;
+      correctAlternativeLetter: string;
+      peerAccuracyPercent: number | null;
       tacticalNote: string;
     }
   > | null;

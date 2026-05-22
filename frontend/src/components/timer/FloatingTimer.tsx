@@ -24,12 +24,21 @@ type SavedQuestionBlock = {
   content: string;
 };
 
+type SavedQuestionAlternative = {
+  letter: string;
+  text: string;
+};
+
 type SavedQuestionDetail = {
   blocks: SavedQuestionBlock[];
-  userAlternative: string;
-  correctAlternative: string;
+  alternatives: SavedQuestionAlternative[];
+  userAlternativeLetter: string;
+  correctAlternativeLetter: string;
+  peerAccuracyPercent: number | null;
   tacticalNote: string;
 };
+
+const alternativeLetters = ["A", "B", "C", "D", "E"];
 
 const defaultSetup: SessionSetup = {
   discipline: "Matematica",
@@ -192,8 +201,10 @@ function estimatedBase64Kb(value: string): number {
 function emptyQuestionDetail(): SavedQuestionDetail {
   return {
     blocks: [],
-    userAlternative: "",
-    correctAlternative: "",
+    alternatives: alternativeLetters.slice(0, 4).map((letter) => ({ letter, text: "" })),
+    userAlternativeLetter: "",
+    correctAlternativeLetter: "",
+    peerAccuracyPercent: null,
     tacticalNote: "",
   };
 }
@@ -201,8 +212,10 @@ function emptyQuestionDetail(): SavedQuestionDetail {
 function hasQuestionDetail(detail: SavedQuestionDetail): boolean {
   return Boolean(
     detail.blocks.some((block) => block.content.trim()) ||
-      detail.userAlternative ||
-      detail.correctAlternative ||
+      detail.alternatives.some((alternative) => alternative.text.trim()) ||
+      detail.userAlternativeLetter ||
+      detail.correctAlternativeLetter ||
+      detail.peerAccuracyPercent !== null ||
       detail.tacticalNote.trim(),
   );
 }
@@ -392,16 +405,36 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     }
   }
 
-  function updateAlternativeAndResult(index: number, patch: Pick<Partial<SavedQuestionDetail>, "userAlternative" | "correctAlternative">) {
+  function addQuestionAlternative(index: number) {
     const currentDetail = savedQuestionsDetails[index] ?? emptyQuestionDetail();
-    const nextDetail = { ...currentDetail, ...patch };
-    updateQuestionDetail(index, patch);
+    if (currentDetail.alternatives.length >= alternativeLetters.length) {
+      return;
+    }
+    updateQuestionDetail(index, {
+      alternatives: [
+        ...currentDetail.alternatives,
+        { letter: alternativeLetters[currentDetail.alternatives.length], text: "" },
+      ],
+    });
+  }
 
-    if (nextDetail.userAlternative && nextDetail.correctAlternative) {
+  function updateQuestionAlternativeText(index: number, letter: string, text: string) {
+    const currentDetail = savedQuestionsDetails[index] ?? emptyQuestionDetail();
+    updateQuestionDetail(index, {
+      alternatives: currentDetail.alternatives.map((alternative) =>
+        alternative.letter === letter ? { ...alternative, text } : alternative,
+      ),
+    });
+  }
+
+  function saveDrawerMetadata(index: number) {
+    const detail = savedQuestionsDetails[index] ?? emptyQuestionDetail();
+    if (detail.userAlternativeLetter && detail.correctAlternativeLetter) {
       updateQuickAnswer(index, {
-        isCorrect: nextDetail.userAlternative === nextDetail.correctAlternative,
+        isCorrect: detail.userAlternativeLetter === detail.correctAlternativeLetter,
       });
     }
+    setActiveDrawerIndex(null);
   }
 
   function startSession() {
@@ -811,7 +844,6 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   const correctCount = Object.values(quickAnswers).filter((answer) => answer.isCorrect === true).length;
   const unresolvedReviewCount = attemptedQuestions.filter((question) => quickAnswerFor(quickAnswers[question.index]).isCorrect === null).length;
   const activeQuestionDetail = activeDrawerIndex !== null ? savedQuestionsDetails[activeDrawerIndex] ?? emptyQuestionDetail() : null;
-  const answerAlternatives = ["A", "B", "C", "D", "E"];
 
   if (!session) {
     return (
@@ -1148,47 +1180,76 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               ))}
             </section>
 
-            <div className="mt-5 grid gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase text-zinc-400">Minha alternativa</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {answerAlternatives.map((alternative) => (
-                    <button
-                      key={`user-${alternative}`}
-                      type="button"
-                      className={`h-10 w-10 rounded-full border text-sm font-black ${
-                        activeQuestionDetail.userAlternative === alternative
-                          ? "border-sky-300 bg-sky-400 text-slate-950"
-                          : "border-slate-700 bg-slate-950 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
-                      }`}
-                      onClick={() => updateAlternativeAndResult(activeDrawerIndex, { userAlternative: alternative })}
-                    >
-                      {alternative}
-                    </button>
-                  ))}
-                </div>
+            <section className="mt-5 grid gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase text-zinc-400">Alternativas da Questao</p>
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-black text-zinc-100 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                  onClick={() => addQuestionAlternative(activeDrawerIndex)}
+                  disabled={activeQuestionDetail.alternatives.length >= alternativeLetters.length}
+                >
+                  + Adicionar Alternativa
+                </button>
               </div>
 
-              <div>
-                <p className="text-xs font-bold uppercase text-zinc-400">Alternativa correta</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {answerAlternatives.map((alternative) => (
+              <div className="grid gap-2">
+                {activeQuestionDetail.alternatives.map((alternative) => (
+                  <div key={alternative.letter} className="grid grid-cols-[2rem_1fr_auto_auto] items-center gap-2 rounded-xl border border-white/10 bg-slate-950/70 p-2">
+                    <span className="grid h-8 w-8 place-items-center rounded-full border border-sky-300/40 text-sm font-black text-sky-100">
+                      {alternative.letter}
+                    </span>
+                    <input
+                      className="min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-sky-300 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                      value={alternative.text}
+                      onChange={(event) => updateQuestionAlternativeText(activeDrawerIndex, alternative.letter, event.target.value)}
+                      placeholder={`Texto da alternativa ${alternative.letter}`}
+                    />
                     <button
-                      key={`correct-${alternative}`}
                       type="button"
-                      className={`h-10 w-10 rounded-full border text-sm font-black ${
-                        activeQuestionDetail.correctAlternative === alternative
-                          ? "border-emerald-300 bg-emerald-400 text-slate-950"
-                          : "border-slate-700 bg-slate-950 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                      title="Marcar como resposta do usuario"
+                      className={`h-8 w-8 rounded-full border text-xs font-black ${
+                        activeQuestionDetail.userAlternativeLetter === alternative.letter
+                          ? "border-sky-300 bg-sky-400 text-slate-950"
+                          : "border-slate-700 bg-slate-900 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
                       }`}
-                      onClick={() => updateAlternativeAndResult(activeDrawerIndex, { correctAlternative: alternative })}
+                      onClick={() => updateQuestionDetail(activeDrawerIndex, { userAlternativeLetter: alternative.letter })}
                     >
-                      {alternative}
+                      U
                     </button>
-                  ))}
-                </div>
+                    <button
+                      type="button"
+                      title="Marcar como resposta correta"
+                      className={`h-8 w-8 rounded-full border text-xs font-black ${
+                        activeQuestionDetail.correctAlternativeLetter === alternative.letter
+                          ? "border-emerald-300 bg-emerald-400 text-slate-950"
+                          : "border-slate-700 bg-slate-900 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                      }`}
+                      onClick={() => updateQuestionDetail(activeDrawerIndex, { correctAlternativeLetter: alternative.letter })}
+                    >
+                      C
+                    </button>
+                  </div>
+                ))}
               </div>
-            </div>
+
+              <label className="grid gap-2">
+                <span className="text-xs font-bold uppercase text-zinc-400">Taxa de Acerto de Terceiros (%)</span>
+                <input
+                  className="max-w-48 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-sky-300 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={activeQuestionDetail.peerAccuracyPercent ?? ""}
+                  onChange={(event) =>
+                    updateQuestionDetail(activeDrawerIndex, {
+                      peerAccuracyPercent: event.target.value === "" ? null : Math.min(100, Math.max(0, Number(event.target.value))),
+                    })
+                  }
+                  placeholder="Ex: 37"
+                />
+              </label>
+            </section>
 
             <label className="mt-5 grid gap-2">
               <span className="text-xs font-bold uppercase text-zinc-400">Onde foi a pegadinha / Qual foi o meu vacilo?</span>
@@ -1203,7 +1264,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
             <button
               type="button"
               className="mt-5 w-full rounded-xl bg-sky-400 px-4 py-3 text-sm font-black text-slate-950 shadow-[0_6px_0_rgba(3,105,161,0.75)]"
-              onClick={() => setActiveDrawerIndex(null)}
+              onClick={() => saveDrawerMetadata(activeDrawerIndex)}
             >
               Salvar Metadados
             </button>

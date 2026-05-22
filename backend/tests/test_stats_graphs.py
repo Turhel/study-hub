@@ -215,8 +215,10 @@ def test_bulk_attempts_accept_v2_vectors() -> None:
                             {"type": "text", "content": "Texto de apoio"},
                             {"type": "enunciado", "content": "Assinale a correta."},
                         ],
-                        "userAlternative": "A",
-                        "correctAlternative": "B",
+                        "alternatives": [{"letter": "A", "text": "Primeira"}, {"letter": "B", "text": "Segunda"}],
+                        "userAlternativeLetter": "A",
+                        "correctAlternativeLetter": "B",
+                        "peerAccuracyPercent": 37,
                         "tacticalNote": "Confundi o comando.",
                     }
                 },
@@ -242,9 +244,11 @@ def test_bulk_attempts_accept_v2_vectors() -> None:
             {"type": "text", "content": "Texto de apoio"},
             {"type": "enunciado", "content": "Assinale a correta."},
         ]
+        assert json.loads(saved_question.alternatives_json or "[]") == [{"letter": "A", "text": "Primeira"}, {"letter": "B", "text": "Segunda"}]
         assert saved_question.correct_answer == "B"
         assert saved_question.user_answer == "A"
         assert saved_question.is_correct is False
+        assert saved_question.difficulty_percent == 37
         assert saved_question.time_seconds == 210
         assert saved_question.notes == "Confundi o comando."
 

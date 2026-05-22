@@ -140,9 +140,11 @@ def register_question_attempts_bulk(
                 subject_id=item_subject_id,
                 block_id=payload.block_id,
                 prompt_markdown=json.dumps(meta.get("blocks", []), ensure_ascii=False),
-                correct_answer=meta.get("correctAlternative"),
-                user_answer=meta.get("userAlternative"),
+                alternatives_json=json.dumps(meta.get("alternatives", []), ensure_ascii=False),
+                correct_answer=meta.get("correctAlternativeLetter") or meta.get("correctAlternative"),
+                user_answer=meta.get("userAlternativeLetter") or meta.get("userAlternative"),
                 is_correct=is_correct,
+                difficulty_percent=meta.get("peerAccuracyPercent"),
                 time_seconds=item_time,
                 notes=meta.get("tacticalNote"),
             )
