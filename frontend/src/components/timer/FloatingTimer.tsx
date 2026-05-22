@@ -509,6 +509,24 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     });
   }
 
+  function returnToPausedTimer() {
+    setSession((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        isRunning: true,
+        isPaused: true,
+        questions: current.questions.map((question, index) =>
+          index === current.activeQuestionIndex ? activateQuestion(question) : question,
+        ),
+      };
+    });
+    setSaveMessage(null);
+  }
+
   function cancelTraining() {
     const shouldCancel = window.confirm("Cancelar este treino e descartar a sessao atual?");
     if (!shouldCancel) {
@@ -871,7 +889,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
           ) : null}
 
           <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_1.4fr]">
-            <button className="timer-widget-button" onClick={() => setSession(null)} disabled={isSavingSession}>
+            <button className="timer-widget-button" onClick={returnToPausedTimer} disabled={isSavingSession}>
               Voltar ao timer
             </button>
             <button
