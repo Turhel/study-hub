@@ -1016,10 +1016,6 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                 <strong>{attemptedQuestions.length}/{session.questions.length}</strong>
               </div>
               <div className="timer-mini-stat">
-                <span>Gabarito</span>
-                <strong>Depois</strong>
-              </div>
-              <div className="timer-mini-stat">
                 <span>Total</span>
                 <strong>{formatTime(session.totalElapsedSeconds)}</strong>
               </div>
