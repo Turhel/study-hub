@@ -107,7 +107,7 @@ def register_question_attempts_bulk(
     confidence = _confidence_value(payload.confidence)
     seconds_per_correct_question = _seconds_per_correct_question(payload.elapsed_seconds, payload.correct_count)
     created_attempts: list[QuestionAttempt] = []
-    saved_bank_mock_exam_id: int | None = None
+    sentinel_exam_id: int | None = None
 
     for index in range(payload.quantity):
         # A grade de gabarito da V2 pode enviar telemetria item a item.
@@ -129,11 +129,11 @@ def register_question_attempts_bulk(
         if payload.saved_items_meta and str(index) in payload.saved_items_meta:
             meta = payload.saved_items_meta[str(index)]
             item_notes = f"Questao favoritada e arquivada no banco de revisoes. Nota tatica: {meta.get('tacticalNote', '')}"
-            if saved_bank_mock_exam_id is None:
-                saved_bank_mock_exam_id = _get_saved_bank_mock_exam_id(session, payload.discipline)
+            if sentinel_exam_id is None:
+                sentinel_exam_id = _get_saved_bank_mock_exam_id(session, payload.discipline)
 
             saved_q = MockExamQuestion(
-                mock_exam_id=saved_bank_mock_exam_id,
+                mock_exam_id=sentinel_exam_id,
                 question_number=index + 1,
                 source_type="saved_bank",
                 discipline=payload.discipline,
@@ -141,8 +141,8 @@ def register_question_attempts_bulk(
                 block_id=payload.block_id,
                 prompt_markdown=json.dumps(meta.get("blocks", []), ensure_ascii=False),
                 alternatives_json=json.dumps(meta.get("alternatives", []), ensure_ascii=False),
-                correct_answer=meta.get("correctAlternativeLetter") or meta.get("correctAlternative"),
-                user_answer=meta.get("userAlternativeLetter") or meta.get("userAlternative"),
+                correct_answer=meta.get("correctAlternativeLetter"),
+                user_answer=meta.get("userAlternativeLetter"),
                 is_correct=is_correct,
                 difficulty_percent=meta.get("peerAccuracyPercent"),
                 time_seconds=item_time,
