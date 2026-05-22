@@ -217,6 +217,9 @@ export type QuestionAttemptBulkPayload = {
   error_type?: string | null;
   notes?: string | null;
   study_mode?: "guided" | "free";
+  results_vector?: boolean[] | null;
+  subject_ids_vector?: Array<number | null> | null;
+  times_vector?: number[] | null;
 };
 
 export type QuestionAttemptBulkResponse = {

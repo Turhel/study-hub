@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { saveQuestionAttemptsQuickSync, saveTimerSession } from "../../lib/api";
+import { getStatsDisciplineSubjects, saveQuestionAttemptsQuickSync, saveTimerSession } from "../../lib/api";
 import { buildTimerSessionPayload, createSession, formatTime, getTimeTone, saveLocalSession } from "../../lib/timer";
 import type { QuestionEntry, SessionSetup, SessionSummaryForm, TimerLaunchPreset, TimerSession } from "../../lib/timerTypes";
+import type { StatsDisciplineSubjectItem } from "../../lib/types";
 import QuestionProgress from "./QuestionProgress";
 import TimerControls from "./TimerControls";
 
@@ -15,6 +16,7 @@ type QuickAnswer = {
   isCorrect: boolean | null;
   difficulty: "facil" | "media" | "dificil";
   subtopic: string;
+  subjectId: number | null;
 };
 
 const defaultSetup: SessionSetup = {
@@ -106,7 +108,7 @@ function activateQuestion(question: QuestionEntry): QuestionEntry {
 }
 
 function quickAnswerFor(current?: QuickAnswer): QuickAnswer {
-  return current ?? { isCorrect: null, difficulty: "media", subtopic: "" };
+  return current ?? { isCorrect: null, difficulty: "media", subtopic: "", subjectId: null };
 }
 
 function averageQuickDifficulty(answers: QuickAnswer[]): QuickAnswer["difficulty"] {
@@ -141,6 +143,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
   const [session, setSession] = useState<TimerSession | null>(null);
   const [showQuestionMap, setShowQuestionMap] = useState(true);
   const [quickAnswers, setQuickAnswers] = useState<Record<number, QuickAnswer>>({});
+  const [disciplineSubjects, setDisciplineSubjects] = useState<StatsDisciplineSubjectItem[]>([]);
   const [floatingMessage, setFloatingMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSavingSession, setIsSavingSession] = useState(false);
@@ -161,6 +164,35 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
       setSetup(buildSetupFromPreset(preset));
     }
   }, [preset, session]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!session || !setup.discipline) {
+      setDisciplineSubjects([]);
+      return undefined;
+    }
+
+    setDisciplineSubjects([]);
+    getStatsDisciplineSubjects(setup.discipline)
+      .then((res) => {
+        if (cancelled) {
+          return;
+        }
+        if (res && Array.isArray(res)) {
+          setDisciplineSubjects(res);
+          return;
+        }
+        if (res && Array.isArray((res as { subjects?: StatsDisciplineSubjectItem[] }).subjects)) {
+          setDisciplineSubjects((res as { subjects: StatsDisciplineSubjectItem[] }).subjects);
+        }
+      })
+      .catch(() => console.log("Fallback: usando subject_id generico"));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session, setup.discipline]);
 
   useEffect(() => {
     if (!session?.isRunning || session.isPaused) {
@@ -375,6 +407,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     const answeredEntries = Object.entries(quickAnswers)
       .map(([index, answer]) => ({ index: Number(index), answer }))
       .filter(({ index, answer }) => Number.isFinite(index) && answer.isCorrect !== null && finishedSession.questions[index]);
+    answeredEntries.sort((left, right) => left.index - right.index);
     const answered = answeredEntries.map(({ answer }) => answer);
     const form = sessionFormFromQuick(answered);
 
@@ -390,22 +423,29 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
         if (!finishedSession.setup.blockId || !finishedSession.setup.subjectId) {
           syncMessage = "Sessao salva, mas sem block_id/subject_id o guia ainda nao consegue aprender com este treino.";
         } else {
-          const totalSecondsSpent = answeredEntries.reduce(
-            (total, { index }) => total + (finishedSession.questions[index]?.elapsedSeconds ?? 0),
-            0,
+          const blockId = finishedSession.setup.blockId;
+          const subjectId = finishedSession.setup.subjectId;
+          const resultsVector = answeredEntries.map(({ answer }) => answer.isCorrect === true);
+          const timesVector = answeredEntries.map(({ index }) => finishedSession.questions[index]?.elapsedSeconds ?? 0);
+          const subjectIdsVector = answeredEntries.map(({ answer }) =>
+            answer.isCorrect === false && answer.subjectId ? answer.subjectId : subjectId,
           );
-          const correctCount = answered.filter((answer) => answer.isCorrect).length;
+          const totalSecondsSpent = timesVector.reduce((total, seconds) => total + seconds, 0);
+          const correctCount = resultsVector.filter(Boolean).length;
           const difficulty = averageQuickDifficulty(answered);
           const wrongSubtopics = answeredEntries
             .filter(({ answer }) => answer.isCorrect === false && answer.subtopic.trim())
             .map(({ index, answer }) => `Q${index + 1}: ${answer.subtopic.trim()}`);
           const response = await saveQuestionAttemptsQuickSync({
             discipline: finishedSession.setup.discipline,
-            block_id: finishedSession.setup.blockId,
-            subject_id: finishedSession.setup.subjectId,
+            block_id: blockId,
+            subject_id: subjectId,
             source: finishedSession.setup.questionSource === "db" ? "timer-v2-db" : "timer-v2-external",
             quantity: answeredEntries.length,
             correct_count: correctCount,
+            results_vector: resultsVector,
+            subject_ids_vector: subjectIdsVector,
+            times_vector: timesVector,
             difficulty_bank: difficulty,
             difficulty_personal: difficulty,
             elapsed_seconds: totalSecondsSpent,
@@ -770,7 +810,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                             ? "border-emerald-300 bg-emerald-400 text-slate-950"
                             : "border-emerald-300/30 bg-emerald-400/10 text-emerald-100 opacity-80"
                         }`}
-                        onClick={() => updateQuickAnswer(question.index, { isCorrect: true })}
+                        onClick={() => updateQuickAnswer(question.index, { isCorrect: true, subjectId: null, subtopic: "" })}
                       >
                         Acertei
                       </button>
@@ -788,13 +828,35 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                     </div>
                     <label className="grid gap-1">
                       <span className="text-[11px] font-bold uppercase text-zinc-500 sm:hidden">Subassunto se errou</span>
-                      <input
-                        className="timer-input text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-zinc-100"
-                        value={answer.subtopic}
-                        disabled={answer.isCorrect !== false}
-                        onChange={(event) => updateQuickAnswer(question.index, { subtopic: event.target.value })}
-                        placeholder={answer.isCorrect === false ? "Ex: funcoes, estequiometria..." : "Opcional apenas se errou"}
-                      />
+                      {answer.isCorrect === false && disciplineSubjects.length > 0 ? (
+                        <select
+                          className="max-w-xs rounded-lg border border-slate-700 bg-slate-900 p-1 text-xs text-white dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                          value={answer.subjectId ?? ""}
+                          onChange={(event) => {
+                            const subjectId = event.target.value ? Number(event.target.value) : null;
+                            const selectedSubject = disciplineSubjects.find((subject) => subject.subject_id === subjectId);
+                            updateQuickAnswer(question.index, {
+                              subjectId,
+                              subtopic: selectedSubject?.subject_name ?? "",
+                            });
+                          }}
+                        >
+                          <option value="">Escolha o subassunto</option>
+                          {disciplineSubjects.map((subject) => (
+                            <option key={subject.subject_id} value={subject.subject_id}>
+                              {subject.subject_name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          className="timer-input text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-zinc-100"
+                          value={answer.subtopic}
+                          disabled={answer.isCorrect !== false}
+                          onChange={(event) => updateQuickAnswer(question.index, { subtopic: event.target.value, subjectId: null })}
+                          placeholder={answer.isCorrect === false ? "Ex: funcoes, estequiometria..." : "Opcional apenas se errou"}
+                        />
+                      )}
                     </label>
                   </div>
                 );
