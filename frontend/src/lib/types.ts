@@ -223,7 +223,7 @@ export type QuestionAttemptBulkPayload = {
   saved_items_meta?: Record<
     number,
     {
-      markdownText: string;
+      blocks: Array<{ type: "text" | "image" | "enunciado"; content: string }>;
       userAlternative: string;
       correctAlternative: string;
       tacticalNote: string;

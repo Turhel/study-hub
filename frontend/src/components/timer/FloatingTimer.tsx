@@ -19,8 +19,13 @@ type QuickAnswer = {
   subjectId: number | null;
 };
 
+type SavedQuestionBlock = {
+  type: "text" | "image" | "enunciado";
+  content: string;
+};
+
 type SavedQuestionDetail = {
-  markdownText: string;
+  blocks: SavedQuestionBlock[];
   userAlternative: string;
   correctAlternative: string;
   tacticalNote: string;
@@ -144,9 +149,49 @@ function sessionFormFromQuick(answers: QuickAnswer[]): SessionSummaryForm {
   };
 }
 
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Nao foi possivel ler a imagem."));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Nao foi possivel carregar a imagem."));
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > 1000) {
+          height = Math.round((height * 1000) / width);
+          width = 1000;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.7;
+        let base64 = canvas.toDataURL("image/jpeg", quality);
+        while (base64.length > 65000 && quality > 0.1) {
+          quality -= 0.1;
+          base64 = canvas.toDataURL("image/jpeg", quality);
+        }
+        resolve(base64);
+      };
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function estimatedBase64Kb(value: string): number {
+  return Math.max(1, Math.round((value.length * 0.75) / 1024));
+}
+
 function emptyQuestionDetail(): SavedQuestionDetail {
   return {
-    markdownText: "",
+    blocks: [],
     userAlternative: "",
     correctAlternative: "",
     tacticalNote: "",
@@ -155,7 +200,7 @@ function emptyQuestionDetail(): SavedQuestionDetail {
 
 function hasQuestionDetail(detail: SavedQuestionDetail): boolean {
   return Boolean(
-    detail.markdownText.trim() ||
+    detail.blocks.some((block) => block.content.trim()) ||
       detail.userAlternative ||
       detail.correctAlternative ||
       detail.tacticalNote.trim(),
@@ -310,6 +355,41 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
         ...patch,
       },
     }));
+  }
+
+  function addQuestionBlock(index: number, type: SavedQuestionBlock["type"], content = "") {
+    const currentDetail = savedQuestionsDetails[index] ?? emptyQuestionDetail();
+    updateQuestionDetail(index, {
+      blocks: [...currentDetail.blocks, { type, content }],
+    });
+  }
+
+  function updateQuestionBlock(index: number, blockIndex: number, content: string) {
+    const currentDetail = savedQuestionsDetails[index] ?? emptyQuestionDetail();
+    updateQuestionDetail(index, {
+      blocks: currentDetail.blocks.map((block, currentBlockIndex) =>
+        currentBlockIndex === blockIndex ? { ...block, content } : block,
+      ),
+    });
+  }
+
+  function removeQuestionBlock(index: number, blockIndex: number) {
+    const currentDetail = savedQuestionsDetails[index] ?? emptyQuestionDetail();
+    updateQuestionDetail(index, {
+      blocks: currentDetail.blocks.filter((_, currentBlockIndex) => currentBlockIndex !== blockIndex),
+    });
+  }
+
+  async function addImageQuestionBlock(index: number, file: File | null) {
+    if (!file) {
+      return;
+    }
+    try {
+      const compressedImage = await compressImage(file);
+      addQuestionBlock(index, "image", compressedImage);
+    } catch {
+      setSaveMessage("Nao foi possivel comprimir a imagem da questao.");
+    }
   }
 
   function updateAlternativeAndResult(index: number, patch: Pick<Partial<SavedQuestionDetail>, "userAlternative" | "correctAlternative">) {
@@ -1001,15 +1081,72 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               </button>
             </div>
 
-            <label className="mt-5 grid gap-2">
-              <span className="text-xs font-bold uppercase text-zinc-400">Enunciado / estrutura em Markdown</span>
-              <textarea
-                className="min-h-44 rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm leading-6 text-white outline-none focus:border-sky-300 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
-                value={activeQuestionDetail.markdownText}
-                onChange={(event) => updateQuestionDetail(activeDrawerIndex, { markdownText: event.target.value })}
-                placeholder="Cole aqui o texto, imagens descritas, comandos e alternativas da questao."
-              />
-            </label>
+            <section className="mt-5 grid gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-black text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                  onClick={() => addQuestionBlock(activeDrawerIndex, "text")}
+                >
+                  + Adicionar Texto
+                </button>
+                <label className="cursor-pointer rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-black text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100">
+                  + Adicionar Imagem
+                  <input
+                    className="hidden"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => {
+                      void addImageQuestionBlock(activeDrawerIndex, event.target.files?.[0] ?? null);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-black text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                  onClick={() => addQuestionBlock(activeDrawerIndex, "enunciado")}
+                >
+                  + Adicionar Comando Final
+                </button>
+              </div>
+
+              {activeQuestionDetail.blocks.length === 0 ? (
+                <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm text-zinc-400">
+                  Adicione textos, imagens ou o comando final da questao quando quiser guardar mais contexto.
+                </p>
+              ) : null}
+
+              {activeQuestionDetail.blocks.map((block, blockIndex) => (
+                <div key={`${block.type}-${blockIndex}`} className="rounded-2xl border border-white/10 bg-slate-950/70 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold uppercase text-sky-300">
+                      {block.type === "image" ? "Imagem comprimida" : block.type === "enunciado" ? "Comando final" : "Texto"}
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-rose-300/30 px-2 py-1 text-[11px] font-bold text-rose-100"
+                      onClick={() => removeQuestionBlock(activeDrawerIndex, blockIndex)}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                  {block.type === "image" ? (
+                    <div className="grid gap-2">
+                      <img className="max-h-64 rounded-xl border border-white/10 object-contain" src={block.content} alt={`Questao ${activeDrawerIndex + 1} imagem ${blockIndex + 1}`} />
+                      <span className="text-xs text-zinc-400">~{estimatedBase64Kb(block.content)}kb apos compressao</span>
+                    </div>
+                  ) : (
+                    <textarea
+                      className="min-h-28 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-sm leading-6 text-white outline-none focus:border-sky-300 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
+                      value={block.content}
+                      onChange={(event) => updateQuestionBlock(activeDrawerIndex, blockIndex, event.target.value)}
+                      placeholder={block.type === "enunciado" ? "Ex: Assinale a alternativa correta..." : "Cole aqui texto, apoio, alternativas ou observacoes da questao."}
+                    />
+                  )}
+                </div>
+              ))}
+            </section>
 
             <div className="mt-5 grid gap-4">
               <div>
