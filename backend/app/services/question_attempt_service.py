@@ -31,6 +31,16 @@ def _difficulty(value: str | None, default: str = "media") -> str:
     return normalized
 
 
+def _difficulty_from_peer_accuracy(value: object, default: str) -> str:
+    if not isinstance(value, (int, float)):
+        return default
+    if value >= 65:
+        return "facil"
+    if value >= 45:
+        return "media"
+    return "dificil"
+
+
 def _confidence_value(value: str | None) -> int | None:
     normalized = (value or "").strip().lower()
     if normalized == "baixa":
@@ -129,6 +139,7 @@ def register_question_attempts_bulk(
         if payload.saved_items_meta and str(index) in payload.saved_items_meta:
             meta = payload.saved_items_meta[str(index)]
             item_notes = f"Questao favoritada e arquivada no banco de revisoes. Nota tatica: {meta.get('tacticalNote', '')}"
+            item_difficulty_personal = _difficulty_from_peer_accuracy(meta.get("peerAccuracyPercent"), difficulty_personal)
             if sentinel_exam_id is None:
                 sentinel_exam_id = _get_saved_bank_mock_exam_id(session, payload.discipline)
 
@@ -149,6 +160,8 @@ def register_question_attempts_bulk(
                 notes=meta.get("tacticalNote"),
             )
             session.add(saved_q)
+        else:
+            item_difficulty_personal = difficulty_personal
 
         attempt = QuestionAttempt(
             data=attempt_date,
@@ -157,7 +170,7 @@ def register_question_attempts_bulk(
             block_id=payload.block_id,
             subject_id=item_subject_id,
             dificuldade_banco=difficulty_bank,
-            dificuldade_pessoal=difficulty_personal,
+            dificuldade_pessoal=item_difficulty_personal,
             acertou=is_correct,
             tempo_segundos=item_time,
             confianca=confidence,

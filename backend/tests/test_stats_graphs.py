@@ -11,8 +11,9 @@ from sqlalchemy import delete
 from sqlmodel import Session, select
 
 from app.db import create_db_engine, init_db
-from app.models import Block, BlockMastery, BlockSubject, MockExamQuestion, QuestionAttempt, StudyEvent, Subject, SubjectProgress
+from app.models import Block, BlockMastery, BlockSubject, MockExam, MockExamQuestion, QuestionAttempt, StudyEvent, Subject, SubjectProgress
 from app.schemas import QuestionAttemptBulkCreate
+from app.services.mastery_service import recalculate_block_mastery
 from app.services.question_attempt_service import register_question_attempts_bulk
 from app.services.stats_service import (
     get_stats_discipline_subjects,
@@ -234,6 +235,7 @@ def test_bulk_attempts_accept_v2_vectors() -> None:
         ]
         assert [attempt.tempo_segundos for attempt in attempts] == [85, 210, 45]
         assert attempts[1].observacoes == "Questao favoritada e arquivada no banco de revisoes. Nota tatica: Confundi o comando."
+        assert attempts[1].dificuldade_pessoal == "dificil"
 
         saved_question = context.session.exec(select(MockExamQuestion).where(MockExamQuestion.source_type == "saved_bank")).one()
         assert saved_question.question_number == 2
@@ -257,6 +259,64 @@ def test_bulk_attempts_accept_v2_vectors() -> None:
         event_metadata = json.loads(event.metadata_json)
         assert event_metadata["correct_count"] == 2
         assert event_metadata["incorrect_count"] == 1
+    finally:
+        _cleanup_context(context)
+
+
+def test_block_mastery_uses_saved_bank_tri_questions_and_incoherence_penalty() -> None:
+    context = _build_context(today_override=date(2026, 5, 7))
+    try:
+        _clear_attempts(context)
+        saved_bank = MockExam(
+            tipo="saved_bank",
+            area="Matematica",
+            mode="saved_bank",
+            status="active",
+            total_questoes=2,
+            total_acertos=1,
+        )
+        context.session.add(saved_bank)
+        context.session.flush()
+        context.session.refresh(saved_bank)
+
+        context.session.add(
+            MockExamQuestion(
+                mock_exam_id=saved_bank.id or 0,
+                question_number=1,
+                source_type="saved_bank",
+                discipline="Matematica",
+                subject_id=context.math_subject_id,
+                block_id=context.math_block_id,
+                is_correct=False,
+                difficulty_percent=80,
+                time_seconds=70,
+            )
+        )
+        context.session.add(
+            MockExamQuestion(
+                mock_exam_id=saved_bank.id or 0,
+                question_number=2,
+                source_type="saved_bank",
+                discipline="Matematica",
+                subject_id=context.math_subject_id,
+                block_id=context.math_block_id,
+                is_correct=True,
+                difficulty_percent=30,
+                time_seconds=220,
+            )
+        )
+        context.session.commit()
+
+        mastery = recalculate_block_mastery(context.session, context.math_block_id)
+
+        assert mastery.facil_total == 1
+        assert mastery.facil_acertos == 0
+        assert mastery.media_total == 0
+        assert mastery.media_acertos == 0
+        assert mastery.dificil_total == 1
+        assert mastery.dificil_acertos == 1
+        assert mastery.score_domino == 0.17
+        assert mastery.status == "em_risco"
     finally:
         _cleanup_context(context)
 

@@ -4,8 +4,18 @@ from collections import defaultdict
 
 from sqlmodel import Session, select
 
-from app.core.rules import score_dominio, status_aprovacao_bloco
-from app.models import Block, BlockMastery, QuestionAttempt
+from app.core.rules import STATUS_EM_RISCO, score_dominio, status_aprovacao_bloco
+from app.models import Block, BlockMastery, MockExamQuestion, QuestionAttempt
+
+
+def _difficulty_from_peer_accuracy(value: float | None) -> str | None:
+    if value is None:
+        return None
+    if value >= 65:
+        return "facil"
+    if value >= 45:
+        return "media"
+    return "dificil"
 
 
 def recalculate_block_mastery(session: Session, block_id: int) -> BlockMastery:
@@ -18,6 +28,25 @@ def recalculate_block_mastery(session: Session, block_id: int) -> BlockMastery:
         difficulty = attempt.dificuldade_banco
         totals[difficulty]["total"] += 1
         totals[difficulty]["acertos"] += int(attempt.acertou)
+
+    saved_questions = session.exec(
+        select(MockExamQuestion).where(
+            MockExamQuestion.block_id == block_id,
+            MockExamQuestion.source_type == "saved_bank",
+        )
+    ).all()
+    has_easy_miss = False
+    has_hard_hit = False
+    for question in saved_questions:
+        difficulty = _difficulty_from_peer_accuracy(question.difficulty_percent)
+        if difficulty is None:
+            continue
+        totals[difficulty]["total"] += 1
+        totals[difficulty]["acertos"] += int(question.is_correct is True)
+        if difficulty == "facil" and question.is_correct is False:
+            has_easy_miss = True
+        if difficulty == "dificil" and question.is_correct is True:
+            has_hard_hit = True
 
     facil_total = totals["facil"]["total"]
     facil_acertos = totals["facil"]["acertos"]
@@ -42,6 +71,10 @@ def recalculate_block_mastery(session: Session, block_id: int) -> BlockMastery:
         dificil_total,
         dificil_acertos,
     )
+    has_tri_incoherence = has_easy_miss and has_hard_hit
+    if has_tri_incoherence:
+        score = round(score * 0.85, 4)
+        status = STATUS_EM_RISCO
 
     mastery = session.exec(
         select(BlockMastery).where(BlockMastery.block_id == block_id)
