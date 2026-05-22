@@ -184,7 +184,7 @@ def register_question_attempts_bulk(
     for attempt in created_attempts:
         session.refresh(attempt)
 
-    mastery = recalculate_block_mastery(session, payload.block_id)
+    mastery = recalculate_block_mastery(session, payload.block_id, current_attempts=created_attempts)
     review = upsert_review_from_attempt(session, created_attempts[-1])
     subject_name = _subject_label(subject)
     correct_count = sum(1 for attempt in created_attempts if attempt.acertou)

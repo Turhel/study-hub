@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date, timedelta
 
 from sqlmodel import Session, select
 
 from app.core.rules import STATUS_EM_RISCO, score_dominio, status_aprovacao_bloco
-from app.models import Block, BlockMastery, MockExamQuestion, QuestionAttempt
+from app.models import Block, BlockMastery, MockExamQuestion, QuestionAttempt, Review
+
+
+EAERE_REVIEW_STAGES = ["R1", "R2", "R3", "R4", "R5", "R6"]
 
 
 def _difficulty_from_peer_accuracy(value: float | None) -> str | None:
@@ -18,7 +22,158 @@ def _difficulty_from_peer_accuracy(value: float | None) -> str | None:
     return "dificil"
 
 
-def recalculate_block_mastery(session: Session, block_id: int) -> BlockMastery:
+def _attempt_accuracy(attempts: list[QuestionAttempt]) -> float | None:
+    if not attempts:
+        return None
+    return sum(1 for attempt in attempts if attempt.acertou) / len(attempts)
+
+
+def _recent_attempt_batches(session: Session, block_id: int) -> list[list[QuestionAttempt]]:
+    attempts = session.exec(
+        select(QuestionAttempt)
+        .where(QuestionAttempt.block_id == block_id)
+        .order_by(QuestionAttempt.data.desc(), QuestionAttempt.id.desc())
+    ).all()
+    batches: dict[tuple[date, str], list[QuestionAttempt]] = defaultdict(list)
+    for attempt in attempts:
+        source = attempt.source or f"attempt-{attempt.id or 0}"
+        batches[(attempt.data, source)].append(attempt)
+
+    ordered_keys = sorted(
+        batches,
+        key=lambda key: max((attempt.id or 0) for attempt in batches[key]),
+        reverse=True,
+    )
+    return [batches[key] for key in ordered_keys]
+
+
+def _advance_review_stage(stage: str) -> str:
+    normalized = stage.upper()
+    if normalized not in EAERE_REVIEW_STAGES:
+        return normalized
+    index = EAERE_REVIEW_STAGES.index(normalized)
+    return EAERE_REVIEW_STAGES[min(index + 1, len(EAERE_REVIEW_STAGES) - 1)]
+
+
+def _regress_review_stage(stage: str) -> str:
+    normalized = stage.upper()
+    if normalized not in EAERE_REVIEW_STAGES:
+        return normalized
+    index = EAERE_REVIEW_STAGES.index(normalized)
+    return EAERE_REVIEW_STAGES[max(index - 1, 0)]
+
+
+def _schedule_rr_satellite(
+    session: Session,
+    *,
+    block_id: int,
+    stage: str,
+    attempts: list[QuestionAttempt],
+) -> None:
+    failed_attempts = [attempt for attempt in attempts if not attempt.acertou]
+    if not failed_attempts:
+        return
+
+    rr_stage = f"RR{stage.lstrip('R')}"
+    next_day = date.today() + timedelta(days=1)
+    existing = session.exec(
+        select(Review)
+        .where(Review.block_id == block_id)
+        .where(Review.proxima_data == next_day)
+        .where(Review.resultado == rr_stage)
+    ).first()
+    if existing is not None:
+        return
+
+    session.add(
+        Review(
+            block_id=block_id,
+            subject_id=failed_attempts[-1].subject_id,
+            ultima_data=date.today(),
+            proxima_data=next_day,
+            status="pendente",
+            resultado=rr_stage,
+            intervalo_dias=1,
+        )
+    )
+
+
+def _apply_eaere_transition(
+    session: Session,
+    mastery: BlockMastery,
+    block_id: int,
+    current_attempts: list[QuestionAttempt] | None,
+) -> None:
+    if not current_attempts:
+        return
+
+    current_accuracy = _attempt_accuracy(current_attempts)
+    if current_accuracy is None:
+        return
+
+    stage = (mastery.eaere_stage or "E1").upper()
+
+    if stage == "E1":
+        mastery.eaere_stage = "E2"
+        mastery.status = "em_andamento"
+        return
+
+    if stage == "E2":
+        all_attempts = session.exec(
+            select(QuestionAttempt).where(QuestionAttempt.block_id == block_id)
+        ).all()
+        combined_accuracy = _attempt_accuracy(all_attempts) or 0.0
+        if combined_accuracy >= 0.85:
+            mastery.eaere_stage = "R1"
+            mastery.status = "aprovado"
+            mastery.consecutive_failures = 0
+        else:
+            mastery.eaere_stage = "EX"
+            mastery.status = STATUS_EM_RISCO
+        return
+
+    if stage == "EX":
+        batches = _recent_attempt_batches(session, block_id)
+        batch_accuracies = [
+            accuracy
+            for batch in batches[:3]
+            if (accuracy := _attempt_accuracy(batch)) is not None
+        ]
+        if batch_accuracies:
+            moving_average = sum(batch_accuracies) / len(batch_accuracies)
+            mastery.ex_moving_average = round(moving_average, 4)
+            if len(batch_accuracies) >= 3 and moving_average >= 0.85:
+                mastery.eaere_stage = "R1"
+                mastery.status = "aprovado"
+                mastery.consecutive_failures = 0
+                return
+        mastery.eaere_stage = "EX"
+        mastery.status = STATUS_EM_RISCO
+        return
+
+    if stage in {"R2", "R3", "R4", "R5", "R6"} and any(not attempt.acertou for attempt in current_attempts):
+        _schedule_rr_satellite(session, block_id=block_id, stage=stage, attempts=current_attempts)
+
+    if stage in {"R4", "R5"} and current_accuracy < 0.75:
+        if mastery.consecutive_failures <= 0:
+            mastery.consecutive_failures = 1
+        else:
+            mastery.consecutive_failures = 0
+            mastery.eaere_stage = _regress_review_stage(stage)
+        mastery.status = STATUS_EM_RISCO
+        return
+
+    if stage in EAERE_REVIEW_STAGES and current_accuracy >= 0.85:
+        mastery.consecutive_failures = 0
+        mastery.eaere_stage = _advance_review_stage(stage)
+        mastery.status = "aprovado"
+
+
+def recalculate_block_mastery(
+    session: Session,
+    block_id: int,
+    current_attempts: list[QuestionAttempt] | None = None,
+) -> BlockMastery:
     attempts = session.exec(
         select(QuestionAttempt).where(QuestionAttempt.block_id == block_id)
     ).all()
@@ -90,6 +245,7 @@ def recalculate_block_mastery(session: Session, block_id: int) -> BlockMastery:
     mastery.dificil_acertos = dificil_acertos
     mastery.status = status
     mastery.score_domino = score
+    _apply_eaere_transition(session, mastery, block_id, current_attempts)
 
     block = session.get(Block, block_id)
     if block is not None:

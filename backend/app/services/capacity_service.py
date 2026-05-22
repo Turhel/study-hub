@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlmodel import Session, select
 
-from app.models import StudyCapacity
+from app.models import MockExam, StudyCapacity, UserEnergySettings
 from app.schemas import StudyGuidePreferences, StudyGuidePreferencesResponse
 
 
@@ -21,6 +21,22 @@ def get_or_create_capacity(session: Session) -> StudyCapacity:
     session.commit()
     session.refresh(capacity)
     return capacity
+
+
+def get_or_create_user_energy_settings(session: Session, user_id: int = 1) -> UserEnergySettings:
+    settings = session.exec(
+        select(UserEnergySettings)
+        .where(UserEnergySettings.user_id == user_id)
+        .order_by(UserEnergySettings.id)
+    ).first()
+    if settings is not None:
+        return settings
+
+    settings = UserEnergySettings(user_id=user_id)
+    session.add(settings)
+    session.commit()
+    session.refresh(settings)
+    return settings
 
 
 def _normalize_intensity(value: str | None) -> str:
@@ -55,9 +71,40 @@ def update_study_guide_preferences(
     capacity.include_new_content = payload.include_new_content
     capacity.updated_at = datetime.utcnow()
     session.add(capacity)
+    session.flush()
+    energy_settings = get_or_create_user_energy_settings(session)
+    energy_settings.current_daily_target_questions = safe_daily_question_load(capacity)
+    session.add(energy_settings)
     session.commit()
     session.refresh(capacity)
     return preferences_response(capacity)
+
+
+def calculate_dynamic_daily_target(session: Session, user_id: int = 1) -> int:
+    settings = get_or_create_user_energy_settings(session, user_id=user_id)
+    target = max(settings.current_daily_target_questions, 1)
+
+    if settings.mode_dia_leve:
+        return 7
+
+    now = datetime.utcnow()
+    recent_mock_exam = session.exec(
+        select(MockExam)
+        .where(MockExam.finished_at.is_not(None))
+        .where(MockExam.finished_at >= now - timedelta(hours=48))
+        .order_by(MockExam.finished_at.desc())
+    ).first()
+    if recent_mock_exam is not None and recent_mock_exam.finished_at is not None:
+        hours_since_exam = (now - recent_mock_exam.finished_at).total_seconds() / 3600
+        if hours_since_exam <= 24:
+            target = round(target * 0.40)
+        else:
+            target = round(target * 0.70)
+
+    if settings.mode_provas_academicas:
+        target = min(target, 5)
+
+    return max(int(target), 1)
 
 
 def safe_daily_question_load(capacity: StudyCapacity) -> int:

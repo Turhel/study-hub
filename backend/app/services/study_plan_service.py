@@ -21,6 +21,7 @@ from app.core.rules import (
 )
 from app.models import (
     Block,
+    BlockMastery,
     BlockProgress,
     BlockSubject,
     DailyStudyPlan,
@@ -30,6 +31,7 @@ from app.models import (
     Review,
     Subject,
     SubjectProgress,
+    UserEnergySettings,
 )
 from app.schemas import (
     StudyPlanCalendarDay,
@@ -41,7 +43,7 @@ from app.schemas import (
     StudyPlanSummary,
     StudyPlanTodayResponse,
 )
-from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load
+from app.services.capacity_service import calculate_dynamic_daily_target, get_or_create_capacity, get_or_create_user_energy_settings, safe_daily_question_load
 from app.services.discipline_normalization_service import normalize_discipline
 from app.services.mock_exam_service import _estimate_score_from_counts
 from app.services.progression_service import sync_progression
@@ -70,6 +72,7 @@ class StudyPlanCandidate:
     roadmap_mapping_reason: str | None = None
     roadmap_status: str | None = None
     roadmap_reason: str | None = None
+    eaere_stage: str = "E1"
 
 
 @dataclass(frozen=True)
@@ -370,6 +373,32 @@ def _mock_exam_area_hint(discipline: str) -> str:
     return "enem_day_1"
 
 
+def _eaere_stage_priority(stage: str | None) -> int:
+    normalized = (stage or "E1").upper()
+    if normalized in {"E1", "E2"}:
+        return 1
+    if normalized.startswith("RR") or normalized in {"R1", "R2", "R3"}:
+        return 2
+    return 3
+
+
+def _minimum_questions_for_stage(stage: str | None) -> int:
+    return 5 if _eaere_stage_priority(stage) == 2 else 10
+
+
+def _is_new_content_stage(stage: str | None) -> bool:
+    return (stage or "E1").upper() in {"E1", "E2", "EX", "A1"}
+
+
+def _block_mastery_by_id(session: Session) -> dict[int, BlockMastery]:
+    rows = session.exec(select(BlockMastery)).all()
+    return {row.block_id: row for row in rows}
+
+
+def _energy_settings_snapshot(session: Session) -> UserEnergySettings:
+    return get_or_create_user_energy_settings(session)
+
+
 def _build_mock_exam_recommendation(
     session: Session,
     *,
@@ -538,7 +567,8 @@ def _build_projected_day(
     candidates: list[StudyPlanCandidate],
     carry_over_items: list[ProjectedCarryOverItem],
 ) -> StudyPlanCalendarDay:
-    total_limit = safe_daily_question_load(capacity)
+    energy_settings = _energy_settings_snapshot(session)
+    total_limit = calculate_dynamic_daily_target(session)
     focus_limit = capacity.max_focus_count
     selected_items: list[StudyPlanCalendarItem] = []
     used_subject_ids: set[int] = set()
@@ -568,8 +598,12 @@ def _build_projected_day(
         candidate for candidate in candidates if candidate.subject_id not in used_subject_ids
     ]
     remaining_slots = max(focus_limit - len(selected_items), 0)
-    projected_candidates = _select_candidates(available_candidates, remaining_slots)
-    question_counts = _question_distribution(max(remaining_questions, 0), len(projected_candidates))
+    projected_candidates, question_counts = _select_candidates_by_question_budget(
+        available_candidates,
+        max(remaining_questions, 0),
+        remaining_slots,
+        allow_new_content=capacity.include_new_content and not energy_settings.mode_provas_academicas,
+    )
 
     for candidate, planned_questions in zip(projected_candidates, question_counts):
         if planned_questions <= 0:
@@ -636,43 +670,46 @@ def build_study_plan_calendar(
             today_plan = _response_from_items(_items_for_plan(session, existing_plan, start_day))
         else:
             capacity = get_or_create_capacity(session)
-            if capacity.include_new_content:
-                block_progress, subject_progress = sync_progression(session, start_day)
-                roadmap_overview = build_guided_roadmap_overview(session, block_progress)
-                candidates = _eligible_candidates(session, start_day, block_progress, subject_progress, roadmap_overview)
-                total_questions = safe_daily_question_load(capacity)
-                focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
-                selected = _select_candidates(candidates, focus_count)
-                question_counts = _question_distribution(total_questions, len(selected))
-                today_plan = _response_from_items(
-                    [
-                        StudyPlanItem(
-                            discipline=candidate.discipline,
-                            strategic_discipline=candidate.strategic_discipline,
-                            subarea=candidate.subarea,
-                            block_id=candidate.block_id,
-                            block_name=candidate.block_name,
-                            subject_id=candidate.subject_id,
-                            subject_name=candidate.subject_name,
-                            planned_questions=planned_questions,
-                            completed_today=0,
-                            remaining_today=planned_questions,
-                            progress_ratio=0,
-                            execution_status="nao_iniciado",
-                            priority_score=candidate.priority_score,
-                            primary_reason=candidate.primary_reason,
-                            planned_mode=candidate.planned_mode,
-                            roadmap_node_id=candidate.roadmap_node_id,
-                            roadmap_mapped=candidate.roadmap_mapped,
-                            roadmap_mapping_source=candidate.roadmap_mapping_source,
-                            roadmap_mapping_confidence=candidate.roadmap_mapping_confidence,
-                            roadmap_mapping_reason=candidate.roadmap_mapping_reason,
-                            roadmap_status=candidate.roadmap_status,
-                            roadmap_reason=candidate.roadmap_reason,
-                        )
-                        for candidate, planned_questions in zip(selected, question_counts)
-                    ]
-                )
+            energy_settings = _energy_settings_snapshot(session)
+            block_progress, subject_progress = sync_progression(session, start_day)
+            roadmap_overview = build_guided_roadmap_overview(session, block_progress)
+            candidates = _eligible_candidates(session, start_day, block_progress, subject_progress, roadmap_overview)
+            total_questions = calculate_dynamic_daily_target(session)
+            selected, question_counts = _select_candidates_by_question_budget(
+                candidates,
+                total_questions,
+                capacity.max_focus_count,
+                allow_new_content=capacity.include_new_content and not energy_settings.mode_provas_academicas,
+            )
+            today_plan = _response_from_items(
+                [
+                    StudyPlanItem(
+                        discipline=candidate.discipline,
+                        strategic_discipline=candidate.strategic_discipline,
+                        subarea=candidate.subarea,
+                        block_id=candidate.block_id,
+                        block_name=candidate.block_name,
+                        subject_id=candidate.subject_id,
+                        subject_name=candidate.subject_name,
+                        planned_questions=planned_questions,
+                        completed_today=0,
+                        remaining_today=planned_questions,
+                        progress_ratio=0,
+                        execution_status="nao_iniciado",
+                        priority_score=candidate.priority_score,
+                        primary_reason=candidate.primary_reason,
+                        planned_mode=candidate.planned_mode,
+                        roadmap_node_id=candidate.roadmap_node_id,
+                        roadmap_mapped=candidate.roadmap_mapped,
+                        roadmap_mapping_source=candidate.roadmap_mapping_source,
+                        roadmap_mapping_confidence=candidate.roadmap_mapping_confidence,
+                        roadmap_mapping_reason=candidate.roadmap_mapping_reason,
+                        roadmap_status=candidate.roadmap_status,
+                        roadmap_reason=candidate.roadmap_reason,
+                    )
+                    for candidate, planned_questions in zip(selected, question_counts)
+                ]
+            )
 
     capacity = get_or_create_capacity(session)
     block_progress, subject_progress = sync_progression(session, start_day)
@@ -835,6 +872,7 @@ def _eligible_candidates(
     candidates: list[StudyPlanCandidate] = []
     seen_subjects: set[int] = set()
     blocks = session.exec(select(Block).order_by(Block.disciplina, Block.ordem, Block.id)).all()
+    mastery_by_block = _block_mastery_by_id(session)
 
     for block in blocks:
         if block.id is None:
@@ -889,6 +927,7 @@ def _eligible_candidates(
             elif subject_state is not None and not subject_state.mapped and subject_state.mapping_reason:
                 reason = f"{reason}. {subject_state.mapping_reason}"
             planned_mode = block_planned_mode(progress.status)
+            eaere_stage = mastery_by_block.get(block.id).eaere_stage if block.id in mastery_by_block else "E1"
             normalized = normalize_discipline(subject.disciplina)
             if progress.status == BLOCK_STATUS_READY_TO_ADVANCE:
                 reason = f"{reason}. Bloco pronto para avancar, mas ainda em consolidacao antes da decisao"
@@ -916,10 +955,11 @@ def _eligible_candidates(
                     roadmap_mapping_reason=roadmap_mapping_reason,
                     roadmap_status=roadmap_status,
                     roadmap_reason=roadmap_reason,
+                    eaere_stage=eaere_stage,
                 )
             )
 
-    return sorted(candidates, key=lambda item: (-item.raw_score, item.block_order, item.subject_id))
+    return sorted(candidates, key=lambda item: (_eaere_stage_priority(item.eaere_stage), -item.raw_score, item.block_order, item.subject_id))
 
 
 def _discipline_group(value: str) -> str:
@@ -950,6 +990,38 @@ def _select_candidates(candidates: list[StudyPlanCandidate], focus_count: int) -
             return selected
 
     return selected
+
+
+def _select_candidates_by_question_budget(
+    candidates: list[StudyPlanCandidate],
+    total_questions: int,
+    max_focus_count: int,
+    *,
+    allow_new_content: bool = True,
+) -> tuple[list[StudyPlanCandidate], list[int]]:
+    selected: list[StudyPlanCandidate] = []
+    question_counts: list[int] = []
+    remaining_questions = total_questions
+    ordered_candidates = sorted(
+        candidates,
+        key=lambda item: (_eaere_stage_priority(item.eaere_stage), -item.raw_score, item.block_order, item.subject_id),
+    )
+
+    for candidate in ordered_candidates:
+        if len(selected) >= max_focus_count:
+            break
+        if not allow_new_content and _is_new_content_stage(candidate.eaere_stage):
+            continue
+
+        minimum_questions = _minimum_questions_for_stage(candidate.eaere_stage)
+        if remaining_questions < minimum_questions:
+            continue
+
+        selected.append(candidate)
+        question_counts.append(minimum_questions)
+        remaining_questions -= minimum_questions
+
+    return selected, question_counts
 
 
 def _question_distribution(total_questions: int, focus_count: int) -> list[int]:
@@ -1037,18 +1109,22 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
         session.commit()
 
     capacity = get_or_create_capacity(session)
-    if not capacity.include_new_content:
-        return _empty_plan_response()
+    energy_settings = _energy_settings_snapshot(session)
     block_progress, subject_progress = sync_progression(session, today)
     roadmap_overview = build_guided_roadmap_overview(session, block_progress)
     candidates = _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
     if not candidates:
         return _empty_plan_response()
 
-    total_questions = safe_daily_question_load(capacity)
-    focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
-    selected = _select_candidates(candidates, focus_count)
-    question_counts = _question_distribution(total_questions, len(selected))
+    total_questions = calculate_dynamic_daily_target(session)
+    selected, question_counts = _select_candidates_by_question_budget(
+        candidates,
+        total_questions,
+        capacity.max_focus_count,
+        allow_new_content=capacity.include_new_content and not energy_settings.mode_provas_academicas,
+    )
+    if not selected:
+        return _empty_plan_response()
     plan = _create_plan(session, selected, question_counts)
 
     return _response_from_items(_items_for_plan(session, plan, today))
