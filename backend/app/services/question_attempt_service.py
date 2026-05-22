@@ -86,18 +86,33 @@ def register_question_attempts_bulk(
     created_attempts: list[QuestionAttempt] = []
 
     for index in range(payload.quantity):
+        # A grade de gabarito da V2 pode enviar telemetria item a item.
+        # Sem esses vetores, o comportamento proporcional antigo e preservado.
+        is_correct = index < payload.correct_count
+        if payload.results_vector and index < len(payload.results_vector):
+            is_correct = payload.results_vector[index]
+
+        item_subject_id = payload.subject_id
+        if payload.subject_ids_vector and index < len(payload.subject_ids_vector):
+            if payload.subject_ids_vector[index] is not None:
+                item_subject_id = payload.subject_ids_vector[index]
+
+        item_time = seconds_per_correct_question if is_correct else None
+        if payload.times_vector and index < len(payload.times_vector):
+            item_time = payload.times_vector[index]
+
         attempt = QuestionAttempt(
             data=attempt_date,
             source=payload.source,
             disciplina=payload.discipline,
             block_id=payload.block_id,
-            subject_id=payload.subject_id,
+            subject_id=item_subject_id,
             dificuldade_banco=difficulty_bank,
             dificuldade_pessoal=difficulty_personal,
-            acertou=index < payload.correct_count,
-            tempo_segundos=seconds_per_correct_question if index < payload.correct_count else None,
+            acertou=is_correct,
+            tempo_segundos=item_time,
             confianca=confidence,
-            tipo_erro=None if index < payload.correct_count else payload.error_type,
+            tipo_erro=None if is_correct else payload.error_type,
             observacoes=payload.notes,
         )
         session.add(attempt)
@@ -110,7 +125,7 @@ def register_question_attempts_bulk(
     mastery = recalculate_block_mastery(session, payload.block_id)
     review = upsert_review_from_attempt(session, created_attempts[-1])
     subject_name = _subject_label(subject)
-    correct_count = payload.correct_count
+    correct_count = sum(1 for attempt in created_attempts if attempt.acertou)
     metadata_extra = {"study_mode": payload.study_mode}
     event_title = f"Questoes registradas em {payload.discipline}"
     if payload.study_mode == "free":

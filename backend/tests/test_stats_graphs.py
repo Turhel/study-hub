@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import shutil
 import tempfile
+import json
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
 from sqlalchemy import delete
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.db import create_db_engine, init_db
-from app.models import Block, BlockMastery, BlockSubject, QuestionAttempt, Subject, SubjectProgress
+from app.models import Block, BlockMastery, BlockSubject, QuestionAttempt, StudyEvent, Subject, SubjectProgress
 from app.schemas import QuestionAttemptBulkCreate
 from app.services.question_attempt_service import register_question_attempts_bulk
 from app.services.stats_service import (
@@ -188,6 +189,45 @@ def _register_bulk_session(
             elapsed_seconds=elapsed_seconds,
         ),
     )
+
+
+def test_bulk_attempts_accept_v2_vectors() -> None:
+    context = _build_context(today_override=date(2026, 5, 7))
+    try:
+        _clear_attempts(context)
+        register_question_attempts_bulk(
+            context.session,
+            QuestionAttemptBulkCreate(
+                date=context.today.isoformat(),
+                discipline="Matematica",
+                block_id=context.math_block_id,
+                subject_id=context.math_subject_id,
+                source="timer-v2-test",
+                quantity=3,
+                correct_count=1,
+                elapsed_seconds=600,
+                results_vector=[True, False, True],
+                subject_ids_vector=[context.math_subject_id, context.chemistry_subject_id, None],
+                times_vector=[85, 210, 45],
+            ),
+        )
+
+        attempts = context.session.exec(select(QuestionAttempt).order_by(QuestionAttempt.id)).all()
+        assert [attempt.acertou for attempt in attempts] == [True, False, True]
+        assert [attempt.subject_id for attempt in attempts] == [
+            context.math_subject_id,
+            context.chemistry_subject_id,
+            context.math_subject_id,
+        ]
+        assert [attempt.tempo_segundos for attempt in attempts] == [85, 210, 45]
+
+        event = context.session.exec(select(StudyEvent).order_by(StudyEvent.id.desc())).first()
+        assert event is not None
+        event_metadata = json.loads(event.metadata_json)
+        assert event_metadata["correct_count"] == 2
+        assert event_metadata["incorrect_count"] == 1
+    finally:
+        _cleanup_context(context)
 
 
 def test_heatmap_returns_all_days_and_zero_day() -> None:

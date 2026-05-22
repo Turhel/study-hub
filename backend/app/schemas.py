@@ -183,6 +183,10 @@ class QuestionAttemptBulkCreate(BaseModel):
     error_type: str | None = None
     notes: str | None = None
     study_mode: Literal["guided", "free"] = "guided"
+    # Listas paralelas opcionais enviadas pela grade de conferencia da V2.
+    results_vector: list[bool] | None = None
+    subject_ids_vector: list[int | None] | None = None
+    times_vector: list[int] | None = None
 
 
 class QuestionAttemptBulkCreateResponse(BaseModel):
