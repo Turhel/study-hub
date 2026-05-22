@@ -312,6 +312,18 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
     }));
   }
 
+  function updateAlternativeAndResult(index: number, patch: Pick<Partial<SavedQuestionDetail>, "userAlternative" | "correctAlternative">) {
+    const currentDetail = savedQuestionsDetails[index] ?? emptyQuestionDetail();
+    const nextDetail = { ...currentDetail, ...patch };
+    updateQuestionDetail(index, patch);
+
+    if (nextDetail.userAlternative && nextDetail.correctAlternative) {
+      updateQuickAnswer(index, {
+        isCorrect: nextDetail.userAlternative === nextDetail.correctAlternative,
+      });
+    }
+  }
+
   function startSession() {
     setQuickAnswers({});
     setSavedQuestionsDetails({});
@@ -1012,7 +1024,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                           ? "border-sky-300 bg-sky-400 text-slate-950"
                           : "border-slate-700 bg-slate-950 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
                       }`}
-                      onClick={() => updateQuestionDetail(activeDrawerIndex, { userAlternative: alternative })}
+                      onClick={() => updateAlternativeAndResult(activeDrawerIndex, { userAlternative: alternative })}
                     >
                       {alternative}
                     </button>
@@ -1032,7 +1044,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
                           ? "border-emerald-300 bg-emerald-400 text-slate-950"
                           : "border-slate-700 bg-slate-950 text-zinc-100 dark:border-slate-700 dark:bg-slate-800 dark:text-zinc-100"
                       }`}
-                      onClick={() => updateQuestionDetail(activeDrawerIndex, { correctAlternative: alternative })}
+                      onClick={() => updateAlternativeAndResult(activeDrawerIndex, { correctAlternative: alternative })}
                     >
                       {alternative}
                     </button>
