@@ -22,7 +22,6 @@ type FreeStudyAttemptForm = {
   correct_count: number;
   source: string;
   difficulty_bank: "facil" | "media" | "dificil";
-  difficulty_personal: "" | "facil" | "media" | "dificil";
   elapsed_seconds: string;
   confidence: "" | "baixa" | "media" | "alta";
   error_type: string;
@@ -34,7 +33,6 @@ const defaultAttemptForm: FreeStudyAttemptForm = {
   correct_count: 0,
   source: "",
   difficulty_bank: "media",
-  difficulty_personal: "media",
   elapsed_seconds: "",
   confidence: "media",
   error_type: "",
@@ -105,7 +103,7 @@ function buildPayload(
     quantity: form.quantity,
     correct_count: form.correct_count,
     difficulty_bank: form.difficulty_bank,
-    difficulty_personal: form.difficulty_personal || null,
+    difficulty_personal: null,
     elapsed_seconds: Number.isFinite(elapsed) && elapsed > 0 ? elapsed : null,
     confidence: form.confidence || null,
     error_type: form.error_type.trim() || null,
@@ -607,9 +605,9 @@ export default function FreeStudyPage() {
                       />
                     </label>
                     <label className="today-form-field">
-                      <span>Dificuldade banco</span>
+                      <span>Dificuldade TRI/base da lista</span>
                       <select
-                        className="app-input"
+                        className="app-input dark:bg-slate-900 dark:text-zinc-100 dark:border-slate-700"
                         value={attemptForm.difficulty_bank}
                         onChange={(event) =>
                           setAttemptForm((current) => ({
@@ -624,27 +622,9 @@ export default function FreeStudyPage() {
                       </select>
                     </label>
                     <label className="today-form-field">
-                      <span>Dificuldade pessoal</span>
-                      <select
-                        className="app-input"
-                        value={attemptForm.difficulty_personal}
-                        onChange={(event) =>
-                          setAttemptForm((current) => ({
-                            ...current,
-                            difficulty_personal: event.target.value as FreeStudyAttemptForm["difficulty_personal"],
-                          }))
-                        }
-                      >
-                        <option value="">Nao informar</option>
-                        <option value="facil">Facil</option>
-                        <option value="media">Media</option>
-                        <option value="dificil">Dificil</option>
-                      </select>
-                    </label>
-                    <label className="today-form-field">
                       <span>Confianca</span>
                       <select
-                        className="app-input"
+                        className="app-input dark:bg-slate-900 dark:text-zinc-100 dark:border-slate-700"
                         value={attemptForm.confidence}
                         onChange={(event) =>
                           setAttemptForm((current) => ({

@@ -69,7 +69,6 @@ export type ExternalQuestionDraft = {
   correctOptionIndex: number | null;
   wasCorrect: "" | "correct" | "incorrect";
   peerAccuracy: string;
-  personalDifficulty: "baixa" | "media" | "alta";
   notes: string;
 };
 

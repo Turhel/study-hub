@@ -46,6 +46,13 @@ function formatSeconds(value?: number | null): string {
   return seconds ? `${minutes}min ${seconds}s` : `${minutes}min`;
 }
 
+function formatMasteryScore(value?: number | null): string {
+  if (value === null || value === undefined) {
+    return "sem TRI";
+  }
+  return `${Math.round(clampNumber(value, 0, 1) * 100)}%`;
+}
+
 function formatDateLabel(value: string): string {
   return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -737,7 +744,7 @@ function SubjectBreakdown({
       <div className="stats-chart-head">
         <div>
           <h3>Assuntos de {discipline}</h3>
-          <p>Volume, acerto e ritmo por conteudo.</p>
+          <p>Volume, acerto, ritmo e maestria TRI estimada por conteudo.</p>
         </div>
       </div>
 
@@ -749,6 +756,7 @@ function SubjectBreakdown({
               <span>
                 {item.questions_count} questoes • {formatPercent(item.accuracy)} • {formatSeconds(item.avg_time_correct_questions_seconds)}
               </span>
+              <small>Maestria TRI estimada: {formatMasteryScore(item.mastery_score)}</small>
             </div>
             <div className="stats-breakdown-bars">
               <div className="stats-breakdown-bar">
@@ -761,6 +769,12 @@ function SubjectBreakdown({
                 <label>Acerto</label>
                 <div className="stats-breakdown-track stats-breakdown-track-accuracy">
                   <i style={{ width: `${Math.max(item.accuracy, 0.02) * 100}%` }} />
+                </div>
+              </div>
+              <div className="stats-breakdown-bar">
+                <label>Maestria TRI</label>
+                <div className="stats-breakdown-track stats-breakdown-track-mastery">
+                  <i style={{ width: `${Math.max(clampNumber(item.mastery_score ?? 0, 0, 1), 0.02) * 100}%` }} />
                 </div>
               </div>
             </div>

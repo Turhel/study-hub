@@ -23,7 +23,6 @@ function buildInitialDrafts(session: TimerSession): ExternalQuestionDraft[] {
       correctOptionIndex: null,
       wasCorrect: question.status === "skipped" ? "incorrect" : "",
       peerAccuracy: "",
-      personalDifficulty: question.status === "skipped" ? "alta" : "media",
       notes: "",
     }));
 }
@@ -52,7 +51,7 @@ function parsePeerAccuracy(value: string): number | null {
   return Math.min(Math.max(parsed, 0), 100);
 }
 
-function generalDifficultyFromPeerAccuracy(peerAccuracy: number | null): ExternalQuestionDraft["personalDifficulty"] | null {
+function generalDifficultyFromPeerAccuracy(peerAccuracy: number | null): SessionSummaryForm["difficulty"] | null {
   if (peerAccuracy === null) {
     return null;
   }
@@ -65,7 +64,7 @@ function generalDifficultyFromPeerAccuracy(peerAccuracy: number | null): Externa
   return "baixa";
 }
 
-function difficultyLabel(value: ExternalQuestionDraft["personalDifficulty"] | null): string {
+function difficultyLabel(value: SessionSummaryForm["difficulty"] | null): string {
   if (value === "alta") {
     return "dificil";
   }
@@ -78,7 +77,7 @@ function difficultyLabel(value: ExternalQuestionDraft["personalDifficulty"] | nu
   return "indefinida";
 }
 
-function payloadDifficulty(value: ExternalQuestionDraft["personalDifficulty"] | SessionSummaryForm["difficulty"]): "facil" | "media" | "dificil" {
+function payloadDifficulty(value: SessionSummaryForm["difficulty"]): "facil" | "media" | "dificil" {
   if (value === "alta") {
     return "dificil";
   }
@@ -88,7 +87,7 @@ function payloadDifficulty(value: ExternalQuestionDraft["personalDifficulty"] | 
   return "facil";
 }
 
-function averageDifficulty(values: ExternalQuestionDraft["personalDifficulty"][], fallback: SessionSummaryForm["difficulty"]): "facil" | "media" | "dificil" {
+function averageDifficulty(values: SessionSummaryForm["difficulty"][], fallback: SessionSummaryForm["difficulty"]): "facil" | "media" | "dificil" {
   if (!values.length) {
     return payloadDifficulty(fallback);
   }
@@ -105,14 +104,13 @@ function averageDifficulty(values: ExternalQuestionDraft["personalDifficulty"][]
   return "facil";
 }
 
-function suggestedPersonalDifficulty(
+function suggestedTriDifficulty(
   elapsedSeconds: number,
   targetSeconds: number,
   wasCorrect: ExternalQuestionDraft["wasCorrect"],
   peerAccuracy: string,
 ): {
-  general: ExternalQuestionDraft["personalDifficulty"] | null;
-  personal: ExternalQuestionDraft["personalDifficulty"] | null;
+  general: SessionSummaryForm["difficulty"] | null;
   note: string;
 } {
   const parsedPeerAccuracy = parsePeerAccuracy(peerAccuracy);
@@ -121,45 +119,21 @@ function suggestedPersonalDifficulty(
   if (general === null) {
     return {
       general: null,
-      personal: null,
       note: "Informe a taxa de acerto dos outros alunos para destravar a sugestao.",
     };
   }
 
-  let score = general === "baixa" ? 0 : general === "media" ? 1 : 2;
   const overtimeRatio = targetSeconds > 0 ? elapsedSeconds / targetSeconds : 1;
-
-  if (wasCorrect === "incorrect") {
-    score += 1;
-  }
-
-  if (overtimeRatio >= 3) {
-    score += 1;
-  } else if (overtimeRatio >= 1.75) {
-    score += 0.5;
-  } else if (overtimeRatio <= 0.5 && wasCorrect === "correct") {
-    score -= 0.25;
-  }
-
-  const clampedScore = Math.min(Math.max(score, 0), 2.5);
-  const personal =
-    clampedScore >= 2 ? "alta" : clampedScore >= 0.85 ? "media" : "baixa";
-
   const pieces = [
-    `Geral: ${difficultyLabel(general)} (${parsedPeerAccuracy}% de acerto).`,
+    `TRI/base da lista: ${difficultyLabel(general)} (${parsedPeerAccuracy}% de acerto).`,
     wasCorrect === "correct" ? "Voce acertou." : wasCorrect === "incorrect" ? "Voce errou." : "Falta marcar se acertou ou errou.",
-    overtimeRatio >= 3
-      ? "O tempo ficou muito acima do alvo, entao ele puxou a dificuldade pessoal para cima."
-      : overtimeRatio >= 1.75
-        ? "O tempo ficou acima do alvo e aumentou um pouco a dificuldade pessoal."
-        : overtimeRatio <= 0.5 && wasCorrect === "correct"
-          ? "O tempo ficou baixo e ajudou a aliviar a dificuldade pessoal."
-          : "O tempo entrou como multiplicador, nao como definidor.",
+    overtimeRatio >= 1.75
+      ? "O tempo ficou acima do alvo e sera interpretado pelo guia como sinal de reforco, sem pedir dificuldade manual."
+      : "O tempo fica como telemetria de ritmo; a dificuldade vem da taxa TRI e da consistencia de acertos.",
   ];
 
   return {
     general,
-    personal,
     note: pieces.join(" "),
   };
 }
@@ -246,7 +220,7 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
 
     const correctCount = externalDrafts.filter((draft) => draft.wasCorrect === "correct").length;
     const generalDifficulties = externalDrafts.map((draft) => {
-      const suggestion = suggestedPersonalDifficulty(
+      const suggestion = suggestedTriDifficulty(
         session.questions[draft.questionNumber - 1]?.elapsedSeconds ?? 0,
         session.setup.targetSecondsPerQuestion,
         draft.wasCorrect,
@@ -254,7 +228,7 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
       );
       return suggestion.general ?? form.difficulty;
     });
-    const personalDifficulties = externalDrafts.map((draft) => draft.personalDifficulty);
+    const calculatedDifficulty = averageDifficulty(generalDifficulties, form.difficulty);
 
     const attemptsResponse = await saveQuestionAttemptsBulk({
       discipline: session.setup.discipline,
@@ -263,8 +237,8 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
       source: session.setup.questionSource === "db" ? "timer-db" : "timer-external",
       quantity,
       correct_count: correctCount,
-      difficulty_bank: averageDifficulty(generalDifficulties, form.difficulty),
-      difficulty_personal: averageDifficulty(personalDifficulties, form.difficulty),
+      difficulty_bank: calculatedDifficulty,
+      difficulty_personal: null,
       elapsed_seconds: session.totalElapsedSeconds,
       confidence: null,
       error_type: summary.skippedQuestions > 0 ? "includes_skipped_as_incorrect" : null,
@@ -373,9 +347,9 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
         <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
           <div className="space-y-3">
             <label className="block text-[11px] text-zinc-400">
-              Dificuldade geral
+              Dificuldade TRI/base
               <select
-                className="timer-input mt-1"
+                className="timer-input mt-1 dark:bg-slate-800 dark:text-zinc-100 dark:border-slate-700"
                 value={form.difficulty}
                 onChange={(event) => setForm((current) => ({ ...current, difficulty: event.target.value as SessionSummaryForm["difficulty"] }))}
               >
@@ -438,7 +412,7 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
               externalDrafts.map((draft) => {
                   const question = session.questions[draft.questionNumber - 1];
                   const elapsed = question?.elapsedSeconds ?? 0;
-                  const suggestedDifficulty = suggestedPersonalDifficulty(
+                  const suggestedDifficulty = suggestedTriDifficulty(
                     elapsed,
                     session.setup.targetSecondsPerQuestion,
                     draft.wasCorrect,
@@ -473,35 +447,17 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
 
                           <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-zinc-300">
                             <p className="leading-5">
-                              Dificuldade geral sugerida:{" "}
+                              Dificuldade TRI sugerida:{" "}
                               <strong className="text-zinc-100">{difficultyLabel(suggestedDifficulty.general)}</strong>
                             </p>
-                            <p className="mt-1 leading-5">
-                              Dificuldade pessoal sugerida:{" "}
-                              <strong className="text-zinc-100">{difficultyLabel(suggestedDifficulty.personal)}</strong>
-                            </p>
                             <p className="mt-2 leading-5 text-zinc-400">{suggestedDifficulty.note}</p>
-                            {suggestedDifficulty.personal ? (
-                              <button
-                                type="button"
-                                className="mt-3 timer-widget-button px-3"
-                                onClick={() =>
-                                  updateDraft(draft.questionNumber, (current) => ({
-                                    ...current,
-                                    personalDifficulty: suggestedDifficulty.personal ?? current.personalDifficulty,
-                                  }))
-                                }
-                              >
-                                Usar sugestao pessoal
-                              </button>
-                            ) : null}
                           </div>
 
                           <div className="grid gap-3 sm:grid-cols-2">
                             <label className="block text-[11px] text-zinc-400">
                               Acertou ou errou?
                               <select
-                                className="timer-input mt-1"
+                                className="timer-input mt-1 dark:bg-slate-800 dark:text-zinc-100 dark:border-slate-700"
                                 value={draft.wasCorrect}
                                 disabled={question?.status === "skipped"}
                                 onChange={(event) =>
@@ -529,23 +485,6 @@ export default function SessionSummaryModal({ session, onClose }: SessionSummary
                               />
                             </label>
 
-                            <label className="block text-[11px] text-zinc-400 sm:col-span-2">
-                              Dificuldade pessoal
-                              <select
-                                className="timer-input mt-1"
-                                value={draft.personalDifficulty}
-                                onChange={(event) =>
-                                  updateDraft(draft.questionNumber, (current) => ({
-                                    ...current,
-                                    personalDifficulty: event.target.value as ExternalQuestionDraft["personalDifficulty"],
-                                  }))
-                                }
-                              >
-                                <option value="baixa">Baixa</option>
-                                <option value="media">Media</option>
-                                <option value="alta">Alta</option>
-                              </select>
-                            </label>
                           </div>
 
                           {isExternalSession ? (

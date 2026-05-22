@@ -618,7 +618,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
             times_vector: timesVector,
             saved_items_meta: Object.keys(savedItemsMeta).length ? savedItemsMeta : null,
             difficulty_bank: difficulty,
-            difficulty_personal: difficulty,
+            difficulty_personal: null,
             elapsed_seconds: totalSecondsSpent,
             confidence: null,
             error_type: answered.some((answer) => answer.isCorrect === false) ? "timer_v2_quick_miss" : null,
@@ -1318,7 +1318,7 @@ export default function FloatingTimer({ preset = null }: FloatingTimerProps) {
               />
             </div>
 
-            <p className="mt-6 text-xs font-bold uppercase tracking-normal text-zinc-500">Sua dificuldade</p>
+            <p className="mt-6 text-xs font-bold uppercase tracking-normal text-zinc-500">Dificuldade TRI/base da questao</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               {quickDifficultyLabels.map((difficulty) => (
                 <button

@@ -3191,6 +3191,12 @@ textarea {
   font-weight: 700;
 }
 
+.stats-breakdown-copy small {
+  color: rgba(125, 211, 252, 0.82);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .stats-breakdown-bars {
   display: grid;
   gap: 0.5rem;
@@ -3225,6 +3231,10 @@ textarea {
 
 .stats-breakdown-track-accuracy i {
   background: linear-gradient(90deg, #ffcf59, #ff8e53);
+}
+
+.stats-breakdown-track-mastery i {
+  background: linear-gradient(90deg, #49d28f, #ffcf59, #ff6b6b);
 }
 
 .stats-list-panel {
