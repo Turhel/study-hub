@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, select
 from sqlalchemy.engine import Engine
 
 from app.db_migrations.runner import run_migrations
@@ -30,12 +30,24 @@ def create_db_engine(database_url: str | None = None) -> Engine:
 engine = create_db_engine(DATABASE_URL)
 
 
+def _ensure_default_user_energy_settings(active_engine: Engine) -> None:
+    from app.models import UserEnergySettings
+
+    with Session(active_engine) as session:
+        existing = session.exec(select(UserEnergySettings).limit(1)).first()
+        if existing is not None:
+            return
+        session.add(UserEnergySettings())
+        session.commit()
+
+
 def init_db(engine_override: Engine | None = None) -> None:
     from app import models  # noqa: F401
 
     active_engine = engine_override or engine
     SQLModel.metadata.create_all(active_engine)
     run_migrations(active_engine)
+    _ensure_default_user_energy_settings(active_engine)
 
 
 def get_session() -> Session:

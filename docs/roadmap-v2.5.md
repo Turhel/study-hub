@@ -7,13 +7,13 @@
 
 ### Modificações em `backend/app/models.py`
 
-- [ ] Aprimoramento do `BlockMastery`:
-  - [ ] Adicionar campo `eaere_stage` (`VARCHAR`): controla o estado atual do bloco (`E1`, `A1`, `E2`, `R1`, `R2`, `R3`, `R4`, `R5`, `R6`, `EX`).
-  - [ ] Adicionar campo `ex_moving_average` (`FLOAT`, opcional/nullable): guarda a média móvel das últimas 3 listas de exercício do looping `EX`.
-  - [ ] Adicionar campo `consecutive_failures` (`INTEGER`, default `0`): contador de erros seguidos nos estágios avançados (`R4` e `R5`) para gerenciar o congelamento ("vidas").
+- [x] Aprimoramento do `BlockMastery`:
+  - [x] Adicionar campo `eaere_stage` (`VARCHAR`): controla o estado atual do bloco (`E1`, `A1`, `E2`, `R1`, `R2`, `R3`, `R4`, `R5`, `R6`, `EX`).
+  - [x] Adicionar campo `ex_moving_average` (`FLOAT`, opcional/nullable): guarda a média móvel das últimas 3 listas de exercício do looping `EX`.
+  - [x] Adicionar campo `consecutive_failures` (`INTEGER`, default `0`): contador de erros seguidos nos estágios avançados (`R4` e `R5`) para gerenciar o congelamento ("vidas").
 
-- [ ] Tabela de Configurações Globais de Carga (`UserEnergySettings`):
-  - [ ] Criar modelo para persistir os estados de proteção de energia do usuário:
+- [x] Tabela de Configurações Globais de Carga (`UserEnergySettings`):
+  - [x] Criar modelo para persistir os estados de proteção de energia do usuário:
     - `mode_dia_leve` (`BOOLEAN`, default `False`)
     - `mode_provas_academicas` (`BOOLEAN`, default `False`)
     - `provas_activated_at` (`DATETIME`, nullable): para o gatilho do pop-up após 7 dias.

@@ -73,6 +73,9 @@ class BlockMastery(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     block_id: int = Field(foreign_key="blocks.id", index=True, unique=True)
+    eaere_stage: str = Field(default="E1", index=True)
+    ex_moving_average: float | None = Field(default=None)
+    consecutive_failures: int = Field(default=0, ge=0)
     facil_total: int = Field(default=0, ge=0)
     facil_acertos: int = Field(default=0, ge=0)
     media_total: int = Field(default=0, ge=0)
@@ -81,6 +84,17 @@ class BlockMastery(SQLModel, table=True):
     dificil_acertos: int = Field(default=0, ge=0)
     status: str = Field(default="em_andamento", index=True)
     score_domino: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class UserEnergySettings(SQLModel, table=True):
+    __tablename__ = "user_energy_settings"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(default=1, index=True)
+    mode_dia_leve: bool = Field(default=False)
+    mode_provas_academicas: bool = Field(default=False)
+    provas_activated_at: datetime | None = Field(default=None)
+    current_daily_target_questions: int = Field(default=20, ge=1)
 
 
 class BlockProgress(SQLModel, table=True):
