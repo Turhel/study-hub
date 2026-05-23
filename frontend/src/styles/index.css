@@ -1545,16 +1545,37 @@ textarea {
 .today-card-illustration {
   display: inline-grid;
   place-items: center;
-  width: 4.25rem;
-  height: 4.25rem;
+  position: relative;
+  width: 4.6rem;
+  height: 4.6rem;
   flex: 0 0 auto;
-  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.32));
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.13), transparent 62%),
+    var(--discipline-icon-glow, rgba(47, 169, 244, 0.12));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 16px 24px rgba(0, 0, 0, 0.22);
+  isolation: isolate;
 }
 
-.today-card-illustration svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+.today-card-illustration::before {
+  content: "";
+  position: absolute;
+  inset: 0.55rem;
+  z-index: -1;
+  border-radius: 999px;
+  background: var(--discipline-icon-glow, rgba(47, 169, 244, 0.18));
+  filter: blur(13px);
+  opacity: 0.75;
+}
+
+.today-card-illustration img {
+  display: block;
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.28));
 }
 
 .today-icon-fill-blue,
@@ -2265,26 +2286,38 @@ textarea {
 }
 
 .today-discipline-card-languages {
+  --discipline-icon-glow: rgba(47, 169, 244, 0.28);
+  --discipline-icon-dot: #7ec5ff;
   background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(37, 118, 154, 0.22) 100%);
 }
 
 .today-discipline-card-humanas {
+  --discipline-icon-glow: rgba(255, 79, 159, 0.24);
+  --discipline-icon-dot: #ff4f9f;
   background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(160, 69, 126, 0.22) 100%);
 }
 
 .today-discipline-card-math {
+  --discipline-icon-glow: rgba(255, 215, 98, 0.28);
+  --discipline-icon-dot: #ffd762;
   background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(155, 139, 49, 0.24) 100%);
 }
 
 .today-discipline-card-nature {
+  --discipline-icon-glow: rgba(110, 231, 168, 0.22);
+  --discipline-icon-dot: #6ee7a8;
   background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(55, 142, 91, 0.22) 100%);
 }
 
 .today-discipline-card-writing {
+  --discipline-icon-glow: rgba(255, 141, 141, 0.25);
+  --discipline-icon-dot: #ff8d8d;
   background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(196, 96, 61, 0.22) 100%);
 }
 
 .today-discipline-card-default {
+  --discipline-icon-glow: rgba(126, 197, 255, 0.22);
+  --discipline-icon-dot: #7ec5ff;
   background: linear-gradient(105deg, #191e28 0%, #171b23 58%, rgba(82, 115, 167, 0.22) 100%);
 }
 

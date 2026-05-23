@@ -24,7 +24,16 @@ import type {
   StudyPlanItem,
 } from "../lib/types";
 
-type DisciplineIconKind = "languages" | "humanas" | "math" | "nature" | "writing" | "default";
+type DisciplineIconKind =
+  | "atom"
+  | "brazil"
+  | "calculating"
+  | "geography"
+  | "hieroglyph"
+  | "leave"
+  | "networking"
+  | "philosopher"
+  | "physics";
 type MetricIconKind = "target" | "focus" | "questions" | "subjects";
 
 type AttemptForm = {
@@ -54,22 +63,24 @@ const defaultAttemptForm: AttemptForm = {
 };
 
 const disciplineVisualMap: Record<string, { icon: DisciplineIconKind; toneClassName: string }> = {
-  "Linguagens e Codigos": { icon: "languages", toneClassName: "today-discipline-card-languages" },
-  Linguagens: { icon: "languages", toneClassName: "today-discipline-card-languages" },
-  "Ciencias Humanas": { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
-  Humanas: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
-  Geografia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
-  Historia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
-  Sociologia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
-  Filosofia: { icon: "humanas", toneClassName: "today-discipline-card-humanas" },
-  "Matematica e suas Tecnologias": { icon: "math", toneClassName: "today-discipline-card-math" },
-  Matematica: { icon: "math", toneClassName: "today-discipline-card-math" },
-  "Ciencias da Natureza": { icon: "nature", toneClassName: "today-discipline-card-nature" },
-  Natureza: { icon: "nature", toneClassName: "today-discipline-card-nature" },
-  Biologia: { icon: "nature", toneClassName: "today-discipline-card-nature" },
-  Quimica: { icon: "nature", toneClassName: "today-discipline-card-nature" },
-  Fisica: { icon: "nature", toneClassName: "today-discipline-card-nature" },
-  Redacao: { icon: "writing", toneClassName: "today-discipline-card-writing" },
+  "Linguagens e Codigos": { icon: "hieroglyph", toneClassName: "today-discipline-card-languages" },
+  Linguagens: { icon: "hieroglyph", toneClassName: "today-discipline-card-languages" },
+  "Ciencias Humanas": { icon: "philosopher", toneClassName: "today-discipline-card-humanas" },
+  Humanas: { icon: "philosopher", toneClassName: "today-discipline-card-humanas" },
+  Geografia: { icon: "geography", toneClassName: "today-discipline-card-humanas" },
+  Historia: { icon: "hieroglyph", toneClassName: "today-discipline-card-humanas" },
+  "Historia do Brasil": { icon: "brazil", toneClassName: "today-discipline-card-humanas" },
+  Sociologia: { icon: "networking", toneClassName: "today-discipline-card-humanas" },
+  Filosofia: { icon: "philosopher", toneClassName: "today-discipline-card-humanas" },
+  "Filosofia/Sociologia": { icon: "philosopher", toneClassName: "today-discipline-card-humanas" },
+  "Matematica e suas Tecnologias": { icon: "calculating", toneClassName: "today-discipline-card-math" },
+  Matematica: { icon: "calculating", toneClassName: "today-discipline-card-math" },
+  "Ciencias da Natureza": { icon: "atom", toneClassName: "today-discipline-card-nature" },
+  Natureza: { icon: "atom", toneClassName: "today-discipline-card-nature" },
+  Biologia: { icon: "leave", toneClassName: "today-discipline-card-nature" },
+  Quimica: { icon: "atom", toneClassName: "today-discipline-card-nature" },
+  Fisica: { icon: "physics", toneClassName: "today-discipline-card-nature" },
+  Redacao: { icon: "hieroglyph", toneClassName: "today-discipline-card-writing" },
 };
 
 function normalizeDisciplineKey(value: string): string {
@@ -78,70 +89,45 @@ function normalizeDisciplineKey(value: string): string {
 
 function visualForDiscipline(value: string): { icon: DisciplineIconKind; toneClassName: string } {
   return disciplineVisualMap[normalizeDisciplineKey(value)] ?? {
-    icon: "default",
+    icon: "hieroglyph",
     toneClassName: "today-discipline-card-default",
   };
 }
 
+function visualForFocus(item: StudyPlanItem): { icon: DisciplineIconKind; toneClassName: string } {
+  const searchable = normalizeDisciplineKey(
+    `${item.strategic_discipline ?? ""} ${item.discipline ?? ""} ${item.block_name ?? ""} ${item.subject_name ?? ""}`,
+  ).toLowerCase();
+
+  if (searchable.includes("multiplo") || searchable.includes("divisor") || searchable.includes("matemat")) {
+    return { icon: "calculating", toneClassName: "today-discipline-card-math" };
+  }
+  if (searchable.includes("fisic")) {
+    return { icon: "physics", toneClassName: "today-discipline-card-nature" };
+  }
+  if (searchable.includes("quimic")) {
+    return { icon: "atom", toneClassName: "today-discipline-card-nature" };
+  }
+  if (searchable.includes("biolog")) {
+    return { icon: "leave", toneClassName: "today-discipline-card-nature" };
+  }
+  if (searchable.includes("geograf")) {
+    return { icon: "geography", toneClassName: "today-discipline-card-humanas" };
+  }
+  if (searchable.includes("brasil")) {
+    return { icon: "brazil", toneClassName: "today-discipline-card-humanas" };
+  }
+  if (searchable.includes("filosof")) {
+    return { icon: "philosopher", toneClassName: "today-discipline-card-humanas" };
+  }
+  if (searchable.includes("sociolog")) {
+    return { icon: "networking", toneClassName: "today-discipline-card-humanas" };
+  }
+  return visualForDiscipline(item.strategic_discipline || item.discipline);
+}
+
 function DisciplineIcon({ kind }: { kind: DisciplineIconKind }) {
-  if (kind === "math") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="9" y="23" width="24" height="24" rx="4" className="today-icon-fill-blue" />
-        <path d="M17 23v24M25 23v24M9 31h24M9 39h24" className="today-icon-line-soft" />
-        <path d="M34 47l12-26 12 26H34z" className="today-icon-fill-gold" />
-        <path d="M42 35h8M46 27v14" className="today-icon-line-dark" />
-        <circle cx="47" cy="18" r="12" className="today-icon-fill-coral" />
-        <path d="M39 18h16M47 10v16" className="today-icon-line-dark" />
-      </svg>
-    );
-  }
-  if (kind === "humanas") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M12 25h40L32 12 12 25z" className="today-icon-fill-pink" />
-        <path d="M16 28h32M20 28v19M30 28v19M44 28v19M16 48h32M12 54h40" className="today-icon-line-soft" />
-        <circle cx="32" cy="21" r="3" className="today-icon-fill-gold" />
-      </svg>
-    );
-  }
-  if (kind === "nature") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="33" r="20" className="today-icon-fill-blue" />
-        <path d="M14 34c7 4 11 4 18 0s11-4 18 0" className="today-icon-line-dark" />
-        <path d="M20 28l7-8 7 8 5-5 7 9" className="today-icon-fill-green" />
-        <circle cx="48" cy="15" r="4" className="today-icon-fill-gold" />
-        <path d="M48 7v3M48 20v3M40 15h3M53 15h3" className="today-icon-line-soft" />
-      </svg>
-    );
-  }
-  if (kind === "languages") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="13" y="16" width="34" height="38" rx="5" className="today-icon-fill-gold" />
-        <path d="M22 24h16M22 32h18M22 40h12" className="today-icon-line-dark" />
-        <path d="M38 45l13-13 5 5-13 13-8 3 3-8z" className="today-icon-fill-coral" />
-        <path d="M48 35l5 5" className="today-icon-line-dark" />
-      </svg>
-    );
-  }
-  if (kind === "writing") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <rect x="14" y="12" width="34" height="42" rx="5" className="today-icon-fill-blue" />
-        <path d="M22 22h18M22 31h18M22 40h10" className="today-icon-line-soft" />
-        <path d="M36 49l15-15 5 5-15 15-8 2 3-7z" className="today-icon-fill-gold" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M14 16h22a8 8 0 018 8v30H22a8 8 0 01-8-8V16z" className="today-icon-fill-blue" />
-      <path d="M22 24h14M22 32h14M22 40h10" className="today-icon-line-soft" />
-      <path d="M44 24h6v30h-6z" className="today-icon-fill-gold" />
-    </svg>
-  );
+  return <img src={`/discipline-icons/${kind}.png`} alt="" loading="lazy" decoding="async" />;
 }
 
 function MetricIcon({ kind }: { kind: MetricIconKind }) {
@@ -623,7 +609,7 @@ export default function TodayPage() {
     () =>
       planItems.map((item) => ({
         item,
-        visual: visualForDiscipline(item.strategic_discipline || item.discipline),
+        visual: visualForFocus(item),
       })),
     [planItems],
   );
@@ -985,7 +971,7 @@ export default function TodayPage() {
                     <strong>{planQuery.isLoading ? "Carregando..." : "Ajuste o Guia ou recalcule o plano."}</strong>
                   </div>
                   <span className="today-card-illustration" aria-hidden="true">
-                    <DisciplineIcon kind="default" />
+                    <DisciplineIcon kind="hieroglyph" />
                   </span>
                 </div>
                 <div className="today-focus-footer">
