@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from sqlmodel import select
 
 from app.db import get_session
-from app.models import Block, MockExam, Review, Subject, UserCalendarEvent
+from app.models import Block, DailyStudyPlan, DailyStudyPlanItem, MockExam, Review, Subject, UserCalendarEvent
 from app.schemas import (
     StudyGuideCalendarProjectionDay,
     StudyGuidePreferences,
@@ -90,6 +90,45 @@ def _scheduled_review_labels(session, target_date: date) -> list[str]:
     return labels
 
 
+def _active_plan_for_day(session, target_date: date) -> DailyStudyPlan | None:
+    return session.exec(
+        select(DailyStudyPlan)
+        .where(DailyStudyPlan.plan_date == target_date)
+        .where(DailyStudyPlan.status == "active")
+        .order_by(DailyStudyPlan.created_at.desc(), DailyStudyPlan.id.desc())
+    ).first()
+
+
+def _active_plan_items_for_day(session, target_date: date) -> list[DailyStudyPlanItem]:
+    plan = _active_plan_for_day(session, target_date)
+    if plan is None or plan.id is None:
+        return []
+    return list(
+        session.exec(
+            select(DailyStudyPlanItem)
+            .where(DailyStudyPlanItem.plan_id == plan.id)
+            .order_by(DailyStudyPlanItem.priority_score.desc(), DailyStudyPlanItem.id)
+        ).all()
+    )
+
+
+def _active_plan_labels(session, target_date: date) -> list[str]:
+    labels: list[str] = []
+    for item in _active_plan_items_for_day(session, target_date):
+        subject = session.get(Subject, item.subject_id)
+        block = session.get(Block, item.block_id)
+        subject_name = subject.assunto if subject is not None else f"Assunto {item.subject_id}"
+        if subject is not None and subject.subassunto:
+            subject_name = f"{subject_name} - {subject.subassunto}"
+        block_name = block.nome if block is not None else f"Bloco {item.block_id}"
+        labels.append(f"{item.discipline} - {subject_name} / {block_name} · {item.planned_questions} questoes")
+    return labels
+
+
+def _active_plan_questions(session, target_date: date) -> int:
+    return sum(item.planned_questions for item in _active_plan_items_for_day(session, target_date))
+
+
 def _mock_exams_for_day(session, target_date: date) -> list[MockExam]:
     return list(session.exec(select(MockExam).where(MockExam.data == target_date)).all())
 
@@ -145,11 +184,15 @@ def read_calendar_projection() -> list[StudyGuideCalendarProjectionDay]:
             events = _events_for_day(session, target_date)
             status_protecao = _protection_status(events)
             revisoes_count = _scheduled_reviews_count(session, target_date)
-            scheduled_items = _scheduled_review_labels(session, target_date)
+            plan_questions = _active_plan_questions(session, target_date)
+            scheduled_items = [
+                *_active_plan_labels(session, target_date),
+                *_scheduled_review_labels(session, target_date),
+            ]
             mock_exams = _mock_exams_for_day(session, target_date)
             has_simulado = bool(mock_exams) or any(event.event_type == EVENT_MOCK_EXAM for event in events)
 
-            estimated_questions = revisoes_count * 5
+            estimated_questions = plan_questions + (revisoes_count * 5)
             estimated_questions += sum(exam.total_questoes for exam in mock_exams)
 
             if status_protecao == "viagem_descanso":
