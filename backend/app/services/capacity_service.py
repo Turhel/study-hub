@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 
 from sqlmodel import Session, select
 
-from app.models import BlockMastery, MockExam, QuestionAttempt, StudyCapacity, StudyEvent, UserEnergySettings
+from app.models import BlockMastery, MockExam, QuestionAttempt, StudyCapacity, StudyEvent, UserCalendarEvent, UserEnergySettings
 from app.schemas import StudyGuidePreferences, StudyGuidePreferencesResponse, UserEnergySettingsResponse, UserEnergySettingsUpdate
 from app.services.study_event_service import record_study_event
 
@@ -128,9 +128,29 @@ def update_study_guide_preferences(
     return preferences_response(capacity)
 
 
+def has_active_calendar_event(session: Session, event_type: str, target_date: date | None = None) -> bool:
+    checked_date = target_date or date.today()
+    return session.exec(
+        select(UserCalendarEvent)
+        .where(UserCalendarEvent.event_type == event_type)
+        .where(UserCalendarEvent.start_date <= checked_date)
+        .where(UserCalendarEvent.end_date >= checked_date)
+        .limit(1)
+    ).first() is not None
+
+
+def is_academic_exam_protection_active(session: Session, settings: UserEnergySettings, target_date: date | None = None) -> bool:
+    return settings.mode_provas_academicas or has_active_calendar_event(
+        session,
+        "PROVAS_ACADEMICAS",
+        target_date=target_date,
+    )
+
+
 def calculate_dynamic_daily_target(session: Session, user_id: int = 1) -> int:
     settings = get_or_create_user_energy_settings(session, user_id=user_id)
     target = max(settings.current_daily_target_questions, 1)
+    academic_exam_protection = is_academic_exam_protection_active(session, settings)
 
     if settings.mode_dia_leve:
         return 7
@@ -149,7 +169,7 @@ def calculate_dynamic_daily_target(session: Session, user_id: int = 1) -> int:
         else:
             target = round(target * 0.70)
 
-    if settings.mode_provas_academicas:
+    if academic_exam_protection:
         target = min(target, 5)
 
     return max(int(target), 1)

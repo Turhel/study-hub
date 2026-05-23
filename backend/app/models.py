@@ -97,6 +97,16 @@ class UserEnergySettings(SQLModel, table=True):
     current_daily_target_questions: int = Field(default=20, ge=1)
 
 
+class UserCalendarEvent(SQLModel, table=True):
+    __tablename__ = "user_calendar_events"
+
+    id: int | None = Field(default=None, primary_key=True)
+    event_type: str = Field(index=True)
+    start_date: date = Field(index=True)
+    end_date: date = Field(index=True)
+    description: str | None = None
+
+
 class BlockProgress(SQLModel, table=True):
     __tablename__ = "block_progress"
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TodayMetrics(BaseModel):
@@ -174,6 +174,16 @@ class UserEnergySettingsResponse(BaseModel):
     mode_provas_academicas: bool
     provas_activated_at: str | None = None
     current_daily_target_questions: int
+
+
+class StudyGuideCalendarProjectionDay(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    date: str
+    has_simulado: bool
+    revisoes_count: int = Field(alias="revisões_count")
+    total_questoes_estimadas: int
+    status_protecao: str
 
 
 class StudyPlanRecalculateResponse(BaseModel):
