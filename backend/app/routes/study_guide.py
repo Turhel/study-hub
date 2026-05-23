@@ -3,8 +3,20 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.db import get_session
-from app.schemas import StudyGuidePreferences, StudyGuidePreferencesResponse
-from app.services.capacity_service import get_or_create_capacity, preferences_response, update_study_guide_preferences
+from app.schemas import (
+    StudyGuidePreferences,
+    StudyGuidePreferencesResponse,
+    UserEnergySettingsResponse,
+    UserEnergySettingsUpdate,
+)
+from app.services.capacity_service import (
+    energy_settings_response,
+    get_or_create_capacity,
+    get_or_create_user_energy_settings,
+    preferences_response,
+    update_study_guide_preferences,
+    update_user_energy_settings,
+)
 
 
 router = APIRouter(prefix="/api/study-guide")
@@ -21,4 +33,17 @@ def read_study_guide_preferences() -> StudyGuidePreferencesResponse:
 def update_preferences(payload: StudyGuidePreferences) -> StudyGuidePreferencesResponse:
     with get_session() as session:
         return update_study_guide_preferences(session, payload)
+
+
+@router.get("/energy-settings", response_model=UserEnergySettingsResponse)
+def read_user_energy_settings() -> UserEnergySettingsResponse:
+    with get_session() as session:
+        settings = get_or_create_user_energy_settings(session)
+        return energy_settings_response(settings)
+
+
+@router.put("/energy-settings", response_model=UserEnergySettingsResponse)
+def update_energy_settings(payload: UserEnergySettingsUpdate) -> UserEnergySettingsResponse:
+    with get_session() as session:
+        return update_user_energy_settings(session, payload)
 

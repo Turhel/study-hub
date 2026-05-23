@@ -5,9 +5,11 @@ import { Link } from "react-router-dom";
 import {
   getStudyGuidePreferences,
   getStudyPlanToday,
+  getUserEnergySettings,
   recalculateStudyPlanToday,
   resetStudyData,
   saveStudyGuidePreferences,
+  saveUserEnergySettings,
 } from "../lib/api";
 import type {
   ResetStudyDataResponse,
@@ -97,6 +99,53 @@ function renderCountEntries(counts: Record<string, number>) {
   );
 }
 
+function EnergyToggleCard({
+  title,
+  description,
+  checked,
+  disabled,
+  onToggle,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`w-full rounded-2xl border p-4 text-left transition dark:border-slate-700 ${
+        checked
+          ? "border-sky-400/70 bg-sky-500/10 text-white shadow-[0_0_0_1px_rgba(56,189,248,0.35)]"
+          : "border-slate-700 bg-slate-950/40 text-slate-200 hover:border-sky-400/50"
+      } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
+      onClick={onToggle}
+      disabled={disabled}
+      aria-pressed={checked}
+    >
+      <span className="flex items-start justify-between gap-4">
+        <span>
+          <strong className="block text-base font-bold text-white">{title}</strong>
+          <span className="mt-1 block text-sm leading-relaxed text-slate-300">{description}</span>
+        </span>
+        <span
+          className={`mt-1 flex h-7 w-12 shrink-0 items-center rounded-full border p-1 transition ${
+            checked ? "border-sky-300 bg-sky-400/30" : "border-slate-600 bg-slate-800"
+          }`}
+          aria-hidden="true"
+        >
+          <span
+            className={`h-5 w-5 rounded-full bg-white shadow transition ${
+              checked ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const [preferencesForm, setPreferencesForm] = useState<PreferencesForm>(defaultPreferences);
@@ -109,6 +158,11 @@ export default function SettingsPage() {
   const preferencesQuery = useQuery({
     queryKey: ["study-guide-preferences"],
     queryFn: getStudyGuidePreferences,
+    retry: false,
+  });
+  const energySettingsQuery = useQuery({
+    queryKey: ["user-energy-settings"],
+    queryFn: getUserEnergySettings,
     retry: false,
   });
 
@@ -156,6 +210,7 @@ export default function SettingsPage() {
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ["study-plan-today"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-guide-preferences"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["user-energy-settings"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-recent"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["stats-overview"], type: "active" }),
@@ -185,6 +240,21 @@ export default function SettingsPage() {
       });
       queryClient.setQueryData(["study-plan-today"], refreshedPlan ?? data.plan);
       setFeedback(data.replaced_plan_id ? "Plano recalculado e substituido." : "Plano recalculado.");
+      await refreshStudyQueries();
+    },
+    onError: (error) => setFeedback(errorMessage(error)),
+  });
+
+  const saveEnergySettingsMutation = useMutation({
+    mutationFn: saveUserEnergySettings,
+    onSuccess: async (data) => {
+      queryClient.setQueryData(["user-energy-settings"], data);
+      setFeedback("Controle de energia atualizado.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["study-plan-today"] }),
+        queryClient.invalidateQueries({ queryKey: ["study-plan-calendar"] }),
+        queryClient.invalidateQueries({ queryKey: ["user-energy-settings"] }),
+      ]);
       await refreshStudyQueries();
     },
     onError: (error) => setFeedback(errorMessage(error)),
@@ -226,6 +296,7 @@ export default function SettingsPage() {
         queryClient.invalidateQueries({ queryKey: ["gamification-summary"] }),
         queryClient.invalidateQueries({ queryKey: ["free-study-catalog"] }),
         queryClient.invalidateQueries({ queryKey: ["study-guide-preferences"] }),
+        queryClient.invalidateQueries({ queryKey: ["user-energy-settings"] }),
       ]);
       await refreshStudyQueries();
     },
@@ -233,6 +304,7 @@ export default function SettingsPage() {
   });
 
   const guideBusy = savePreferencesMutation.isPending || recalculateMutation.isPending;
+  const energyBusy = saveEnergySettingsMutation.isPending || energySettingsQuery.isLoading;
   const canConfirmReset = confirmationText === RESET_CONFIRMATION_TEXT && !applyResetMutation.isPending;
 
   function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
@@ -416,6 +488,53 @@ export default function SettingsPage() {
                       ? "Salvar e recalcular"
                       : "Recalcular plano"}
               </button>
+            </div>
+          </section>
+
+          <section className="today-panel">
+            <div className="today-section-head">
+              <div>
+                <p className="today-eyebrow">Energia</p>
+                <h2>Protecao cognitiva</h2>
+              </div>
+              {energySettingsQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
+            </div>
+
+            <div className="today-guide-overview">
+              <div>
+                <strong>Use quando a vida real apertar.</strong>
+                <p>Esses modos alteram o teto adaptativo e protegem o edital de virar uma bola de neve.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <EnergyToggleCard
+                title="Modo Dia Leve"
+                description="Reduz o teto de questoes do dia para o patamar minimo de 7 itens, priorizando apenas satelites de erro imediatos (RRs)."
+                checked={Boolean(energySettingsQuery.data?.mode_dia_leve)}
+                disabled={energyBusy}
+                onToggle={() =>
+                  saveEnergySettingsMutation.mutate({
+                    mode_dia_leve: !energySettingsQuery.data?.mode_dia_leve,
+                  })
+                }
+              />
+              <EnergyToggleCard
+                title="Semana de Provas Academicas"
+                description="Congela 100% o avanco de conteudos novos (E1/E2) para focar nas avaliacoes da faculdade sem gerar bola de neve no edital."
+                checked={Boolean(energySettingsQuery.data?.mode_provas_academicas)}
+                disabled={energyBusy}
+                onToggle={() =>
+                  saveEnergySettingsMutation.mutate({
+                    mode_provas_academicas: !energySettingsQuery.data?.mode_provas_academicas,
+                  })
+                }
+              />
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/40 p-4 text-sm text-slate-300 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300">
+              <span className="font-bold text-slate-100">Teto atual:</span>{" "}
+              {energySettingsQuery.data?.current_daily_target_questions ?? "--"} questoes antes dos redutores do dia.
             </div>
           </section>
 

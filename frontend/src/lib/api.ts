@@ -46,6 +46,8 @@ import type {
   StudyPlanTodayResponse,
   SystemCapabilitiesResponse,
   TodayResponse,
+  UserEnergySettingsPayload,
+  UserEnergySettingsResponse,
 } from "./types";
 import type { TimerSessionPayload } from "./timerTypes";
 
@@ -160,6 +162,34 @@ export async function saveStudyGuidePreferences(
   }
 
   return response.json() as Promise<StudyGuidePreferencesResponse>;
+}
+
+export async function getUserEnergySettings(): Promise<UserEnergySettingsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/study-guide/energy-settings`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar o controle de energia.");
+  }
+
+  return response.json() as Promise<UserEnergySettingsResponse>;
+}
+
+export async function saveUserEnergySettings(
+  payload: UserEnergySettingsPayload,
+): Promise<UserEnergySettingsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/study-guide/energy-settings`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel salvar o controle de energia.");
+  }
+
+  return response.json() as Promise<UserEnergySettingsResponse>;
 }
 
 export async function getTodayActivity(): Promise<ActivityTodayResponse> {

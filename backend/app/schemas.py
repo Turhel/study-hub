@@ -163,6 +163,19 @@ class StudyGuidePreferencesResponse(StudyGuidePreferences):
     updated_at: str
 
 
+class UserEnergySettingsUpdate(BaseModel):
+    mode_dia_leve: bool | None = None
+    mode_provas_academicas: bool | None = None
+    current_daily_target_questions: int | None = Field(default=None, ge=1, le=80)
+
+
+class UserEnergySettingsResponse(BaseModel):
+    mode_dia_leve: bool
+    mode_provas_academicas: bool
+    provas_activated_at: str | None = None
+    current_daily_target_questions: int
+
+
 class StudyPlanRecalculateResponse(BaseModel):
     replaced_plan_id: int | None = None
     plan: StudyPlanTodayResponse

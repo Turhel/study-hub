@@ -6,7 +6,8 @@ from datetime import date, datetime, timedelta
 from sqlmodel import Session, select
 
 from app.models import BlockMastery, MockExam, QuestionAttempt, StudyCapacity, StudyEvent, UserEnergySettings
-from app.schemas import StudyGuidePreferences, StudyGuidePreferencesResponse
+from app.schemas import StudyGuidePreferences, StudyGuidePreferencesResponse, UserEnergySettingsResponse, UserEnergySettingsUpdate
+from app.services.study_event_service import record_study_event
 
 
 VALID_INTENSITIES = {"leve", "normal", "forte"}
@@ -38,6 +39,51 @@ def get_or_create_user_energy_settings(session: Session, user_id: int = 1) -> Us
     session.commit()
     session.refresh(settings)
     return settings
+
+
+def energy_settings_response(settings: UserEnergySettings) -> UserEnergySettingsResponse:
+    return UserEnergySettingsResponse(
+        mode_dia_leve=settings.mode_dia_leve,
+        mode_provas_academicas=settings.mode_provas_academicas,
+        provas_activated_at=settings.provas_activated_at.isoformat() if settings.provas_activated_at else None,
+        current_daily_target_questions=settings.current_daily_target_questions,
+    )
+
+
+def update_user_energy_settings(
+    session: Session,
+    payload: UserEnergySettingsUpdate,
+    user_id: int = 1,
+) -> UserEnergySettingsResponse:
+    settings = get_or_create_user_energy_settings(session, user_id=user_id)
+    previous_provas_mode = settings.mode_provas_academicas
+
+    if payload.mode_dia_leve is not None:
+        settings.mode_dia_leve = payload.mode_dia_leve
+    if payload.mode_provas_academicas is not None:
+        settings.mode_provas_academicas = payload.mode_provas_academicas
+        if payload.mode_provas_academicas and (not previous_provas_mode or settings.provas_activated_at is None):
+            settings.provas_activated_at = datetime.utcnow()
+        if not payload.mode_provas_academicas:
+            settings.provas_activated_at = None
+    if payload.current_daily_target_questions is not None:
+        settings.current_daily_target_questions = payload.current_daily_target_questions
+
+    session.add(settings)
+    record_study_event(
+        session,
+        event_type="energy_settings_update",
+        title="Controle de energia atualizado",
+        description="Modo de protecao cognitiva ajustado nas configuracoes.",
+        metadata={
+            "mode_dia_leve": settings.mode_dia_leve,
+            "mode_provas_academicas": settings.mode_provas_academicas,
+            "current_daily_target_questions": settings.current_daily_target_questions,
+        },
+    )
+    session.commit()
+    session.refresh(settings)
+    return energy_settings_response(settings)
 
 
 def _normalize_intensity(value: str | None) -> str:

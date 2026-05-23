@@ -12,7 +12,9 @@ import {
   getStudyPlanToday,
   getSystemCapabilities,
   getTodayActivity,
+  getUserEnergySettings,
   saveQuestionAttemptsBulk,
+  saveUserEnergySettings,
 } from "../lib/api";
 import type {
   ActivityItem,
@@ -468,6 +470,22 @@ function calendarTypeLabel(value: string): string {
   return "Descanso";
 }
 
+function shouldShowAcademicExamsReminder(activatedAt: string | null | undefined): boolean {
+  if (!activatedAt) {
+    return false;
+  }
+  const normalized = /[zZ]|[+-]\d{2}:\d{2}$/.test(activatedAt) ? activatedAt : `${activatedAt}Z`;
+  const activatedTime = new Date(normalized).getTime();
+  if (!Number.isFinite(activatedTime)) {
+    return false;
+  }
+  return Date.now() - activatedTime >= 7 * 24 * 60 * 60 * 1000;
+}
+
+function academicExamsReminderStorageKey(): string {
+  return `study-hub:academic-exams-reminder:${new Date().toLocaleDateString("en-CA")}`;
+}
+
 function ActivityMetric({
   label,
   value,
@@ -493,6 +511,7 @@ export default function TodayPage() {
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<StudyPlanCalendarDay | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [showAcademicExamsPopup, setShowAcademicExamsPopup] = useState(false);
   const { pendingCompletion, consumePendingCompletion } = useStudyTimer();
 
   const studyPlanTodayQueryKey = useMemo(
@@ -520,6 +539,11 @@ export default function TodayPage() {
     queryFn: getStudyGuidePreferences,
     retry: false,
   });
+  const energySettingsQuery = useQuery({
+    queryKey: ["user-energy-settings"],
+    queryFn: getUserEnergySettings,
+    retry: false,
+  });
   const activityTodayQuery = useQuery({
     queryKey: ["activity-today"],
     queryFn: getTodayActivity,
@@ -542,6 +566,7 @@ export default function TodayPage() {
       queryClient.refetchQueries({ queryKey: studyPlanTodayQueryKey, type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-plan-calendar"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-guide-preferences"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["user-energy-settings"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-recent"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["gamification-summary"], type: "active" }),
@@ -571,6 +596,16 @@ export default function TodayPage() {
     },
     onError: (error) => setFeedback(errorMessage(error)),
   });
+  const updateEnergySettingsMutation = useMutation({
+    mutationFn: saveUserEnergySettings,
+    onSuccess: async (data) => {
+      queryClient.setQueryData(["user-energy-settings"], data);
+      setShowAcademicExamsPopup(false);
+      setFeedback("Modo de protecao atualizado.");
+      await refreshTodayData();
+    },
+    onError: (error) => setFeedback(errorMessage(error)),
+  });
 
   const planItems = planQuery.data?.items ?? [];
   const planSummary = planQuery.data?.summary;
@@ -580,6 +615,8 @@ export default function TodayPage() {
   const activityToday = activityTodayQuery.data;
   const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
   const savedPreferences = preferencesQuery.data;
+  const energySettings = energySettingsQuery.data;
+  const isLightDayMode = Boolean(energySettings?.mode_dia_leve);
 
   const backendOffline = planQuery.isError && capabilitiesQuery.isError && preferencesQuery.isError;
   const focusCards = useMemo(
@@ -688,6 +725,20 @@ export default function TodayPage() {
     };
   }, [planSummary, savedPreferences]);
   const activitySummary = useMemo(() => activityHeadline(activityToday), [activityToday]);
+
+  useEffect(() => {
+    if (!energySettings?.mode_provas_academicas) {
+      setShowAcademicExamsPopup(false);
+      return;
+    }
+    if (!shouldShowAcademicExamsReminder(energySettings.provas_activated_at)) {
+      return;
+    }
+    if (localStorage.getItem(academicExamsReminderStorageKey()) === "dismissed") {
+      return;
+    }
+    setShowAcademicExamsPopup(true);
+  }, [energySettings]);
 
   function openAttemptModal(item: StudyPlanItem, elapsedSeconds?: number | null) {
     setSelectedItem(item);
@@ -818,6 +869,11 @@ export default function TodayPage() {
             <span>{capabilities ? `Perfil ${capabilities.machine_profile}` : "Perfil indisponivel"}</span>
             <span>{capabilities ? `Banco ${capabilities.database.dialect}` : "Banco indisponivel"}</span>
             <span>{capabilities ? `LLM ${capabilities.llm.enabled ? "ligado" : "desligado"}` : "LLM indisponivel"}</span>
+            {isLightDayMode ? (
+              <span className="bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-bold px-3 py-1 rounded-full shadow-sm animate-pulse flex items-center gap-1.5">
+                ⚡ MODO DIA LEVE ATIVO
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -959,13 +1015,24 @@ export default function TodayPage() {
 
             <div className="today-focus-list">
               {focusCards.map(({ item, visual }) => {
+                const isSuspendedNewContent = isLightDayMode && item.planned_mode === "aprendizado";
                 return (
-                <article key={`${item.block_id}-${item.subject_id}`} className={`today-focus-card ${visual.toneClassName}`}>
+                <article
+                  key={`${item.block_id}-${item.subject_id}`}
+                  className={`today-focus-card ${visual.toneClassName} ${
+                    isSuspendedNewContent ? "opacity-60 saturate-50" : ""
+                  }`}
+                >
                   <div className="today-focus-main">
                     <div className="today-focus-copy">
                       <h3>{item.discipline}</h3>
                       <p>{item.block_name}</p>
                       <strong>{item.subject_name}</strong>
+                      {isSuspendedNewContent ? (
+                        <span className="mt-2 inline-flex w-fit rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400">
+                          Conteudo novo suspenso para poupar carga mental
+                        </span>
+                      ) : null}
                     </div>
                     <span className="today-card-illustration" aria-hidden="true">
                       <DisciplineIcon kind={visual.icon} />
@@ -992,7 +1059,13 @@ export default function TodayPage() {
                           <i />
                         </span>
                       </Link>
-                      <button type="button" className="today-register-button" onClick={() => openTrainingTimer(item)}>
+                      <button
+                        type="button"
+                        className="today-register-button"
+                        onClick={() => openTrainingTimer(item)}
+                        disabled={isSuspendedNewContent}
+                        title={isSuspendedNewContent ? "Modo Dia Leve suspendeu conteudos novos hoje." : undefined}
+                      >
                         Iniciar timer
                       </button>
                     </div>
@@ -1330,6 +1403,39 @@ export default function TodayPage() {
                   <p>{item.reason}</p>
                 </article>
               ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {showAcademicExamsPopup ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+          <section className="w-full max-w-lg rounded-3xl border border-slate-700 bg-slate-950 p-6 text-slate-100 shadow-2xl dark:border-slate-700 dark:bg-slate-950">
+            <p className="today-eyebrow">Protecao cognitiva</p>
+            <h2 className="mt-2 text-2xl font-bold text-white">Semana de provas ainda ativa</h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">
+              Voce esta em semana de provas academicas ha mais de 7 dias. Deseja desativar o modo de protecao para
+              retomar o avanco do edital do ENEM?
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                className="rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 font-bold text-slate-100 transition hover:border-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                onClick={() => {
+                  localStorage.setItem(academicExamsReminderStorageKey(), "dismissed");
+                  setShowAcademicExamsPopup(false);
+                }}
+              >
+                Manter Ativo
+              </button>
+              <button
+                type="button"
+                className="rounded-2xl border border-sky-300 bg-sky-400 px-4 py-3 font-bold text-slate-950 shadow-lg transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={updateEnergySettingsMutation.isPending}
+                onClick={() => updateEnergySettingsMutation.mutate({ mode_provas_academicas: false })}
+              >
+                {updateEnergySettingsMutation.isPending ? "Desativando..." : "Desativar e Retomar"}
+              </button>
             </div>
           </section>
         </div>

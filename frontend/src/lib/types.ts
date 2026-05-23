@@ -170,6 +170,19 @@ export type StudyGuidePreferencesResponse = StudyGuidePreferencesPayload & {
   updated_at: string;
 };
 
+export type UserEnergySettingsPayload = {
+  mode_dia_leve?: boolean;
+  mode_provas_academicas?: boolean;
+  current_daily_target_questions?: number;
+};
+
+export type UserEnergySettingsResponse = {
+  mode_dia_leve: boolean;
+  mode_provas_academicas: boolean;
+  provas_activated_at: string | null;
+  current_daily_target_questions: number;
+};
+
 export type StudyPlanRecalculateResponse = {
   replaced_plan_id: number | null;
   plan: StudyPlanTodayResponse;

@@ -116,13 +116,13 @@
 
 ### Modificacoes em `TodayPage.tsx` e `SettingsPage.tsx`
 
-- [ ] Modo Dia Leve visual:
-  - [ ] Se ativado nas configuracoes, o Guia congela o edital (`E1`/`E2`), exibe apenas `RRs` e revisoes criticas.
-  - [ ] Plotar badge de telemetria brilhante no topo da tela: `[MODO DIA LEVE ATIVO]` com classes `dark:*` explicitas para alto contraste.
+- [x] Modo Dia Leve visual:
+  - [x] Se ativado nas configuracoes, o Guia congela o edital (`E1`/`E2`), exibe apenas `RRs` e revisoes criticas.
+  - [x] Plotar badge de telemetria brilhante no topo da tela: `[MODO DIA LEVE ATIVO]` com classes `dark:*` explicitas para alto contraste.
 
-- [ ] Modo Provas Academicas (pop-up nao poluente):
-  - [ ] Se o toggle de provas academicas estiver ligado, pausar 100% o avanco do edital para nao acumular bola de neve.
-  - [ ] Gatilho temporizado: apos 7 dias corridos com o modo ativado, injetar um pop-up de confirmacao logo na inicializacao perguntando se o usuario deseja desativar o modo de protecao para retomar o edital.
+- [x] Modo Provas Academicas (pop-up nao poluente):
+  - [x] Se o toggle de provas academicas estiver ligado, pausar 100% o avanco do edital para nao acumular bola de neve.
+  - [x] Gatilho temporizado: apos 7 dias corridos com o modo ativado, injetar um pop-up de confirmacao logo na inicializacao perguntando se o usuario deseja desativar o modo de protecao para retomar o edital.
 
 - [x] Feedback do pos-prova (curva de fadiga):
   - [x] Na tela final de resultados do simulado, renderizar grafico de linha mapeando o tempo medio de reacao (`Tmu`) ao longo do avanco das questoes para diagnosticar visualmente a perda de resistencia cognitiva (endurance).
