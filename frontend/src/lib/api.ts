@@ -52,6 +52,17 @@ import type {
 import type { TimerSessionPayload } from "./timerTypes";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const API_TOKEN = import.meta.env.VITE_STUDY_HUB_SECRET_TOKEN ?? "local_dev_secret_token_2026";
+
+function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  headers.set("X-API-Token", API_TOKEN);
+
+  return fetch(input, {
+    ...init,
+    headers,
+  });
+}
 
 async function responseError(response: Response, fallback: string): Promise<Error> {
   try {
@@ -69,7 +80,7 @@ async function responseError(response: Response, fallback: string): Promise<Erro
 }
 
 export async function getToday(): Promise<TodayResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/today`);
+  const response = await apiFetch(`${API_BASE_URL}/api/today`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar o resumo de hoje.");
@@ -79,7 +90,7 @@ export async function getToday(): Promise<TodayResponse> {
 }
 
 export async function getStudyPlanToday(): Promise<StudyPlanTodayResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/study-plan/today`);
+  const response = await apiFetch(`${API_BASE_URL}/api/study-plan/today`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar o plano de hoje.");
@@ -89,7 +100,7 @@ export async function getStudyPlanToday(): Promise<StudyPlanTodayResponse> {
 }
 
 export async function getStudyPlanCalendar(days = 7): Promise<StudyPlanCalendarResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/study-plan/calendar?days=${days}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/study-plan/calendar?days=${days}`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar a previsao adaptativa.");
@@ -99,7 +110,7 @@ export async function getStudyPlanCalendar(days = 7): Promise<StudyPlanCalendarR
 }
 
 export async function recalculateStudyPlanToday(): Promise<StudyPlanRecalculateResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/study-plan/today/recalculate`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/study-plan/today/recalculate`, {
     method: "POST",
   });
 
@@ -111,7 +122,7 @@ export async function recalculateStudyPlanToday(): Promise<StudyPlanRecalculateR
 }
 
 export async function getSystemCapabilities(): Promise<SystemCapabilitiesResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/system/capabilities`);
+  const response = await apiFetch(`${API_BASE_URL}/api/system/capabilities`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar as capacidades da maquina.");
@@ -121,7 +132,7 @@ export async function getSystemCapabilities(): Promise<SystemCapabilitiesRespons
 }
 
 export async function resetStudyData(payload: ResetStudyDataPayload): Promise<ResetStudyDataResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/system/reset-study-data`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/system/reset-study-data`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -137,7 +148,7 @@ export async function resetStudyData(payload: ResetStudyDataPayload): Promise<Re
 }
 
 export async function getStudyGuidePreferences(): Promise<StudyGuidePreferencesResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/study-guide/preferences`);
+  const response = await apiFetch(`${API_BASE_URL}/api/study-guide/preferences`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar as preferencias do guia.");
@@ -149,7 +160,7 @@ export async function getStudyGuidePreferences(): Promise<StudyGuidePreferencesR
 export async function saveStudyGuidePreferences(
   payload: StudyGuidePreferencesPayload,
 ): Promise<StudyGuidePreferencesResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/study-guide/preferences`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/study-guide/preferences`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -165,7 +176,7 @@ export async function saveStudyGuidePreferences(
 }
 
 export async function getUserEnergySettings(): Promise<UserEnergySettingsResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/study-guide/energy-settings`);
+  const response = await apiFetch(`${API_BASE_URL}/api/study-guide/energy-settings`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar o controle de energia.");
@@ -177,7 +188,7 @@ export async function getUserEnergySettings(): Promise<UserEnergySettingsRespons
 export async function saveUserEnergySettings(
   payload: UserEnergySettingsPayload,
 ): Promise<UserEnergySettingsResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/study-guide/energy-settings`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/study-guide/energy-settings`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -193,7 +204,7 @@ export async function saveUserEnergySettings(
 }
 
 export async function getTodayActivity(): Promise<ActivityTodayResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/activity/today`);
+  const response = await apiFetch(`${API_BASE_URL}/api/activity/today`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar a atividade de hoje.");
@@ -203,7 +214,7 @@ export async function getTodayActivity(): Promise<ActivityTodayResponse> {
 }
 
 export async function getRecentActivity(limit = 100): Promise<ActivityItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/activity/recent?limit=${limit}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/activity/recent?limit=${limit}`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar a atividade recente.");
@@ -213,7 +224,7 @@ export async function getRecentActivity(limit = 100): Promise<ActivityItem[]> {
 }
 
 export async function getStatsOverview(): Promise<StatsOverviewResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/stats/overview`);
+  const response = await apiFetch(`${API_BASE_URL}/api/stats/overview`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar as estatisticas gerais.");
@@ -223,7 +234,7 @@ export async function getStatsOverview(): Promise<StatsOverviewResponse> {
 }
 
 export async function getStatsByDiscipline(discipline: string): Promise<StatsDisciplineResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/stats/discipline/${encodeURIComponent(discipline)}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/stats/discipline/${encodeURIComponent(discipline)}`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar as estatisticas da disciplina.");
@@ -233,7 +244,7 @@ export async function getStatsByDiscipline(discipline: string): Promise<StatsDis
 }
 
 export async function getStatsDisciplines(): Promise<StatsDisciplineItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/stats/disciplines`);
+  const response = await apiFetch(`${API_BASE_URL}/api/stats/disciplines`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar as disciplinas.");
@@ -250,7 +261,7 @@ export async function getStatsHeatmap(
   if (discipline) {
     params.set("discipline", discipline);
   }
-  const response = await fetch(`${API_BASE_URL}/api/stats/heatmap?${params.toString()}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/stats/heatmap?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar o heatmap.");
@@ -268,7 +279,7 @@ export async function getStatsTimeSeries(
   if (discipline) {
     params.set("discipline", discipline);
   }
-  const response = await fetch(`${API_BASE_URL}/api/stats/timeseries?${params.toString()}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/stats/timeseries?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar a serie temporal.");
@@ -280,7 +291,7 @@ export async function getStatsTimeSeries(
 export async function getStatsDisciplineSubjects(
   discipline: string,
 ): Promise<StatsDisciplineSubjectsResponse> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/api/stats/discipline/${encodeURIComponent(discipline)}/subjects`,
   );
 
@@ -292,7 +303,7 @@ export async function getStatsDisciplineSubjects(
 }
 
 export async function getGamificationSummary(): Promise<GamificationSummaryResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/gamification/summary`);
+  const response = await apiFetch(`${API_BASE_URL}/api/gamification/summary`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar ofensiva e maestria.");
@@ -302,7 +313,7 @@ export async function getGamificationSummary(): Promise<GamificationSummaryRespo
 }
 
 export async function getFreeStudyCatalog(): Promise<FreeStudyCatalogResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/free-study/catalog`);
+  const response = await apiFetch(`${API_BASE_URL}/api/free-study/catalog`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar o catalogo do modo livre.");
@@ -312,7 +323,7 @@ export async function getFreeStudyCatalog(): Promise<FreeStudyCatalogResponse> {
 }
 
 export async function getFreeStudySubjectContext(subjectId: number): Promise<FreeStudySubjectContextResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/free-study/subjects/${subjectId}/context`);
+  const response = await apiFetch(`${API_BASE_URL}/api/free-study/subjects/${subjectId}/context`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar o contexto deste conteudo.");
@@ -324,7 +335,7 @@ export async function getFreeStudySubjectContext(subjectId: number): Promise<Fre
 export async function saveFreeStudyQuestionAttemptsBulk(
   payload: QuestionAttemptBulkPayload,
 ): Promise<QuestionAttemptBulkResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/free-study/question-attempts/bulk`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/free-study/question-attempts/bulk`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -341,7 +352,7 @@ export async function saveFreeStudyQuestionAttemptsBulk(
 
 export async function getBlockProgressByDiscipline(discipline: string): Promise<BlockProgressDisciplineResponse> {
   const params = new URLSearchParams({ discipline });
-  const response = await fetch(`${API_BASE_URL}/api/block-progress/discipline?${params.toString()}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/block-progress/discipline?${params.toString()}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar a progressao da disciplina.");
@@ -352,7 +363,7 @@ export async function getBlockProgressByDiscipline(discipline: string): Promise<
 
 export async function getLessonContents(publishedOnly = false): Promise<LessonContent[]> {
   const query = publishedOnly ? "?published_only=true" : "";
-  const response = await fetch(`${API_BASE_URL}/api/lessons/contents${query}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/contents${query}`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar as aulas.");
@@ -362,7 +373,7 @@ export async function getLessonContents(publishedOnly = false): Promise<LessonCo
 }
 
 export async function getMockExams(): Promise<MockExam[]> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams`);
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar os simulados.");
@@ -372,7 +383,7 @@ export async function getMockExams(): Promise<MockExam[]> {
 }
 
 export async function getMockExam(id: number): Promise<MockExam> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar o simulado.");
@@ -382,7 +393,7 @@ export async function getMockExam(id: number): Promise<MockExam> {
 }
 
 export async function getMockExamSummary(): Promise<MockExamSummaryResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/summary`);
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/summary`);
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar o resumo dos simulados.");
@@ -392,7 +403,7 @@ export async function getMockExamSummary(): Promise<MockExamSummaryResponse> {
 }
 
 export async function getActiveMockExam(): Promise<MockExamActiveResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/active`);
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/active`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel verificar simulado em andamento.");
@@ -402,7 +413,7 @@ export async function getActiveMockExam(): Promise<MockExamActiveResponse> {
 }
 
 export async function createMockExam(payload: MockExamPayload): Promise<MockExam> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -418,7 +429,7 @@ export async function createMockExam(payload: MockExamPayload): Promise<MockExam
 }
 
 export async function updateMockExam(id: number, payload: Partial<MockExamPayload>): Promise<MockExam> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -434,7 +445,7 @@ export async function updateMockExam(id: number, payload: Partial<MockExamPayloa
 }
 
 export async function deleteMockExam(id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}`, {
     method: "DELETE",
   });
 
@@ -444,7 +455,7 @@ export async function deleteMockExam(id: number): Promise<void> {
 }
 
 export async function getMockExamQuestions(id: number): Promise<MockExamQuestion[]> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/questions`);
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/questions`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar as questoes do simulado.");
@@ -457,7 +468,7 @@ export async function generateMockExamPlaceholders(
   id: number,
   payload: MockExamPlaceholderRequest,
 ): Promise<MockExamPlaceholderResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/questions/generate-placeholders`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/questions/generate-placeholders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -477,7 +488,7 @@ export async function updateMockExamQuestion(
   questionId: number,
   payload: MockExamQuestionPayload,
 ): Promise<MockExamQuestion> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${examId}/questions/${questionId}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${examId}/questions/${questionId}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -493,7 +504,7 @@ export async function updateMockExamQuestion(
 }
 
 export async function startMockExam(id: number): Promise<MockExamStartResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/start`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/start`, {
     method: "POST",
   });
 
@@ -505,7 +516,7 @@ export async function startMockExam(id: number): Promise<MockExamStartResponse> 
 }
 
 export async function pauseMockExam(id: number): Promise<MockExamStartResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/pause`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/pause`, {
     method: "POST",
   });
 
@@ -517,7 +528,7 @@ export async function pauseMockExam(id: number): Promise<MockExamStartResponse> 
 }
 
 export async function resumeMockExam(id: number): Promise<MockExamStartResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/resume`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/resume`, {
     method: "POST",
   });
 
@@ -532,7 +543,7 @@ export async function recordMockExamAnswer(
   id: number,
   payload: MockExamRecordAnswerPayload,
 ): Promise<MockExamQuestion> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/record-answer`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/record-answer`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -548,7 +559,7 @@ export async function recordMockExamAnswer(
 }
 
 export async function finishMockExam(id: number): Promise<MockExamFinishResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/finish`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/finish`, {
     method: "POST",
   });
 
@@ -560,7 +571,7 @@ export async function finishMockExam(id: number): Promise<MockExamFinishResponse
 }
 
 export async function getMockExamResults(id: number): Promise<MockExamResultsResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/mock-exams/${id}/results`);
+  const response = await apiFetch(`${API_BASE_URL}/api/mock-exams/${id}/results`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar os resultados do simulado.");
@@ -570,7 +581,7 @@ export async function getMockExamResults(id: number): Promise<MockExamResultsRes
 }
 
 export async function getLessonContentsBySubject(subjectId: number): Promise<LessonContent[]> {
-  const response = await fetch(`${API_BASE_URL}/api/lessons/by-subject/${subjectId}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/by-subject/${subjectId}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar as aulas deste conteudo.");
@@ -580,7 +591,7 @@ export async function getLessonContentsBySubject(subjectId: number): Promise<Les
 }
 
 export async function getLessonContentsByRoadmapNode(nodeId: string): Promise<LessonContent[]> {
-  const response = await fetch(`${API_BASE_URL}/api/lessons/by-roadmap-node/${encodeURIComponent(nodeId)}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/by-roadmap-node/${encodeURIComponent(nodeId)}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar as aulas deste node.");
@@ -590,7 +601,7 @@ export async function getLessonContentsByRoadmapNode(nodeId: string): Promise<Le
 }
 
 export async function createLessonContent(payload: LessonContentPayload): Promise<LessonContent> {
-  const response = await fetch(`${API_BASE_URL}/api/lessons/contents`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/contents`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -606,7 +617,7 @@ export async function createLessonContent(payload: LessonContentPayload): Promis
 }
 
 export async function updateLessonContent(id: number, payload: LessonContentPayload): Promise<LessonContent> {
-  const response = await fetch(`${API_BASE_URL}/api/lessons/contents/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/contents/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -622,7 +633,7 @@ export async function updateLessonContent(id: number, payload: LessonContentPayl
 }
 
 export async function deleteLessonContent(id: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/lessons/contents/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/contents/${id}`, {
     method: "DELETE",
   });
 
@@ -632,7 +643,7 @@ export async function deleteLessonContent(id: number): Promise<void> {
 }
 
 export async function correctEssay(payload: EssayCorrectionPayload): Promise<EssayCorrectionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/correct`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/correct`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -650,7 +661,7 @@ export async function correctEssay(payload: EssayCorrectionPayload): Promise<Ess
 export async function createEssayCorrection(
   payload: EssayCorrectionPayload,
 ): Promise<EssayCorrectionStoredResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/corrections`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/corrections`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -668,7 +679,7 @@ export async function createEssayCorrection(
 export async function createManualEssayCorrection(
   payload: EssayManualCorrectionPayload,
 ): Promise<EssayCorrectionStoredResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/manual-corrections`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/manual-corrections`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -684,7 +695,7 @@ export async function createManualEssayCorrection(
 }
 
 export async function getEssayExternalPromptTemplate(): Promise<EssayExternalPromptTemplateResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/external-prompt-template`);
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/external-prompt-template`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar o prompt calibrado de redacao.");
@@ -694,7 +705,7 @@ export async function getEssayExternalPromptTemplate(): Promise<EssayExternalPro
 }
 
 export async function getEssayCorrections(limit = 20): Promise<EssayCorrectionListItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/corrections?limit=${limit}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/corrections?limit=${limit}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar o historico de redacoes.");
@@ -704,7 +715,7 @@ export async function getEssayCorrections(limit = 20): Promise<EssayCorrectionLi
 }
 
 export async function getEssayCorrection(correctionId: number): Promise<EssayCorrectionStoredResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/corrections/${correctionId}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/corrections/${correctionId}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar a correcao.");
@@ -714,7 +725,7 @@ export async function getEssayCorrection(correctionId: number): Promise<EssayCor
 }
 
 export async function createEssayStudySession(essayCorrectionId: number): Promise<EssayStudySessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/study-sessions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -733,7 +744,7 @@ export async function sendEssayStudyMessage(
   sessionId: number,
   content: string,
 ): Promise<EssayStudySessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}/messages`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -749,7 +760,7 @@ export async function sendEssayStudyMessage(
 }
 
 export async function closeEssayStudySession(sessionId: number): Promise<EssayStudySessionCloseResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}/close`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}/close`, {
     method: "POST",
   });
 
@@ -761,7 +772,7 @@ export async function closeEssayStudySession(sessionId: number): Promise<EssaySt
 }
 
 export async function getEssayStudySession(sessionId: number): Promise<EssayStudySessionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}`);
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/study-sessions/${sessionId}`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar a sessao de estudo.");
@@ -773,7 +784,7 @@ export async function getEssayStudySession(sessionId: number): Promise<EssayStud
 export async function listEssayStudySessionsForSubmission(
   submissionId: number,
 ): Promise<EssayStudySessionListItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/essay/submissions/${submissionId}/study-sessions`);
+  const response = await apiFetch(`${API_BASE_URL}/api/essay/submissions/${submissionId}/study-sessions`);
 
   if (!response.ok) {
     throw await responseError(response, "Nao foi possivel carregar sessoes de estudo da redacao.");
@@ -783,7 +794,7 @@ export async function listEssayStudySessionsForSubmission(
 }
 
 export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPayload): Promise<QuestionAttemptBulkResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/question-attempts/bulk`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/question-attempts/bulk`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -799,7 +810,7 @@ export async function saveQuestionAttemptsBulk(payload: QuestionAttemptBulkPaylo
 }
 
 export async function saveQuestionAttemptsQuickSync(payload: QuestionAttemptBulkPayload): Promise<QuestionAttemptBulkResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/question-attempts/quick-sync`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/question-attempts/quick-sync`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -815,7 +826,7 @@ export async function saveQuestionAttemptsQuickSync(payload: QuestionAttemptBulk
 }
 
 export async function saveTimerSession(payload: TimerSessionPayload): Promise<{ id: number }> {
-  const response = await fetch(`${API_BASE_URL}/api/timer-sessions`, {
+  const response = await apiFetch(`${API_BASE_URL}/api/timer-sessions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -829,3 +840,4 @@ export async function saveTimerSession(payload: TimerSessionPayload): Promise<{ 
 
   return response.json() as Promise<{ id: number }>;
 }
+

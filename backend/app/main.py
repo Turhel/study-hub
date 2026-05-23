@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import os
+import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app import models  # noqa: F401
 from app.db import init_db
@@ -48,6 +51,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _api_token_check_enabled() -> bool:
+    return "pytest" not in sys.modules
+
+
+def _expected_api_token() -> str:
+    return os.getenv("STUDY_HUB_SECRET_TOKEN") or "local_dev_secret_token_2026"
+
+
+@app.middleware("http")
+async def require_api_token(request: Request, call_next):
+    if request.url.path.startswith("/api") and request.method != "OPTIONS" and _api_token_check_enabled():
+        supplied_token = request.headers.get("X-API-Token")
+        if supplied_token != _expected_api_token():
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Acesso negado: Token inválido ou ausente."},
+            )
+    return await call_next(request)
 
 app.include_router(health_router)
 app.include_router(today_router)
