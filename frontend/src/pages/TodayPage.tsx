@@ -8,7 +8,6 @@ import {
   getActiveMockExam,
   getRecentActivity,
   getStudyPlanCalendar,
-  getStudyGuidePreferences,
   getStudyPlanToday,
   getSystemCapabilities,
   getTodayActivity,
@@ -520,11 +519,6 @@ export default function TodayPage() {
     queryFn: () => getStudyPlanCalendar(7),
     retry: false,
   });
-  const preferencesQuery = useQuery({
-    queryKey: ["study-guide-preferences"],
-    queryFn: getStudyGuidePreferences,
-    retry: false,
-  });
   const energySettingsQuery = useQuery({
     queryKey: ["user-energy-settings"],
     queryFn: getUserEnergySettings,
@@ -551,7 +545,6 @@ export default function TodayPage() {
     await Promise.all([
       queryClient.refetchQueries({ queryKey: studyPlanTodayQueryKey, type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-plan-calendar"], type: "active" }),
-      queryClient.refetchQueries({ queryKey: ["study-guide-preferences"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["user-energy-settings"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-recent"], type: "active" }),
@@ -600,11 +593,12 @@ export default function TodayPage() {
   const capabilities = capabilitiesQuery.data;
   const activityToday = activityTodayQuery.data;
   const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
-  const savedPreferences = preferencesQuery.data;
   const energySettings = energySettingsQuery.data;
   const isLightDayMode = Boolean(energySettings?.mode_dia_leve);
+  const questionsDoneToday = activityToday?.question_attempts_registered ?? 0;
+  const dailyQuestionTarget = energySettings?.current_daily_target_questions ?? planSummary?.total_questions ?? 0;
 
-  const backendOffline = planQuery.isError && capabilitiesQuery.isError && preferencesQuery.isError;
+  const backendOffline = planQuery.isError && capabilitiesQuery.isError && energySettingsQuery.isError;
   const focusCards = useMemo(
     () =>
       planItems.map((item) => ({
@@ -622,7 +616,7 @@ export default function TodayPage() {
         onPrimary: () => {
           void refreshTodayData();
           void capabilitiesQuery.refetch();
-          void preferencesQuery.refetch();
+          void energySettingsQuery.refetch();
         },
         secondaryLabel: undefined,
         secondaryTo: undefined,
@@ -680,36 +674,11 @@ export default function TodayPage() {
     activityToday?.question_attempts_registered,
     backendOffline,
     capabilitiesQuery,
+    energySettingsQuery,
     hasPlanItems,
     planItems,
     planQuery,
-    preferencesQuery,
   ]);
-  const guideSummary = useMemo(() => {
-    if (!savedPreferences) {
-      return "Defina seu ritmo em Configuracoes para ajustar tempo, intensidade e limites do plano.";
-    }
-    const toggles = [
-      savedPreferences.include_reviews ? "com revisoes" : "sem revisoes",
-      savedPreferences.include_new_content ? "com conteudo novo" : "sem conteudo novo",
-    ];
-
-    return `Hoje voce pediu ${savedPreferences.daily_minutes} min, intensidade ${savedPreferences.intensity}, ate ${savedPreferences.max_focus_count} focos e ate ${savedPreferences.max_questions} questoes, ${toggles.join(" e ")}.`;
-  }, [savedPreferences]);
-  const guideResultSummary = useMemo(() => {
-    const focusCount = planSummary?.focus_count ?? 0;
-    const totalQuestions = planSummary?.total_questions ?? 0;
-    const focusLimit = savedPreferences?.max_focus_count ?? 0;
-    const questionLimit = savedPreferences?.max_questions ?? 0;
-    return {
-      focusMessage: `O guia selecionou ${focusCount} foco(s), dentro do limite de ate ${focusLimit}.`,
-      questionMessage: `Total sugerido: ${totalQuestions} questoes, limite configurado: ${questionLimit}.`,
-      fewerFocusesThanLimit:
-        focusCount > 0 && focusCount < focusLimit
-          ? "O plano pode sugerir menos focos quando ha poucos candidatos uteis ou para evitar carga desnecessaria."
-          : null,
-    };
-  }, [planSummary, savedPreferences]);
   const activitySummary = useMemo(() => activityHeadline(activityToday), [activityToday]);
 
   useEffect(() => {
@@ -888,10 +857,17 @@ export default function TodayPage() {
           secondaryTo={nextStep.secondaryTo}
         />
 
+        <div className="flex flex-wrap items-center gap-2 px-1 text-sm font-bold text-slate-800 dark:text-slate-100">
+          <span className="text-sky-700 dark:text-sky-300">Progresso do Dia:</span>
+          <span className="text-slate-700 dark:text-slate-200">
+            {questionsDoneToday} / {dailyQuestionTarget} questoes
+          </span>
+        </div>
+
         <section className="today-summary-grid">
           <SummaryCard label="Total planejado" value={planSummary?.total_questions ?? 0} detail="questoes" icon="target" />
           <SummaryCard label="Focos" value={planSummary?.focus_count ?? 0} detail="ativos" icon="focus" />
-          <SummaryCard label="Registradas hoje" value={activityToday?.question_attempts_registered ?? 0} detail="questoes" icon="questions" />
+          <SummaryCard label="Registradas hoje" value={questionsDoneToday} detail="questoes" icon="questions" />
           <SummaryCard label="Assuntos hoje" value={activityToday?.subjects_studied_today ?? 0} detail="estudados" icon="subjects" />
         </section>
 
@@ -1116,47 +1092,6 @@ export default function TodayPage() {
           </section>
 
           <aside className="today-side-stack">
-            <section className="today-panel">
-              <div className="today-section-head">
-                <div>
-                  <p className="today-eyebrow">Carga</p>
-                  <h2>Guia do dia</h2>
-                </div>
-                {preferencesQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
-              </div>
-
-              <div className="today-guide-overview">
-                <div>
-                  <strong>O plano de hoje usa as configuracoes salvas.</strong>
-                  <p>Tempo, intensidade e limites do guia agora ficam em Configuracoes.</p>
-                </div>
-              </div>
-
-              <div className="today-guide-summary">
-                <span className="today-guide-summary-label">Resumo atual</span>
-                <p>{guideSummary}</p>
-              </div>
-
-              <div className="today-guide-summary today-guide-summary-secondary">
-                <span className="today-guide-summary-label">Como isso afeta o plano</span>
-                <p>Minutos e intensidade influenciam a carga do dia, mas nao obrigam preencher todos os focos.</p>
-                <p>Focos max. significa ate esse numero de focos. Questoes max. funciona como teto de volume.</p>
-              </div>
-
-              <div className="today-guide-summary today-guide-summary-result">
-                <span className="today-guide-summary-label">Leitura do plano atual</span>
-                <p>{guideResultSummary.focusMessage}</p>
-                <p>{guideResultSummary.questionMessage}</p>
-                {guideResultSummary.fewerFocusesThanLimit ? <p>{guideResultSummary.fewerFocusesThanLimit}</p> : null}
-              </div>
-
-              <div className="today-guide-compact-actions">
-                <Link className="app-secondary-action app-guidance-link" to="/settings">
-                  Editar guia
-                </Link>
-              </div>
-            </section>
-
             <section className="today-panel">
               <div className="today-section-head">
                 <div>
