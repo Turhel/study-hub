@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from sqlmodel import select
 
 from app.db import get_session
-from app.models import MockExam, Review, UserCalendarEvent
+from app.models import Block, MockExam, Review, Subject, UserCalendarEvent
 from app.schemas import (
     StudyGuideCalendarProjectionDay,
     StudyGuidePreferences,
@@ -61,6 +61,33 @@ def _scheduled_reviews_count(session, target_date: date) -> int:
             .where(Review.status == "pendente")
         ).all()
     )
+
+
+def _scheduled_review_labels(session, target_date: date) -> list[str]:
+    reviews = session.exec(
+        select(Review)
+        .where(Review.proxima_data == target_date)
+        .where(Review.status == "pendente")
+    ).all()
+
+    labels: list[str] = []
+    for review in reviews:
+        subject = session.get(Subject, review.subject_id) if review.subject_id else None
+        block = session.get(Block, review.block_id) if review.block_id else None
+
+        if subject is not None:
+            subject_name = subject.assunto
+            if subject.subassunto:
+                subject_name = f"{subject_name} - {subject.subassunto}"
+            discipline = subject.disciplina
+        else:
+            subject_name = "Revisao sem assunto vinculado"
+            discipline = block.disciplina if block is not None else "Geral"
+
+        block_name = f" / {block.nome}" if block is not None else ""
+        labels.append(f"{discipline} - {subject_name}{block_name}")
+
+    return labels
 
 
 def _mock_exams_for_day(session, target_date: date) -> list[MockExam]:
@@ -118,6 +145,7 @@ def read_calendar_projection() -> list[StudyGuideCalendarProjectionDay]:
             events = _events_for_day(session, target_date)
             status_protecao = _protection_status(events)
             revisoes_count = _scheduled_reviews_count(session, target_date)
+            scheduled_items = _scheduled_review_labels(session, target_date)
             mock_exams = _mock_exams_for_day(session, target_date)
             has_simulado = bool(mock_exams) or any(event.event_type == EVENT_MOCK_EXAM for event in events)
 
@@ -136,6 +164,7 @@ def read_calendar_projection() -> list[StudyGuideCalendarProjectionDay]:
                     revisoes_count=revisoes_count,
                     total_questoes_estimadas=estimated_questions,
                     status_protecao=status_protecao,
+                    scheduled_items=scheduled_items,
                 )
             )
 

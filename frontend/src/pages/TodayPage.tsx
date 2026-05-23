@@ -91,8 +91,8 @@ function buildCalendarGrid(anchorDate: Date): Array<{ date: Date; key: string; i
 }
 
 function calendarEventLabel(value: CalendarEventPayload["event_type"]): string {
-  if (value === "PROVAS_ACADEMICAS") return "Semana de provas";
-  if (value === "VIAGEM_DESCANSO") return "Viagem/descanso";
+  if (value === "PROVAS_ACADEMICAS") return "Semana de Provas";
+  if (value === "VIAGEM_DESCANSO") return "Viagem / Descanso";
   if (value === "SIMULADO_PROG") return "Simulado programado";
   return value;
 }
@@ -547,11 +547,14 @@ export default function TodayPage() {
   }
 
   function submitCalendarEvent() {
+    if (!selectedCalendarDate) {
+      return;
+    }
     createCalendarEventMutation.mutate({
       event_type: calendarEventForm.event_type,
-      start_date: calendarEventForm.start_date,
-      end_date: calendarEventForm.end_date,
-      description: calendarEventForm.description.trim() || null,
+      start_date: selectedCalendarDate,
+      end_date: selectedCalendarDate,
+      description: null,
     });
   }
 
@@ -885,9 +888,9 @@ export default function TodayPage() {
       </motion.section>
 
       {selectedCalendarDate ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <section className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white/10 bg-slate-950 p-6 text-slate-100 shadow-2xl dark:bg-slate-950">
-            <div className="flex flex-col gap-3 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
+          <section className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950/95 p-6 text-slate-100 shadow-2xl dark:bg-slate-950/95">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-5">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Calendario preditivo</p>
                 <h2 className="mt-1 text-2xl font-black text-white">
@@ -899,101 +902,101 @@ export default function TodayPage() {
               </div>
               <button
                 type="button"
-                className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-slate-400"
+                className="grid h-9 w-9 place-items-center rounded-full border border-slate-800 text-sm font-black text-slate-400 transition hover:border-slate-500 hover:text-white"
                 onClick={() => setSelectedCalendarDate(null)}
+                aria-label="Fechar calendario preditivo"
               >
-                Fechar
+                X
               </button>
             </div>
 
-            <div className="mt-5 rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
               {selectedCalendarProjection?.status_protecao === "viagem_descanso" ? (
-                <p className="text-base font-bold text-emerald-200">
-                  Dia de descanso programado. Carga redistribuida sem acumulo.
-                </p>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">Pauta de estudos estimada</p>
+                  <p className="mt-3 text-base font-bold text-emerald-100">
+                    Dia de descanso programado. Carga redistribuida sem acumulo.
+                  </p>
+                </div>
               ) : selectedCalendarProjection ? (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl bg-slate-950 p-4">
-                    <span className="text-xs font-bold uppercase text-slate-500">Revisoes</span>
-                    <strong className="mt-1 block text-2xl text-white">{selectedCalendarProjection.revisoes_count}</strong>
-                    <small className="text-slate-500">agendadas</small>
+                <div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Pauta de estudos estimada</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-500">
+                        {selectedCalendarProjection.revisoes_count} revisao(oes) · {selectedCalendarProjection.total_questoes_estimadas} questoes estimadas · {protectionLabel(selectedCalendarProjection.status_protecao)}
+                      </p>
+                    </div>
+                    {selectedCalendarProjection.has_simulado ? (
+                      <span className="w-fit rounded-full border border-rose-400/40 px-3 py-1 text-xs font-black uppercase tracking-wide text-rose-300">
+                        Simulado
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="rounded-2xl bg-slate-950 p-4">
-                    <span className="text-xs font-bold uppercase text-slate-500">Estimativa</span>
-                    <strong className="mt-1 block text-2xl text-white">
-                      {selectedCalendarProjection.total_questoes_estimadas}
-                    </strong>
-                    <small className="text-slate-500">questoes dentro do teto</small>
-                  </div>
-                  <div className="rounded-2xl bg-slate-950 p-4">
-                    <span className="text-xs font-bold uppercase text-slate-500">Protecao</span>
-                    <strong className="mt-1 block text-sm text-white">
-                      {protectionLabel(selectedCalendarProjection.status_protecao)}
-                    </strong>
-                    <small className="text-slate-500">
-                      {selectedCalendarProjection.has_simulado ? "simulado previsto" : "sem simulado"}
-                    </small>
+
+                  <div className="mt-4 space-y-2">
+                    {selectedCalendarProjection.scheduled_items.length > 0 ? (
+                      selectedCalendarProjection.scheduled_items.map((item, index) => (
+                        <div key={`${item}-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2">
+                          <p className="font-mono text-xs leading-relaxed text-slate-400">{item}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-3 font-mono text-xs leading-relaxed text-slate-500">
+                        Sem conteudo detalhado agendado para este dia.
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm font-semibold text-slate-400">
-                  A previsao fina fica limitada aos proximos 7 dias. Voce ainda pode agendar um bloqueio para esta data.
-                </p>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Pauta de estudos estimada</p>
+                  <p className="mt-3 font-mono text-xs leading-relaxed text-slate-500">
+                    A previsao fina fica limitada aos proximos 7 dias. Voce ainda pode agendar um bloqueio para esta data.
+                  </p>
+                </div>
               )}
             </div>
 
-            <div className="mt-5 rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+            <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Agendar bloqueio/evento</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300">
-                  Tipo
-                  <select
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    value={calendarEventForm.event_type}
-                    onChange={(event) =>
-                      setCalendarEventForm((current) => ({
-                        ...current,
-                        event_type: event.target.value as CalendarEventPayload["event_type"],
-                      }))
-                    }
-                  >
-                    <option value="PROVAS_ACADEMICAS">{calendarEventLabel("PROVAS_ACADEMICAS")}</option>
-                    <option value="VIAGEM_DESCANSO">{calendarEventLabel("VIAGEM_DESCANSO")}</option>
-                    <option value="SIMULADO_PROG">{calendarEventLabel("SIMULADO_PROG")}</option>
-                  </select>
-                </label>
-                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300">
-                  Inicio
-                  <input
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    type="date"
-                    value={calendarEventForm.start_date}
-                    onChange={(event) => setCalendarEventForm((current) => ({ ...current, start_date: event.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300">
-                  Fim
-                  <input
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    type="date"
-                    value={calendarEventForm.end_date}
-                    onChange={(event) => setCalendarEventForm((current) => ({ ...current, end_date: event.target.value }))}
-                  />
-                </label>
-                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300 sm:col-span-2">
-                  Descricao opcional
-                  <input
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                    value={calendarEventForm.description}
-                    onChange={(event) => setCalendarEventForm((current) => ({ ...current, description: event.target.value }))}
-                    placeholder="Ex: semana de provas da faculdade"
-                  />
-                </label>
+                {(["PROVAS_ACADEMICAS", "VIAGEM_DESCANSO"] as const).map((eventType) => {
+                  const active = calendarEventForm.event_type === eventType;
+                  return (
+                    <button
+                      key={eventType}
+                      type="button"
+                      className={[
+                        "rounded-2xl border bg-slate-800 px-4 py-4 text-left transition hover:border-sky-400",
+                        active ? "border-blue-500 shadow-lg shadow-blue-950/30" : "border-slate-700",
+                      ].join(" ")}
+                      onClick={() =>
+                        setCalendarEventForm((current) => ({
+                          ...current,
+                          event_type: eventType,
+                          start_date: selectedCalendarDate,
+                          end_date: selectedCalendarDate,
+                          description: "",
+                        }))
+                      }
+                    >
+                      <span className="block text-sm font-black text-white">
+                        {eventType === "PROVAS_ACADEMICAS" ? "📚 Semana de Provas" : "✈️ Viagem / Descanso"}
+                      </span>
+                      <span className="mt-1 block text-xs font-semibold text-slate-400">
+                        {eventType === "PROVAS_ACADEMICAS"
+                          ? "Congela o avanco do edital neste dia."
+                          : "Zera a carga e redistribui sem acumulo."}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               <div className="mt-5 flex justify-end">
                 <button
                   type="button"
-                  className="rounded-2xl bg-sky-500 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-sky-950/40 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl bg-blue-500 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-950/40 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={createCalendarEventMutation.isPending}
                   onClick={submitCalendarEvent}
                 >

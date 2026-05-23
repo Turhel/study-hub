@@ -184,6 +184,7 @@ class StudyGuideCalendarProjectionDay(BaseModel):
     revisoes_count: int = Field(alias="revisões_count")
     total_questoes_estimadas: int
     status_protecao: str
+    scheduled_items: list[str] = Field(default_factory=list)
 
 
 class UserCalendarEventCreate(BaseModel):
