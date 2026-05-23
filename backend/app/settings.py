@@ -160,3 +160,7 @@ def get_cors_origins() -> list[str]:
         "STUDY_HUB_CORS_ORIGINS",
         ["http://localhost:5173", "http://127.0.0.1:5173"],
     )
+
+
+def get_api_security_token() -> str:
+    return get_env_str("API_SECURITY_TOKEN", "study_hub_local_default_secret_key")

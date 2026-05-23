@@ -1,10 +1,11 @@
 # Roadmap V2.6
 
-## Segurança básica dos endpoints
+## Blindagem basica dos endpoints
 
-- [x] Proteger rotas `/api/*` com cabeçalho `X-API-Token`.
-- [x] Ler o token do backend via `STUDY_HUB_SECRET_TOKEN`.
-- [x] Enviar o token do frontend via `VITE_STUDY_HUB_SECRET_TOKEN`.
-- [x] Manter bypass em testes automatizados para preservar a suíte local.
+- [x] Proteger rotas `/api/*` com cabecalho `X-API-Key`.
+- [x] Ler o token do backend via `API_SECURITY_TOKEN`.
+- [x] Enviar o token do frontend via `VITE_API_SECURITY_TOKEN`.
+- [x] Liberar `/health`, `/docs`, `/openapi.json` e preflight `OPTIONS`.
+- [x] Manter bypass em testes automatizados para preservar a suite local.
 
-Observação: esta camada reduz acesso casual e robôs de indexação. Como o token do frontend fica público no bundle Vite, ela não substitui autenticação real.
+Observacao: esta camada reduz acesso casual e robos de indexacao. Como o token do frontend fica publico no bundle Vite, ela nao substitui autenticacao real.

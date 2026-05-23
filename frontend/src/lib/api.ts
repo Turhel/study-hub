@@ -52,11 +52,11 @@ import type {
 import type { TimerSessionPayload } from "./timerTypes";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
-const API_TOKEN = import.meta.env.VITE_STUDY_HUB_SECRET_TOKEN ?? "local_dev_secret_token_2026";
+const API_SECURITY_TOKEN = import.meta.env.VITE_API_SECURITY_TOKEN ?? "study_hub_local_default_secret_key";
 
 function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set("X-API-Token", API_TOKEN);
+  headers.set("X-API-Key", API_SECURITY_TOKEN);
 
   return fetch(input, {
     ...init,

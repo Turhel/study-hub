@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-import os
 import sys
 
 from fastapi import FastAPI, Request
@@ -25,7 +24,7 @@ from app.routes.stats import router as stats_router
 from app.routes.study_guide import router as study_guide_router
 from app.routes.study_plan import router as study_plan_router
 from app.routes.system import router as system_router
-from app.settings import get_auto_sync_structural_on_startup, get_cors_origins, load_env_file
+from app.settings import get_api_security_token, get_auto_sync_structural_on_startup, get_cors_origins, load_env_file
 from app.routes.today import router as today_router
 from app.routes.timer_sessions import router as timer_sessions_router
 
@@ -57,19 +56,17 @@ def _api_token_check_enabled() -> bool:
     return "pytest" not in sys.modules
 
 
-def _expected_api_token() -> str:
-    return os.getenv("STUDY_HUB_SECRET_TOKEN") or "local_dev_secret_token_2026"
-
-
 @app.middleware("http")
 async def require_api_token(request: Request, call_next):
-    if request.url.path.startswith("/api") and request.method != "OPTIONS" and _api_token_check_enabled():
-        supplied_token = request.headers.get("X-API-Token")
-        if supplied_token != _expected_api_token():
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "Acesso negado: Token inválido ou ausente."},
-            )
+    public_paths = {"/health", "/docs", "/openapi.json"}
+    is_public_request = request.method == "OPTIONS" or request.url.path in public_paths
+    should_protect = request.url.path.startswith("/api") and not is_public_request and _api_token_check_enabled()
+
+    if should_protect and request.headers.get("X-API-Key") != get_api_security_token():
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Unauthorized Access - Study Hub Secured"},
+        )
     return await call_next(request)
 
 app.include_router(health_router)
