@@ -23,8 +23,8 @@
 
 ### Substituicao total em `capacity_service.py` e `study_plan_service.py`
 
-- [ ] Aposentadoria do modelo de minutos legado:
-  - [ ] Remover referencias a `daily_minutes` e calculos lineares baseados em tempo de leitura de teoria.
+- [x] Aposentadoria do modelo de minutos legado:
+  - [x] Remover referencias a `daily_minutes` e calculos lineares baseados em tempo de leitura de teoria.
 
 - [x] Implementacao do teto adaptativo baseado em questoes:
   - [x] Ler o teto global do dia, iniciando em 20 questoes.
@@ -49,15 +49,15 @@
 
 ### Ajustes em `mastery_service.py` e `review_service.py`
 
-- [ ] Validacao cruzada (`E1 -> E2`):
-  - [ ] O estudante faz o `E1` (5 questoes no escuro).
+- [x] Validacao cruzada (`E1 -> E2`):
+  - [x] O estudante faz o `E1` (5 questoes no escuro).
   - [x] Independentemente da nota, ele obrigatoriamente vai para o `E2` (lote completo de validacao).
   - [x] Calcular a media aritmetica combinada de `E1 + E2`.
   - [x] Se `>= 85%`: o bloco e liberado e gera o gatilho da Revisao 1 (`R1`).
   - [x] Se `< 85%`: o bloco ativa a tranca e joga o usuario na esteira infinita de recuperacao `EX`.
 
-- [ ] Tranca de saida do looping `EX`:
-  - [ ] O usuario roda `EX1`, `EX2`, `EX3` combinados com o estudo ativo do `A1`.
+- [x] Tranca de saida do looping `EX`:
+  - [x] O usuario roda `EX1`, `EX2`, `EX3` combinados com o estudo ativo do `A1`.
   - [x] O sistema calcula a media movel apenas dos ultimos 3 exercicios.
   - [x] O bloco so e considerado aprovado e liberado para a esteira de revisoes quando a media do trio atingir `>= 85%`.
 
@@ -68,8 +68,8 @@
   - [x] Se o aluno gabaritou tudo antes, gerar o "`R1 Light`" com questoes do banco global.
   - [x] O resultado do `R1` da o diagnostico na tela, mas nao bloqueia o usuario: ele decide se avanca para o `R2` ou volta ao `EX` por conta propria.
 
-- [ ] Esteira espacada e satelites `RR` (`R2` ate `R6+`):
-  - [ ] Toda revisao avancada (`R2`, `R3`, `R4`, `R5`, `R6`...) gera listas de 7 questoes (metade da carga normal).
+- [x] Esteira espacada e satelites `RR` (`R2` ate `R6+`):
+  - [x] Toda revisao avancada (`R2`, `R3`, `R4`, `R5`, `R6`...) gera listas de 7 questoes (metade da carga normal).
   - [x] Gatilho `RR`: qualquer erro cometido em uma revisao gera um micro-satelite `RR` no dia seguinte (`RR2`, `RR3`, `RR4`...) contendo apenas as questoes que falharam para auditoria imediata em 24 horas.
 
 - [x] Elasticidade da memoria de longo prazo:

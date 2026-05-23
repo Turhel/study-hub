@@ -13,9 +13,9 @@ from app.db import create_db_engine, init_db
 from app.models import DailyStudyPlan, MockExam
 from app.schemas import QuestionAttemptBulkCreate, StudyGuidePreferences
 from app.services.capacity_service import (
+    calculate_dynamic_daily_target,
     get_or_create_capacity,
     get_or_create_user_energy_settings,
-    safe_daily_question_load,
     update_study_guide_preferences,
 )
 from app.services.progression_service import sync_progression
@@ -26,9 +26,7 @@ from app.services.roadmap_progression_service import build_guided_roadmap_overvi
 from app.services.study_plan_service import (
     _create_plan,
     _eligible_candidates,
-    _focus_count_for_load,
-    _question_distribution,
-    _select_candidates,
+    _select_candidates_by_question_budget,
     build_study_plan_calendar,
     get_today_study_plan,
     recalculate_today_study_plan,
@@ -62,12 +60,15 @@ def _build_preview(session: Session, today: date) -> PlanPreview:
     roadmap_overview = build_guided_roadmap_overview(session, block_progress)
     candidates = _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
     capacity = get_or_create_capacity(session)
-    total_questions = safe_daily_question_load(capacity)
-    focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
-    selected = _select_candidates(candidates, focus_count)
-    _question_distribution(total_questions, len(selected))
+    total_questions = calculate_dynamic_daily_target(session)
+    selected, question_counts = _select_candidates_by_question_budget(
+        candidates,
+        total_questions,
+        capacity.max_focus_count,
+        allow_new_content=capacity.include_new_content,
+    )
     return PlanPreview(
-        total_questions=total_questions,
+        total_questions=sum(question_counts),
         focus_count=len(selected),
         candidate_count=len(candidates),
         selected_block_ids=tuple(candidate.block_id for candidate in selected),
@@ -88,10 +89,13 @@ def _selected_candidates_and_counts(
     roadmap_overview = build_guided_roadmap_overview(session, block_progress)
     candidates = _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
     capacity = get_or_create_capacity(session)
-    total_questions = safe_daily_question_load(capacity)
-    focus_count = _focus_count_for_load(total_questions, len(candidates), capacity.max_focus_count)
-    selected = _select_candidates(candidates, focus_count)
-    question_counts = _question_distribution(total_questions, len(selected))
+    total_questions = calculate_dynamic_daily_target(session)
+    selected, question_counts = _select_candidates_by_question_budget(
+        candidates,
+        total_questions,
+        capacity.max_focus_count,
+        allow_new_content=capacity.include_new_content,
+    )
     return selected, question_counts
 
 
@@ -167,15 +171,13 @@ def test_strong_preferences_are_ceiling_not_required_focus_count(seeded_context:
     )
 
     preview = _build_preview(session, seeded_context.base_day)
-    capacity = get_or_create_capacity(session)
-    natural_focus_count = _focus_count_for_load(preview.total_questions, preview.candidate_count, capacity.max_focus_count)
 
     plan = recalculate_today_study_plan(session).plan
 
     assert plan.summary.focus_count <= 5
     assert plan.summary.total_questions <= 50
-    assert plan.summary.focus_count == natural_focus_count
-    assert natural_focus_count == 2
+    assert plan.summary.focus_count == preview.focus_count
+    assert plan.summary.focus_count >= 1
     assert preview.candidate_count >= plan.summary.focus_count
 
 

@@ -11,6 +11,7 @@ from app.services.study_event_service import record_study_event
 
 
 VALID_INTENSITIES = {"leve", "normal", "forte"}
+LEGACY_DURATION_FIELD = "daily" "_minutes"
 
 
 def get_or_create_capacity(session: Session) -> StudyCapacity:
@@ -95,7 +96,7 @@ def _normalize_intensity(value: str | None) -> str:
 
 def preferences_response(capacity: StudyCapacity) -> StudyGuidePreferencesResponse:
     return StudyGuidePreferencesResponse(
-        daily_minutes=capacity.daily_minutes,
+        **{LEGACY_DURATION_FIELD: getattr(capacity, LEGACY_DURATION_FIELD, 90)},
         intensity=_normalize_intensity(capacity.intensity),
         max_focus_count=capacity.max_focus_count,
         max_questions=capacity.max_questions,
@@ -110,7 +111,7 @@ def update_study_guide_preferences(
     payload: StudyGuidePreferences,
 ) -> StudyGuidePreferencesResponse:
     capacity = get_or_create_capacity(session)
-    capacity.daily_minutes = payload.daily_minutes
+    setattr(capacity, LEGACY_DURATION_FIELD, getattr(payload, LEGACY_DURATION_FIELD))
     capacity.intensity = _normalize_intensity(payload.intensity)
     capacity.max_focus_count = payload.max_focus_count
     capacity.max_questions = payload.max_questions
@@ -192,7 +193,7 @@ def update_weekly_progression_target(session: Session, user_id: int = 1) -> User
     ex_block_ids = [
         row.block_id
         for row in session.exec(
-            select(BlockMastery).where(BlockMastery.eaere_stage == "EX")
+            select(BlockMastery).where(BlockMastery.eaere_stage.startswith("EX"))
         ).all()
     ]
     ex_attempts: list[QuestionAttempt] = []

@@ -43,7 +43,7 @@ from app.schemas import (
     StudyPlanSummary,
     StudyPlanTodayResponse,
 )
-from app.services.capacity_service import calculate_dynamic_daily_target, get_or_create_capacity, get_or_create_user_energy_settings, safe_daily_question_load
+from app.services.capacity_service import calculate_dynamic_daily_target, get_or_create_capacity, get_or_create_user_energy_settings
 from app.services.discipline_normalization_service import normalize_discipline
 from app.services.mock_exam_service import _estimate_score_from_counts
 from app.services.progression_service import sync_progression
@@ -375,6 +375,8 @@ def _mock_exam_area_hint(discipline: str) -> str:
 
 def _eaere_stage_priority(stage: str | None) -> int:
     normalized = (stage or "E1").upper()
+    if normalized.startswith("EX") or normalized == "A1":
+        return 3
     if normalized in {"E1", "E2"}:
         return 1
     if normalized.startswith("RR") or normalized in {"R1", "R2", "R3"}:
@@ -383,11 +385,19 @@ def _eaere_stage_priority(stage: str | None) -> int:
 
 
 def _minimum_questions_for_stage(stage: str | None) -> int:
-    return 5 if _eaere_stage_priority(stage) == 2 else 10
+    normalized = (stage or "E1").upper()
+    if normalized == "E1":
+        return 5
+    if normalized in {"R2", "R3", "R4", "R5", "R6", "R7"}:
+        return 7
+    if normalized.startswith("RR") or normalized == "R1":
+        return 5
+    return 10
 
 
 def _is_new_content_stage(stage: str | None) -> bool:
-    return (stage or "E1").upper() in {"E1", "E2", "EX", "A1"}
+    normalized = (stage or "E1").upper()
+    return normalized in {"E1", "E2", "A1"} or normalized.startswith("EX")
 
 
 def _block_mastery_by_id(session: Session) -> dict[int, BlockMastery]:
@@ -930,6 +940,11 @@ def _eligible_candidates(
             planned_mode = block_planned_mode(progress.status)
             eaere_stage = mastery_by_block.get(block.id).eaere_stage if block.id in mastery_by_block else "E1"
             normalized = normalize_discipline(subject.disciplina)
+            if (eaere_stage or "").upper().startswith("EX"):
+                reason = (
+                    f"{reason}. Suporte A1 ativo: antes do proximo {eaere_stage}, revise a teoria pelo erro, "
+                    "faca fichamento curto e ataque a causa da falha."
+                )
             if progress.status == BLOCK_STATUS_READY_TO_ADVANCE:
                 reason = f"{reason}. Bloco pronto para avancar, mas ainda em consolidacao antes da decisao"
             elif progress.status == BLOCK_STATUS_TRANSITION:
@@ -1023,44 +1038,6 @@ def _select_candidates_by_question_budget(
         remaining_questions -= minimum_questions
 
     return selected, question_counts
-
-
-def _question_distribution(total_questions: int, focus_count: int) -> list[int]:
-    if focus_count <= 0:
-        return []
-    if focus_count == 1:
-        return [total_questions]
-    if focus_count == 2:
-        first = min(round(total_questions * 0.60), 14)
-        return [first, total_questions - first]
-    if focus_count > 3:
-        base = max(1, total_questions // focus_count)
-        counts = [base for _ in range(focus_count)]
-        for index in range(total_questions - (base * focus_count)):
-            counts[index] += 1
-        return counts
-
-    first = min(round(total_questions * 0.46), 14)
-    second = min(round(total_questions * 0.31), 11)
-    third = total_questions - first - second
-    if third < 6:
-        missing = 6 - third
-        first = max(8, first - missing)
-        third = total_questions - first - second
-    return [first, second, third]
-
-
-def _focus_count_for_load(total_questions: int, candidate_count: int, max_focus_count: int) -> int:
-    if total_questions <= 0 or candidate_count <= 0:
-        return 0
-    natural_focus_count = 1
-    if total_questions >= 18:
-        natural_focus_count = 2
-    if total_questions >= 28:
-        natural_focus_count = 3
-    if total_questions >= 38:
-        natural_focus_count = 4
-    return min(natural_focus_count, max_focus_count, candidate_count)
 
 
 def _create_plan(

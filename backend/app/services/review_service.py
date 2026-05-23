@@ -9,6 +9,10 @@ from app.models import Block, BlockSubject, MockExamQuestion, QuestionAttempt, R
 from app.services.study_event_service import record_study_event
 
 
+ADVANCED_REVIEW_STAGES = {"R2", "R3", "R4", "R5", "R6", "R7"}
+ADVANCED_REVIEW_QUESTION_TARGET = 7
+
+
 @dataclass(frozen=True)
 class R1TribunalQuestion:
     question_id: int | None
@@ -46,6 +50,10 @@ def review_interval_days(acertou: bool, confianca: int | None) -> int:
     if confianca is not None and confianca >= 5:
         return 7
     return 3
+
+
+def review_question_target_for_stage(stage: str | None) -> int:
+    return ADVANCED_REVIEW_QUESTION_TARGET if (stage or "").upper() in ADVANCED_REVIEW_STAGES else 5
 
 
 def generate_r1_tribunal_session(session: Session, block_id: int, user_id: int = 1) -> R1TribunalSession:

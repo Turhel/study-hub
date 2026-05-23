@@ -30,6 +30,15 @@ def _attempt_accuracy(attempts: list[QuestionAttempt]) -> float | None:
     return sum(1 for attempt in attempts if attempt.acertou) / len(attempts)
 
 
+def _stage_is_new_content(stage: str) -> bool:
+    normalized = stage.upper()
+    return normalized in {"E1", "E2", "A1"} or normalized.startswith("EX")
+
+
+def _ex_stage_from_batch_count(batch_count: int) -> str:
+    return f"EX{max(batch_count, 1)}"
+
+
 def _recent_attempt_batches(session: Session, block_id: int) -> list[list[QuestionAttempt]]:
     attempts = session.exec(
         select(QuestionAttempt)
@@ -81,7 +90,7 @@ def _new_content_exhausted_for_discipline(session: Session, block_id: int) -> bo
     mastery_rows = session.exec(select(BlockMastery).where(BlockMastery.block_id.in_(block_ids))).all()
     mastery_by_block_id = {row.block_id: (row.eaere_stage or "E1").upper() for row in mastery_rows}
     for candidate_block_id in block_ids:
-        if mastery_by_block_id.get(candidate_block_id, "E1") in {"E1", "E2", "EX", "A1"}:
+        if _stage_is_new_content(mastery_by_block_id.get(candidate_block_id, "E1")):
             return False
     return True
 
@@ -178,6 +187,9 @@ def _apply_eaere_transition(
     stage = (mastery.eaere_stage or "E1").upper()
 
     if stage == "E1":
+        if len(current_attempts) != 5:
+            mastery.status = "em_andamento"
+            return
         mastery.eaere_stage = "E2"
         mastery.status = "em_andamento"
         return
@@ -192,11 +204,11 @@ def _apply_eaere_transition(
             mastery.status = "aprovado"
             mastery.consecutive_failures = 0
         else:
-            mastery.eaere_stage = "EX"
+            mastery.eaere_stage = "EX1"
             mastery.status = STATUS_EM_RISCO
         return
 
-    if stage == "EX":
+    if stage.startswith("EX"):
         batches = _recent_attempt_batches(session, block_id)
         batch_accuracies = [
             accuracy
@@ -211,7 +223,7 @@ def _apply_eaere_transition(
                 mastery.status = "aprovado"
                 mastery.consecutive_failures = 0
                 return
-        mastery.eaere_stage = "EX"
+        mastery.eaere_stage = _ex_stage_from_batch_count(len(batches))
         mastery.status = STATUS_EM_RISCO
         return
 
