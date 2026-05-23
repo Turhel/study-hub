@@ -9,7 +9,9 @@ from app.core.rules import STATUS_EM_RISCO, score_dominio, status_aprovacao_bloc
 from app.models import Block, BlockMastery, MockExamQuestion, QuestionAttempt, Review
 
 
-EAERE_REVIEW_STAGES = ["R1", "R2", "R3", "R4", "R5", "R6"]
+EAERE_REVIEW_STAGES = ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]
+ADVANCED_REVIEW_BASE_INTERVAL_DAYS = 60
+ADVANCED_REVIEW_ELASTIC_MULTIPLIER = 1.5
 
 
 def _difficulty_from_peer_accuracy(value: float | None) -> str | None:
@@ -61,6 +63,68 @@ def _regress_review_stage(stage: str) -> str:
         return normalized
     index = EAERE_REVIEW_STAGES.index(normalized)
     return EAERE_REVIEW_STAGES[max(index - 1, 0)]
+
+
+def _new_content_exhausted_for_discipline(session: Session, block_id: int) -> bool:
+    block = session.get(Block, block_id)
+    if block is None:
+        return False
+
+    discipline_blocks = session.exec(select(Block).where(Block.disciplina == block.disciplina)).all()
+    if not discipline_blocks:
+        return False
+
+    block_ids = [item.id for item in discipline_blocks if item.id is not None]
+    if not block_ids:
+        return False
+
+    mastery_rows = session.exec(select(BlockMastery).where(BlockMastery.block_id.in_(block_ids))).all()
+    mastery_by_block_id = {row.block_id: (row.eaere_stage or "E1").upper() for row in mastery_rows}
+    for candidate_block_id in block_ids:
+        if mastery_by_block_id.get(candidate_block_id, "E1") in {"E1", "E2", "EX", "A1"}:
+            return False
+    return True
+
+
+def _schedule_elastic_long_term_review(
+    session: Session,
+    *,
+    block_id: int,
+    attempts: list[QuestionAttempt],
+) -> None:
+    next_interval = round(ADVANCED_REVIEW_BASE_INTERVAL_DAYS * ADVANCED_REVIEW_ELASTIC_MULTIPLIER)
+    next_date = date.today() + timedelta(days=next_interval)
+    existing = session.exec(
+        select(Review)
+        .where(Review.block_id == block_id)
+        .where(Review.status == "pendente")
+        .order_by(Review.proxima_data.desc(), Review.id.desc())
+    ).first()
+    new_content_exhausted = _new_content_exhausted_for_discipline(session, block_id)
+
+    if existing is None:
+        session.add(
+            Review(
+                block_id=block_id,
+                subject_id=attempts[-1].subject_id if attempts else None,
+                ultima_data=date.today(),
+                proxima_data=next_date,
+                status="pendente",
+                resultado="elastic_long_term",
+                intervalo_dias=next_interval,
+            )
+        )
+        return
+
+    existing_interval = existing.intervalo_dias or 1
+    if existing_interval > next_interval and not new_content_exhausted:
+        return
+
+    existing.ultima_data = date.today()
+    existing.proxima_data = next_date
+    existing.resultado = "elastic_long_term"
+    existing.intervalo_dias = next_interval
+    session.add(existing)
 
 
 def _schedule_rr_satellite(
@@ -151,7 +215,7 @@ def _apply_eaere_transition(
         mastery.status = STATUS_EM_RISCO
         return
 
-    if stage in {"R2", "R3", "R4", "R5", "R6"} and any(not attempt.acertou for attempt in current_attempts):
+    if stage in {"R2", "R3", "R4", "R5", "R6", "R7"} and any(not attempt.acertou for attempt in current_attempts):
         _schedule_rr_satellite(session, block_id=block_id, stage=stage, attempts=current_attempts)
 
     if stage in {"R4", "R5"} and current_accuracy < 0.75:
@@ -165,6 +229,8 @@ def _apply_eaere_transition(
 
     if stage in EAERE_REVIEW_STAGES and current_accuracy >= 0.85:
         mastery.consecutive_failures = 0
+        if stage in {"R6", "R7"}:
+            _schedule_elastic_long_term_review(session, block_id=block_id, attempts=current_attempts)
         mastery.eaere_stage = _advance_review_stage(stage)
         mastery.status = "aprovado"
 

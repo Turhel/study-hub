@@ -12,7 +12,12 @@ from sqlmodel import Session, select
 from app.db import create_db_engine, init_db
 from app.models import DailyStudyPlan, MockExam
 from app.schemas import QuestionAttemptBulkCreate, StudyGuidePreferences
-from app.services.capacity_service import get_or_create_capacity, safe_daily_question_load, update_study_guide_preferences
+from app.services.capacity_service import (
+    get_or_create_capacity,
+    get_or_create_user_energy_settings,
+    safe_daily_question_load,
+    update_study_guide_preferences,
+)
 from app.services.progression_service import sync_progression
 from app.services.question_attempt_service import register_question_attempts_bulk
 from app.services.repo_seed_service import sync_structural_seed_into_session
@@ -364,6 +369,10 @@ def test_calendar_carry_over_when_today_has_pending(seeded_context: SeededStudyP
             include_new_content=True,
         ),
     )
+    energy_settings = get_or_create_user_energy_settings(session)
+    energy_settings.current_daily_target_questions = 25
+    session.add(energy_settings)
+    session.commit()
     selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
 
     first_subject_id = selected[0].subject_id
@@ -533,6 +542,10 @@ def test_calendar_mock_exam_recommendation_suggests_area_when_ready(
             include_new_content=True,
         ),
     )
+    energy_settings = get_or_create_user_energy_settings(session)
+    energy_settings.current_daily_target_questions = 25
+    session.add(energy_settings)
+    session.commit()
     selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
     for offset in range(7):
         session_day = seeded_context.base_day - timedelta(days=offset)
@@ -590,6 +603,10 @@ def test_calendar_mock_exam_recommendation_limits_low_daily_minutes_to_mini(
             include_new_content=True,
         ),
     )
+    energy_settings = get_or_create_user_energy_settings(session)
+    energy_settings.current_daily_target_questions = 15
+    session.add(energy_settings)
+    session.commit()
     selected, question_counts = _create_plan_for_day(session, seeded_context.base_day)
     for offset in range(7):
         session_day = seeded_context.base_day - timedelta(days=offset)

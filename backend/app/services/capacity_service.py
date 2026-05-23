@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+import json
+from datetime import date, datetime, timedelta
 
 from sqlmodel import Session, select
 
-from app.models import MockExam, StudyCapacity, UserEnergySettings
+from app.models import BlockMastery, MockExam, QuestionAttempt, StudyCapacity, StudyEvent, UserEnergySettings
 from app.schemas import StudyGuidePreferences, StudyGuidePreferencesResponse
 
 
@@ -107,32 +108,81 @@ def calculate_dynamic_daily_target(session: Session, user_id: int = 1) -> int:
     return max(int(target), 1)
 
 
+def _attempt_accuracy(attempts: list[QuestionAttempt]) -> float | None:
+    if not attempts:
+        return None
+    return sum(1 for attempt in attempts if attempt.acertou) / len(attempts)
+
+
+def _dia_leve_uses_last_14_days(session: Session, settings: UserEnergySettings) -> int:
+    since = datetime.utcnow() - timedelta(days=14)
+    events = session.exec(
+        select(StudyEvent)
+        .where(StudyEvent.created_at >= since)
+        .where(StudyEvent.event_type.in_(["energy_settings_update", "study_capacity_update"]))
+        .order_by(StudyEvent.created_at.desc())
+    ).all()
+
+    uses = 0
+    for event in events:
+        try:
+            metadata = json.loads(event.metadata_json or "{}")
+        except json.JSONDecodeError:
+            metadata = {}
+        if metadata.get("mode_dia_leve") is True:
+            uses += 1
+    if settings.mode_dia_leve:
+        uses = max(uses, 1)
+    return uses
+
+
+def update_weekly_progression_target(session: Session, user_id: int = 1) -> UserEnergySettings:
+    settings = get_or_create_user_energy_settings(session, user_id=user_id)
+    today = date.today()
+    since = today - timedelta(days=14)
+    attempts = session.exec(select(QuestionAttempt).where(QuestionAttempt.data >= since)).all()
+    global_accuracy = _attempt_accuracy(attempts)
+
+    ex_block_ids = [
+        row.block_id
+        for row in session.exec(
+            select(BlockMastery).where(BlockMastery.eaere_stage == "EX")
+        ).all()
+    ]
+    ex_attempts: list[QuestionAttempt] = []
+    if ex_block_ids:
+        ex_attempts = session.exec(
+            select(QuestionAttempt)
+            .where(QuestionAttempt.data >= since)
+            .where(QuestionAttempt.block_id.in_(ex_block_ids))
+        ).all()
+    ex_accuracy = _attempt_accuracy(ex_attempts)
+    dia_leve_uses = _dia_leve_uses_last_14_days(session, settings)
+
+    target = settings.current_daily_target_questions
+    if global_accuracy is not None and global_accuracy >= 0.85 and dia_leve_uses == 0:
+        target = min(45, target + 5)
+    if dia_leve_uses > 3 or (ex_accuracy is not None and ex_accuracy < 0.75):
+        target = max(15, target - 5)
+
+    settings.current_daily_target_questions = target
+    session.add(settings)
+    session.commit()
+    session.refresh(settings)
+    return settings
+
+
 def safe_daily_question_load(capacity: StudyCapacity) -> int:
-    base_load = 18 + (capacity.current_load_level * 4)
-
-    if capacity.recent_fatigue_score >= 0.65:
-        base_load -= 4
-    if capacity.recent_overtime_rate >= 0.45:
-        base_load -= 4
-    if capacity.recent_completion_rate >= 0.82 and capacity.recent_fatigue_score <= 0.35:
-        base_load += 4
-
     intensity = _normalize_intensity(capacity.intensity)
-    if intensity == "leve":
-        base_load = round(base_load * 0.72)
-    elif intensity == "forte":
-        base_load = round(base_load * 1.18)
-
-    seconds_per_question = {
-        "leve": 270,
-        "normal": 210,
-        "forte": 180,
-    }[intensity]
-    questions_by_time = max(4, (capacity.daily_minutes * 60) // seconds_per_question)
     review_reserve = 0.82 if capacity.include_reviews else 1.0
-    adjusted_load = int(min(base_load, questions_by_time) * review_reserve)
+    base_load_by_intensity = {
+        "leve": 15,
+        "normal": 20,
+        "forte": 30,
+    }
+    adjusted_load = int(base_load_by_intensity[intensity] * review_reserve)
 
-    lower_bound = 8 if intensity == "leve" or capacity.daily_minutes < 45 else 12
+    lower_bound = 8 if intensity == "leve" else 12
     conservative_cap = 45 if intensity == "forte" else 35
     bounded_cap = min(capacity.max_questions, conservative_cap)
     return max(1, min(max(adjusted_load, lower_bound), bounded_cap))

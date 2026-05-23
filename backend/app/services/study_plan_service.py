@@ -465,13 +465,14 @@ def _build_mock_exam_recommendation(
         )
 
     accuracy = sum(1 for attempt in recent_attempts if attempt.acertou) / len(recent_attempts)
-    if capacity.daily_minutes < 90 or accuracy < 0.55:
+    daily_question_target = calculate_dynamic_daily_target(session)
+    if daily_question_target < 20 or accuracy < 0.55:
         return MockExamRecommendationSignal(
             recommended=True,
             kind="mini",
             title="Mini-simulado sugerido",
             reason=(
-                "O ritmo atual ja permite treino de prova, mas a recomendacao segue curta por carga diaria menor "
+                "O ritmo atual ja permite treino de prova, mas a recomendacao segue curta por teto diario menor "
                 "ou acuracia recente abaixo de 55%."
             ),
         )
@@ -487,7 +488,7 @@ def _build_mock_exam_recommendation(
         key=lambda item: ((item[1][1] / item[1][0]) if item[1][0] else 1.0, -item[1][0]),
     )[0]
 
-    if capacity.daily_minutes >= 150:
+    if daily_question_target >= 35:
         kind = _mock_exam_area_hint(weakest_discipline)
         title = "ENEM Dia 2 sugerido" if kind == "enem_day_2" else "ENEM Dia 1 sugerido"
         reason = (

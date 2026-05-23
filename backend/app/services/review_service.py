@@ -1,11 +1,29 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, timedelta
 
 from sqlmodel import Session, select
 
-from app.models import Block, QuestionAttempt, Review, Subject
+from app.models import Block, BlockSubject, MockExamQuestion, QuestionAttempt, Review, Subject
 from app.services.study_event_service import record_study_event
+
+
+@dataclass(frozen=True)
+class R1TribunalQuestion:
+    question_id: int | None
+    attempt_id: int | None
+    subject_id: int | None
+    source: str
+    prompt_markdown: str | None = None
+    notes: str | None = None
+
+
+@dataclass(frozen=True)
+class R1TribunalSession:
+    block_id: int
+    mode: str
+    questions: list[R1TribunalQuestion]
 
 
 def _subject_label(subject: Subject | None, subject_id: int | None) -> str:
@@ -28,6 +46,93 @@ def review_interval_days(acertou: bool, confianca: int | None) -> int:
     if confianca is not None and confianca >= 5:
         return 7
     return 3
+
+
+def generate_r1_tribunal_session(session: Session, block_id: int, user_id: int = 1) -> R1TribunalSession:
+    del user_id  # O ecossistema local ainda usa usuario unico.
+
+    saved_failures = session.exec(
+        select(MockExamQuestion)
+        .where(MockExamQuestion.block_id == block_id)
+        .where(MockExamQuestion.source_type == "saved_bank")
+        .where(MockExamQuestion.is_correct == False)  # noqa: E712
+        .order_by(MockExamQuestion.answered_at.desc(), MockExamQuestion.id.desc())
+    ).all()
+    if saved_failures:
+        return R1TribunalSession(
+            block_id=block_id,
+            mode="tribunal",
+            questions=[
+                R1TribunalQuestion(
+                    question_id=question.id,
+                    attempt_id=None,
+                    subject_id=question.subject_id,
+                    source="saved_bank",
+                    prompt_markdown=question.prompt_markdown,
+                    notes=question.notes,
+                )
+                for question in saved_failures
+            ],
+        )
+
+    failed_attempts = session.exec(
+        select(QuestionAttempt)
+        .where(QuestionAttempt.block_id == block_id)
+        .where(QuestionAttempt.acertou == False)  # noqa: E712
+        .order_by(QuestionAttempt.data.desc(), QuestionAttempt.id.desc())
+    ).all()
+    if failed_attempts:
+        return R1TribunalSession(
+            block_id=block_id,
+            mode="tribunal",
+            questions=[
+                R1TribunalQuestion(
+                    question_id=None,
+                    attempt_id=attempt.id,
+                    subject_id=attempt.subject_id,
+                    source=attempt.source or "question_attempt",
+                    notes=attempt.observacoes,
+                )
+                for attempt in failed_attempts
+            ],
+        )
+
+    subject_ids = [
+        row.subject_id
+        for row in session.exec(select(BlockSubject).where(BlockSubject.block_id == block_id)).all()
+    ]
+    light_query = (
+        select(MockExamQuestion)
+        .where(MockExamQuestion.block_id == block_id)
+        .where(MockExamQuestion.source_type != "saved_bank")
+        .order_by(MockExamQuestion.id.desc())
+        .limit(5)
+    )
+    light_questions = session.exec(light_query).all()
+    if not light_questions and subject_ids:
+        light_questions = session.exec(
+            select(MockExamQuestion)
+            .where(MockExamQuestion.subject_id.in_(subject_ids))
+            .where(MockExamQuestion.source_type != "saved_bank")
+            .order_by(MockExamQuestion.id.desc())
+            .limit(5)
+        ).all()
+
+    return R1TribunalSession(
+        block_id=block_id,
+        mode="r1_light",
+        questions=[
+            R1TribunalQuestion(
+                question_id=question.id,
+                attempt_id=None,
+                subject_id=question.subject_id,
+                source=question.source_type,
+                prompt_markdown=question.prompt_markdown,
+                notes=question.notes,
+            )
+            for question in light_questions
+        ],
+    )
 
 
 def upsert_review_from_attempt(session: Session, attempt: QuestionAttempt) -> Review | None:

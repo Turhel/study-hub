@@ -39,11 +39,11 @@
 
 ### Algoritmo de Sobrecarga Progressiva Semanal
 
-- [ ] Expansao de carga:
-  - [ ] Se por 2 semanas seguidas o aproveitamento global for `>= 85%` sem acionamento do Modo Dia Leve, o teto diario sobe `+5` questoes automaticamente ate o limite saudavel (plato de 35-45q).
+- [x] Expansao de carga:
+  - [x] Se por 2 semanas seguidas o aproveitamento global for `>= 85%` sem acionamento do Modo Dia Leve, o teto diario sobe `+5` questoes automaticamente ate o limite saudavel (plato de 35-45q).
 
-- [ ] Recuo por fadiga cronica:
-  - [ ] Se o Modo Dia Leve for usado repetidamente ou o aproveitamento cair de `75%`, encolher o teto diario em `5` questoes na semana seguinte.
+- [x] Recuo por fadiga cronica:
+  - [x] Se o Modo Dia Leve for usado repetidamente ou o aproveitamento cair de `75%`, encolher o teto diario em `5` questoes na semana seguinte.
 
 ## 3. Esteira Refinada do Metodo EAERE & Revisoes
 
@@ -63,18 +63,18 @@
 
 ### Mecanica de Revisoes Avancadas e Satelites `RR`
 
-- [ ] `R1`: o tribunal do erro:
-  - [ ] Puxar exclusivamente as questoes erradas no `E1`/`E2`/`EX` salvas via gaveta lateral para o aluno refazer.
-  - [ ] Se o aluno gabaritou tudo antes, gerar o "`R1 Light`" com questoes do banco global.
-  - [ ] O resultado do `R1` da o diagnostico na tela, mas nao bloqueia o usuario: ele decide se avanca para o `R2` ou volta ao `EX` por conta propria.
+- [x] `R1`: o tribunal do erro:
+  - [x] Puxar exclusivamente as questoes erradas no `E1`/`E2`/`EX` salvas via gaveta lateral para o aluno refazer.
+  - [x] Se o aluno gabaritou tudo antes, gerar o "`R1 Light`" com questoes do banco global.
+  - [x] O resultado do `R1` da o diagnostico na tela, mas nao bloqueia o usuario: ele decide se avanca para o `R2` ou volta ao `EX` por conta propria.
 
 - [ ] Esteira espacada e satelites `RR` (`R2` ate `R6+`):
   - [ ] Toda revisao avancada (`R2`, `R3`, `R4`, `R5`, `R6`...) gera listas de 7 questoes (metade da carga normal).
   - [x] Gatilho `RR`: qualquer erro cometido em uma revisao gera um micro-satelite `RR` no dia seguinte (`RR2`, `RR3`, `RR4`...) contendo apenas as questoes que falharam para auditoria imediata em 24 horas.
 
-- [ ] Elasticidade da memoria de longo prazo:
-  - [ ] Se o aproveitamento no `R6` e `R7` for soberano (`>= 85%`), o intervalo para o proximo estagio ganha bonus de `1.5x` (ex: pula de 60 para 90 dias).
-  - [ ] Esse intervalo elastico so pode ser encurtado novamente quando o edital de conteudos novos for 100% esgotado.
+- [x] Elasticidade da memoria de longo prazo:
+  - [x] Se o aproveitamento no `R6` e `R7` for soberano (`>= 85%`), o intervalo para o proximo estagio ganha bonus de `1.5x` (ex: pula de 60 para 90 dias).
+  - [x] Esse intervalo elastico so pode ser encurtado novamente quando o edital de conteudos novos for 100% esgotado.
 
 ## 4. Modulo de Simulado V2.5 (Modo Maratona)
 
