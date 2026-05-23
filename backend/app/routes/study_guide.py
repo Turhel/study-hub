@@ -11,6 +11,8 @@ from app.schemas import (
     StudyGuideCalendarProjectionDay,
     StudyGuidePreferences,
     StudyGuidePreferencesResponse,
+    UserCalendarEventCreate,
+    UserCalendarEventResponse,
     UserEnergySettingsResponse,
     UserEnergySettingsUpdate,
 )
@@ -63,6 +65,20 @@ def _scheduled_reviews_count(session, target_date: date) -> int:
 
 def _mock_exams_for_day(session, target_date: date) -> list[MockExam]:
     return list(session.exec(select(MockExam).where(MockExam.data == target_date)).all())
+
+
+def _parse_event_date(value: str) -> date:
+    return date.fromisoformat(value)
+
+
+def _calendar_event_response(event: UserCalendarEvent) -> UserCalendarEventResponse:
+    return UserCalendarEventResponse(
+        id=event.id or 0,
+        event_type=event.event_type,
+        start_date=event.start_date.isoformat(),
+        end_date=event.end_date.isoformat(),
+        description=event.description,
+    )
 
 
 @router.get("/preferences", response_model=StudyGuidePreferencesResponse)
@@ -124,4 +140,24 @@ def read_calendar_projection() -> list[StudyGuideCalendarProjectionDay]:
             )
 
     return projected_days
+
+
+@router.post("/calendar-events", response_model=UserCalendarEventResponse)
+def create_calendar_event(payload: UserCalendarEventCreate) -> UserCalendarEventResponse:
+    start_date = _parse_event_date(payload.start_date)
+    end_date = _parse_event_date(payload.end_date)
+    if end_date < start_date:
+        start_date, end_date = end_date, start_date
+
+    with get_session() as session:
+        event = UserCalendarEvent(
+            event_type=payload.event_type,
+            start_date=start_date,
+            end_date=end_date,
+            description=payload.description.strip() if payload.description else None,
+        )
+        session.add(event)
+        session.commit()
+        session.refresh(event)
+        return _calendar_event_response(event)
 

@@ -186,6 +186,21 @@ class StudyGuideCalendarProjectionDay(BaseModel):
     status_protecao: str
 
 
+class UserCalendarEventCreate(BaseModel):
+    event_type: Literal["PROVAS_ACADEMICAS", "VIAGEM_DESCANSO", "SIMULADO_PROG"]
+    start_date: str
+    end_date: str
+    description: str | None = None
+
+
+class UserCalendarEventResponse(BaseModel):
+    id: int
+    event_type: str
+    start_date: str
+    end_date: str
+    description: str | None = None
+
+
 class StudyPlanRecalculateResponse(BaseModel):
     replaced_plan_id: int | None = None
     plan: StudyPlanTodayResponse

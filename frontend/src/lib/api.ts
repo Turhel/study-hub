@@ -2,6 +2,8 @@ import type {
   ActivityTodayResponse,
   ActivityItem,
   BlockProgressDisciplineResponse,
+  CalendarEventPayload,
+  CalendarEventResponse,
   EssayCorrectionPayload,
   EssayCorrectionListItem,
   EssayCorrectionResponse,
@@ -39,6 +41,7 @@ import type {
   StatsOverviewResponse,
   StatsTimeSeriesGroupBy,
   StatsTimeSeriesResponse,
+  SmartCalendarProjectionDay,
   StudyGuidePreferencesPayload,
   StudyGuidePreferencesResponse,
   StudyPlanCalendarResponse,
@@ -201,6 +204,44 @@ export async function saveUserEnergySettings(
   }
 
   return response.json() as Promise<UserEnergySettingsResponse>;
+}
+
+export async function getStudyGuideCalendarProjection(): Promise<SmartCalendarProjectionDay[]> {
+  const response = await apiFetch(`${API_BASE_URL}/api/study-guide/calendar-projection`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar o calendario preditivo.");
+  }
+
+  const payload = (await response.json()) as Array<
+    Omit<SmartCalendarProjectionDay, "revisoes_count"> & {
+      revisoes_count?: number;
+      "revisões_count"?: number;
+    }
+  >;
+
+  return payload.map((day) => ({
+    ...day,
+    revisoes_count: day.revisoes_count ?? day["revisões_count"] ?? 0,
+  }));
+}
+
+export async function createStudyGuideCalendarEvent(
+  payload: CalendarEventPayload,
+): Promise<CalendarEventResponse> {
+  const response = await apiFetch(`${API_BASE_URL}/api/study-guide/calendar-events`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel salvar o evento no calendario.");
+  }
+
+  return response.json() as Promise<CalendarEventResponse>;
 }
 
 export async function getTodayActivity(): Promise<ActivityTodayResponse> {

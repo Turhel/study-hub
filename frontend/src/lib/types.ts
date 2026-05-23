@@ -183,6 +183,26 @@ export type UserEnergySettingsResponse = {
   current_daily_target_questions: number;
 };
 
+export type SmartCalendarProjectionDay = {
+  date: string;
+  has_simulado: boolean;
+  revisoes_count: number;
+  total_questoes_estimadas: number;
+  status_protecao: "normal" | "provas_academicas" | "viagem_descanso" | string;
+};
+
+export type CalendarEventPayload = {
+  event_type: "PROVAS_ACADEMICAS" | "VIAGEM_DESCANSO" | "SIMULADO_PROG";
+  start_date: string;
+  end_date: string;
+  description?: string | null;
+};
+
+export type CalendarEventResponse = CalendarEventPayload & {
+  id: number;
+  description: string | null;
+};
+
 export type StudyPlanRecalculateResponse = {
   replaced_plan_id: number | null;
   plan: StudyPlanTodayResponse;

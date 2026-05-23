@@ -5,7 +5,9 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useStudyTimer } from "../components/StudyTimer";
 import {
+  createStudyGuideCalendarEvent,
   getActiveMockExam,
+  getStudyGuideCalendarProjection,
   getStudyPlanCalendar,
   getStudyPlanToday,
   getSystemCapabilities,
@@ -15,8 +17,10 @@ import {
   saveUserEnergySettings,
 } from "../lib/api";
 import type {
+  CalendarEventPayload,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
+  SmartCalendarProjectionDay,
   StudyPlanItem,
 } from "../lib/types";
 
@@ -31,6 +35,12 @@ type DisciplineIconKind =
   | "philosopher"
   | "physics";
 type FocusLane = "advance" | "maintenance" | "recovery";
+type CalendarEventForm = {
+  event_type: CalendarEventPayload["event_type"];
+  start_date: string;
+  end_date: string;
+  description: string;
+};
 
 type AttemptForm = {
   quantity: number;
@@ -45,6 +55,52 @@ type AttemptForm = {
 
 function studyPlanTodayLocalDateKey(): string {
   return new Date().toLocaleDateString("en-CA");
+}
+
+function localDateKey(date: Date): string {
+  return date.toLocaleDateString("en-CA");
+}
+
+function parseDateKey(dateKey: string): Date {
+  return new Date(`${dateKey}T00:00:00`);
+}
+
+function shortWeekday(dateKey: string): string {
+  return parseDateKey(dateKey).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+}
+
+function shortDayMonth(dateKey: string): string {
+  return parseDateKey(dateKey).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+function buildCalendarGrid(anchorDate: Date): Array<{ date: Date; key: string; inCurrentMonth: boolean }> {
+  const firstDay = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1);
+  const startOffset = firstDay.getDay();
+  const gridStart = new Date(firstDay);
+  gridStart.setDate(firstDay.getDate() - startOffset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    return {
+      date,
+      key: localDateKey(date),
+      inCurrentMonth: date.getMonth() === anchorDate.getMonth(),
+    };
+  });
+}
+
+function calendarEventLabel(value: CalendarEventPayload["event_type"]): string {
+  if (value === "PROVAS_ACADEMICAS") return "Semana de provas";
+  if (value === "VIAGEM_DESCANSO") return "Viagem/descanso";
+  if (value === "SIMULADO_PROG") return "Simulado programado";
+  return value;
+}
+
+function protectionLabel(value: string): string {
+  if (value === "provas_academicas") return "Provas academicas";
+  if (value === "viagem_descanso") return "Descanso programado";
+  return "Normal";
 }
 
 const defaultAttemptForm: AttemptForm = {
@@ -77,6 +133,13 @@ const disciplineVisualMap: Record<string, { icon: DisciplineIconKind; toneClassN
   Quimica: { icon: "atom", toneClassName: "today-discipline-card-nature" },
   Fisica: { icon: "physics", toneClassName: "today-discipline-card-nature" },
   Redacao: { icon: "hieroglyph", toneClassName: "today-discipline-card-writing" },
+};
+
+const defaultCalendarEventForm: CalendarEventForm = {
+  event_type: "PROVAS_ACADEMICAS",
+  start_date: studyPlanTodayLocalDateKey(),
+  end_date: studyPlanTodayLocalDateKey(),
+  description: "",
 };
 
 function normalizeDisciplineKey(value: string): string {
@@ -268,6 +331,8 @@ export default function TodayPage() {
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showAcademicExamsPopup, setShowAcademicExamsPopup] = useState(false);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+  const [calendarEventForm, setCalendarEventForm] = useState<CalendarEventForm>(defaultCalendarEventForm);
   const { pendingCompletion, consumePendingCompletion } = useStudyTimer();
 
   const studyPlanTodayQueryKey = useMemo(
@@ -288,6 +353,11 @@ export default function TodayPage() {
   const calendarQuery = useQuery({
     queryKey: ["study-plan-calendar", 7],
     queryFn: () => getStudyPlanCalendar(7),
+    retry: false,
+  });
+  const smartCalendarQuery = useQuery({
+    queryKey: ["study-guide-calendar-projection"],
+    queryFn: getStudyGuideCalendarProjection,
     retry: false,
   });
   const energySettingsQuery = useQuery({
@@ -350,16 +420,35 @@ export default function TodayPage() {
     },
     onError: (error) => setFeedback(errorMessage(error)),
   });
+  const createCalendarEventMutation = useMutation({
+    mutationFn: createStudyGuideCalendarEvent,
+    onSuccess: async () => {
+      setSelectedCalendarDate(null);
+      setCalendarEventForm(defaultCalendarEventForm);
+      setFeedback("Evento salvo no calendario preditivo.");
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["study-guide-calendar-projection"], type: "active" }),
+        queryClient.refetchQueries({ queryKey: ["user-energy-settings"], type: "active" }),
+        queryClient.refetchQueries({ queryKey: studyPlanTodayQueryKey, type: "active" }),
+        queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
+      ]);
+    },
+    onError: (error) => setFeedback(errorMessage(error)),
+  });
 
   const planItems = planQuery.data?.items ?? [];
   const planSummary = planQuery.data?.summary;
   const calendarDays = calendarQuery.data?.days ?? [];
+  const smartCalendarDays = smartCalendarQuery.data ?? [];
   const activityToday = activityTodayQuery.data;
   const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
   const energySettings = energySettingsQuery.data;
   const isLightDayMode = Boolean(energySettings?.mode_dia_leve);
-  const isAcademicExamMode = Boolean(energySettings?.mode_provas_academicas);
-  const isAdvanceSuspended = isLightDayMode || isAcademicExamMode;
+  const todayProjection = smartCalendarDays.find((day) => day.date === studyPlanTodayLocalDateKey());
+  const isCalendarAcademicExamMode = todayProjection?.status_protecao === "provas_academicas";
+  const isTravelRestToday = todayProjection?.status_protecao === "viagem_descanso";
+  const isAcademicExamMode = Boolean(energySettings?.mode_provas_academicas) || isCalendarAcademicExamMode;
+  const isAdvanceSuspended = isLightDayMode || isAcademicExamMode || isTravelRestToday;
   const questionsDoneToday = activityToday?.question_attempts_registered ?? 0;
   const dailyQuestionTarget = energySettings?.current_daily_target_questions ?? planSummary?.total_questions ?? 0;
 
@@ -384,6 +473,13 @@ export default function TodayPage() {
     [focusCards],
   );
   const mockExamRecommendation = calendarDays.find((day) => day.mock_exam_recommendation.recommended)?.mock_exam_recommendation;
+  const smartCalendarMap = useMemo(
+    () => new Map(smartCalendarDays.map((day) => [day.date, day])),
+    [smartCalendarDays],
+  );
+  const calendarGridDays = useMemo(() => buildCalendarGrid(new Date()), []);
+  const selectedCalendarProjection = selectedCalendarDate ? smartCalendarMap.get(selectedCalendarDate) : null;
+  const isSelectedDateProjected = Boolean(selectedCalendarProjection);
 
   useEffect(() => {
     if (!energySettings?.mode_provas_academicas) {
@@ -438,6 +534,24 @@ export default function TodayPage() {
           subjectId: item.subject_id,
         },
       },
+    });
+  }
+
+  function openCalendarDay(dateKey: string) {
+    setSelectedCalendarDate(dateKey);
+    setCalendarEventForm({
+      ...defaultCalendarEventForm,
+      start_date: dateKey,
+      end_date: dateKey,
+    });
+  }
+
+  function submitCalendarEvent() {
+    createCalendarEventMutation.mutate({
+      event_type: calendarEventForm.event_type,
+      start_date: calendarEventForm.start_date,
+      end_date: calendarEventForm.end_date,
+      description: calendarEventForm.description.trim() || null,
     });
   }
 
@@ -522,28 +636,97 @@ export default function TodayPage() {
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8"
       >
-        <header className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-black tracking-[0.08em] text-white">HOJE</h1>
-            <p className="mt-1 text-sm font-semibold text-slate-400">
-              {questionsDoneToday} / {dailyQuestionTarget} Questoes
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {isLightDayMode ? (
-              <span className="rounded-full border border-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-300">
-                Modo dia leve
+        <header className="grid gap-5 border-b border-white/10 pb-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <div className="flex min-h-52 flex-col justify-between gap-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black tracking-[0.08em] text-white">HOJE</h1>
+                <p className="mt-1 text-sm font-semibold text-slate-400">
+                  {questionsDoneToday} / {dailyQuestionTarget} Questoes
+                </p>
+              </div>
+              <span className="grid h-11 w-11 place-items-center rounded-full border border-sky-400 bg-sky-500 text-lg font-black text-white shadow-lg shadow-sky-950/40">
+                T
               </span>
-            ) : null}
-            {isAcademicExamMode ? (
-              <span className="rounded-full border border-purple-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-300">
-                Provas academicas
-              </span>
-            ) : null}
-            <span className="grid h-11 w-11 place-items-center rounded-full border border-sky-400 bg-sky-500 text-lg font-black text-white shadow-lg shadow-sky-950/40">
-              T
-            </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {isLightDayMode ? (
+                <span className="rounded-full border border-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-300">
+                  Modo dia leve
+                </span>
+              ) : null}
+              {isAcademicExamMode ? (
+                <span className="rounded-full border border-purple-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-300">
+                  Provas academicas
+                </span>
+              ) : null}
+              {isTravelRestToday ? (
+                <span className="rounded-full border border-emerald-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-300">
+                  Descanso programado
+                </span>
+              ) : null}
+            </div>
           </div>
+
+          <section className="rounded-[1.75rem] border border-white/10 bg-slate-900/70 p-4 shadow-2xl shadow-black/20">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Calendario</p>
+                <h2 className="text-base font-black text-white">
+                  {new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+                </h2>
+              </div>
+              <span className="rounded-full border border-slate-700 px-3 py-1 text-xs font-bold text-slate-300">
+                7 dias
+              </span>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-[0.65rem] font-black uppercase text-slate-500">
+              {["D", "S", "T", "Q", "Q", "S", "S"].map((label, index) => (
+                <span key={`${label}-${index}`}>{label}</span>
+              ))}
+            </div>
+            <div className="mt-2 grid grid-cols-7 gap-1">
+              {calendarGridDays.map((calendarDay) => {
+                const projection = smartCalendarMap.get(calendarDay.key);
+                const isToday = calendarDay.key === studyPlanTodayLocalDateKey();
+                return (
+                  <button
+                    key={calendarDay.key}
+                    type="button"
+                    className={[
+                      "relative flex h-10 flex-col items-center justify-center rounded-xl border text-xs font-black transition",
+                      calendarDay.inCurrentMonth ? "border-slate-800 text-slate-200 hover:border-sky-400" : "border-transparent text-slate-700",
+                      selectedCalendarDate === calendarDay.key ? "bg-slate-800 ring-1 ring-sky-400" : "bg-slate-950/50",
+                    ].join(" ")}
+                    onClick={() => openCalendarDay(calendarDay.key)}
+                  >
+                    <span
+                      className={
+                        isToday
+                          ? "grid h-6 w-6 place-items-center rounded-full bg-white text-slate-950"
+                          : "grid h-6 w-6 place-items-center"
+                      }
+                    >
+                      {calendarDay.date.getDate()}
+                    </span>
+                    {projection ? (
+                      <span className="absolute bottom-1 flex items-center gap-1">
+                        {projection.has_simulado ? <span className="h-1.5 w-1.5 rounded-full bg-rose-400" /> : null}
+                        {projection.revisoes_count > 0 ? <span className="h-1.5 w-1.5 rounded-full bg-sky-400" /> : null}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-slate-400">
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-400" /> Simulado</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-400" /> Revisao</span>
+            </div>
+            {smartCalendarQuery.isError ? (
+              <p className="mt-3 text-xs font-semibold text-rose-300">Projecao indisponivel agora.</p>
+            ) : null}
+          </section>
         </header>
         {backendOffline ? (
           <section className="today-panel today-error-panel">
@@ -700,6 +883,127 @@ export default function TodayPage() {
         </section>
 
       </motion.section>
+
+      {selectedCalendarDate ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+          <section className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white/10 bg-slate-950 p-6 text-slate-100 shadow-2xl dark:bg-slate-950">
+            <div className="flex flex-col gap-3 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Calendario preditivo</p>
+                <h2 className="mt-1 text-2xl font-black text-white">
+                  {shortWeekday(selectedCalendarDate)} · {shortDayMonth(selectedCalendarDate)}
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-slate-400">
+                  {isSelectedDateProjected ? "Projecao dos proximos 7 dias" : "Fora da janela preditiva atual"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-2xl border border-slate-700 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-slate-400"
+                onClick={() => setSelectedCalendarDate(null)}
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+              {selectedCalendarProjection?.status_protecao === "viagem_descanso" ? (
+                <p className="text-base font-bold text-emerald-200">
+                  Dia de descanso programado. Carga redistribuida sem acumulo.
+                </p>
+              ) : selectedCalendarProjection ? (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-slate-950 p-4">
+                    <span className="text-xs font-bold uppercase text-slate-500">Revisoes</span>
+                    <strong className="mt-1 block text-2xl text-white">{selectedCalendarProjection.revisoes_count}</strong>
+                    <small className="text-slate-500">agendadas</small>
+                  </div>
+                  <div className="rounded-2xl bg-slate-950 p-4">
+                    <span className="text-xs font-bold uppercase text-slate-500">Estimativa</span>
+                    <strong className="mt-1 block text-2xl text-white">
+                      {selectedCalendarProjection.total_questoes_estimadas}
+                    </strong>
+                    <small className="text-slate-500">questoes dentro do teto</small>
+                  </div>
+                  <div className="rounded-2xl bg-slate-950 p-4">
+                    <span className="text-xs font-bold uppercase text-slate-500">Protecao</span>
+                    <strong className="mt-1 block text-sm text-white">
+                      {protectionLabel(selectedCalendarProjection.status_protecao)}
+                    </strong>
+                    <small className="text-slate-500">
+                      {selectedCalendarProjection.has_simulado ? "simulado previsto" : "sem simulado"}
+                    </small>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-slate-400">
+                  A previsao fina fica limitada aos proximos 7 dias. Voce ainda pode agendar um bloqueio para esta data.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 rounded-3xl border border-slate-800 bg-slate-900/70 p-5">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Agendar bloqueio/evento</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300">
+                  Tipo
+                  <select
+                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    value={calendarEventForm.event_type}
+                    onChange={(event) =>
+                      setCalendarEventForm((current) => ({
+                        ...current,
+                        event_type: event.target.value as CalendarEventPayload["event_type"],
+                      }))
+                    }
+                  >
+                    <option value="PROVAS_ACADEMICAS">{calendarEventLabel("PROVAS_ACADEMICAS")}</option>
+                    <option value="VIAGEM_DESCANSO">{calendarEventLabel("VIAGEM_DESCANSO")}</option>
+                    <option value="SIMULADO_PROG">{calendarEventLabel("SIMULADO_PROG")}</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300">
+                  Inicio
+                  <input
+                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    type="date"
+                    value={calendarEventForm.start_date}
+                    onChange={(event) => setCalendarEventForm((current) => ({ ...current, start_date: event.target.value }))}
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300">
+                  Fim
+                  <input
+                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    type="date"
+                    value={calendarEventForm.end_date}
+                    onChange={(event) => setCalendarEventForm((current) => ({ ...current, end_date: event.target.value }))}
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm font-bold text-slate-300 sm:col-span-2">
+                  Descricao opcional
+                  <input
+                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                    value={calendarEventForm.description}
+                    onChange={(event) => setCalendarEventForm((current) => ({ ...current, description: event.target.value }))}
+                    placeholder="Ex: semana de provas da faculdade"
+                  />
+                </label>
+              </div>
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  className="rounded-2xl bg-sky-500 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-sky-950/40 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={createCalendarEventMutation.isPending}
+                  onClick={submitCalendarEvent}
+                >
+                  {createCalendarEventMutation.isPending ? "Salvando..." : "Salvar evento"}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {selectedItem ? (
         <div className="today-modal-backdrop" role="dialog" aria-modal="true">
