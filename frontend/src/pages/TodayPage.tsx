@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -6,7 +6,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useStudyTimer } from "../components/StudyTimer";
 import {
   getActiveMockExam,
-  getRecentActivity,
   getStudyPlanCalendar,
   getStudyPlanToday,
   getSystemCapabilities,
@@ -16,10 +15,8 @@ import {
   saveUserEnergySettings,
 } from "../lib/api";
 import type {
-  ActivityItem,
   QuestionAttemptBulkPayload,
   QuestionAttemptBulkResponse,
-  StudyPlanCalendarDay,
   StudyPlanItem,
 } from "../lib/types";
 
@@ -33,7 +30,7 @@ type DisciplineIconKind =
   | "networking"
   | "philosopher"
   | "physics";
-type MetricIconKind = "target" | "focus" | "questions" | "subjects";
+type FocusLane = "advance" | "maintenance" | "recovery";
 
 type AttemptForm = {
   quantity: number;
@@ -129,118 +126,6 @@ function DisciplineIcon({ kind }: { kind: DisciplineIconKind }) {
   return <img src={`/discipline-icons/${kind}.png`} alt="" loading="lazy" decoding="async" />;
 }
 
-function MetricIcon({ kind }: { kind: MetricIconKind }) {
-  if (kind === "target") {
-    return (
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
-        <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
-        <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
-      </svg>
-    );
-  }
-  if (kind === "focus") {
-    return (
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <rect x="9" y="9" width="30" height="30" rx="8" className="today-icon-fill-pink" />
-        <path d="M24 15v18M15 24h18" className="today-icon-line-soft" />
-      </svg>
-    );
-  }
-  if (kind === "questions") {
-    return (
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <rect x="10" y="8" width="28" height="32" rx="5" className="today-icon-fill-gold" />
-        <path d="M17 18h14M17 25h14M17 32h8" className="today-icon-line-dark" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 48 48" aria-hidden="true">
-      <circle cx="24" cy="24" r="16" className="today-icon-fill-green" />
-      <path d="M14 27c6-9 14-9 20 0M17 33c5-5 9-5 14 0" className="today-icon-line-dark" />
-    </svg>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  detail,
-  icon,
-}: {
-  label: string;
-  value: number;
-  detail: string;
-  icon: MetricIconKind;
-}) {
-  return (
-    <article className={`today-mini-card today-mini-card-${icon}`}>
-      <div className="today-mini-card-main">
-        <div>
-          <span>{label}</span>
-          <strong>{value}</strong>
-        </div>
-        <span className="today-mini-icon">
-          <MetricIcon kind={icon} />
-        </span>
-      </div>
-      <div className="today-mini-card-footer">
-        <small>{detail}</small>
-      </div>
-    </article>
-  );
-}
-
-function NextStepPanel({
-  title,
-  description,
-  primaryLabel,
-  onPrimary,
-  secondaryLabel,
-  secondaryTo,
-}: {
-  title: string;
-  description: string;
-  primaryLabel: string;
-  onPrimary?: () => void;
-  secondaryLabel?: string;
-  secondaryTo?: string;
-}) {
-  return (
-    <section className="app-next-step-panel">
-      <div className="app-next-step-copy">
-        <p className="today-eyebrow">Faca agora</p>
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
-      <div className="app-next-step-actions">
-        <button type="button" className="app-primary-action app-primary-action-blue" onClick={onPrimary}>
-          {primaryLabel}
-        </button>
-        {secondaryLabel && secondaryTo ? (
-          <Link className="app-secondary-action app-guidance-link" to={secondaryTo}>
-            {secondaryLabel}
-          </Link>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-function formatOptional(value: unknown): string {
-  if (value === null || value === undefined || value === "") {
-    return "Nao informado";
-  }
-  if (typeof value === "boolean") {
-    return value ? "Sim" : "Nao";
-  }
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? String(value) : value.toFixed(2);
-  }
-  return String(value);
-}
-
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Nao foi possivel completar a acao.";
 }
@@ -253,18 +138,38 @@ function plannedModeLabel(value: string | null | undefined): string {
   return value;
 }
 
-function roadmapStatusLabel(value: string | null | undefined): string {
-  if (!value) return "Nao informado";
-  if (value === "entry") return "Entrada";
-  if (value === "available") return "Disponivel";
-  if (value === "blocked_required") return "Bloqueado por prerequisito";
-  if (value === "blocked_cross_required") return "Bloqueado por dependencia cruzada";
-  if (value === "reviewable") return "Revisavel";
-  return value;
+function focusLane(item: StudyPlanItem): FocusLane {
+  const searchText = [
+    item.planned_mode,
+    item.primary_reason,
+    item.roadmap_reason,
+    item.roadmap_status,
+    item.subject_name,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (/\bex\d*\b/.test(searchText) || /\ba1\b/.test(searchText) || searchText.includes("recupera")) {
+    return "recovery";
+  }
+  if (/\brr\d*\b/.test(searchText) || /\br[1-9]\b/.test(searchText) || searchText.includes("revis")) {
+    return "maintenance";
+  }
+  return "advance";
 }
 
-function isActivityEmpty(activity?: ActivityItem[]): boolean {
-  return !activity || activity.length === 0;
+function eaereTag(item: StudyPlanItem): string {
+  const searchText = [item.planned_mode, item.primary_reason, item.roadmap_reason, item.roadmap_status]
+    .filter(Boolean)
+    .join(" ")
+    .toUpperCase();
+  const explicitTag = searchText.match(/\b(RR\d+|EX\d+|EX|A1|E1|E2|R[1-9])\b/);
+  if (explicitTag) return explicitTag[1];
+  if (item.planned_mode === "aprendizado") return item.planned_questions <= 5 ? "E1" : "E2";
+  if (item.planned_mode === "revisao") return "R";
+  if (item.planned_mode === "consolidacao") return "EX";
+  return plannedModeLabel(item.planned_mode);
 }
 
 function buildAttemptPayload(item: StudyPlanItem, form: AttemptForm): QuestionAttemptBulkPayload {
@@ -333,126 +238,11 @@ function PreferenceNumberInput({
   );
 }
 
-function ActivityList({ items }: { items?: ActivityItem[] }) {
-  if (isActivityEmpty(items)) {
-    return <p className="today-empty-copy">Nenhuma atividade recente ainda. Registre questoes para alimentar o historico.</p>;
-  }
-
-  function activityTypeLabel(type: string): string {
-    const normalized = type.toLowerCase();
-    if (normalized.includes("question")) return "Questoes";
-    if (normalized.includes("review")) return "Revisao";
-    if (normalized.includes("progress")) return "Progressao";
-    if (normalized.includes("plan")) return "Plano";
-    return "Atividade";
-  }
-
-  function relativeTime(value: string): string {
-    const createdAt = new Date(value).getTime();
-    const diffMs = Date.now() - createdAt;
-    const diffMinutes = Math.max(Math.floor(diffMs / 60000), 0);
-
-    if (diffMinutes < 1) return "agora";
-    if (diffMinutes < 60) return `${diffMinutes} min atras`;
-
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours} h atras`;
-
-    return new Date(value).toLocaleDateString("pt-BR");
-  }
-
-  return (
-    <div className="today-activity-list">
-      {items?.slice(0, 6).map((item, index) => (
-        <article
-          key={`${item.created_at}-${item.type}-${index}`}
-          className={`today-activity-item ${index === 0 ? "is-latest" : ""}`}
-        >
-          <div className="today-activity-copy">
-            <div className="today-activity-meta">
-              <span className="today-activity-type">{activityTypeLabel(item.type)}</span>
-              <small>{relativeTime(item.created_at)}</small>
-            </div>
-            <strong>{item.title}</strong>
-            <p>{item.description}</p>
-          </div>
-          <span>{new Date(item.created_at).toLocaleDateString("pt-BR")}</span>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function activityHeadline(activityToday?: {
-  question_attempts_registered?: number;
-  subjects_studied_today?: number;
-  blocks_impacted_today?: number;
-  reviews_generated_today?: number;
-  progression_decisions_today?: number;
-}) {
-  if (!activityToday) {
-    return {
-      title: "Aguardando dados de hoje",
-      description: "Quando o backend responder, este card mostra o que ja andou e o que ainda esta em aberto.",
-    };
-  }
-
-  if ((activityToday.question_attempts_registered ?? 0) === 0) {
-    return {
-      title: "Dia ainda sem registro",
-      description: "O proximo passo para movimentar o estudo e registrar algumas questoes no foco do dia.",
-    };
-  }
-
-  if ((activityToday.subjects_studied_today ?? 0) <= 1) {
-    return {
-      title: "Voce ja começou",
-      description: "Ja houve execucao hoje. Agora vale decidir se fecha esse foco ou abre um segundo assunto.",
-    };
-  }
-
-  return {
-    title: "Dia em movimento",
-    description: "Voce ja espalhou estudo por mais de um assunto. Agora vale usar isso para revisar estatisticas e manter o ritmo.",
-  };
-}
-
 function formatTri(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "--";
   }
   return value.toFixed(1);
-}
-
-function triBasisLabel(value: "subject" | "discipline" | null | undefined): string {
-  if (value === "subject") {
-    return "estimada pelo foco";
-  }
-  if (value === "discipline") {
-    return "estimada pela disciplina";
-  }
-  return "base insuficiente ainda";
-}
-
-function formatCalendarDayLabel(value: string): { weekday: string; dayMonth: string } {
-  const parsed = new Date(`${value}T12:00:00`);
-  return {
-    weekday: parsed.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
-    dayMonth: parsed.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-  };
-}
-
-function calendarStatusLabel(value: "today" | "projected" | "adjusted"): string {
-  if (value === "today") return "Hoje";
-  if (value === "adjusted") return "Ajustado";
-  return "Previsto";
-}
-
-function calendarTypeLabel(value: string): string {
-  if (value === "study_focus") return "Foco";
-  if (value === "review") return "Revisao";
-  if (value === "mock_exam") return "Simulado";
-  return "Descanso";
 }
 
 function shouldShowAcademicExamsReminder(activatedAt: string | null | undefined): boolean {
@@ -471,29 +261,10 @@ function academicExamsReminderStorageKey(): string {
   return `study-hub:academic-exams-reminder:${new Date().toLocaleDateString("en-CA")}`;
 }
 
-function ActivityMetric({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: number;
-  hint: string;
-}) {
-  return (
-    <article className="today-activity-metric">
-      <strong>{value}</strong>
-      <span>{label}</span>
-      <small>{hint}</small>
-    </article>
-  );
-}
-
 export default function TodayPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<StudyPlanItem | null>(null);
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState<StudyPlanCalendarDay | null>(null);
   const [attemptForm, setAttemptForm] = useState<AttemptForm>(defaultAttemptForm);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showAcademicExamsPopup, setShowAcademicExamsPopup] = useState(false);
@@ -529,11 +300,6 @@ export default function TodayPage() {
     queryFn: getTodayActivity,
     retry: false,
   });
-  const recentActivityQuery = useQuery({
-    queryKey: ["activity-recent", 30],
-    queryFn: () => getRecentActivity(30),
-    retry: false,
-  });
   const activeMockExamQuery = useQuery({
     queryKey: ["mock-exam-active"],
     queryFn: getActiveMockExam,
@@ -547,7 +313,6 @@ export default function TodayPage() {
       queryClient.refetchQueries({ queryKey: ["study-plan-calendar"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["user-energy-settings"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
-      queryClient.refetchQueries({ queryKey: ["activity-recent"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["gamification-summary"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["stats-overview"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["stats-discipline"], type: "active" }),
@@ -569,7 +334,7 @@ export default function TodayPage() {
           data.next_review_date ? `Proxima revisao: ${data.next_review_date}` : null,
         ]
           .filter(Boolean)
-          .join(" · ") || "Questoes registradas.",
+          .join(" Â· ") || "Questoes registradas.",
       );
       await refreshTodayData();
     },
@@ -588,13 +353,13 @@ export default function TodayPage() {
 
   const planItems = planQuery.data?.items ?? [];
   const planSummary = planQuery.data?.summary;
-  const hasPlanItems = planItems.length > 0;
   const calendarDays = calendarQuery.data?.days ?? [];
-  const capabilities = capabilitiesQuery.data;
   const activityToday = activityTodayQuery.data;
   const attemptError = selectedItem ? attemptValidationMessage(attemptForm) : null;
   const energySettings = energySettingsQuery.data;
   const isLightDayMode = Boolean(energySettings?.mode_dia_leve);
+  const isAcademicExamMode = Boolean(energySettings?.mode_provas_academicas);
+  const isAdvanceSuspended = isLightDayMode || isAcademicExamMode;
   const questionsDoneToday = activityToday?.question_attempts_registered ?? 0;
   const dailyQuestionTarget = energySettings?.current_daily_target_questions ?? planSummary?.total_questions ?? 0;
 
@@ -607,79 +372,18 @@ export default function TodayPage() {
       })),
     [planItems],
   );
-  const nextStep = useMemo(() => {
-    if (backendOffline) {
-      return {
-        title: "Recupere a conexao com o backend",
-        description: "Sem backend voce perde plano, activity e registro. Assim que ele voltar, esta tela volta a te orientar.",
-        primaryLabel: "Tentar novamente",
-        onPrimary: () => {
-          void refreshTodayData();
-          void capabilitiesQuery.refetch();
-          void energySettingsQuery.refetch();
+  const focusGroups = useMemo(
+    () =>
+      focusCards.reduce<Record<FocusLane, typeof focusCards>>(
+        (groups, focusCard) => {
+          groups[focusLane(focusCard.item)].push(focusCard);
+          return groups;
         },
-        secondaryLabel: undefined,
-        secondaryTo: undefined,
-      };
-    }
-
-    if (planQuery.isLoading) {
-      return {
-        title: "Espere o plano carregar",
-        description: "A prioridade do estudo depende do plano do dia. Quando ele responder, voce ja pode comecar pelo primeiro foco.",
-        primaryLabel: "Atualizar plano",
-        onPrimary: () => {
-          void planQuery.refetch();
-        },
-        secondaryLabel: "Ver estatisticas",
-        secondaryTo: "/stats",
-      };
-    }
-
-    if (!hasPlanItems) {
-      return {
-        title: "Ajuste o guia nas configuracoes",
-        description: "Quando nao ha focos, o proximo passo util e revisar o Guia do Dia em Configuracoes e recalcular por la.",
-        primaryLabel: "Abrir configuracoes",
-        onPrimary: () => {
-          window.location.assign("/settings");
-        },
-        secondaryLabel: "Ir para aulas",
-        secondaryTo: "/lessons",
-      };
-    }
-
-    if ((activityToday?.question_attempts_registered ?? 0) === 0) {
-      return {
-        title: `Comece por ${planItems[0]?.subject_name ?? "seu primeiro foco"}`,
-        description: "Seu plano ja existe. O passo mais importante agora e fazer algumas questoes e registrar o resultado para o app aprender com voce.",
-        primaryLabel: "Registrar questoes",
-        onPrimary: () => openAttemptModal(planItems[0]),
-        secondaryLabel: "Ver aulas",
-        secondaryTo: "/lessons",
-      };
-    }
-
-    return {
-      title: "Feche o ciclo do estudo",
-      description: "Voce ja registrou execucao hoje. Agora vale revisar activity e usar Estatisticas ou Aulas para decidir o proximo aprofundamento.",
-      primaryLabel: "Abrir estatisticas",
-      onPrimary: () => {
-        window.location.assign("/stats");
-      },
-      secondaryLabel: "Ir para aulas",
-      secondaryTo: "/lessons",
-    };
-  }, [
-    activityToday?.question_attempts_registered,
-    backendOffline,
-    capabilitiesQuery,
-    energySettingsQuery,
-    hasPlanItems,
-    planItems,
-    planQuery,
-  ]);
-  const activitySummary = useMemo(() => activityHeadline(activityToday), [activityToday]);
+        { advance: [], maintenance: [], recovery: [] },
+      ),
+    [focusCards],
+  );
+  const mockExamRecommendation = calendarDays.find((day) => day.mock_exam_recommendation.recommended)?.mock_exam_recommendation;
 
   useEffect(() => {
     if (!energySettings?.mode_provas_academicas) {
@@ -756,7 +460,7 @@ export default function TodayPage() {
   }, [consumePendingCompletion, pendingCompletion, planItems]);
 
   useEffect(() => {
-    if (!selectedItem && !selectedCalendarDay) {
+    if (!selectedItem) {
       return;
     }
 
@@ -766,12 +470,11 @@ export default function TodayPage() {
       }
 
       setSelectedItem(null);
-      setSelectedCalendarDay(null);
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedCalendarDay, selectedItem]);
+  }, [selectedItem]);
 
   const activeMockExam = activeMockExamQuery.data?.exam ?? null;
   const activeMockExamSeconds = activeMockExamQuery.data?.seconds_remaining ?? 0;
@@ -812,26 +515,36 @@ export default function TodayPage() {
   }
 
   return (
-    <main className="today-page">
+    <main className="min-h-screen bg-slate-950 text-slate-100">
       <motion.section
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: "easeOut" }}
-        className="today-subjects-shell today-functional-shell"
+        className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8"
       >
-        <div className="today-capability-strip" aria-label="Status do ambiente">
-          <div className="today-capability-row">
-            <span>{capabilities ? `Perfil ${capabilities.machine_profile}` : "Perfil indisponivel"}</span>
-            <span>{capabilities ? `Banco ${capabilities.database.dialect}` : "Banco indisponivel"}</span>
-            <span>{capabilities ? `LLM ${capabilities.llm.enabled ? "ligado" : "desligado"}` : "LLM indisponivel"}</span>
+        <header className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-black tracking-[0.08em] text-white">HOJE (EAERE)</h1>
+            <p className="mt-1 text-sm font-semibold text-slate-400">
+              {questionsDoneToday} / {dailyQuestionTarget} Questoes
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             {isLightDayMode ? (
-              <span className="bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-bold px-3 py-1 rounded-full shadow-sm animate-pulse flex items-center gap-1.5">
-                ⚡ MODO DIA LEVE ATIVO
+              <span className="rounded-full border border-amber-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-300">
+                Modo dia leve
               </span>
             ) : null}
+            {isAcademicExamMode ? (
+              <span className="rounded-full border border-purple-400 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-300">
+                Provas academicas
+              </span>
+            ) : null}
+            <span className="grid h-11 w-11 place-items-center rounded-full border border-sky-400 bg-sky-500 text-lg font-black text-white shadow-lg shadow-sky-950/40">
+              T
+            </span>
           </div>
-        </div>
-
+        </header>
         {backendOffline ? (
           <section className="today-panel today-error-panel">
             <strong>Backend offline</strong>
@@ -848,306 +561,144 @@ export default function TodayPage() {
           </section>
         ) : null}
 
-        <NextStepPanel
-          title={nextStep.title}
-          description={nextStep.description}
-          primaryLabel={nextStep.primaryLabel}
-          onPrimary={nextStep.onPrimary}
-          secondaryLabel={nextStep.secondaryLabel}
-          secondaryTo={nextStep.secondaryTo}
-        />
-
-        <div className="flex flex-wrap items-center gap-2 px-1 text-sm font-bold text-slate-800 dark:text-slate-100">
-          <span className="text-sky-700 dark:text-sky-300">Progresso do Dia:</span>
-          <span className="text-slate-700 dark:text-slate-200">
-            {questionsDoneToday} / {dailyQuestionTarget} questoes
-          </span>
-        </div>
-
-        <section className="today-summary-grid">
-          <SummaryCard label="Total planejado" value={planSummary?.total_questions ?? 0} detail="questoes" icon="target" />
-          <SummaryCard label="Focos" value={planSummary?.focus_count ?? 0} detail="ativos" icon="focus" />
-          <SummaryCard label="Registradas hoje" value={questionsDoneToday} detail="questoes" icon="questions" />
-          <SummaryCard label="Assuntos hoje" value={activityToday?.subjects_studied_today ?? 0} detail="estudados" icon="subjects" />
-        </section>
-
-        <section className="today-panel">
-          <div className="today-section-head">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/20 sm:p-7">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="today-eyebrow">Previsao</p>
-              <h2>Proximos 7 dias</h2>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Avanco do edital</p>
+              <h2 className="mt-1 text-3xl font-black text-white">Zona E1 / E2</h2>
             </div>
-            {calendarQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
+            <span className="text-sm font-semibold text-slate-400">{focusGroups.advance.length} bloco(s) ativos</span>
           </div>
-          <p className="today-calendar-note">
-            Este calendario e uma previsao adaptativa. Ele muda conforme voce estuda.
-          </p>
-          <div className="today-calendar-grid">
-            {calendarQuery.isLoading && calendarDays.length === 0 ? (
-              Array.from({ length: 7 }).map((_, index) => (
-                <article key={`calendar-skeleton-${index}`} className="today-calendar-card is-loading">
-                  <strong>...</strong>
-                  <span>carregando</span>
-                </article>
-              ))
-            ) : calendarDays.length > 0 ? (
-              calendarDays.map((day) => {
-                const label = formatCalendarDayLabel(day.date);
-                return (
-                  <button
-                    type="button"
-                    key={day.date}
-                    className={`today-calendar-card status-${day.status}`}
-                    onClick={() => setSelectedCalendarDay(day)}
-                  >
-                    <div className="today-calendar-card-top">
-                      <span>{label.weekday}</span>
-                      <small>{calendarStatusLabel(day.status)}</small>
-                    </div>
-                    <strong>{label.dayMonth}</strong>
-                    {day.mock_exam_recommendation.recommended ? (
-                      <span className="today-calendar-badge">Simulado sugerido</span>
-                    ) : null}
-                    <div className="today-calendar-card-metrics">
-                      <span>{day.total_questions} q</span>
-                      <span>{day.focus_count} foco(s)</span>
-                    </div>
-                  </button>
-                );
-              })
-            ) : (
-              <article className="today-calendar-card status-projected is-empty">
-                <strong>Sem previsao</strong>
-                <span>O calendario aparece quando o plano do dia estiver disponivel.</span>
-              </article>
-            )}
-          </div>
-        </section>
 
-        <section className="today-content-grid">
-          <section className="today-panel today-plan-panel">
-              <div className="today-section-head">
-                <div>
-                  <p className="today-eyebrow">Hoje</p>
-                  <h2>Focos</h2>
+          {isAdvanceSuspended ? (
+            <article className="grid min-h-80 place-items-center rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-8 text-center">
+              <div className="max-w-lg">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-slate-600 bg-slate-900 text-3xl text-slate-300">
+                  shield
                 </div>
-                {planQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
-              </div>
-
-            {planQuery.isLoading || !hasPlanItems ? (
-              <article className="today-focus-card today-discipline-card-default today-focus-empty-card">
-                <div className="today-focus-main">
-                  <div className="today-focus-copy">
-                    <h3>{planQuery.isLoading ? "Preparando seus focos" : "Sem focos para exibir"}</h3>
-                    <p>
-                      {planQuery.isLoading
-                        ? "Buscando plano, preferencias e progresso do dia."
-                        : "Quando houver itens, eles aparecem aqui como seus proximos focos."}
-                    </p>
-                    <strong>{planQuery.isLoading ? "Carregando..." : "Ajuste o Guia ou recalcule o plano."}</strong>
-                  </div>
-                  <span className="today-card-illustration" aria-hidden="true">
-                    <DisciplineIcon kind="hieroglyph" />
-                  </span>
-                </div>
-                <div className="today-focus-footer">
-                  <div className="today-focus-status-block">
-                    <strong>Plano aguardando dados</strong>
-                    <span>Quando houver focos, o guia mostra o modo e o status aqui.</span>
-                  </div>
-                  <div className="today-focus-count-block">
-                    <strong>0</strong>
-                    <span>Feitas</span>
-                  </div>
-                  <div className="today-focus-actions">
-                    <button type="button" className="today-discipline-icon-button" disabled aria-label="Estatisticas indisponiveis">
-                      <span className="today-discipline-chart" aria-hidden="true">
-                        <i />
-                        <i />
-                        <i />
-                      </span>
-                    </button>
-                    <button type="button" className="today-register-button" disabled>
-                      Iniciar timer
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ) : null}
-
-            <div className="today-focus-list">
-              {focusCards.map(({ item, visual }) => {
-                const isSuspendedNewContent = isLightDayMode && item.planned_mode === "aprendizado";
-                return (
-                <article
-                  key={`${item.block_id}-${item.subject_id}`}
-                  className={`today-focus-card ${visual.toneClassName} ${
-                    isSuspendedNewContent ? "opacity-60 saturate-50" : ""
-                  }`}
+                <h3 className="mt-5 text-2xl font-black text-white">Avanco do Edital suspenso hoje</h3>
+                <p className="mt-2 text-base text-slate-400">
+                  Avanco do Edital suspenso hoje para protecao da sua carga mental.
+                </p>
+                <Link
+                  to="/lessons"
+                  className="mt-6 inline-flex rounded-2xl bg-sky-500 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-sky-950/40 transition hover:bg-sky-400"
                 >
-                  <div className="today-focus-main">
-                    <div className="today-focus-copy">
-                      <h3>{item.discipline}</h3>
-                      <p>{item.block_name}</p>
-                      <strong>{item.subject_name}</strong>
-                      {isSuspendedNewContent ? (
-                        <span className="mt-2 inline-flex w-fit rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400">
-                          Conteudo novo suspenso para poupar carga mental
-                        </span>
-                      ) : null}
+                  Realizar Teoria
+                </Link>
+              </div>
+            </article>
+          ) : planQuery.isLoading ? (
+            <article className="min-h-72 rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-6 text-slate-400">
+              Preparando focos EAERE...
+            </article>
+          ) : focusGroups.advance.length > 0 ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {focusGroups.advance.map(({ item, visual }) => (
+                <article key={`${item.block_id}-${item.subject_id}`} className="rounded-[1.75rem] border border-slate-700 bg-slate-950 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <span className="rounded-full border border-sky-400/50 px-3 py-1 text-xs font-black text-sky-300">
+                        {eaereTag(item)}
+                      </span>
+                      <h3 className="mt-4 text-2xl font-black text-white">{item.subject_name}</h3>
+                      <p className="mt-1 text-sm font-semibold text-slate-400">{item.discipline} / {item.block_name}</p>
                     </div>
-                    <span className="today-card-illustration" aria-hidden="true">
+                    <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-slate-700 bg-slate-900 p-2">
                       <DisciplineIcon kind={visual.icon} />
                     </span>
                   </div>
-
-                  <div className="today-focus-footer">
-                    <div className="today-focus-score-block">
-                      <strong>{formatTri(item.estimated_tri_score)}</strong>
-                      <span>TRI estimada</span>
-                      <small>{triBasisLabel(item.estimated_tri_basis)}</small>
+                  <div className="mt-6 grid grid-cols-3 gap-3 text-sm">
+                    <div className="rounded-2xl bg-slate-900 p-3">
+                      <span className="text-slate-500">Meta</span>
+                      <strong className="block text-lg text-white">{item.planned_questions}</strong>
                     </div>
-
-                    <div className="today-focus-count-block">
-                      <strong>{item.completed_today}</strong>
-                      <span>Feitas</span>
+                    <div className="rounded-2xl bg-slate-900 p-3">
+                      <span className="text-slate-500">Feitas</span>
+                      <strong className="block text-lg text-white">{item.completed_today}</strong>
                     </div>
-
-                    <div className="today-focus-actions">
-                      <Link className="today-discipline-icon-button" to={`/stats?discipline=${encodeURIComponent(item.discipline)}`} aria-label={`Ver estatisticas de ${item.discipline}`}>
-                        <span className="today-discipline-chart" aria-hidden="true">
-                          <i />
-                          <i />
-                          <i />
-                        </span>
-                      </Link>
-                      <button
-                        type="button"
-                        className="today-register-button"
-                        onClick={() => openTrainingTimer(item)}
-                        disabled={isSuspendedNewContent}
-                        title={isSuspendedNewContent ? "Modo Dia Leve suspendeu conteudos novos hoje." : undefined}
-                      >
-                        Iniciar timer
-                      </button>
+                    <div className="rounded-2xl bg-slate-900 p-3">
+                      <span className="text-slate-500">TRI</span>
+                      <strong className="block text-lg text-white">{formatTri(item.estimated_tri_score)}</strong>
                     </div>
                   </div>
-
-                  <div className="today-focus-metrics">
-                    <span>{item.planned_questions} planejadas</span>
-                    <span>{item.completed_today} feitas hoje</span>
-                    <span>{item.remaining_today} restantes</span>
-                    <span>progresso {Math.round(item.progress_ratio * 100)}%</span>
-                    <span>modo {plannedModeLabel(item.planned_mode)}</span>
-                    <span>status {roadmapStatusLabel(item.roadmap_status)}</span>
-                  </div>
-
-                  <div className="today-focus-explanation">
-                    <strong>Por que este foco</strong>
-                    <p>{formatOptional(item.primary_reason)}</p>
-                    {item.roadmap_reason && item.roadmap_reason !== item.primary_reason ? (
-                      <p className="today-focus-explanation-secondary">{item.roadmap_reason}</p>
-                    ) : null}
-                  </div>
-
-                  <div className="today-focus-secondary-row">
-                    <button type="button" className="today-focus-secondary-action" onClick={() => openAttemptModal(item)}>
-                      Registrar manualmente
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button type="button" className="rounded-2xl bg-sky-500 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-sky-400" onClick={() => openTrainingTimer(item)}>
+                      Iniciar timer
+                    </button>
+                    <button type="button" className="rounded-2xl border border-slate-600 px-5 py-3 text-sm font-bold text-slate-200 transition hover:border-slate-300" onClick={() => openAttemptModal(item)}>
+                      Registrar
                     </button>
                   </div>
-
-                  <details className="today-focus-details">
-                    <summary>Detalhes tecnicos do foco</summary>
-                    <dl className="today-roadmap-details">
-                      <div>
-                        <dt>Node</dt>
-                        <dd>{formatOptional(item.roadmap_node_id)}</dd>
-                      </div>
-                      <div>
-                        <dt>Mapeado</dt>
-                        <dd>{formatOptional(item.roadmap_mapped)}</dd>
-                      </div>
-                      <div>
-                        <dt>Origem do mapeamento</dt>
-                        <dd>{formatOptional(item.roadmap_mapping_source)}</dd>
-                      </div>
-                      <div>
-                        <dt>Confianca</dt>
-                        <dd>{formatOptional(item.roadmap_mapping_confidence)}</dd>
-                      </div>
-                      <div className="today-roadmap-wide">
-                        <dt>Motivo do roadmap</dt>
-                        <dd>{formatOptional(item.roadmap_reason)}</dd>
-                      </div>
-                      <div className="today-roadmap-wide">
-                        <dt>Observacao de mapeamento</dt>
-                        <dd>{formatOptional(item.roadmap_mapping_reason)}</dd>
-                      </div>
-                    </dl>
-                  </details>
                 </article>
-                );
-              })}
+              ))}
             </div>
-          </section>
-
-          <aside className="today-side-stack">
-            <section className="today-panel">
-              <div className="today-section-head">
-                <div>
-                  <p className="today-eyebrow">Hoje</p>
-                  <h2>Progresso</h2>
-                </div>
-                {activityTodayQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
-              </div>
-
-              <div className="today-activity-overview">
-                <div>
-                  <strong>{activitySummary.title}</strong>
-                  <p>{activitySummary.description}</p>
-                </div>
-              </div>
-
-              <div className="today-activity-metrics-grid">
-                <ActivityMetric
-                  label="Questoes registradas"
-                  value={activityToday?.question_attempts_registered ?? 0}
-                  hint="Volume real ja salvo hoje."
-                />
-                <ActivityMetric
-                  label="Assuntos estudados"
-                  value={activityToday?.subjects_studied_today ?? 0}
-                  hint="Quantos temas receberam atencao."
-                />
-                <ActivityMetric
-                  label="Blocos impactados"
-                  value={activityToday?.blocks_impacted_today ?? 0}
-                  hint="Onde seu progresso mexeu na trilha."
-                />
-                <ActivityMetric
-                  label="Revisoes geradas"
-                  value={activityToday?.reviews_generated_today ?? 0}
-                  hint="O que ja virou manutencao futura."
-                />
-              </div>
-
-              <div className="today-activity-summary">
-                <span>Decisoes de progressao: {activityToday?.progression_decisions_today ?? 0}</span>
-              </div>
-            </section>
-          </aside>
+          ) : (
+            <article className="rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-8 text-center text-slate-400">
+              Nenhum bloco E1/E2 ativo agora.
+            </article>
+          )}
         </section>
 
-        <section className="today-panel">
-          <div className="today-section-head">
-            <div>
-              <p className="today-eyebrow">Recentes</p>
-              <h2>Historico do dia</h2>
+        <section className="grid gap-4 lg:grid-cols-3">
+          <article className="rounded-[1.75rem] border border-white/10 bg-slate-900/70 p-5">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Tiros Rapidos / RRs</p>
+            <h3 className="mt-2 text-xl font-black text-white">Manutencao</h3>
+            <div className="mt-4 space-y-3">
+              {focusGroups.maintenance.length > 0 ? focusGroups.maintenance.slice(0, 3).map(({ item }) => (
+                <button key={`${item.block_id}-${item.subject_id}`} type="button" onClick={() => openTrainingTimer(item)} className="w-full rounded-2xl border border-slate-700 bg-slate-950 p-3 text-left transition hover:border-sky-400">
+                  <span className="text-xs font-black text-sky-300">{eaereTag(item)}</span>
+                  <strong className="mt-1 block text-sm text-white">{item.subject_name}</strong>
+                  <small className="text-slate-500">{item.planned_questions} questoes</small>
+                </button>
+              )) : <p className="text-sm text-slate-500">Sem RR ou revisao imediata.</p>}
             </div>
-            {recentActivityQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
-          </div>
-          <ActivityList items={recentActivityQuery.data} />
+          </article>
+
+          <article className="rounded-[1.75rem] border border-amber-400/30 bg-amber-950/10 p-5">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-300">Looping EX</p>
+            <h3 className="mt-2 text-xl font-black text-white">Recuperacao</h3>
+            <div className="mt-4 space-y-3">
+              {focusGroups.recovery.length > 0 ? focusGroups.recovery.slice(0, 3).map(({ item }) => (
+                <div key={`${item.block_id}-${item.subject_id}`} className="rounded-2xl border border-amber-400/20 bg-slate-950 p-3">
+                  <span className="text-xs font-black text-amber-300">{eaereTag(item)}</span>
+                  <strong className="mt-1 block text-sm text-white">{item.subject_name}</strong>
+                  <small className="text-slate-500">score {formatTri(item.estimated_tri_score)}</small>
+                  <Link to="/lessons" className="mt-3 inline-flex rounded-xl border border-amber-300/50 px-3 py-2 text-xs font-black text-amber-200">
+                    Estudar Teoria A1
+                  </Link>
+                </div>
+              )) : <p className="text-sm text-slate-500">Nenhum bloco em EX agora.</p>}
+            </div>
+          </article>
+
+          <article className="rounded-[1.75rem] border border-white/10 bg-slate-900/70 p-5">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Metricas minimas</p>
+            <h3 className="mt-2 text-xl font-black text-white">Pulso do dia</h3>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-slate-950 p-3">
+                <span className="text-xs text-slate-500">Assuntos</span>
+                <strong className="block text-xl text-white">{activityToday?.subjects_studied_today ?? 0}</strong>
+              </div>
+              <div className="rounded-2xl bg-slate-950 p-3">
+                <span className="text-xs text-slate-500">Blocos</span>
+                <strong className="block text-xl text-white">{activityToday?.blocks_impacted_today ?? 0}</strong>
+              </div>
+              <div className="rounded-2xl bg-slate-950 p-3">
+                <span className="text-xs text-slate-500">Revisoes</span>
+                <strong className="block text-xl text-white">{activityToday?.reviews_generated_today ?? 0}</strong>
+              </div>
+              <div className="rounded-2xl bg-slate-950 p-3">
+                <span className="text-xs text-slate-500">Focos</span>
+                <strong className="block text-xl text-white">{planSummary?.focus_count ?? 0}</strong>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-slate-500">
+              {mockExamRecommendation?.title ?? "Sem simulado sugerido agora."}
+            </p>
+          </article>
         </section>
+
       </motion.section>
 
       {selectedItem ? (
@@ -1281,54 +832,6 @@ export default function TodayPage() {
         </div>
       ) : null}
 
-      {selectedCalendarDay ? (
-        <div className="today-modal-backdrop" role="dialog" aria-modal="true">
-          <section className="today-panel today-modal">
-            <div className="today-section-head">
-              <div>
-                <p className="today-eyebrow">Calendario adaptativo</p>
-                <h2>{formatCalendarDayLabel(selectedCalendarDay.date).dayMonth}</h2>
-              </div>
-              <button type="button" className="today-close-button" onClick={() => setSelectedCalendarDay(null)}>
-                Fechar
-              </button>
-            </div>
-
-            <div className="today-calendar-modal-summary">
-              <span>{calendarStatusLabel(selectedCalendarDay.status)}</span>
-              <span>{selectedCalendarDay.total_questions} questoes</span>
-              <span>{selectedCalendarDay.focus_count} foco(s)</span>
-            </div>
-            <p className="today-calendar-note">{selectedCalendarDay.reason}</p>
-
-            <div className="today-calendar-recommendation">
-              <strong>
-                {selectedCalendarDay.mock_exam_recommendation.recommended
-                  ? selectedCalendarDay.mock_exam_recommendation.title || "Simulado sugerido"
-                  : "Sem simulado sugerido agora"}
-              </strong>
-              <p>{selectedCalendarDay.mock_exam_recommendation.reason}</p>
-            </div>
-
-            <div className="today-calendar-detail-list">
-              {selectedCalendarDay.items.map((item, index) => (
-                <article key={`${selectedCalendarDay.date}-${item.subject_id ?? index}`} className="today-calendar-detail-item">
-                  <div>
-                    <strong>{item.subject_name || calendarTypeLabel(item.type)}</strong>
-                    <p>{item.discipline || calendarTypeLabel(item.type)}</p>
-                  </div>
-                  <div className="today-calendar-detail-meta">
-                    <span>{calendarTypeLabel(item.type)}</span>
-                    <span>{item.planned_questions} questoes</span>
-                  </div>
-                  <p>{item.reason}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-        </div>
-      ) : null}
-
       {showAcademicExamsPopup ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
           <section className="w-full max-w-lg rounded-3xl border border-slate-700 bg-slate-950 p-6 text-slate-100 shadow-2xl dark:border-slate-700 dark:bg-slate-950">
@@ -1364,3 +867,5 @@ export default function TodayPage() {
     </main>
   );
 }
+
+
