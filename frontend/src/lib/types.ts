@@ -192,6 +192,7 @@ export type SmartCalendarProjectionDay = {
   scheduled_items: string[];
   subjects_predicted: string[];
   plan_subjects_predicted: string[];
+  focus_subjects_predicted: string[];
 };
 
 export type CalendarEventPayload = {

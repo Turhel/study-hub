@@ -226,6 +226,7 @@ export async function getStudyGuideCalendarProjection(): Promise<SmartCalendarPr
     scheduled_items: day.scheduled_items ?? [],
     subjects_predicted: day.subjects_predicted ?? [],
     plan_subjects_predicted: day.plan_subjects_predicted ?? [],
+    focus_subjects_predicted: day.focus_subjects_predicted ?? [],
   }));
 }
 

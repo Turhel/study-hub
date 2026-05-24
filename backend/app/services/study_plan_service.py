@@ -577,15 +577,18 @@ def _build_projected_day(
     capacity,
     candidates: list[StudyPlanCandidate],
     carry_over_items: list[ProjectedCarryOverItem],
+    excluded_subject_ids: set[int] | None = None,
 ) -> StudyPlanCalendarDay:
     energy_settings = _energy_settings_snapshot(session)
     total_limit = calculate_dynamic_daily_target(session)
     focus_limit = capacity.max_focus_count
     selected_items: list[StudyPlanCalendarItem] = []
-    used_subject_ids: set[int] = set()
+    used_subject_ids: set[int] = set(excluded_subject_ids or set())
     remaining_questions = total_limit
 
     for item in carry_over_items:
+        if item.subject_id in used_subject_ids:
+            continue
         if len(selected_items) >= focus_limit or remaining_questions <= 0:
             break
         planned_questions = min(item.planned_questions, remaining_questions)
@@ -748,6 +751,12 @@ def build_study_plan_calendar(
             capacity=capacity,
             candidates=candidates,
             carry_over_items=carry_over_items if offset == 1 else [],
+            excluded_subject_ids={
+                item.subject_id
+                for day in days_payload[1:]
+                for item in day.items
+                if item.type == "study_focus" and item.subject_id is not None
+            },
         )
         days_payload.append(future_day)
 

@@ -715,7 +715,9 @@ export default function TodayPage() {
                     {projection ? (
                       <span className="absolute bottom-1 flex items-center gap-1">
                         {projection.has_simulado ? <span className="h-1.5 w-1.5 rounded-full bg-rose-400" /> : null}
-                        {projection.subjects_predicted.length > 0 || projection.revisoes_count > 0 ? (
+                        {projection.subjects_predicted.length > 0 ||
+                        projection.revisoes_count > 0 ||
+                        (projection.focus_subjects_predicted?.length ?? 0) > 0 ? (
                           <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
                         ) : null}
                         {projection.plan_subjects_predicted?.length > 0 ? (
@@ -729,7 +731,7 @@ export default function TodayPage() {
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-slate-400">
               <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-400" /> Simulado</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-400" /> Revisao EAERE</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-400" /> Previsao EAERE</span>
               <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-300" /> Plano de hoje</span>
             </div>
             {smartCalendarQuery.isError ? (
@@ -903,7 +905,7 @@ export default function TodayPage() {
                   {shortWeekday(selectedCalendarDate)} · {shortDayMonth(selectedCalendarDate)}
                 </h2>
                 <p className="mt-1 text-sm font-semibold text-slate-400">
-                  {isSelectedDateProjected ? "Projecao dos proximos 7 dias" : "Fora da janela preditiva atual"}
+                  {isSelectedDateProjected ? "Previsao visual, recalculada conforme voce executa o plano" : "Fora da janela preditiva atual"}
                 </p>
               </div>
               <button
@@ -928,6 +930,9 @@ export default function TodayPage() {
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
                     Carga estimada: {selectedCalendarProjection.total_questoes_estimadas} questoes aproximadas para este dia
+                  </p>
+                  <p className="mt-2 text-xs font-semibold leading-relaxed text-slate-500">
+                    Se voce concluir os focos anteriores, esta e a fila provavel do EAERE. Se sobrar pendencia, o calendario se ajusta e carrega o conteudo para frente.
                   </p>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -955,6 +960,28 @@ export default function TodayPage() {
                             >
                               <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-300/90" aria-hidden />
                               <span className="font-mono text-xs leading-relaxed text-amber-100/90">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {(selectedCalendarProjection.focus_subjects_predicted?.length ?? 0) > 0 ? (
+                      <div>
+                        <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-violet-300">
+                          Plano ativo previsto
+                        </p>
+                        <p className="mt-1 text-[0.7rem] font-semibold text-violet-200/70">
+                          Sequencia provavel se os dias anteriores forem executados.
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {selectedCalendarProjection.focus_subjects_predicted.map((item, index) => (
+                            <li
+                              key={`focus-${item}-${index}`}
+                              className="flex items-start gap-2 rounded-lg border border-violet-400/20 bg-violet-950/20 px-3 py-2"
+                            >
+                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-violet-300/90" aria-hidden />
+                              <span className="font-mono text-xs leading-relaxed text-violet-100/90">{item}</span>
                             </li>
                           ))}
                         </ul>

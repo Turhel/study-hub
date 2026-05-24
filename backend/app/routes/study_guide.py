@@ -13,11 +13,13 @@ from app.schemas import (
     StudyGuideCalendarProjectionDay,
     StudyGuidePreferences,
     StudyGuidePreferencesResponse,
+    StudyPlanCalendarDay,
     UserCalendarEventCreate,
     UserCalendarEventResponse,
     UserEnergySettingsResponse,
     UserEnergySettingsUpdate,
 )
+from app.services.study_plan_service import build_study_plan_calendar
 from app.services.capacity_service import (
     calculate_dynamic_daily_target,
     energy_settings_response,
@@ -214,6 +216,29 @@ def _dedupe_review_queue(items: list[_ReviewQueueItem]) -> list[_ReviewQueueItem
     return unique_items
 
 
+def _labels_from_study_calendar_day(session: Session, calendar_day: StudyPlanCalendarDay | None) -> list[str]:
+    if calendar_day is None:
+        return []
+    mastery_by_block = _block_mastery_by_id(session)
+    labels: list[str] = []
+    for item in calendar_day.items:
+        if item.type != "study_focus":
+            continue
+        subject = session.get(Subject, item.subject_id) if item.subject_id else None
+        discipline = item.discipline or (subject.disciplina if subject is not None else "Geral")
+        stage = "FOCO"
+        if item.block_id is not None:
+            mastery = mastery_by_block.get(item.block_id)
+            if mastery is not None and mastery.eaere_stage:
+                stage = mastery.eaere_stage.upper()
+        if subject is not None:
+            labels.append(_format_subject_predicted(discipline, subject, stage))
+        else:
+            name = item.subject_name or "Assunto"
+            labels.append(f"{_discipline_short_name(discipline)}: {name} ({stage})")
+    return labels
+
+
 def _simulate_review_schedule(
     session: Session,
     pending_reviews: list[_ReviewQueueItem],
@@ -297,6 +322,8 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
     projected_days: list[StudyGuideCalendarProjectionDay] = []
     pending_reviews = _build_review_queue(session)
     review_schedule = _simulate_review_schedule(session, pending_reviews, reference_day=reference_day)
+    study_calendar = build_study_plan_calendar(session, start_day=reference_day, days=7)
+    study_day_by_date = {day.date: day for day in study_calendar.days}
 
     for offset in range(7):
         target_date = reference_day + timedelta(days=offset)
@@ -315,6 +342,7 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
                     status_protecao=status_protecao,
                     scheduled_items=[],
                     subjects_predicted=[],
+                    focus_subjects_predicted=[],
                 )
             )
             continue
@@ -322,10 +350,16 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
         selected_reviews = review_schedule.get(target_date, [])
         subjects_predicted = [item.label for item in selected_reviews]
         plan_subjects_predicted = _plan_predicted_labels(session, target_date) if offset == 0 else []
+        calendar_day = study_day_by_date.get(target_date.isoformat())
+        focus_subjects_predicted = _labels_from_study_calendar_day(session, calendar_day) if offset > 0 else []
 
         revisoes_count = len(selected_reviews)
         plan_questions = _active_plan_questions(session, target_date) if offset == 0 else 0
-        estimated_questions = plan_questions + sum(item.questions_estimate for item in selected_reviews)
+        focus_questions = calendar_day.total_questions if calendar_day is not None and offset > 0 else 0
+        if status_protecao == "provas_academicas":
+            focus_subjects_predicted = []
+            focus_questions = 0
+        estimated_questions = plan_questions + focus_questions + sum(item.questions_estimate for item in selected_reviews)
         estimated_questions += sum(exam.total_questoes for exam in mock_exams)
 
         if status_protecao == "provas_academicas":
@@ -333,6 +367,7 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
 
         scheduled_items = [
             *[f"Plano ativo: {label}" for label in plan_subjects_predicted],
+            *[f"Foco previsto: {label}" for label in focus_subjects_predicted],
             *[f"Revisao: {item.label}" for item in selected_reviews],
         ]
 
@@ -346,6 +381,7 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
                 scheduled_items=scheduled_items,
                 subjects_predicted=subjects_predicted,
                 plan_subjects_predicted=plan_subjects_predicted,
+                focus_subjects_predicted=focus_subjects_predicted,
             )
         )
 
