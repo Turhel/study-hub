@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.db import get_session
 from app.schemas import (
@@ -17,9 +17,9 @@ router = APIRouter(prefix="/api/free-study")
 
 
 @router.get("/catalog", response_model=FreeStudyCatalogResponse)
-def read_free_study_catalog() -> FreeStudyCatalogResponse:
+def read_free_study_catalog(discipline: str | None = Query(default=None)) -> FreeStudyCatalogResponse:
     with get_session() as session:
-        return get_free_study_catalog(session)
+        return get_free_study_catalog(session, discipline=discipline)
 
 
 @router.get("/subjects/{subject_id}/context", response_model=FreeStudySubjectContextResponse)

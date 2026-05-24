@@ -367,6 +367,16 @@ export async function getFreeStudyCatalog(): Promise<FreeStudyCatalogResponse> {
   return response.json() as Promise<FreeStudyCatalogResponse>;
 }
 
+export async function getFreeStudyCatalogByDiscipline(discipline: string): Promise<FreeStudyCatalogResponse> {
+  const response = await apiFetch(`${API_BASE_URL}/api/free-study/catalog?discipline=${encodeURIComponent(discipline)}`);
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel carregar o catalogo de estudo livre.");
+  }
+
+  return response.json() as Promise<FreeStudyCatalogResponse>;
+}
+
 export async function getFreeStudySubjectContext(subjectId: number): Promise<FreeStudySubjectContextResponse> {
   const response = await apiFetch(`${API_BASE_URL}/api/free-study/subjects/${subjectId}/context`);
 

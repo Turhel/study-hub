@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import unicodedata
 
 from sqlmodel import Session, select
 
@@ -31,6 +32,14 @@ def _subject_label(subject: Subject) -> str:
     if subject.subassunto:
         return f"{subject.assunto} - {subject.subassunto}"
     return subject.assunto
+
+
+def _normalize_filter(value: str | None) -> str:
+    if not value:
+        return ""
+    normalized = unicodedata.normalize("NFKD", value)
+    ascii_value = "".join(char for char in normalized if not unicodedata.combining(char))
+    return " ".join(ascii_value.casefold().split())
 
 
 def _block_progress_by_id(session: Session) -> dict[int, BlockProgress]:
@@ -279,12 +288,20 @@ def get_free_study_subject_context(session: Session, subject_id: int) -> FreeStu
     )
 
 
-def get_free_study_catalog(session: Session) -> FreeStudyCatalogResponse:
+def get_free_study_catalog(session: Session, discipline: str | None = None) -> FreeStudyCatalogResponse:
     subjects = session.exec(
         select(Subject)
         .where(Subject.ativo == True)  # noqa: E712
         .order_by(Subject.disciplina, Subject.assunto, Subject.subassunto, Subject.id)
     ).all()
+    discipline_filter = _normalize_filter(discipline)
+    if discipline_filter:
+        subjects = [
+            subject
+            for subject in subjects
+            if _normalize_filter(subject.disciplina) == discipline_filter
+            or discipline_filter in _normalize_filter(subject.disciplina)
+        ]
     primary_blocks = _primary_blocks_by_subject(session)
     block_progress_by_id = _block_progress_by_id(session)
     overview = build_guided_roadmap_overview(session, block_progress_by_id)
