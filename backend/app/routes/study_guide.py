@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, timedelta
 
 from fastapi import APIRouter
-from sqlmodel import select
+from sqlmodel import Session, select
 
 from app.db import get_session
-from app.models import Block, DailyStudyPlan, DailyStudyPlanItem, MockExam, Review, Subject, UserCalendarEvent
+from app.models import Block, BlockMastery, DailyStudyPlan, DailyStudyPlanItem, MockExam, Review, Subject, UserCalendarEvent
 from app.schemas import (
     StudyGuideCalendarProjectionDay,
     StudyGuidePreferences,
@@ -17,6 +18,7 @@ from app.schemas import (
     UserEnergySettingsUpdate,
 )
 from app.services.capacity_service import (
+    calculate_dynamic_daily_target,
     energy_settings_response,
     get_or_create_capacity,
     get_or_create_user_energy_settings,
@@ -24,6 +26,7 @@ from app.services.capacity_service import (
     update_study_guide_preferences,
     update_user_energy_settings,
 )
+from app.services.review_service import review_question_target_for_stage
 
 
 router = APIRouter(prefix="/api/study-guide")
@@ -32,6 +35,19 @@ router = APIRouter(prefix="/api/study-guide")
 PROTECTION_EXAMS = "PROVAS_ACADEMICAS"
 PROTECTION_TRAVEL = "VIAGEM_DESCANSO"
 EVENT_MOCK_EXAM = "SIMULADO_PROG"
+QUESTIONS_PER_REVIEW_SLOT = 5
+
+
+@dataclass(frozen=True)
+class _ReviewQueueItem:
+    review_id: int
+    block_id: int | None
+    subject_id: int | None
+    proxima_data: date
+    priority: int
+    stage: str
+    label: str
+    questions_estimate: int
 
 
 def _events_for_day(session, target_date: date) -> list[UserCalendarEvent]:
@@ -53,41 +69,48 @@ def _protection_status(events: list[UserCalendarEvent]) -> str:
     return "normal"
 
 
-def _scheduled_reviews_count(session, target_date: date) -> int:
-    return len(
-        session.exec(
-            select(Review)
-            .where(Review.proxima_data == target_date)
-            .where(Review.status == "pendente")
-        ).all()
-    )
+def _eaere_stage_priority(stage: str | None) -> int:
+    normalized = (stage or "E1").upper()
+    if normalized.startswith("EX") or normalized == "A1":
+        return 3
+    if normalized in {"E1", "E2"}:
+        return 1
+    if normalized.startswith("RR") or normalized in {"R1", "R2", "R3", "R4", "R5", "R6", "R7"}:
+        return 2
+    return 3
 
 
-def _scheduled_review_labels(session, target_date: date) -> list[str]:
-    reviews = session.exec(
-        select(Review)
-        .where(Review.proxima_data == target_date)
-        .where(Review.status == "pendente")
-    ).all()
+def _discipline_short_name(discipline: str) -> str:
+    normalized = discipline.strip().lower()
+    shortcuts = {
+        "biologia": "Bio",
+        "química": "Química",
+        "quimica": "Química",
+        "física": "Física",
+        "fisica": "Física",
+        "matemática": "Mat",
+        "matematica": "Mat",
+        "linguagens": "Ling",
+        "humanas": "Hum",
+        "redação": "Red",
+        "redacao": "Red",
+    }
+    for key, short in shortcuts.items():
+        if key in normalized:
+            return short
+    return discipline.split()[0] if discipline else "Geral"
 
-    labels: list[str] = []
-    for review in reviews:
-        subject = session.get(Subject, review.subject_id) if review.subject_id else None
-        block = session.get(Block, review.block_id) if review.block_id else None
 
-        if subject is not None:
-            subject_name = subject.assunto
-            if subject.subassunto:
-                subject_name = f"{subject_name} - {subject.subassunto}"
-            discipline = subject.disciplina
-        else:
-            subject_name = "Revisao sem assunto vinculado"
-            discipline = block.disciplina if block is not None else "Geral"
+def _subject_topic_label(subject: Subject | None) -> str:
+    if subject is None:
+        return "Assunto"
+    if subject.subassunto:
+        return f"{subject.assunto} - {subject.subassunto}"
+    return subject.assunto
 
-        block_name = f" / {block.nome}" if block is not None else ""
-        labels.append(f"{discipline} - {subject_name}{block_name}")
 
-    return labels
+def _format_subject_predicted(discipline: str, subject: Subject | None, stage: str) -> str:
+    return f"{_discipline_short_name(discipline)}: {_subject_topic_label(subject)} ({stage})"
 
 
 def _active_plan_for_day(session, target_date: date) -> DailyStudyPlan | None:
@@ -112,16 +135,12 @@ def _active_plan_items_for_day(session, target_date: date) -> list[DailyStudyPla
     )
 
 
-def _active_plan_labels(session, target_date: date) -> list[str]:
+def _plan_predicted_labels(session, target_date: date) -> list[str]:
     labels: list[str] = []
     for item in _active_plan_items_for_day(session, target_date):
         subject = session.get(Subject, item.subject_id)
-        block = session.get(Block, item.block_id)
-        subject_name = subject.assunto if subject is not None else f"Assunto {item.subject_id}"
-        if subject is not None and subject.subassunto:
-            subject_name = f"{subject_name} - {subject.subassunto}"
-        block_name = block.nome if block is not None else f"Bloco {item.block_id}"
-        labels.append(f"{item.discipline} - {subject_name} / {block_name} · {item.planned_questions} questoes")
+        stage = item.planned_mode.upper() if item.planned_mode else "FOCO"
+        labels.append(_format_subject_predicted(item.discipline, subject, stage))
     return labels
 
 
@@ -131,6 +150,71 @@ def _active_plan_questions(session, target_date: date) -> int:
 
 def _mock_exams_for_day(session, target_date: date) -> list[MockExam]:
     return list(session.exec(select(MockExam).where(MockExam.data == target_date)).all())
+
+
+def _block_mastery_by_id(session) -> dict[int, BlockMastery]:
+    return {row.block_id: row for row in session.exec(select(BlockMastery)).all()}
+
+
+def _build_review_queue(session) -> list[_ReviewQueueItem]:
+    reviews = session.exec(
+        select(Review)
+        .where(Review.status == "pendente")
+        .order_by(Review.proxima_data, Review.id)
+    ).all()
+    mastery_by_block = _block_mastery_by_id(session)
+    queue: list[_ReviewQueueItem] = []
+
+    for review in reviews:
+        if review.id is None:
+            continue
+        subject = session.get(Subject, review.subject_id) if review.subject_id else None
+        block = session.get(Block, review.block_id) if review.block_id else None
+        mastery = mastery_by_block.get(review.block_id or 0)
+        stage = (mastery.eaere_stage if mastery is not None else "RR").upper()
+        discipline = subject.disciplina if subject is not None else (block.disciplina if block is not None else "Geral")
+        queue.append(
+            _ReviewQueueItem(
+                review_id=review.id,
+                block_id=review.block_id,
+                subject_id=review.subject_id,
+                proxima_data=review.proxima_data,
+                priority=_eaere_stage_priority(stage),
+                stage=stage,
+                label=_format_subject_predicted(discipline, subject, stage),
+                questions_estimate=review_question_target_for_stage(stage),
+            )
+        )
+
+    return queue
+
+
+def _max_review_slots_for_day(session, target_date: date) -> int:
+    daily_target = calculate_dynamic_daily_target(session)
+    events = _events_for_day(session, target_date)
+    if _protection_status(events) == "provas_academicas":
+        daily_target = min(daily_target, 5)
+    return max(1, daily_target // QUESTIONS_PER_REVIEW_SLOT)
+
+
+def _allocate_reviews_for_day(
+    *,
+    pending_reviews: list[_ReviewQueueItem],
+    reprimidos: list[_ReviewQueueItem],
+    assigned_ids: set[int],
+    target_date: date,
+    max_slots: int,
+) -> tuple[list[_ReviewQueueItem], list[_ReviewQueueItem]]:
+    due_today = [
+        item
+        for item in pending_reviews
+        if item.review_id not in assigned_ids and item.proxima_data <= target_date
+    ]
+    queue = [*reprimidos, *due_today]
+    queue.sort(key=lambda item: (item.proxima_data, item.priority, item.review_id))
+    selected = queue[:max_slots]
+    overflow = queue[max_slots:]
+    return selected, overflow
 
 
 def _parse_event_date(value: str) -> date:
@@ -173,45 +257,81 @@ def update_energy_settings(payload: UserEnergySettingsUpdate) -> UserEnergySetti
         return update_user_energy_settings(session, payload)
 
 
-@router.get("/calendar-projection", response_model=list[StudyGuideCalendarProjectionDay])
-def read_calendar_projection() -> list[StudyGuideCalendarProjectionDay]:
-    today = date.today()
+def build_calendar_projection(session: Session, *, today: date | None = None) -> list[StudyGuideCalendarProjectionDay]:
+    reference_day = today or date.today()
     projected_days: list[StudyGuideCalendarProjectionDay] = []
+    pending_reviews = _build_review_queue(session)
+    reprimidos: list[_ReviewQueueItem] = []
+    assigned_review_ids: set[int] = set()
 
-    with get_session() as session:
-        for offset in range(7):
-            target_date = today + timedelta(days=offset)
-            events = _events_for_day(session, target_date)
-            status_protecao = _protection_status(events)
-            revisoes_count = _scheduled_reviews_count(session, target_date)
-            plan_questions = _active_plan_questions(session, target_date)
-            scheduled_items = [
-                *_active_plan_labels(session, target_date),
-                *_scheduled_review_labels(session, target_date),
-            ]
-            mock_exams = _mock_exams_for_day(session, target_date)
-            has_simulado = bool(mock_exams) or any(event.event_type == EVENT_MOCK_EXAM for event in events)
+    for offset in range(7):
+        target_date = reference_day + timedelta(days=offset)
+        events = _events_for_day(session, target_date)
+        status_protecao = _protection_status(events)
+        mock_exams = _mock_exams_for_day(session, target_date)
+        has_simulado = bool(mock_exams) or any(event.event_type == EVENT_MOCK_EXAM for event in events)
 
-            estimated_questions = plan_questions + (revisoes_count * 5)
-            estimated_questions += sum(exam.total_questoes for exam in mock_exams)
-
-            if status_protecao == "viagem_descanso":
-                estimated_questions = 0
-            elif status_protecao == "provas_academicas":
-                estimated_questions = min(estimated_questions, 5)
-
+        if status_protecao == "viagem_descanso":
             projected_days.append(
                 StudyGuideCalendarProjectionDay(
                     date=target_date.isoformat(),
                     has_simulado=has_simulado,
-                    revisoes_count=revisoes_count,
-                    total_questoes_estimadas=estimated_questions,
+                    revisoes_count=0,
+                    total_questoes_estimadas=0,
                     status_protecao=status_protecao,
-                    scheduled_items=scheduled_items,
+                    scheduled_items=[],
+                    subjects_predicted=[],
                 )
             )
+            continue
+
+        max_slots = _max_review_slots_for_day(session, target_date)
+        selected_reviews, reprimidos = _allocate_reviews_for_day(
+            pending_reviews=pending_reviews,
+            reprimidos=reprimidos,
+            assigned_ids=assigned_review_ids,
+            target_date=target_date,
+            max_slots=max_slots,
+        )
+        for item in selected_reviews:
+            assigned_review_ids.add(item.review_id)
+
+        subjects_predicted = [item.label for item in selected_reviews]
+        if offset == 0:
+            subjects_predicted = [*_plan_predicted_labels(session, target_date), *subjects_predicted]
+
+        revisoes_count = len(selected_reviews)
+        plan_questions = _active_plan_questions(session, target_date) if offset == 0 else 0
+        estimated_questions = plan_questions + sum(item.questions_estimate for item in selected_reviews)
+        estimated_questions += sum(exam.total_questoes for exam in mock_exams)
+
+        if status_protecao == "provas_academicas":
+            estimated_questions = min(estimated_questions, 5)
+
+        scheduled_items = [
+            *([f"Plano ativo: {label}" for label in _plan_predicted_labels(session, target_date)] if offset == 0 else []),
+            *[f"Revisao: {item.label}" for item in selected_reviews],
+        ]
+
+        projected_days.append(
+            StudyGuideCalendarProjectionDay(
+                date=target_date.isoformat(),
+                has_simulado=has_simulado,
+                revisoes_count=revisoes_count,
+                total_questoes_estimadas=estimated_questions,
+                status_protecao=status_protecao,
+                scheduled_items=scheduled_items,
+                subjects_predicted=subjects_predicted,
+            )
+        )
 
     return projected_days
+
+
+@router.get("/calendar-projection", response_model=list[StudyGuideCalendarProjectionDay])
+def read_calendar_projection() -> list[StudyGuideCalendarProjectionDay]:
+    with get_session() as session:
+        return build_calendar_projection(session)
 
 
 @router.post("/calendar-events", response_model=UserCalendarEventResponse)
@@ -232,4 +352,3 @@ def create_calendar_event(payload: UserCalendarEventCreate) -> UserCalendarEvent
         session.commit()
         session.refresh(event)
         return _calendar_event_response(event)
-

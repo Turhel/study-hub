@@ -94,43 +94,59 @@ def _looks_like_legacy_timer_total_time(attempts: list[QuestionAttempt]) -> bool
     return len(times) == 1
 
 
+def _attempt_session_key(attempt: QuestionAttempt) -> tuple[date, str | None, str, int | None, int | None, str | None]:
+    return (
+        attempt.data,
+        attempt.source,
+        attempt.disciplina,
+        attempt.block_id,
+        attempt.subject_id,
+        attempt.observacoes,
+    )
+
+
+def _looks_like_duplicated_session_total_time(correct_attempts: list[QuestionAttempt]) -> bool:
+    if len(correct_attempts) <= 1:
+        return False
+    times = {attempt.tempo_segundos for attempt in correct_attempts if attempt.tempo_segundos is not None}
+    if len(times) != 1:
+        return False
+    shared_time = next(iter(times))
+    if shared_time is None:
+        return False
+    if _looks_like_legacy_timer_total_time(correct_attempts):
+        return True
+    return shared_time >= 600
+
+
+def _session_correct_time_totals(group: list[QuestionAttempt]) -> tuple[float, int]:
+    correct_attempts = [
+        attempt
+        for attempt in group
+        if attempt.acertou and attempt.tempo_segundos is not None and attempt.tempo_segundos > 0
+    ]
+    if not correct_attempts:
+        return 0.0, 0
+
+    if _looks_like_duplicated_session_total_time(correct_attempts):
+        return float(correct_attempts[0].tempo_segundos or 0), len(correct_attempts)
+
+    return float(sum(attempt.tempo_segundos or 0 for attempt in correct_attempts)), len(correct_attempts)
+
+
 def _average_correct_time_seconds(attempts: list[QuestionAttempt]) -> float | None:
-    grouped: dict[tuple[date, str | None, str, int | None, int | None, int | None, str | None], list[QuestionAttempt]] = defaultdict(list)
+    grouped: dict[tuple[date, str | None, str, int | None, int | None, str | None], list[QuestionAttempt]] = defaultdict(list)
     for attempt in attempts:
-        if attempt.tempo_segundos is None:
-            continue
-        grouped[
-            (
-                attempt.data,
-                attempt.source,
-                attempt.disciplina,
-                attempt.block_id,
-                attempt.subject_id,
-                attempt.tempo_segundos,
-                attempt.observacoes,
-            )
-        ].append(attempt)
+        grouped[_attempt_session_key(attempt)].append(attempt)
 
     total_seconds = 0.0
     total_correct = 0
     for group in grouped.values():
-        correct_count = sum(1 for attempt in group if attempt.acertou)
-        if correct_count <= 0:
+        session_seconds, session_correct = _session_correct_time_totals(group)
+        if session_correct <= 0:
             continue
-
-        first_time = group[0].tempo_segundos
-        if first_time is None:
-            continue
-
-        if _looks_like_legacy_timer_total_time(group):
-            total_seconds += first_time
-        else:
-            total_seconds += sum(
-                attempt.tempo_segundos or 0
-                for attempt in group
-                if attempt.acertou
-            )
-        total_correct += correct_count
+        total_seconds += session_seconds
+        total_correct += session_correct
 
     if total_correct <= 0:
         return None

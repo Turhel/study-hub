@@ -987,7 +987,7 @@ export default function StatsPage() {
             )}
           </ChartFrame>
 
-          <ChartFrame title="Tempo medio correto" subtitle="Linha real com meta de 3min e tendencia discreta.">
+          <ChartFrame title="Tempo medio correto" subtitle="Segundos por questao correta (media da sessao), meta 3min e tendencia discreta.">
             {timeseriesPoints.length > 0 ? (
               <TimeTrendChart points={timeseriesPoints} />
             ) : (

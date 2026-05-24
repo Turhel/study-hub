@@ -920,11 +920,14 @@ export default function TodayPage() {
                 </div>
               ) : selectedCalendarProjection ? (
                 <div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+                    Carga estimada: {selectedCalendarProjection.total_questoes_estimadas} questoes aproximadas para este dia
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Pauta de estudos estimada</p>
                       <p className="mt-1 text-sm font-semibold text-slate-500">
-                        {selectedCalendarProjection.revisoes_count} revisao(oes) · {selectedCalendarProjection.total_questoes_estimadas} questoes estimadas · {protectionLabel(selectedCalendarProjection.status_protecao)}
+                        {selectedCalendarProjection.revisoes_count} revisao(oes) · {protectionLabel(selectedCalendarProjection.status_protecao)}
                       </p>
                     </div>
                     {selectedCalendarProjection.has_simulado ? (
@@ -934,19 +937,23 @@ export default function TodayPage() {
                     ) : null}
                   </div>
 
-                  <div className="mt-4 space-y-2">
-                    {selectedCalendarProjection.scheduled_items.length > 0 ? (
-                      selectedCalendarProjection.scheduled_items.map((item, index) => (
-                        <div key={`${item}-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2">
-                          <p className="font-mono text-xs leading-relaxed text-slate-400">{item}</p>
-                        </div>
+                  <ul className="mt-4 space-y-1.5">
+                    {selectedCalendarProjection.subjects_predicted.length > 0 ? (
+                      selectedCalendarProjection.subjects_predicted.map((item, index) => (
+                        <li
+                          key={`${item}-${index}`}
+                          className="flex items-start gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2"
+                        >
+                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-sky-400/80" aria-hidden />
+                          <span className="font-mono text-xs leading-relaxed text-slate-300">{item}</span>
+                        </li>
                       ))
                     ) : (
-                      <p className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-3 font-mono text-xs leading-relaxed text-slate-500">
+                      <li className="rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2 font-mono text-xs leading-relaxed text-slate-500">
                         Sem conteudo detalhado agendado para este dia.
-                      </p>
+                      </li>
                     )}
-                  </div>
+                  </ul>
                 </div>
               ) : (
                 <div>

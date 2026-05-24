@@ -190,6 +190,7 @@ export type SmartCalendarProjectionDay = {
   total_questoes_estimadas: number;
   status_protecao: "normal" | "provas_academicas" | "viagem_descanso" | string;
   scheduled_items: string[];
+  subjects_predicted: string[];
 };
 
 export type CalendarEventPayload = {
