@@ -46,9 +46,9 @@ const profileMenuItems = [
 const streakWeekdayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"] as const;
 
 const masterySummaryItems = [
-  { label: "Questoes", key: "question_mastery_stars" },
-  { label: "Revisoes", key: "review_mastery_stars" },
-  { label: "Consistencia", key: "consistency_mastery_stars" },
+  { label: "Questões", key: "question_mastery_stars" },
+  { label: "Revisões", key: "review_mastery_stars" },
+  { label: "Consistência", key: "consistency_mastery_stars" },
   { label: "Dominados", key: "mastered_subjects_count" },
 ] as const;
 
@@ -323,7 +323,7 @@ export default function App() {
               <section className="topbar-profile-card topbar-profile-card-open" role="menu" onKeyDown={handleProfileMenuKeyDown}>
                 <div className="topbar-profile-header">
                   <div>
-                    <h2>Ola, Thullyo</h2>
+                    <h2>Olá</h2>
                     <p>Seu hub pessoal de estudo.</p>
                   </div>
                   <div className="topbar-profile-avatar" aria-hidden="true">
