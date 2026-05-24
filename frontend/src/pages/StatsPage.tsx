@@ -275,40 +275,6 @@ function normalizeDisciplineLabel(value: string): string {
   return value === GENERAL_FILTER ? value : value;
 }
 
-function StatsGlyph({ tone }: { tone: StatsCardTone }) {
-  if (tone === "gold") {
-    return (
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <rect x="10" y="8" width="28" height="32" rx="5" className="today-icon-fill-gold" />
-        <path d="M17 18h14M17 25h14M17 32h8" className="today-icon-line-dark" />
-      </svg>
-    );
-  }
-  if (tone === "pink") {
-    return (
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <rect x="9" y="9" width="30" height="30" rx="8" className="today-icon-fill-pink" />
-        <path d="M24 15v18M15 24h18" className="today-icon-line-soft" />
-      </svg>
-    );
-  }
-  if (tone === "green") {
-    return (
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="24" cy="24" r="16" className="today-icon-fill-green" />
-        <path d="M14 27c6-9 14-9 20 0M17 33c5-5 9-5 14 0" className="today-icon-line-dark" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 48 48" aria-hidden="true">
-      <circle cx="24" cy="24" r="17" className="today-icon-fill-blue" />
-      <circle cx="24" cy="24" r="9" className="today-icon-fill-gold" />
-      <circle cx="24" cy="24" r="3" className="today-icon-fill-coral" />
-    </svg>
-  );
-}
-
 function SummaryCard({
   label,
   value,
@@ -320,22 +286,18 @@ function SummaryCard({
   hint?: string;
   tone: StatsCardTone;
 }) {
+  const toneClass = {
+    blue: "border-sky-400/20 bg-sky-400/5 text-sky-200",
+    pink: "border-fuchsia-400/20 bg-fuchsia-400/5 text-fuchsia-200",
+    gold: "border-amber-400/20 bg-amber-400/5 text-amber-200",
+    green: "border-emerald-400/20 bg-emerald-400/5 text-emerald-200",
+  }[tone];
+
   return (
-    <article className={`stats-card stats-card-${tone}`}>
-      <div className="stats-card-main">
-        <div className="stats-card-copy">
-          <span>{label}</span>
-          <strong>{value}</strong>
-        </div>
-        <span className="stats-card-icon" aria-hidden="true">
-          <StatsGlyph tone={tone} />
-        </span>
-      </div>
-      {hint ? (
-        <div className="stats-card-footer">
-          <small>{hint}</small>
-        </div>
-      ) : null}
+    <article className={`rounded-2xl border bg-slate-900/50 p-4 backdrop-blur-md ${toneClass}`}>
+      <span className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-slate-500">{label}</span>
+      <strong className="mt-3 block text-2xl font-black text-white">{value}</strong>
+      {hint ? <small className="mt-2 block text-xs font-bold text-slate-400">{hint}</small> : null}
     </article>
   );
 }
@@ -486,7 +448,7 @@ function ChartFrame({
   children: ReactNode;
 }) {
   return (
-    <section className="stats-chart-card">
+    <section className="stats-chart-card rounded-3xl border border-slate-800 bg-slate-900/50 p-5 shadow-xl shadow-black/10 backdrop-blur-md">
       <div className="stats-chart-head">
         <div>
           <h3>{title}</h3>
@@ -843,6 +805,14 @@ export default function StatsPage() {
   const timeseriesPoints = timeseriesQuery.data?.points ?? [];
   const selectedSubjectItems = disciplineSubjectsQuery.data?.subjects ?? [];
   const selectedDisciplineCardSource = selectedDiscipline ? disciplineDetail : null;
+  const riskBlocksCount = (disciplinesQuery.data ?? []).reduce((total, item) => total + item.risk_blocks_count, 0);
+  const activeBlocksEstimate = selectedDiscipline
+    ? (disciplineDetail?.blocks_in_progress ?? 0) + (disciplineDetail?.blocks_reviewable ?? 0)
+    : overview?.impacted_blocks_this_week ?? 0;
+  const healthyReviewCount = selectedDiscipline
+    ? disciplineDetail?.blocks_reviewable ?? 0
+    : Math.max(activeBlocksEstimate - riskBlocksCount, 0);
+  const exLoopCount = selectedDiscipline ? disciplineDetail?.blocks_in_progress ?? 0 : riskBlocksCount;
   const summaryCards = selectedDisciplineCardSource
     ? [
         {
@@ -941,20 +911,34 @@ export default function StatsPage() {
     (selectedDiscipline !== null && (disciplineDetailQuery.isError || disciplineSubjectsQuery.isError));
 
   return (
-    <main className="today-page stats-page">
-      <section className="today-subjects-shell today-functional-shell">
-        <section className="today-panel stats-hero-panel">
-          <div className="stats-filter-row" role="tablist" aria-label="Filtro de disciplina">
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8">
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Stats</p>
+              <h1 className="mt-2 text-3xl font-black text-white">Performance</h1>
+              <p className="mt-2 text-sm font-semibold text-slate-400">
+                {selectedDiscipline ? selectedDiscipline : "Visao geral"} · {overview?.questions_this_week ?? 0} questoes na semana ·{" "}
+                {formatPercent(overview?.accuracy_this_week)} de acuracia.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filtro de disciplina">
             {disciplineOptions.map((option) => (
               <button
                 key={option}
                 type="button"
-                className={option === selectedFilter ? "is-active" : ""}
+                className={`rounded-full border px-4 py-2 text-sm font-black transition ${
+                  option === selectedFilter
+                    ? "border-sky-400 bg-sky-500 text-slate-950"
+                    : "border-slate-700 bg-slate-950/50 text-slate-300 hover:border-sky-500/60"
+                }`}
                 onClick={() => setSelectedFilter(option)}
               >
                 {option}
               </button>
             ))}
+            </div>
           </div>
         </section>
 
@@ -964,6 +948,35 @@ export default function StatsPage() {
             <p>A pagina continua estavel, mas parte dos graficos pode estar incompleta ate a proxima tentativa.</p>
           </section>
         ) : null}
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {summaryCards.map((card) => (
+            <SummaryCard key={card.label} {...card} />
+          ))}
+        </div>
+
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Distribuicao Tatica do Edital (EAERE)</p>
+              <h2 className="mt-2 text-2xl font-black text-white">Leitura de retaguarda</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <article className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Blocos ativos</span>
+                <strong className="mt-2 block text-2xl font-black text-white">{activeBlocksEstimate}</strong>
+              </article>
+              <article className="rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-200/70">Revisao saudavel</span>
+                <strong className="mt-2 block text-2xl font-black text-white">{healthyReviewCount}</strong>
+              </article>
+              <article className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4">
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-amber-200/70">Looping EX / risco</span>
+                <strong className="mt-2 block text-2xl font-black text-white">{exLoopCount}</strong>
+              </article>
+            </div>
+          </div>
+        </section>
 
         <Heatmap
           data={heatmap}
@@ -1006,7 +1019,7 @@ export default function StatsPage() {
               <div className="stats-chart-head">
                 <div>
                   <h3>Disciplinas fortes</h3>
-                  <p>Onde o registro recente esta sustentando melhor o acerto.</p>
+              <p>Onde o registro recente sustenta melhor o acerto.</p>
                 </div>
               </div>
               <div className="stats-breakdown-list">
@@ -1048,11 +1061,8 @@ export default function StatsPage() {
           </div>
         )}
 
-        <section className="today-panel today-panel-wide">
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
           <div className="stats-grid">
-            {summaryCards.map((card) => (
-              <SummaryCard key={card.label} {...card} />
-            ))}
             {secondaryCards.map((card) => (
               <SummaryCard key={card.label} {...card} />
             ))}
