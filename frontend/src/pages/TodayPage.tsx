@@ -472,6 +472,11 @@ export default function TodayPage() {
       ),
     [focusCards],
   );
+  const plannedQuestionsToday =
+    planSummary?.total_questions ?? planItems.reduce((total, item) => total + item.planned_questions, 0);
+  const remainingQuestionsToday = planItems.reduce((total, item) => total + Math.max(item.remaining_today, 0), 0);
+  const completedPlanItemsToday = planItems.filter((item) => item.remaining_today <= 0).length;
+  const isDailyPlanComplete = planItems.length > 0 && remainingQuestionsToday <= 0;
   const mockExamRecommendation = calendarDays.find((day) => day.mock_exam_recommendation.recommended)?.mock_exam_recommendation;
   const smartCalendarMap = useMemo(
     () => new Map(smartCalendarDays.map((day) => [day.date, day])),
@@ -672,7 +677,60 @@ export default function TodayPage() {
             <section className="flex flex-1 flex-col justify-between rounded-[1.75rem] border border-white/10 bg-slate-900/50 p-5 shadow-2xl shadow-black/10">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Fazer agora</p>
-                {isAdvanceSuspended ? (
+                {isDailyPlanComplete ? (
+                  <div className="mt-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <span className="rounded-full border border-emerald-400/50 px-3 py-1 text-xs font-black text-emerald-300">
+                          Fechamento
+                        </span>
+                        <h2 className="mt-3 text-2xl font-black text-white">Dia concluido</h2>
+                        <p className="mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-slate-400">
+                          Voce fez o essencial hoje. O calendario ja ajustou a proxima previsao sem criar carga extra.
+                        </p>
+                      </div>
+                      <Link
+                        to="/stats"
+                        className="w-fit rounded-2xl bg-emerald-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-300"
+                      >
+                        Ver resumo
+                      </Link>
+                    </div>
+                    <div className="mt-5 grid gap-2 sm:grid-cols-4">
+                      <div className="rounded-2xl bg-slate-950/70 p-3">
+                        <span className="text-xs font-semibold text-slate-500">Questoes</span>
+                        <strong className="block text-lg text-white">
+                          {questionsDoneToday} / {plannedQuestionsToday}
+                        </strong>
+                      </div>
+                      <div className="rounded-2xl bg-slate-950/70 p-3">
+                        <span className="text-xs font-semibold text-slate-500">Focos</span>
+                        <strong className="block text-lg text-white">
+                          {completedPlanItemsToday} / {planItems.length}
+                        </strong>
+                      </div>
+                      <div className="rounded-2xl bg-slate-950/70 p-3">
+                        <span className="text-xs font-semibold text-slate-500">Blocos</span>
+                        <strong className="block text-lg text-white">{activityToday?.blocks_impacted_today ?? 0}</strong>
+                      </div>
+                      <div className="rounded-2xl bg-slate-950/70 p-3">
+                        <span className="text-xs font-semibold text-slate-500">Revisoes</span>
+                        <strong className="block text-lg text-white">{activityToday?.reviews_generated_today ?? 0}</strong>
+                      </div>
+                    </div>
+                    <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                      <Link
+                        to="/free-study"
+                        className="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs font-bold text-slate-300 transition hover:border-sky-400 hover:text-white"
+                      >
+                        Modo Livre sem pressao
+                      </Link>
+                      <span className="rounded-full border border-emerald-400/20 bg-emerald-950/20 px-3 py-1 text-xs font-bold text-emerald-200">
+                        Teto do dia respeitado
+                      </span>
+                    </div>
+                  </div>
+                ) : isAdvanceSuspended ? (
                   <div className="mt-4">
                     <h2 className="text-2xl font-black text-white">Avanco suspenso</h2>
                     <p className="mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-slate-400">
@@ -722,7 +780,7 @@ export default function TodayPage() {
                   <p className="mt-4 text-sm font-semibold text-slate-400">Sem bloco E1/E2 ativo agora.</p>
                 )}
               </div>
-              {focusGroups.advance.length > 1 && !isAdvanceSuspended ? (
+              {focusGroups.advance.length > 1 && !isAdvanceSuspended && !isDailyPlanComplete ? (
                 <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
                   {focusGroups.advance.slice(1, 4).map(({ item }) => (
                     <span
