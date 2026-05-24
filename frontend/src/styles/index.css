@@ -75,8 +75,8 @@
 }
 
 :root[data-theme="dark"] {
-  background: #0f1117;
-  --app-bg: #0f1117;
+  background: #020617;
+  --app-bg: #020617;
   --app-text: #eef2f8;
   --surface: #151a24;
   --surface-strong: #171d29;
@@ -142,6 +142,13 @@
   --discipline-train-button-shadow: rgba(37, 149, 222, 0.22);
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--app-bg);
+}
+
 body {
   margin: 0;
   min-width: 300px;
@@ -165,6 +172,7 @@ textarea {
 
 .app-shell {
   min-height: 100vh;
+  background: var(--app-bg);
   color: var(--app-text);
   overflow-x: clip;
 }
@@ -725,6 +733,7 @@ textarea {
 
 .app-content {
   min-height: 100vh;
+  background: var(--app-bg);
   padding-bottom: 7rem;
 }
 
