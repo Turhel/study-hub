@@ -607,9 +607,13 @@ export default function TodayPage() {
   );
 
   if (shouldBlockForMockExam && activeMockExam) {
-    const minutes = Math.floor(activeMockExamSeconds / 60);
+    const hours = Math.floor(activeMockExamSeconds / 3600);
+    const minutes = Math.floor((activeMockExamSeconds % 3600) / 60);
     const seconds = activeMockExamSeconds % 60;
-    const formattedRemaining = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    const formattedRemaining = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    const friendlyRemaining = hours > 0
+      ? `${hours}h ${String(minutes).padStart(2, "0")}min`
+      : `${minutes}min ${String(seconds).padStart(2, "0")}s`;
 
     return (
       <main className="today-page">
@@ -619,7 +623,7 @@ export default function TodayPage() {
             <h1>Voce saiu da tela de prova</h1>
             <p>
               Detectamos um simulado ativo. O relogio do ENEM continua correndo.
-              Tempo restante: <strong>{formattedRemaining}</strong>.
+              Tempo restante: <strong>{friendlyRemaining}</strong> <span className="text-slate-400">({formattedRemaining})</span>.
             </p>
             <div className="today-action-row">
               <button
