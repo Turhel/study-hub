@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 
 import { StudyTimerDock, StudyTimerProvider } from "./components/StudyTimer";
@@ -197,17 +197,14 @@ export default function App() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") {
-      return "light";
+      return "dark";
     }
 
     const stored = window.localStorage.getItem("study-hub-theme");
-    if (stored === "light" || stored === "dark") {
-      return stored;
-    }
-
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return "dark";
   });
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileButtonRef = useRef<HTMLButtonElement | null>(null);
   const profileMenuItems = [
     { label: "Configuracoes", icon: "⚙️", onClick: () => navigate("/settings") },
     { label: "Preferencias de estudo", icon: "🧠", onClick: () => navigate("/settings") },
@@ -229,6 +226,39 @@ export default function App() {
     window.addEventListener("keydown", closeMenuOnEscape);
     return () => window.removeEventListener("keydown", closeMenuOnEscape);
   }, []);
+
+  function handleProfileMenuKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
+    const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>(".topbar-profile-item")).filter(
+      (item) => item.getClientRects().length > 0,
+    );
+    const currentIndex = items.findIndex((item) => item === document.activeElement);
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setProfileMenuOpen(false);
+      profileButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + direction + items.length) % items.length;
+      items[nextIndex]?.focus();
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      items[0]?.focus();
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  }
 
   return (
     <StudyTimerProvider>
@@ -273,14 +303,24 @@ export default function App() {
                 className="topbar-hover-icon"
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
+                ref={profileButtonRef}
                 onClick={() => setProfileMenuOpen((current) => !current)}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setProfileMenuOpen(true);
+                    window.requestAnimationFrame(() => {
+                      document.querySelector<HTMLButtonElement>(".topbar-profile-card-open .topbar-profile-item")?.focus();
+                    });
+                  }
+                }}
               >
                 <span className="topbar-hover-icon-glyph">
                   <AvatarIcon />
                 </span>
               </button>
               {profileMenuOpen ? (
-              <section className="topbar-profile-card topbar-profile-card-open" role="menu">
+              <section className="topbar-profile-card topbar-profile-card-open" role="menu" onKeyDown={handleProfileMenuKeyDown}>
                 <div className="topbar-profile-header">
                   <div>
                     <h2>Ola, Thullyo</h2>
@@ -297,6 +337,7 @@ export default function App() {
                 </div>
 
                 <div className="topbar-profile-menu">
+                  {false ? (
                   <button
                     type="button"
                     className="topbar-profile-item"
@@ -310,6 +351,7 @@ export default function App() {
                       →
                     </span>
                   </button>
+                  ) : null}
 
                   {profileMenuItems.map((item) => (
                     <button

@@ -281,6 +281,75 @@ export default function MockExamRunPage() {
       ? "Dia 2 liquido"
       : "tempo liquido";
 
+  function focusQuestion(index: number) {
+    if (questions.length === 0) return;
+    setCurrentIndex(Math.max(0, Math.min(index, questions.length - 1)));
+    setQuestionStartedAt(Date.now());
+  }
+
+  function submitCurrentAnswer(answer: string) {
+    if (!canAnswer || !selectedQuestion) return;
+    setSelectedAnswers((current) => ({ ...current, [selectedQuestion.id]: answer }));
+    recordAnswerMutation.mutate({ question: selectedQuestion, answer });
+  }
+
+  function skipCurrentQuestion() {
+    if (!canAnswer || !selectedQuestion) return;
+    setSelectedAnswers((current) => {
+      const next = { ...current };
+      delete next[selectedQuestion.id];
+      return next;
+    });
+    recordAnswerMutation.mutate({ question: selectedQuestion, skipped: true });
+  }
+
+  useEffect(() => {
+    function handleExamKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName.toLowerCase();
+      if (target?.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select") {
+        return;
+      }
+
+      const key = event.key.toUpperCase();
+      if (answerOptions.includes(key as (typeof answerOptions)[number])) {
+        event.preventDefault();
+        submitCurrentAnswer(key);
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        focusQuestion(currentIndex + 1);
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        focusQuestion(currentIndex - 1);
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (exam && isPaused(exam)) {
+          resumeMutation.mutate();
+          return;
+        }
+        focusQuestion(nextOpenQuestionIndex(questions, currentIndex));
+        return;
+      }
+
+      if (event.key === "Escape" && exam && isRunning(exam) && !pauseMutation.isPending) {
+        event.preventDefault();
+        pauseMutation.mutate();
+      }
+    }
+
+    window.addEventListener("keydown", handleExamKeyDown);
+    return () => window.removeEventListener("keydown", handleExamKeyDown);
+  });
+
   if (examQuery.isLoading || questionsQuery.isLoading) {
     return (
       <main className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4 text-white">
@@ -419,11 +488,7 @@ export default function MockExamRunPage() {
                         ? "border-sky-300 bg-sky-400/20 text-sky-100 shadow-sky-950/50"
                         : "border-white/15 bg-white/[0.03] text-white hover:border-white/50 hover:bg-white/10"
                     }`}
-                    onClick={() => {
-                      if (!selectedQuestion) return;
-                      setSelectedAnswers((current) => ({ ...current, [selectedQuestion.id]: answer }));
-                      recordAnswerMutation.mutate({ question: selectedQuestion, answer });
-                    }}
+                    onClick={() => submitCurrentAnswer(answer)}
                   >
                     {answer}
                   </button>
@@ -435,15 +500,7 @@ export default function MockExamRunPage() {
               type="button"
               disabled={!canAnswer}
               className="mt-8 w-full max-w-2xl rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-5 text-base font-black text-zinc-200 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:text-lg"
-              onClick={() => {
-                if (!selectedQuestion) return;
-                setSelectedAnswers((current) => {
-                  const next = { ...current };
-                  delete next[selectedQuestion.id];
-                  return next;
-                });
-                recordAnswerMutation.mutate({ question: selectedQuestion, skipped: true });
-              }}
+              onClick={skipCurrentQuestion}
             >
               ⏩ Pular Questao / Deixar em Branco
             </button>
@@ -475,10 +532,7 @@ export default function MockExamRunPage() {
                         ? "border-zinc-500 bg-zinc-800 text-zinc-200"
                         : "border-zinc-800 bg-zinc-950 text-zinc-600"
                   }`}
-                  onClick={() => {
-                    setCurrentIndex(index);
-                    setQuestionStartedAt(Date.now());
-                  }}
+                  onClick={() => focusQuestion(index)}
                 >
                   {question.question_number}
                 </button>

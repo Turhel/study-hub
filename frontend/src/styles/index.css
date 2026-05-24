@@ -731,6 +731,16 @@ textarea {
   font-size: 1rem;
 }
 
+.topbar-profile-menu > .topbar-profile-item:first-child .topbar-profile-item-icon::before {
+  content: "\2699" !important;
+  font-size: 1rem;
+}
+
+.topbar-profile-menu > .topbar-profile-item:nth-child(2) .topbar-profile-item-icon::before {
+  content: "\1F9E0" !important;
+  font-size: 1rem;
+}
+
 .app-content {
   min-height: 100vh;
   background: var(--app-bg);
