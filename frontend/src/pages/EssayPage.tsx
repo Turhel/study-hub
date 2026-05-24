@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
@@ -31,6 +31,7 @@ const correctionModeOptions: Array<{ value: EssayCorrectionMode; label: string }
 
 const externalProviderOptions: EssayExternalProvider[] = ["ChatGPT", "Gemini", "Claude", "DeepSeek", "Outro"];
 const allowedCompetencyScores = [0, 40, 80, 120, 160, 200];
+const WRITING_SESSION_SECONDS = 75 * 60;
 type EssayTab = "automatic" | "manual";
 type ManualScoreKey = "c1" | "c2" | "c3" | "c4" | "c5";
 
@@ -58,6 +59,14 @@ function formatDateTime(value?: string | null): string {
     return "Sem data";
   }
   return new Date(value).toLocaleString("pt-BR");
+}
+
+function formatWritingTime(seconds: number): string {
+  const safeSeconds = Math.max(0, seconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
 function competencyLabel(key: string): string {
@@ -154,7 +163,7 @@ function CorrectionResult({ result }: { result: EssayCorrectionStoredResponse })
   const competencies = sortedCompetencies(result.competencies);
 
   return (
-    <section className="today-panel essay-result-panel">
+    <section className="today-panel essay-result-panel rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
       <div className="today-section-heading essay-result-heading">
         <div>
           <p className="today-eyebrow">Correcao concluida</p>
@@ -174,13 +183,18 @@ function CorrectionResult({ result }: { result: EssayCorrectionStoredResponse })
         <span>Tokens: {result.tokens_total}</span>
       </div>
 
-      <div className="essay-competency-grid">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {competencies.length > 0 ? (
           competencies.map(([key, value]) => (
-            <article key={key} className="essay-competency-card">
-              <span>{competencyLabel(key)}</span>
-              <strong>{value.score}</strong>
-              <p>{value.comment}</p>
+            <article
+              key={key}
+              className={`rounded-2xl border p-4 ${
+                value.score < 200 ? "border-amber-400/40 bg-amber-400/5" : "border-emerald-400/30 bg-emerald-400/5"
+              }`}
+            >
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">{competencyLabel(key)}</span>
+              <strong className="mt-2 block text-2xl font-black text-white">{value.score} / 200</strong>
+              <p className="mt-3 text-xs font-semibold leading-relaxed text-slate-400">{value.comment}</p>
             </article>
           ))
         ) : (
@@ -355,6 +369,8 @@ export default function EssayPage() {
   const [studySession, setStudySession] = useState<EssayStudySessionResponse | null>(null);
   const [studyMessage, setStudyMessage] = useState("");
   const [studyError, setStudyError] = useState<string | null>(null);
+  const [writingActive, setWritingActive] = useState(false);
+  const [writingRemaining, setWritingRemaining] = useState(WRITING_SESSION_SECONDS);
 
   const capabilitiesQuery = useQuery({
     queryKey: ["system-capabilities"],
@@ -374,6 +390,18 @@ export default function EssayPage() {
   const unavailableMessage = capabilities
     ? "Correcao por IA esta indisponivel nesta maquina. Habilite um provider compatível nesta instalacao."
     : "Carregando capabilities da maquina...";
+
+  useEffect(() => {
+    if (!writingActive || writingRemaining <= 0) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setWritingRemaining((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [writingActive, writingRemaining]);
 
   const correctionMutation = useMutation({
     mutationFn: () =>
@@ -622,13 +650,42 @@ export default function EssayPage() {
   return (
     <main className="today-page essay-page">
       <section className="today-subjects-shell today-functional-shell essay-shell">
-        <section className="today-panel essay-hero-panel">
-          <div>
-            <p className="today-eyebrow">Redacao</p>
-            <h1>Correcao e estudo assistido</h1>
-            <p>
-              Escreva, corrija e transforme o feedback em um plano curto de estudo quando a IA estiver disponivel.
-            </p>
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Redacao V3</p>
+              <h1 className="mt-2 text-3xl font-black text-white">Escrita ativa</h1>
+              <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-400">
+                Sessao isolada de 75 minutos, correcao automatica quando disponivel e registro manual sem depender do provider.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <strong className={`rounded-2xl border px-5 py-3 font-mono text-2xl font-black ${
+                writingActive ? "border-sky-400 bg-sky-400/10 text-sky-100" : "border-slate-800 bg-slate-950/60 text-white"
+              }`}>
+                {formatWritingTime(writingRemaining)}
+              </strong>
+              <button
+                type="button"
+                className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-sky-950/30 transition hover:bg-sky-300"
+                onClick={() => {
+                  setWritingActive(true);
+                  setWritingRemaining(WRITING_SESSION_SECONDS);
+                }}
+              >
+                Iniciar Escrita Isolada
+              </button>
+              <button
+                type="button"
+                className="rounded-2xl border border-slate-700 bg-slate-950/60 px-5 py-3 text-sm font-black text-slate-200 transition hover:border-sky-500/60"
+                onClick={() => {
+                  setWritingActive(false);
+                  setEssayTab("manual");
+                }}
+              >
+                Registrar Nota Externa/Manual
+              </button>
+            </div>
           </div>
         </section>
 
@@ -639,6 +696,7 @@ export default function EssayPage() {
           </section>
         ) : null}
 
+        {!writingActive ? (
         <section className="app-guidance-panel">
           <div className="app-guidance-head">
             <div>
@@ -669,7 +727,9 @@ export default function EssayPage() {
             </Link>
           </div>
         </section>
+        ) : null}
 
+        {!writingActive ? (
         <EssayNextStep
           title={nextStep.title}
           description={nextStep.description}
@@ -678,8 +738,10 @@ export default function EssayPage() {
           secondaryLabel={nextStep.secondaryLabel}
           secondaryTo={nextStep.secondaryTo}
         />
+        ) : null}
 
-        <section className="today-panel essay-capabilities-panel">
+        {!writingActive ? (
+        <section className="today-panel essay-capabilities-panel rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
           <div className="today-section-heading">
             <div>
               <p className="today-eyebrow">Maquina</p>
@@ -705,9 +767,10 @@ export default function EssayPage() {
           </div>
           {!correctionEnabled ? <p className="essay-unavailable-copy">{unavailableMessage}</p> : null}
         </section>
+        ) : null}
 
-        <div className="essay-grid">
-          <section className="today-panel essay-form-panel">
+        <div className={writingActive ? "grid gap-6" : "essay-grid"}>
+          <section className="today-panel essay-form-panel rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
             <div className="today-section-heading">
               <div>
                 <p className="today-eyebrow">Texto</p>
@@ -903,7 +966,8 @@ export default function EssayPage() {
             </div>
           </section>
 
-          <section className="today-panel essay-side-panel">
+          {!writingActive ? (
+          <section className="today-panel essay-side-panel rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
             <div className="today-section-heading">
               <div>
                 <p className="today-eyebrow">Fluxo</p>
@@ -929,24 +993,26 @@ export default function EssayPage() {
               </article>
             </div>
           </section>
+          ) : null}
         </div>
 
-        {correction ? <CorrectionResult result={correction} /> : (
+        {!writingActive && (correction ? <CorrectionResult result={correction} /> : (
           <section className="today-panel essay-empty-result">
             <strong>Nenhuma correcao nesta sessao ainda.</strong>
             <p>Quando a IA estiver disponivel, a correcao persistida aparece aqui com nota, competencias e plano.</p>
           </section>
-        )}
+        ))}
 
-        <EssayHistory
+        {!writingActive ? <EssayHistory
           items={historyQuery.data ?? []}
           isLoading={historyQuery.isLoading}
           isError={historyQuery.isError}
           isOpening={detailMutation.isPending}
           onOpen={(correctionId) => detailMutation.mutate(correctionId)}
-        />
+        /> : null}
 
-        <section className="today-panel essay-study-panel">
+        {!writingActive ? (
+        <section className="today-panel essay-study-panel rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
           <div className="today-section-heading essay-study-heading">
             <div>
               <p className="today-eyebrow">Estudo</p>
@@ -1017,6 +1083,7 @@ export default function EssayPage() {
             </div>
           ) : null}
         </section>
+        ) : null}
       </section>
     </main>
   );
