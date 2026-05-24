@@ -715,7 +715,12 @@ export default function TodayPage() {
                     {projection ? (
                       <span className="absolute bottom-1 flex items-center gap-1">
                         {projection.has_simulado ? <span className="h-1.5 w-1.5 rounded-full bg-rose-400" /> : null}
-                        {projection.revisoes_count > 0 ? <span className="h-1.5 w-1.5 rounded-full bg-sky-400" /> : null}
+                        {projection.subjects_predicted.length > 0 || projection.revisoes_count > 0 ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                        ) : null}
+                        {projection.plan_subjects_predicted?.length > 0 ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+                        ) : null}
                       </span>
                     ) : null}
                   </button>
@@ -724,7 +729,8 @@ export default function TodayPage() {
             </div>
             <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-slate-400">
               <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-400" /> Simulado</span>
-              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-400" /> Revisao</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-400" /> Revisao EAERE</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-300" /> Plano de hoje</span>
             </div>
             {smartCalendarQuery.isError ? (
               <p className="mt-3 text-xs font-semibold text-rose-300">Projecao indisponivel agora.</p>
@@ -937,23 +943,45 @@ export default function TodayPage() {
                     ) : null}
                   </div>
 
-                  <ul className="mt-4 space-y-1.5">
-                    {selectedCalendarProjection.subjects_predicted.length > 0 ? (
-                      selectedCalendarProjection.subjects_predicted.map((item, index) => (
-                        <li
-                          key={`${item}-${index}`}
-                          className="flex items-start gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2"
-                        >
-                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-sky-400/80" aria-hidden />
-                          <span className="font-mono text-xs leading-relaxed text-slate-300">{item}</span>
-                        </li>
-                      ))
-                    ) : (
-                      <li className="rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2 font-mono text-xs leading-relaxed text-slate-500">
-                        Sem conteudo detalhado agendado para este dia.
-                      </li>
-                    )}
-                  </ul>
+                  <div className="mt-4 space-y-4">
+                    {selectedCalendarProjection.plan_subjects_predicted?.length > 0 ? (
+                      <div>
+                        <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-amber-300">Plano ativo de hoje</p>
+                        <ul className="mt-2 space-y-1.5">
+                          {selectedCalendarProjection.plan_subjects_predicted.map((item, index) => (
+                            <li
+                              key={`plan-${item}-${index}`}
+                              className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-950/20 px-3 py-2"
+                            >
+                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-300/90" aria-hidden />
+                              <span className="font-mono text-xs leading-relaxed text-amber-100/90">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    <div>
+                      <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-sky-300">Revisoes previstas (EAERE)</p>
+                      <ul className="mt-2 space-y-1.5">
+                        {selectedCalendarProjection.subjects_predicted.length > 0 ? (
+                          selectedCalendarProjection.subjects_predicted.map((item, index) => (
+                            <li
+                              key={`review-${item}-${index}`}
+                              className="flex items-start gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2"
+                            >
+                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-sky-400/80" aria-hidden />
+                              <span className="font-mono text-xs leading-relaxed text-slate-300">{item}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2 font-mono text-xs leading-relaxed text-slate-500">
+                            Nenhuma revisao prevista para este dia na simulacao atual.
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div>

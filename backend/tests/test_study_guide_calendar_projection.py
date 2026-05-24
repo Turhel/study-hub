@@ -9,7 +9,7 @@ from sqlmodel import Session
 
 from app.db import create_db_engine, init_db
 from app.models import Block, BlockMastery, BlockSubject, Review, Subject, UserCalendarEvent
-from app.routes.study_guide import build_calendar_projection
+from app.routes.study_guide import _study_reference_day, build_calendar_projection
 from app.services.repo_seed_service import sync_structural_seed_into_session
 
 
@@ -31,7 +31,7 @@ def _cleanup(session: Session, engine, temp_dir: Path) -> None:
 def test_projection_lists_due_reviews_with_subjects_predicted() -> None:
     session, engine, temp_dir = _session()
     try:
-        today = date.today()
+        today = _study_reference_day()
         block = Block(nome="Genetica", disciplina="Biologia", ordem=1)
         session.add(block)
         session.commit()
@@ -54,7 +54,7 @@ def test_projection_lists_due_reviews_with_subjects_predicted() -> None:
         )
         session.commit()
 
-        payload = build_calendar_projection(session)
+        payload = build_calendar_projection(session, today=today)
 
         today_payload = next(day for day in payload if day.date == today.isoformat())
         assert today_payload.revisoes_count >= 1
@@ -67,7 +67,7 @@ def test_projection_lists_due_reviews_with_subjects_predicted() -> None:
 def test_projection_rolls_reprimidos_to_next_day() -> None:
     session, engine, temp_dir = _session()
     try:
-        today = date.today()
+        today = _study_reference_day()
         block = Block(nome="Ligacoes", disciplina="Quimica", ordem=1)
         session.add(block)
         session.commit()
@@ -91,7 +91,7 @@ def test_projection_rolls_reprimidos_to_next_day() -> None:
             )
         session.commit()
 
-        payload = build_calendar_projection(session)
+        payload = build_calendar_projection(session, today=today)
         today_payload = next(day for day in payload if day.date == today.isoformat())
         tomorrow_payload = next(day for day in payload if day.date == (today + timedelta(days=1)).isoformat())
 
@@ -103,10 +103,47 @@ def test_projection_rolls_reprimidos_to_next_day() -> None:
         _cleanup(session, engine, temp_dir)
 
 
+def test_review_scheduled_for_tomorrow_appears_on_tomorrow_not_today() -> None:
+    session, engine, temp_dir = _session()
+    try:
+        today = date(2026, 6, 15)
+        tomorrow = today + timedelta(days=1)
+        block = Block(nome="Eletroquimica", disciplina="Quimica", ordem=1)
+        session.add(block)
+        session.commit()
+        session.refresh(block)
+
+        subject = Subject(disciplina="Quimica", assunto="Eletroquimica", subassunto=None)
+        session.add(subject)
+        session.commit()
+        session.refresh(subject)
+
+        session.add(BlockSubject(block_id=block.id or 0, subject_id=subject.id or 0))
+        session.add(BlockMastery(block_id=block.id or 0, eaere_stage="R3"))
+        session.add(
+            Review(
+                subject_id=subject.id,
+                block_id=block.id,
+                proxima_data=tomorrow,
+                status="pendente",
+            )
+        )
+        session.commit()
+
+        payload = build_calendar_projection(session, today=today)
+        today_payload = next(day for day in payload if day.date == today.isoformat())
+        tomorrow_payload = next(day for day in payload if day.date == tomorrow.isoformat())
+
+        assert all("Eletroquimica" not in label for label in today_payload.subjects_predicted)
+        assert any("Química: Eletroquimica (R3)" in label or "Quimica: Eletroquimica (R3)" in label for label in tomorrow_payload.subjects_predicted)
+    finally:
+        _cleanup(session, engine, temp_dir)
+
+
 def test_travel_day_clears_subjects_predicted() -> None:
     session, engine, temp_dir = _session()
     try:
-        today = date.today()
+        today = _study_reference_day()
         session.add(
             UserCalendarEvent(
                 event_type="VIAGEM_DESCANSO",
@@ -116,7 +153,7 @@ def test_travel_day_clears_subjects_predicted() -> None:
         )
         session.commit()
 
-        payload = build_calendar_projection(session)
+        payload = build_calendar_projection(session, today=today)
         today_payload = next(day for day in payload if day.date == today.isoformat())
 
         assert today_payload.status_protecao == "viagem_descanso"

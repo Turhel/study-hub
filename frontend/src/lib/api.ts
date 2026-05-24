@@ -225,6 +225,7 @@ export async function getStudyGuideCalendarProjection(): Promise<SmartCalendarPr
     revisoes_count: day.revisoes_count ?? day["revisões_count"] ?? 0,
     scheduled_items: day.scheduled_items ?? [],
     subjects_predicted: day.subjects_predicted ?? [],
+    plan_subjects_predicted: day.plan_subjects_predicted ?? [],
   }));
 }
 

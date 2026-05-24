@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter
 from sqlmodel import Session, select
@@ -36,6 +37,11 @@ PROTECTION_EXAMS = "PROVAS_ACADEMICAS"
 PROTECTION_TRAVEL = "VIAGEM_DESCANSO"
 EVENT_MOCK_EXAM = "SIMULADO_PROG"
 QUESTIONS_PER_REVIEW_SLOT = 5
+_STUDY_TIMEZONE = ZoneInfo("America/Sao_Paulo")
+
+
+def _study_reference_day() -> date:
+    return datetime.now(_STUDY_TIMEZONE).date()
 
 
 @dataclass(frozen=True)
@@ -197,24 +203,53 @@ def _max_review_slots_for_day(session, target_date: date) -> int:
     return max(1, daily_target // QUESTIONS_PER_REVIEW_SLOT)
 
 
-def _allocate_reviews_for_day(
-    *,
+def _dedupe_review_queue(items: list[_ReviewQueueItem]) -> list[_ReviewQueueItem]:
+    seen_ids: set[int] = set()
+    unique_items: list[_ReviewQueueItem] = []
+    for item in items:
+        if item.review_id in seen_ids:
+            continue
+        seen_ids.add(item.review_id)
+        unique_items.append(item)
+    return unique_items
+
+
+def _simulate_review_schedule(
+    session: Session,
     pending_reviews: list[_ReviewQueueItem],
-    reprimidos: list[_ReviewQueueItem],
-    assigned_ids: set[int],
-    target_date: date,
-    max_slots: int,
-) -> tuple[list[_ReviewQueueItem], list[_ReviewQueueItem]]:
-    due_today = [
-        item
-        for item in pending_reviews
-        if item.review_id not in assigned_ids and item.proxima_data <= target_date
-    ]
-    queue = [*reprimidos, *due_today]
-    queue.sort(key=lambda item: (item.proxima_data, item.priority, item.review_id))
-    selected = queue[:max_slots]
-    overflow = queue[max_slots:]
-    return selected, overflow
+    *,
+    reference_day: date,
+    days: int = 7,
+) -> dict[date, list[_ReviewQueueItem]]:
+    """Simula fila diaria: reprimidos (vencidos) + revisoes com proxima_data no dia."""
+    reprimidos = sorted(
+        [item for item in pending_reviews if item.proxima_data < reference_day],
+        key=lambda item: (item.proxima_data, item.priority, item.review_id),
+    )
+    scheduled_by_day: dict[date, list[_ReviewQueueItem]] = {}
+    for item in pending_reviews:
+        if item.proxima_data < reference_day:
+            continue
+        scheduled_by_day.setdefault(item.proxima_data, []).append(item)
+
+    allocations: dict[date, list[_ReviewQueueItem]] = {}
+
+    for offset in range(days):
+        target_date = reference_day + timedelta(days=offset)
+        newly_due = sorted(
+            scheduled_by_day.get(target_date, []),
+            key=lambda item: (item.priority, item.review_id),
+        )
+        reprimido_ids = {item.review_id for item in reprimidos}
+        queue = _dedupe_review_queue([*reprimidos, *[item for item in newly_due if item.review_id not in reprimido_ids]])
+        queue.sort(key=lambda item: (item.priority, item.proxima_data, item.review_id))
+
+        max_slots = _max_review_slots_for_day(session, target_date)
+        selected = queue[:max_slots]
+        reprimidos = queue[max_slots:]
+        allocations[target_date] = selected
+
+    return allocations
 
 
 def _parse_event_date(value: str) -> date:
@@ -258,11 +293,10 @@ def update_energy_settings(payload: UserEnergySettingsUpdate) -> UserEnergySetti
 
 
 def build_calendar_projection(session: Session, *, today: date | None = None) -> list[StudyGuideCalendarProjectionDay]:
-    reference_day = today or date.today()
+    reference_day = today or _study_reference_day()
     projected_days: list[StudyGuideCalendarProjectionDay] = []
     pending_reviews = _build_review_queue(session)
-    reprimidos: list[_ReviewQueueItem] = []
-    assigned_review_ids: set[int] = set()
+    review_schedule = _simulate_review_schedule(session, pending_reviews, reference_day=reference_day)
 
     for offset in range(7):
         target_date = reference_day + timedelta(days=offset)
@@ -285,20 +319,9 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
             )
             continue
 
-        max_slots = _max_review_slots_for_day(session, target_date)
-        selected_reviews, reprimidos = _allocate_reviews_for_day(
-            pending_reviews=pending_reviews,
-            reprimidos=reprimidos,
-            assigned_ids=assigned_review_ids,
-            target_date=target_date,
-            max_slots=max_slots,
-        )
-        for item in selected_reviews:
-            assigned_review_ids.add(item.review_id)
-
+        selected_reviews = review_schedule.get(target_date, [])
         subjects_predicted = [item.label for item in selected_reviews]
-        if offset == 0:
-            subjects_predicted = [*_plan_predicted_labels(session, target_date), *subjects_predicted]
+        plan_subjects_predicted = _plan_predicted_labels(session, target_date) if offset == 0 else []
 
         revisoes_count = len(selected_reviews)
         plan_questions = _active_plan_questions(session, target_date) if offset == 0 else 0
@@ -309,7 +332,7 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
             estimated_questions = min(estimated_questions, 5)
 
         scheduled_items = [
-            *([f"Plano ativo: {label}" for label in _plan_predicted_labels(session, target_date)] if offset == 0 else []),
+            *[f"Plano ativo: {label}" for label in plan_subjects_predicted],
             *[f"Revisao: {item.label}" for item in selected_reviews],
         ]
 
@@ -322,6 +345,7 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
                 status_protecao=status_protecao,
                 scheduled_items=scheduled_items,
                 subjects_predicted=subjects_predicted,
+                plan_subjects_predicted=plan_subjects_predicted,
             )
         )
 
