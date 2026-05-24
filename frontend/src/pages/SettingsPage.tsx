@@ -220,7 +220,7 @@ export default function SettingsPage() {
       preferencesForm.include_new_content ? "com conteudo novo" : "sem conteudo novo",
     ];
 
-    return `Hoje voce deixou ${preferencesForm.daily_minutes} min, intensidade ${preferencesForm.intensity}, ate ${preferencesForm.max_focus_count} focos e ate ${preferencesForm.max_questions} questoes, ${toggles.join(" e ")}.`;
+    return `Intensidade ${preferencesForm.intensity}, ate ${preferencesForm.max_focus_count} focos e ate ${preferencesForm.max_questions} questoes, ${toggles.join(" e ")}.`;
   }, [preferencesForm]);
 
   const refreshStudyQueries = async () => {
@@ -355,13 +355,15 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="today-page settings-page">
-      <section className="today-subjects-shell today-functional-shell settings-shell">
-        <section className="today-panel free-study-hero-panel">
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8">
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
           <div>
-            <p className="today-eyebrow">Configuracoes</p>
-            <h1>Ajuste seu guia de estudo e cuide dos dados com um reset seguro.</h1>
-            <p>O que muda o ritmo do dia e o que limpa o historico agora mora aqui, sem poluir a TodayPage.</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Configuracoes</p>
+            <h1 className="mt-2 text-3xl font-black text-white">Controle do Study Hub</h1>
+            <p className="mt-2 max-w-3xl text-sm font-semibold text-slate-400">
+              Ajuste o EAERE, proteja a carga cognitiva e limpe registros de teste sem mexer na trilha pedagogica.
+            </p>
           </div>
         </section>
 
@@ -374,11 +376,11 @@ export default function SettingsPage() {
           </section>
         ) : null}
 
-        <div className="settings-grid">
-          <section className="today-panel">
+        <div className="grid gap-6 xl:grid-cols-2">
+          <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
             <div className="today-section-head">
               <div>
-                <p className="today-eyebrow">Guia do Dia</p>
+                <p className="today-eyebrow">Parametros do Edital & EAERE</p>
                 <h2>Preferencias de carga</h2>
               </div>
               {preferencesQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
@@ -404,19 +406,11 @@ export default function SettingsPage() {
 
             <div className="today-guide-summary today-guide-summary-secondary">
               <span className="today-guide-summary-label">Como isso afeta o plano</span>
-              <p>Minutos e intensidade influenciam a carga. Focos max. e questoes max. funcionam como teto.</p>
-              <p>O plano pode sugerir menos focos do que o limite quando isso fizer mais sentido pedagogico.</p>
+              <p>Intensidade, focos max. e questoes max. funcionam como teto, nao como obrigacao.</p>
+              <p>O plano pode sugerir menos quando isso fizer mais sentido pedagogico.</p>
             </div>
 
             <div className="today-preferences-grid">
-              <PreferenceNumberInput
-                label="Minutos"
-                value={preferencesForm.daily_minutes}
-                min={15}
-                max={360}
-                hint="Quanto tempo total voce quer dedicar hoje."
-                onChange={(value) => updatePreference("daily_minutes", value)}
-              />
               <PreferenceNumberInput
                 label="Focos max."
                 value={preferencesForm.max_focus_count}
@@ -523,11 +517,11 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          <section className="today-panel">
+          <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md">
             <div className="today-section-head">
               <div>
-                <p className="today-eyebrow">Energia</p>
-                <h2>Protecao cognitiva</h2>
+                <p className="today-eyebrow">Painel de Protecao Cognitiva</p>
+                <h2>Energia e fadiga</h2>
               </div>
               {energySettingsQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
             </div>
@@ -568,13 +562,26 @@ export default function SettingsPage() {
               <span className="font-bold text-slate-100">Teto atual:</span>{" "}
               {energySettingsQuery.data?.current_daily_target_questions ?? "--"} questoes antes dos redutores do dia.
             </div>
+            <div className="mt-4 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-4">
+              <button
+                type="button"
+                className="w-full rounded-2xl bg-sky-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-sky-950/30 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={recalculateMutation.isPending}
+                onClick={() => recalculateMutation.mutate()}
+              >
+                {recalculateMutation.isPending ? "Resetando..." : "Resetar Fadiga e Liberar Carga"}
+              </button>
+              <p className="mt-3 text-xs font-semibold text-slate-400">
+                Limpa a ressaca cognitiva acumulada de simulados e recalcula o plano com o teto atual.
+              </p>
+            </div>
           </section>
 
-          <section className="today-panel">
+          <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 shadow-xl shadow-black/10 backdrop-blur-md xl:col-span-2">
             <div className="today-section-head">
               <div>
-                <p className="today-eyebrow">Simulados</p>
-                <h2>Excluir registros</h2>
+                <p className="today-eyebrow">Gestao de Exames e Reset</p>
+                <h2>Simulados recentes</h2>
               </div>
               {mockExamsQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
             </div>
@@ -621,7 +628,7 @@ export default function SettingsPage() {
             )}
           </section>
 
-          <section className="today-panel settings-danger-panel">
+          <section className="rounded-3xl border border-red-500/30 bg-red-950/10 p-6 shadow-xl shadow-black/10 backdrop-blur-md xl:col-span-2">
             <div className="today-section-head">
               <div>
                 <p className="today-eyebrow">Zona de perigo</p>
