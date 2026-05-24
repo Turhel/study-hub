@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
   finishMockExam,
@@ -38,10 +38,7 @@ function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(safeSeconds / 3600);
   const minutes = Math.floor((safeSeconds % 3600) / 60);
   const seconds = safeSeconds % 60;
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function isRunning(exam: MockExam): boolean {
@@ -56,31 +53,24 @@ function isFinished(exam: MockExam): boolean {
   return exam.status === "finalizado" || exam.status === "finished";
 }
 
-function statusLabel(status: MockExam["status"]): string {
-  if (status === "finalizado" || status === "finished") return "finalizado";
-  if (status === "pausado") return "pausado";
-  if (status === "em_andamento" || status === "in_progress") return "em andamento";
-  return "rascunho";
-}
-
 function buildPlaceholderDefault(totalQuestions: number, area: string): PlaceholderFormState {
   const midpoint = Math.max(1, Math.floor(totalQuestions / 2));
   return {
     total_questions: String(totalQuestions),
-    first_area: area === "Geral" ? "Matematica" : area,
+    first_area: area === "Geral" ? "Linguagens/Humanas" : area,
     first_start: "1",
     first_end: String(midpoint),
-    second_area: area === "Geral" ? "Natureza" : area,
+    second_area: area === "Geral" ? "Natureza/Matematica" : area,
     second_start: String(midpoint + 1),
     second_end: String(totalQuestions),
   };
 }
 
-function questionState(question: MockExamQuestion, current: boolean): string {
-  if (current) return "is-current";
-  if (question.skipped) return "is-skipped";
-  if (question.user_answer) return "is-answered";
-  return "is-empty";
+function nextOpenQuestionIndex(questions: MockExamQuestion[], currentIndex: number): number {
+  const afterCurrent = questions.findIndex((question, index) => index > currentIndex && !question.user_answer && !question.skipped);
+  if (afterCurrent >= 0) return afterCurrent;
+  const firstOpen = questions.findIndex((question) => !question.user_answer && !question.skipped);
+  return firstOpen >= 0 ? firstOpen : Math.min(currentIndex, Math.max(questions.length - 1, 0));
 }
 
 export default function MockExamRunPage() {
@@ -92,9 +82,13 @@ export default function MockExamRunPage() {
   const [nowTick, setNowTick] = useState(Date.now());
   const [questionStartedAt, setQuestionStartedAt] = useState(Date.now());
   const [placeholderForm, setPlaceholderForm] = useState<PlaceholderFormState | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const finishingRef = useRef(false);
+
+  useEffect(() => {
+    document.body.classList.add("mock-exam-isolated");
+    return () => document.body.classList.remove("mock-exam-isolated");
+  }, []);
 
   const examQuery = useQuery({
     queryKey: ["mock-exam", examId],
@@ -102,6 +96,7 @@ export default function MockExamRunPage() {
     enabled: Number.isFinite(examId) && examId > 0,
     retry: false,
   });
+
   const questionsQuery = useQuery({
     queryKey: ["mock-exam-questions", examId],
     queryFn: () => getMockExamQuestions(examId),
@@ -120,7 +115,15 @@ export default function MockExamRunPage() {
     }
   }, [examQuery.data, placeholderForm]);
 
-  const selectedQuestion = (questionsQuery.data ?? [])[currentIndex] ?? null;
+  const questions = questionsQuery.data ?? [];
+  const exam = examQuery.data;
+  const selectedQuestion = questions[currentIndex] ?? null;
+
+  useEffect(() => {
+    if (questions.length === 0) return;
+    setCurrentIndex((current) => Math.min(current, questions.length - 1));
+  }, [questions.length]);
+
   useEffect(() => {
     setQuestionStartedAt(Date.now());
   }, [selectedQuestion?.id]);
@@ -128,7 +131,7 @@ export default function MockExamRunPage() {
   const startMutation = useMutation({
     mutationFn: () => startMockExam(examId),
     onSuccess: async (payload) => {
-      setFeedback("Modo Maratona iniciado. O relogio agora segue a hora do sistema.");
+      setError(null);
       setQuestionStartedAt(Date.now());
       queryClient.setQueryData(["mock-exam", examId], payload.exam);
       await queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] });
@@ -139,6 +142,7 @@ export default function MockExamRunPage() {
   const pauseMutation = useMutation({
     mutationFn: () => pauseMockExam(examId),
     onSuccess: async (payload) => {
+      setError(null);
       queryClient.setQueryData(["mock-exam", examId], payload.exam);
       await queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] });
     },
@@ -148,6 +152,7 @@ export default function MockExamRunPage() {
   const resumeMutation = useMutation({
     mutationFn: () => resumeMockExam(examId),
     onSuccess: async (payload) => {
+      setError(null);
       setQuestionStartedAt(Date.now());
       queryClient.setQueryData(["mock-exam", examId], payload.exam);
       await queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] });
@@ -167,8 +172,8 @@ export default function MockExamRunPage() {
       };
       return generateMockExamPlaceholders(examId, payload);
     },
-    onSuccess: async (payload) => {
-      setFeedback(payload.message);
+    onSuccess: async () => {
+      setError(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] }),
         queryClient.invalidateQueries({ queryKey: ["mock-exam-questions", examId] }),
@@ -187,14 +192,14 @@ export default function MockExamRunPage() {
         time_seconds: Math.max(0, Math.round((Date.now() - questionStartedAt) / 1000)),
       }),
     onSuccess: async (updated) => {
-      queryClient.setQueryData<MockExamQuestion[]>(["mock-exam-questions", examId], (current = []) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      );
-      const questions = questionsQuery.data ?? [];
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex((current) => current + 1);
-      }
+      let nextQuestions = questions;
+      queryClient.setQueryData<MockExamQuestion[]>(["mock-exam-questions", examId], (current = []) => {
+        nextQuestions = current.map((item) => (item.id === updated.id ? updated : item));
+        return nextQuestions;
+      });
+      setCurrentIndex((current) => nextOpenQuestionIndex(nextQuestions, current));
       setQuestionStartedAt(Date.now());
+      setError(null);
     },
     onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel registrar a resposta."),
   });
@@ -217,8 +222,6 @@ export default function MockExamRunPage() {
     },
   });
 
-  const exam = examQuery.data;
-  const questions = questionsQuery.data ?? [];
   const targetEnd = parseBackendTime(exam?.target_end_time);
   const remainingSeconds = targetEnd == null || !exam || isPaused(exam) || isFinished(exam)
     ? 0
@@ -234,13 +237,16 @@ export default function MockExamRunPage() {
     () => questions.filter((question) => question.user_answer || question.skipped).length,
     [questions],
   );
+  const canAnswer = Boolean(exam && isRunning(exam) && !recordAnswerMutation.isPending && selectedQuestion);
+  const progressLabel = questions.length > 0 ? `Questao ${selectedQuestion?.question_number ?? currentIndex + 1} de ${questions.length}` : "Questao 0 de 0";
+  const criticalTime = Boolean(exam && remainingSeconds <= 300 && isRunning(exam));
 
   if (examQuery.isLoading || questionsQuery.isLoading) {
     return (
-      <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
-        <section className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-900 p-6">
-          <strong>Carregando prova...</strong>
-          <p className="text-slate-300">Estamos montando o Modo Maratona.</p>
+      <main className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4 text-white">
+        <section className="w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-950 p-6 text-center">
+          <strong className="text-xl font-black">Carregando Modo Maratona...</strong>
+          <p className="mt-2 text-sm font-semibold text-zinc-500">Preparando o ambiente isolado.</p>
         </section>
       </main>
     );
@@ -248,13 +254,13 @@ export default function MockExamRunPage() {
 
   if (examQuery.isError || !exam) {
     return (
-      <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
-        <section className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-slate-900 p-6">
-          <strong>Simulado indisponivel.</strong>
-          <p className="text-slate-300">Este registro nao respondeu agora.</p>
-          <Link className="mt-4 inline-flex rounded-xl border border-white/20 px-4 py-2" to="/mock-exams">
-            Voltar para simulados
-          </Link>
+      <main className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4 text-white">
+        <section className="w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-950 p-6 text-center">
+          <strong className="text-xl font-black">Simulado indisponivel.</strong>
+          <p className="mt-2 text-sm font-semibold text-zinc-500">Este registro nao respondeu agora.</p>
+          <button type="button" className="mt-5 rounded-2xl border border-white/15 px-5 py-3 font-black" onClick={() => navigate("/mock-exams")}>
+            Voltar
+          </button>
         </section>
       </main>
     );
@@ -262,138 +268,133 @@ export default function MockExamRunPage() {
 
   if (questions.length === 0) {
     return (
-      <main className="today-page mock-exam-run-page">
-        <section className="today-subjects-shell today-functional-shell mock-exams-shell">
-          <section className="today-panel mock-exam-placeholder-panel">
-            <p className="today-eyebrow">Configurar prova externa</p>
-            <h1>Gerar grade de questoes</h1>
-            <p className="mock-exam-form-note">Criamos uma grade 1..N por faixa de area. Depois disso o Modo Maratona fica disponivel.</p>
+      <main className="fixed inset-0 z-50 overflow-y-auto bg-black px-4 py-8 text-white">
+        <section className="mx-auto flex min-h-full w-full max-w-3xl items-center">
+          <div className="w-full rounded-[2rem] border border-white/10 bg-zinc-950 p-6 shadow-2xl">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-sky-300">Setup de prova</p>
+            <h1 className="mt-2 text-3xl font-black">Gerar grade cega</h1>
+            <p className="mt-2 text-sm font-semibold text-zinc-500">Antes da maratona, criamos apenas os slots numerados da prova.</p>
             {placeholderForm ? (
-              <div className="today-form-grid">
-                <label className="today-form-field">Total<input className="app-input" type="number" min={1} value={placeholderForm.total_questions} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, total_questions: event.target.value } : current)} /></label>
-                <label className="today-form-field">Area 1<input className="app-input" value={placeholderForm.first_area} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_area: event.target.value } : current)} /></label>
-                <label className="today-form-field">Inicio 1<input className="app-input" type="number" min={1} value={placeholderForm.first_start} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_start: event.target.value } : current)} /></label>
-                <label className="today-form-field">Fim 1<input className="app-input" type="number" min={1} value={placeholderForm.first_end} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_end: event.target.value } : current)} /></label>
-                <label className="today-form-field">Area 2<input className="app-input" value={placeholderForm.second_area} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, second_area: event.target.value } : current)} /></label>
-                <label className="today-form-field">Inicio 2<input className="app-input" type="number" min={1} value={placeholderForm.second_start} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, second_start: event.target.value } : current)} /></label>
-                <label className="today-form-field">Fim 2<input className="app-input" type="number" min={1} value={placeholderForm.second_end} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, second_end: event.target.value } : current)} /></label>
+              <div className="mt-6 grid gap-3 md:grid-cols-4">
+                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Total<input className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-sky-400" type="number" min={1} value={placeholderForm.total_questions} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, total_questions: event.target.value } : current)} /></label>
+                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Area 1<input className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-sky-400" value={placeholderForm.first_area} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_area: event.target.value } : current)} /></label>
+                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Inicio 1<input className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-sky-400" type="number" min={1} value={placeholderForm.first_start} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_start: event.target.value } : current)} /></label>
+                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Fim 1<input className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-sky-400" type="number" min={1} value={placeholderForm.first_end} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, first_end: event.target.value } : current)} /></label>
+                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Area 2<input className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-sky-400" value={placeholderForm.second_area} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, second_area: event.target.value } : current)} /></label>
+                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Inicio 2<input className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-sky-400" type="number" min={1} value={placeholderForm.second_start} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, second_start: event.target.value } : current)} /></label>
+                <label className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Fim 2<input className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none focus:border-sky-400" type="number" min={1} value={placeholderForm.second_end} onChange={(event) => setPlaceholderForm((current) => current ? { ...current, second_end: event.target.value } : current)} /></label>
               </div>
             ) : null}
-            {error ? <p className="today-form-error">{error}</p> : null}
-            {feedback ? <p className="today-feedback">{feedback}</p> : null}
-            <div className="today-action-row">
-              <Link className="app-secondary-action" to="/mock-exams">Voltar</Link>
-              <button type="button" className="app-primary-action app-primary-action-blue" disabled={placeholderMutation.isPending} onClick={() => placeholderMutation.mutate()}>
-                {placeholderMutation.isPending ? "Gerando..." : "Gerar placeholders"}
+            {error ? <p className="mt-4 rounded-2xl border border-red-400/30 bg-red-950/40 p-3 text-sm font-bold text-red-100">{error}</p> : null}
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" className="rounded-2xl border border-white/15 px-5 py-3 font-black text-zinc-300" onClick={() => navigate("/mock-exams")}>Voltar</button>
+              <button type="button" className="rounded-2xl bg-sky-400 px-5 py-3 font-black text-black" disabled={placeholderMutation.isPending} onClick={() => placeholderMutation.mutate()}>
+                {placeholderMutation.isPending ? "Gerando..." : "Gerar grade"}
               </button>
             </div>
-          </section>
+          </div>
         </section>
       </main>
     );
   }
 
-  const canAnswer = isRunning(exam) && !recordAnswerMutation.isPending && selectedQuestion;
-
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#172554_0,#020617_48%,#020617_100%)] px-4 py-6 text-white">
-      <section className="mx-auto flex min-h-[calc(100vh-48px)] max-w-5xl flex-col gap-5">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-400/30 bg-slate-950/80 p-4 shadow-2xl">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Modo Maratona</p>
-            <h1 className="text-2xl font-black">{exam.title}</h1>
-            <p className="text-sm text-slate-300">{exam.area} · {answeredCount}/{questions.length} preenchidas · {statusLabel(exam.status)}</p>
+    <main className="fixed inset-0 z-50 overflow-y-auto bg-black text-white">
+      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4">
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-black/95 py-4 backdrop-blur">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-black uppercase tracking-[0.24em] text-zinc-500">{exam.title}</p>
+            <strong className="mt-1 block text-sm font-black text-zinc-200 md:text-base">{progressLabel}</strong>
           </div>
-          <div className="flex items-center gap-3">
-            <Link className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-slate-200" to="/mock-exams">
-              Sair
-            </Link>
-            {isFinished(exam) ? (
-              <Link className="rounded-xl bg-sky-400 px-4 py-2 text-sm font-black text-slate-950" to={`/mock-exams/${exam.id}/results`}>
+          <strong className={`font-mono text-4xl font-black tabular-nums md:text-6xl ${criticalTime ? "text-amber-300" : "text-white"}`}>
+            {isPaused(exam) ? "PAUSADO" : formatDuration(remainingSeconds)}
+          </strong>
+          <div className="flex min-w-0 justify-end">
+            {exam.status === "draft" ? (
+              <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
+                {startMutation.isPending ? "Iniciando..." : "Iniciar Prova"}
+              </button>
+            ) : isPaused(exam) ? (
+              <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" disabled={resumeMutation.isPending} onClick={() => resumeMutation.mutate()}>
+                Retomar
+              </button>
+            ) : isRunning(exam) ? (
+              <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" disabled={pauseMutation.isPending} onClick={() => pauseMutation.mutate()}>
+                ⏸️ Pausar Prova
+              </button>
+            ) : (
+              <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" onClick={() => navigate(`/mock-exams/${exam.id}/results`)}>
                 Resultados
-              </Link>
-            ) : null}
+              </button>
+            )}
           </div>
         </header>
 
-        {error ? <div className="rounded-2xl border border-red-400/40 bg-red-950/60 p-4 text-red-100">{error}</div> : null}
-        {feedback ? <div className="rounded-2xl border border-sky-400/30 bg-sky-950/40 p-4 text-sky-100">{feedback}</div> : null}
+        {error ? (
+          <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-950/30 p-4 text-sm font-bold text-red-100">
+            {error}
+          </div>
+        ) : null}
 
-        <section className="grid flex-1 gap-5 lg:grid-cols-[1fr_300px]">
-          <div className="flex flex-col justify-center rounded-3xl border border-white/10 bg-slate-950/70 p-6 text-center shadow-2xl">
-            <span className="text-sm font-black uppercase tracking-[0.25em] text-slate-400">Tempo restante</span>
-            <strong className={`mt-2 font-mono text-6xl font-black md:text-8xl ${remainingSeconds <= 300 && isRunning(exam) ? "text-red-300" : "text-yellow-300"}`}>
-              {isPaused(exam) ? "PAUSA" : formatDuration(remainingSeconds)}
-            </strong>
-            <p className="mt-3 text-slate-300">
-              {isRunning(exam) ? "Relogio sincronizado pelo horario do sistema." : isPaused(exam) ? "Prova congelada. Ao retomar, o backend ajusta o fim." : "Inicie para abrir o lancamento cego."}
+        <section className="flex flex-1 flex-col items-center justify-center py-10 text-center">
+          <div className="w-full max-w-4xl rounded-[2rem] border border-white/10 bg-zinc-950 px-5 py-8 shadow-2xl md:px-10 md:py-12">
+            <p className="text-xs font-black uppercase tracking-[0.32em] text-zinc-500">Lancamento cego</p>
+            <h1 className="mt-3 text-5xl font-black tracking-tight md:text-8xl">
+              Q{selectedQuestion?.question_number ?? currentIndex + 1}
+            </h1>
+            <p className="mt-3 text-sm font-semibold text-zinc-500">
+              {answeredCount}/{questions.length} preenchidas · sem feedback ate o encerramento.
             </p>
 
-            <div className="mt-8 rounded-3xl border border-sky-400/20 bg-slate-900/80 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Questao atual</p>
-              <h2 className="mt-1 text-4xl font-black">Q{selectedQuestion?.question_number ?? currentIndex + 1}</h2>
-              <div className="mt-6 grid grid-cols-5 gap-3">
-                {answerOptions.map((answer) => (
-                  <button
-                    key={answer}
-                    type="button"
-                    disabled={!canAnswer}
-                    className="aspect-square rounded-full border border-sky-300/50 bg-sky-500/15 text-2xl font-black text-white shadow-lg shadow-sky-950/40 transition hover:bg-sky-400 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-35"
-                    onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, answer })}
-                  >
-                    {answer}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                disabled={!canAnswer}
-                className="mt-5 w-full rounded-2xl border border-amber-300/50 bg-amber-400/10 px-5 py-4 text-lg font-black text-amber-100 transition hover:bg-amber-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-35"
-                onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, skipped: true })}
-              >
-                Pular questao
-              </button>
+            <div className="mx-auto mt-9 grid max-w-3xl grid-cols-5 gap-3 md:gap-5">
+              {answerOptions.map((answer) => (
+                <button
+                  key={answer}
+                  type="button"
+                  disabled={!canAnswer}
+                  className="aspect-square rounded-full border border-white/15 bg-white/[0.03] text-3xl font-black text-white shadow-xl transition hover:border-white/50 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:text-5xl"
+                  onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, answer })}
+                >
+                  {answer}
+                </button>
+              ))}
             </div>
 
-            <div className="mt-5 flex flex-wrap justify-center gap-3">
-              {exam.status === "draft" ? (
-                <button type="button" className="rounded-2xl bg-sky-400 px-6 py-3 font-black text-slate-950" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
-                  {startMutation.isPending ? "Iniciando..." : "Iniciar Modo Maratona"}
-                </button>
-              ) : null}
-              {isRunning(exam) ? (
-                <button type="button" className="rounded-2xl border border-white/20 px-6 py-3 font-black" disabled={pauseMutation.isPending} onClick={() => pauseMutation.mutate()}>
-                  Pausar prova
-                </button>
-              ) : null}
-              {isPaused(exam) ? (
-                <button type="button" className="rounded-2xl bg-emerald-400 px-6 py-3 font-black text-slate-950" disabled={resumeMutation.isPending} onClick={() => resumeMutation.mutate()}>
-                  Retomar prova
-                </button>
-              ) : null}
-              {!isFinished(exam) ? (
-                <button type="button" className="rounded-2xl border border-red-400/50 px-6 py-3 font-black text-red-100" disabled={finishMutation.isPending} onClick={() => finishMutation.mutate()}>
-                  Finalizar agora
-                </button>
-              ) : null}
+            <button
+              type="button"
+              disabled={!canAnswer}
+              className="mt-8 w-full max-w-2xl rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-5 text-base font-black text-zinc-200 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:text-lg"
+              onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, skipped: true })}
+            >
+              ⏩ Pular Questao / Deixar em Branco
+            </button>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                className="rounded-2xl border border-white/10 px-5 py-3 text-sm font-black text-zinc-400 hover:border-white/30 hover:text-white"
+                disabled={finishMutation.isPending}
+                onClick={() => finishMutation.mutate()}
+              >
+                {finishMutation.isPending ? "Encerrando..." : "Finalizar e corrigir"}
+              </button>
             </div>
           </div>
 
-          <aside className="rounded-3xl border border-white/10 bg-slate-950/70 p-4 shadow-2xl">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Mapa cego</p>
-            <div className="mt-4 grid max-h-[65vh] grid-cols-5 gap-2 overflow-y-auto pr-1">
-              {questions.map((question, index) => (
+          <div className="mt-6 flex w-full max-w-4xl flex-wrap justify-center gap-2">
+            {questions.map((question, index) => {
+              const answered = Boolean(question.user_answer || question.skipped);
+              const current = index === currentIndex;
+              return (
                 <button
                   key={question.id}
                   type="button"
-                  className={`rounded-xl border px-2 py-3 text-sm font-black ${questionState(question, index === currentIndex)} ${
-                    index === currentIndex
-                      ? "border-sky-300 bg-sky-400 text-slate-950"
-                      : question.user_answer
-                        ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
-                        : question.skipped
-                          ? "border-amber-400/40 bg-amber-500/15 text-amber-100"
-                          : "border-white/10 bg-slate-900 text-slate-300"
+                  className={`h-8 w-8 rounded-full border text-[11px] font-black transition ${
+                    current
+                      ? "border-white bg-white text-black"
+                      : answered
+                        ? "border-zinc-500 bg-zinc-800 text-zinc-200"
+                        : "border-zinc-800 bg-zinc-950 text-zinc-600"
                   }`}
                   onClick={() => {
                     setCurrentIndex(index);
@@ -402,9 +403,9 @@ export default function MockExamRunPage() {
                 >
                   {question.question_number}
                 </button>
-              ))}
-            </div>
-          </aside>
+              );
+            })}
+          </div>
         </section>
       </section>
     </main>

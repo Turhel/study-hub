@@ -737,6 +737,21 @@ textarea {
   padding-bottom: 7rem;
 }
 
+body.mock-exam-isolated {
+  overflow: hidden;
+  background: #000;
+}
+
+body.mock-exam-isolated .app-topbar {
+  display: none !important;
+}
+
+body.mock-exam-isolated .app-content {
+  min-height: 100vh;
+  padding: 0 !important;
+  background: #000;
+}
+
 .study-timer-dock {
   position: fixed;
   right: 1rem;

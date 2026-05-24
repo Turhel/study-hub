@@ -1,9 +1,15 @@
-﻿import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
-import { createMockExam, deleteMockExam, getMockExams, getMockExamSummary, updateMockExam } from "../lib/api";
-import type { MockExam, MockExamArea, MockExamMode, MockExamPayload } from "../lib/types";
+import {
+  createMockExam,
+  generateMockExamPlaceholders,
+  getMockExamResults,
+  getMockExams,
+  getMockExamSummary,
+} from "../lib/api";
+import type { MockExam, MockExamArea, MockExamMode, MockExamPayload, MockExamResultsResponse } from "../lib/types";
 
 const areaOptions: Array<{ value: MockExamArea; label: string }> = [
   { value: "Geral", label: "Geral" },
@@ -14,9 +20,7 @@ const areaOptions: Array<{ value: MockExamArea; label: string }> = [
   { value: "Redacao", label: "Redacao" },
 ];
 
-type MockExamView = "quick" | "run" | "history";
-
-type MockExamFormState = {
+type ExternalFormState = {
   exam_date: string;
   title: string;
   area: MockExamArea;
@@ -26,10 +30,9 @@ type MockExamFormState = {
   tri_score: string;
   duration_minutes: string;
   notes: string;
-  showAdvanced: boolean;
 };
 
-const emptyForm: MockExamFormState = {
+const emptyExternalForm: ExternalFormState = {
   exam_date: new Date().toISOString().slice(0, 10),
   title: "",
   area: "Geral",
@@ -39,7 +42,6 @@ const emptyForm: MockExamFormState = {
   tri_score: "",
   duration_minutes: "",
   notes: "",
-  showAdvanced: false,
 };
 
 function formatDate(value: string | null | undefined): string {
@@ -57,49 +59,19 @@ function formatTri(value: number | null | undefined): string {
   return value.toFixed(1);
 }
 
-function formatDuration(minutes: number | null | undefined): string {
-  if (minutes == null) return "-";
-  const hours = Math.floor(minutes / 60);
-  const remaining = minutes % 60;
-  return hours > 0 ? `${hours}h${String(remaining).padStart(2, "0")}min` : `${remaining}min`;
-}
-
-function formatMode(mode: MockExamMode): string {
-  return mode === "internal" ? "interno" : "externo";
-}
-
-function formatStatus(status: MockExam["status"]): string {
-  if (status === "finished" || status === "finalizado") return "finalizado";
-  if (status === "pausado") return "pausado";
-  if (status === "in_progress" || status === "em_andamento") return "em andamento";
-  return "rascunho";
+function formatScore(exam: MockExam, results?: MockExamResultsResponse): string {
+  return formatTri(results?.estimated_tri_score ?? exam.estimated_tri_score ?? exam.official_tri_score);
 }
 
 function isExamFinished(exam: MockExam): boolean {
   return exam.status === "finished" || exam.status === "finalizado";
 }
 
-function isExamRunning(exam: MockExam): boolean {
-  return exam.status === "in_progress" || exam.status === "em_andamento" || exam.status === "pausado";
+function isExamRunnable(exam: MockExam): boolean {
+  return exam.status === "draft" || exam.status === "in_progress" || exam.status === "em_andamento" || exam.status === "pausado";
 }
 
-function formFromExam(exam: MockExam | null): MockExamFormState {
-  if (!exam) return emptyForm;
-  return {
-    exam_date: exam.exam_date,
-    title: exam.title,
-    area: exam.area,
-    mode: exam.mode,
-    total_questions: String(exam.total_questions),
-    correct_count: String(exam.correct_count),
-    tri_score: exam.tri_score == null ? "" : String(exam.tri_score),
-    duration_minutes: exam.duration_minutes == null ? "" : String(exam.duration_minutes),
-    notes: exam.notes ?? "",
-    showAdvanced: Boolean(exam.tri_score),
-  };
-}
-
-function buildPayload(form: MockExamFormState): MockExamPayload {
+function buildExternalPayload(form: ExternalFormState): MockExamPayload {
   return {
     exam_date: form.exam_date,
     title: form.title.trim(),
@@ -113,424 +85,322 @@ function buildPayload(form: MockExamFormState): MockExamPayload {
   };
 }
 
-function validateForm(form: MockExamFormState): string | null {
+function validateExternalForm(form: ExternalFormState): string | null {
   if (!form.exam_date) return "Informe a data do simulado.";
   if (!form.title.trim()) return "Informe um titulo para o simulado.";
   const totalQuestions = Number(form.total_questions);
   const correctCount = Number(form.correct_count);
   if (!Number.isFinite(totalQuestions) || totalQuestions <= 0) return "Total de questoes deve ser maior que zero.";
   if (!Number.isFinite(correctCount) || correctCount < 0) return "Acertos nao pode ser negativo.";
-  if (correctCount > totalQuestions) return "Acertos nao pode ser maior que o total de questoes.";
-  if (form.tri_score.trim() && !Number.isFinite(Number(form.tri_score))) return "A nota oficial precisa ser numerica.";
+  if (correctCount > totalQuestions) return "Acertos nao pode ser maior que o total.";
+  if (form.tri_score.trim() && !Number.isFinite(Number(form.tri_score))) return "A nota TRI precisa ser numerica.";
   if (form.duration_minutes.trim() && !Number.isFinite(Number(form.duration_minutes))) return "A duracao precisa ser numerica.";
   return null;
 }
 
-function SummaryCard({ label, value, description }: { label: string; value: string; description: string }) {
-  return (
-    <article className="today-stat-card mock-exam-summary-card-v2">
-      <span className="mock-exam-summary-label">{label}</span>
-      <strong className="mock-exam-summary-value">{value}</strong>
-      <small className="mock-exam-summary-description">{description}</small>
-    </article>
-  );
+function miniChartPoints(values: number[]): string {
+  if (values.length === 0) return "";
+  const width = 112;
+  const height = 34;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = Math.max(max - min, 1);
+  return values.map((value, index) => {
+    const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
+    const y = height - ((value - min) / spread) * (height - 6) - 3;
+    return `${index === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(" ");
 }
 
-function MetricPill({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="mock-exam-metric-pill">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
-  );
+function bucketTimes(values: number[], buckets = 9): number[] {
+  if (values.length <= buckets) return values;
+  const bucketSize = Math.ceil(values.length / buckets);
+  const result: number[] = [];
+  for (let index = 0; index < values.length; index += bucketSize) {
+    const slice = values.slice(index, index + bucketSize);
+    result.push(slice.reduce((sum, value) => sum + value, 0) / slice.length);
+  }
+  return result;
 }
 
-function MockExamLineChart({
-  title,
-  subtitle,
-  values,
-  colorClassName,
-  formatter,
-}: {
-  title: string;
-  subtitle: string;
-  values: Array<{ label: string; value: number }>;
-  colorClassName: string;
-  formatter: (value: number) => string;
-}) {
-  if (values.length === 0) {
-    return (
-      <section className="stats-chart-card mock-exam-chart-card">
-        <div className="stats-chart-head"><div><h3>{title}</h3><p>{subtitle}</p></div></div>
-        <div className="mock-exam-empty-chart"><strong>Sem pontos suficientes.</strong><p>Registre simulados para ver a evolucao.</p></div>
-      </section>
-    );
+function FatigueSparkline({ results }: { results?: MockExamResultsResponse }) {
+  const times = useMemo(
+    () => bucketTimes((results?.questions ?? []).map((question) => question.time_seconds).filter((value): value is number => value != null && value > 0)),
+    [results],
+  );
+
+  if (times.length < 2) {
+    return <span className="text-xs font-semibold text-slate-500">sem curva</span>;
   }
 
-  const maxValue = Math.max(...values.map((item) => item.value), 1);
-  const height = 168;
-  const width = Math.max(values.length * 88, 320);
-  const paddingX = 20;
-  const paddingTop = 16;
-  const paddingBottom = 34;
-  const chartHeight = height - paddingTop - paddingBottom;
-  const stepX = values.length > 1 ? (width - paddingX * 2) / (values.length - 1) : 0;
-  const points = values.map((item, index) => ({
-    ...item,
-    x: paddingX + index * stepX,
-    y: paddingTop + chartHeight - (item.value / maxValue) * chartHeight,
-  }));
-  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const path = miniChartPoints(times);
+  const last = times[times.length - 1] ?? 0;
+  const first = times[0] ?? 0;
+  const delta = last - first;
 
   return (
-    <section className="stats-chart-card mock-exam-chart-card">
-      <div className="stats-chart-head"><div><h3>{title}</h3><p>{subtitle}</p></div></div>
-      <div className="mock-exam-chart-scroll">
-        <svg className="mock-exam-line-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-          <line x1={paddingX} y1={paddingTop + chartHeight} x2={width - paddingX} y2={paddingTop + chartHeight} className="mock-exam-chart-axis" />
-          <path d={path} className={`mock-exam-line-path ${colorClassName}`} />
-          {points.map((point) => (
-            <g key={`${point.label}-${point.value}`}>
-              <circle cx={point.x} cy={point.y} r="4.5" className={`mock-exam-line-point ${colorClassName}`}>
-                <title>{`${point.label}: ${formatter(point.value)}`}</title>
-              </circle>
-              <text x={point.x} y={height - 10} textAnchor="middle" className="mock-exam-chart-label">{point.label}</text>
-            </g>
-          ))}
-        </svg>
-      </div>
-    </section>
-  );
-}
-
-function MockExamBarChart({ values }: { values: Array<{ label: string; value: number; title: string }> }) {
-  if (values.length === 0) {
-    return (
-      <section className="stats-chart-card mock-exam-chart-card">
-        <div className="stats-chart-head"><div><h3>Acertos por simulado</h3><p>Volume de acertos nos registros mais recentes.</p></div></div>
-        <div className="mock-exam-empty-chart"><strong>Sem barras para mostrar.</strong><p>Assim que voce registrar simulados, esta visao passa a comparar os acertos.</p></div>
-      </section>
-    );
-  }
-
-  const maxValue = Math.max(...values.map((item) => item.value), 1);
-  return (
-    <section className="stats-chart-card mock-exam-chart-card">
-      <div className="stats-chart-head"><div><h3>Acertos por simulado</h3><p>Volume de acertos em cada prova.</p></div></div>
-      <div className="mock-exam-bars">
-        {values.map((item) => (
-          <div key={item.title} className="mock-exam-bar-item">
-            <div className="mock-exam-bar-track"><div className="mock-exam-bar-fill" style={{ height: `${Math.max((item.value / maxValue) * 100, 8)}%` }} title={`${item.title}: ${item.value} acertos`} /></div>
-            <strong>{item.value}</strong>
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function MockExamAreaChart({ values }: { values: Array<{ area: string; accuracy: number | null; total: number }> }) {
-  if (values.length === 0) {
-    return (
-      <section className="stats-chart-card mock-exam-chart-card">
-        <div className="stats-chart-head"><div><h3>Media por area</h3><p>Como cada area esta ficando na sua leitura recente.</p></div></div>
-        <div className="mock-exam-empty-chart"><strong>Sem medias ainda.</strong><p>Quando existirem simulados por area, esta comparacao aparece aqui.</p></div>
-      </section>
-    );
-  }
-  return (
-    <section className="stats-chart-card mock-exam-chart-card">
-      <div className="stats-chart-head"><div><h3>Media por area</h3><p>Acuracia media agregada por area registrada.</p></div></div>
-      <div className="mock-exam-area-list">
-        {values.map((item) => (
-          <article key={item.area} className="mock-exam-area-row">
-            <div><strong>{item.area}</strong><span>{item.total} simulados</span></div>
-            <div className="mock-exam-area-bar"><div className="mock-exam-area-bar-fill" style={{ width: `${Math.max((item.accuracy ?? 0) * 100, 3)}%` }} title={`${item.area}: ${formatPercent(item.accuracy)}`} /></div>
-            <strong>{formatPercent(item.accuracy)}</strong>
-          </article>
-        ))}
-      </div>
-    </section>
+    <div className="flex items-center gap-3">
+      <svg viewBox="0 0 112 34" className="h-9 w-28 overflow-visible" aria-label="Curva de fadiga">
+        <path d="M 0 31 L 112 31" fill="none" stroke="rgba(148,163,184,0.18)" strokeWidth="1" />
+        <path d={path} fill="none" stroke="#38bdf8" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span className={`text-[11px] font-black ${delta > 0 ? "text-amber-300" : "text-sky-300"}`}>
+        Tmu {Math.round(last)}s
+      </span>
+    </div>
   );
 }
 
 export default function MockExamsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [editingExamId, setEditingExamId] = useState<number | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [activeView, setActiveView] = useState<MockExamView>("history");
-  const [form, setForm] = useState<MockExamFormState>(emptyForm);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [externalOpen, setExternalOpen] = useState(false);
+  const [form, setForm] = useState<ExternalFormState>(emptyExternalForm);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const examsQuery = useQuery({ queryKey: ["mock-exams"], queryFn: getMockExams, retry: false });
   const summaryQuery = useQuery({ queryKey: ["mock-exams-summary"], queryFn: getMockExamSummary, retry: false });
 
-  const saveMutation = useMutation({
+  const recentExams = useMemo(() => (examsQuery.data ?? []).slice(0, 8), [examsQuery.data]);
+  const runnableExam = useMemo(() => (examsQuery.data ?? []).find(isExamRunnable), [examsQuery.data]);
+  const finishedRecent = useMemo(() => recentExams.filter(isExamFinished).slice(0, 5), [recentExams]);
+
+  const resultQueries = useQueries({
+    queries: finishedRecent.map((exam) => ({
+      queryKey: ["mock-exam-results", exam.id],
+      queryFn: () => getMockExamResults(exam.id),
+      enabled: isExamFinished(exam),
+      retry: false,
+    })),
+  });
+
+  const resultsByExamId = useMemo(() => {
+    const map = new Map<number, MockExamResultsResponse>();
+    finishedRecent.forEach((exam, index) => {
+      const payload = resultQueries[index]?.data;
+      if (payload) map.set(exam.id, payload);
+    });
+    return map;
+  }, [finishedRecent, resultQueries]);
+
+  const startDefaultMutation = useMutation({
     mutationFn: async () => {
-      const validation = validateForm(form);
+      const created = await createMockExam({
+        exam_date: new Date().toISOString().slice(0, 10),
+        title: "Simulado Padrao ENEM",
+        area: "Geral",
+        mode: "external",
+        total_questions: 90,
+        correct_count: 0,
+        tri_score: null,
+        duration_minutes: null,
+        notes: "Modo Maratona V3.",
+      });
+      await generateMockExamPlaceholders(created.id, {
+        total_questions: 90,
+        areas: [
+          { area: "Linguagens/Humanas", start: 1, end: 45 },
+          { area: "Natureza/Matematica", start: 46, end: 90 },
+        ],
+      });
+      return created;
+    },
+    onSuccess: async (created) => {
+      await queryClient.invalidateQueries({ queryKey: ["mock-exams"] });
+      navigate(`/mock-exams/${created.id}/run`);
+    },
+    onError: (error) => setFormError(error instanceof Error ? error.message : "Nao foi possivel iniciar o simulado."),
+  });
+
+  const externalMutation = useMutation({
+    mutationFn: async () => {
+      const validation = validateExternalForm(form);
       if (validation) throw new Error(validation);
-      return editingExamId == null ? createMockExam(buildPayload(form)) : updateMockExam(editingExamId, buildPayload(form));
+      return createMockExam(buildExternalPayload(form));
     },
     onSuccess: async () => {
-      setFeedback(editingExamId == null ? "Simulado salvo." : "Simulado atualizado.");
-      setForm(emptyForm);
-      setEditingExamId(null);
+      setFeedback("Gabarito externo registrado.");
+      setForm(emptyExternalForm);
+      setExternalOpen(false);
       setFormError(null);
-      setFormOpen(false);
-      setActiveView("history");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["mock-exams"] }),
         queryClient.invalidateQueries({ queryKey: ["mock-exams-summary"] }),
       ]);
     },
-    onError: (error) => setFormError(error instanceof Error ? error.message : "Nao foi possivel salvar o simulado."),
+    onError: (error) => setFormError(error instanceof Error ? error.message : "Nao foi possivel registrar o gabarito."),
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (examId: number) => deleteMockExam(examId),
-    onSuccess: async () => {
-      setFeedback("Simulado excluido.");
-      if (editingExamId != null) {
-        setEditingExamId(null);
-        setForm(emptyForm);
-      }
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["mock-exams"] }),
-        queryClient.invalidateQueries({ queryKey: ["mock-exams-summary"] }),
-      ]);
-    },
-    onError: (error) => setFormError(error instanceof Error ? error.message : "Nao foi possivel excluir o simulado."),
-  });
-
-  const estimatedTriChartValues = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.estimated_tri_score != null).slice().reverse().map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.estimated_tri_score as number })), [examsQuery.data]);
-  const correctChartValues = useMemo(() => (examsQuery.data ?? []).slice(0, 6).reverse().map((exam) => ({ label: formatDate(exam.exam_date).slice(0, 5), value: exam.correct_count, title: exam.title })), [examsQuery.data]);
-  const areaChartValues = useMemo(() => (summaryQuery.data?.by_area ?? []).map((item) => ({ area: item.area, accuracy: item.average_accuracy, total: item.total_exams })), [summaryQuery.data]);
-  const draftOrRunning = useMemo(() => (examsQuery.data ?? []).filter((exam) => !isExamFinished(exam)), [examsQuery.data]);
-  const estimatedRecent = useMemo(() => (examsQuery.data ?? []).filter((exam) => exam.estimated_tri_score != null).slice(0, 3), [examsQuery.data]);
-  const estimatedAverageRecent = useMemo(() => {
-    if (estimatedRecent.length === 0) return null;
-    return estimatedRecent.reduce((sum, exam) => sum + (exam.estimated_tri_score ?? 0), 0) / estimatedRecent.length;
-  }, [estimatedRecent]);
-  const bestEstimatedTri = useMemo(() => {
-    const values = (examsQuery.data ?? []).map((exam) => exam.estimated_tri_score).filter((value): value is number => value != null);
-    return values.length > 0 ? Math.max(...values) : null;
-  }, [examsQuery.data]);
 
   return (
-    <main className="today-page mock-exams-page">
-      <section className="today-subjects-shell today-functional-shell mock-exams-shell mock-exams-shell-v2">
-        <section className="today-panel mock-exams-hero-panel-v2">
-          <div>
-            <p className="today-eyebrow">Simulados</p>
-            <h1>Simulados</h1>
-            <p>Registre resultados, execute provas e acompanhe sua evolucao.</p>
-          </div>
-          <div className="mock-exams-hero-actions-v2">
-            <button type="button" className="app-secondary-action" onClick={() => { setActiveView("quick"); setFormOpen(true); setEditingExamId(null); setForm(emptyForm); setFormError(null); }}>
-              Novo simulado
-            </button>
-            <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => { setActiveView("run"); if (draftOrRunning[0]) navigate(`/mock-exams/${draftOrRunning[0].id}/run`); }}>
-              Executar prova
-            </button>
-          </div>
-        </section>
-
-        {feedback ? <section className="today-feedback"><span>{feedback}</span><button type="button" onClick={() => setFeedback(null)}>Fechar</button></section> : null}
-        {formError ? <section className="today-error-panel"><strong>Algo precisa de ajuste.</strong><p>{formError}</p></section> : null}
-
-        <section className="mock-exams-summary-grid mock-exams-summary-grid-v2">
-          <SummaryCard label="Total de simulados" value={String(summaryQuery.data?.total_exams ?? 0)} description="base registrada" />
-          <SummaryCard label="Estimativa TRI ultimos 3" value={summaryQuery.isLoading ? "..." : formatTri(estimatedAverageRecent)} description="calculada automaticamente" />
-          <SummaryCard label="Media de acerto" value={summaryQuery.isLoading ? "..." : formatPercent(summaryQuery.data?.last_three_average_accuracy)} description="janela recente" />
-          <SummaryCard label="Melhor estimativa" value={summaryQuery.isLoading ? "..." : formatTri(bestEstimatedTri)} description="melhor leitura automatica" />
-        </section>
-
-        <section className="today-panel mock-exams-mode-panel">
-          <div className="mock-exams-mode-tabs" role="tablist" aria-label="Modo da pagina de simulados">
-            {[
-              { key: "quick", label: "Registro rapido" },
-              { key: "run", label: "Modo prova" },
-              { key: "history", label: "Historico" },
-            ].map((item) => (
+    <main className="min-h-screen bg-slate-950 px-4 py-8 text-white md:px-8">
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/30 md:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs font-black uppercase tracking-[0.32em] text-sky-300">Simulados V3</p>
+              <h1 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">Modo Maratona</h1>
+              <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-slate-400">
+                Entre em prova cega, registre por clique e acompanhe endurance sem transformar o simulado em dashboard.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
               <button
-                key={item.key}
                 type="button"
-                className={`mock-exams-mode-tab ${activeView === item.key ? "is-active" : ""}`}
-                onClick={() => setActiveView(item.key as MockExamView)}
+                className="rounded-2xl bg-sky-400 px-6 py-4 text-base font-black text-slate-950 shadow-lg shadow-sky-950/40 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={startDefaultMutation.isPending}
+                onClick={() => startDefaultMutation.mutate()}
               >
-                {item.label}
+                {startDefaultMutation.isPending ? "Preparando..." : "⏱️ Iniciar Novo Simulado Padrao"}
               </button>
-            ))}
-          </div>
-          <p className="mock-exams-mode-copy">
-            {activeView === "quick"
-              ? "Lance um resultado de prova feita fora do app. Voce nao precisa saber a TRI: o app estima automaticamente a nota."
-              : activeView === "run"
-                ? "Execute uma prova externa dentro do app com grade, tempo, resposta, gabarito e resultado detalhado."
-                : "Revise seus simulados recentes, compare acertos e acompanhe a evolucao por area."}
-          </p>
-        </section>
-
-        {activeView === "quick" ? (
-          <section className="today-panel mock-exams-form-shell-v2">
-            <div className="mock-exams-form-shell-head">
-              <div>
-                <p className="today-eyebrow">{editingExamId == null ? "Novo simulado" : "Editando simulado"}</p>
-                <h2>{editingExamId == null ? "Registro rapido" : "Atualize este registro"}</h2>
-              </div>
-              <button type="button" className="app-secondary-action" onClick={() => setFormOpen((current) => !current)}>
-                {formOpen ? "Recolher formulario" : "Abrir formulario"}
+              <button
+                type="button"
+                className="rounded-2xl border border-white/15 bg-white/5 px-6 py-4 text-base font-black text-slate-200 transition hover:border-sky-300/60 hover:text-white"
+                onClick={() => { setExternalOpen(true); setFeedback(null); setFormError(null); }}
+              >
+                📑 Registrar Gabarito Externo
               </button>
             </div>
+          </div>
 
-            {formOpen ? (
-              <form className="mock-exams-form" onSubmit={(event) => { event.preventDefault(); setFeedback(null); setFormError(null); saveMutation.mutate(); }}>
-                <div className="today-form-grid">
-                  <label className="today-form-field">Titulo<input className="app-input" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ex.: Simulado Natureza abril" /></label>
-                  <label className="today-form-field">Data<input type="date" className="app-input" value={form.exam_date} onChange={(event) => setForm((current) => ({ ...current, exam_date: event.target.value }))} /></label>
-                  <label className="today-form-field">Area<select className="app-input" value={form.area} onChange={(event) => setForm((current) => ({ ...current, area: event.target.value as MockExamArea }))}>{areaOptions.map((area) => <option key={area.value} value={area.value}>{area.label}</option>)}</select></label>
-                  <label className="today-form-field">Modo<select className="app-input" value={form.mode} onChange={(event) => setForm((current) => ({ ...current, mode: event.target.value as MockExamMode }))}><option value="external">Externo</option><option value="internal">Interno</option></select></label>
-                  <label className="today-form-field">Total de questoes<input type="number" min={1} className="app-input" value={form.total_questions} onChange={(event) => setForm((current) => ({ ...current, total_questions: event.target.value }))} /></label>
-                  <label className="today-form-field">Acertos<input type="number" min={0} className="app-input" value={form.correct_count} onChange={(event) => setForm((current) => ({ ...current, correct_count: event.target.value }))} /></label>
-                  <label className="today-form-field">Duracao (min)<input type="number" min={0} className="app-input" value={form.duration_minutes} onChange={(event) => setForm((current) => ({ ...current, duration_minutes: event.target.value }))} placeholder="Opcional" /></label>
-                </div>
-                <label className="today-form-field">Observacoes<textarea className="app-input" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Contexto da prova, sensacao, gargalos..." /></label>
-                <section className="mock-exam-advanced-shell">
-                  <button
-                    type="button"
-                    className="mock-exam-advanced-toggle"
-                    onClick={() => setForm((current) => ({ ...current, showAdvanced: !current.showAdvanced }))}
-                  >
-                    {form.showAdvanced ? "Fechar avancado" : "Avancado: tenho a nota oficial"}
-                  </button>
-                  {form.showAdvanced ? (
-                    <label className="today-form-field mock-exam-advanced-field">
-                      Nota oficial informada
-                      <input
-                        type="number"
-                        min={0}
-                        className="app-input"
-                        value={form.tri_score}
-                        onChange={(event) => setForm((current) => ({ ...current, tri_score: event.target.value }))}
-                        placeholder="Opcional"
-                      />
-                      <small>Use apenas se a plataforma do simulado ja forneceu a nota.</small>
-                    </label>
-                  ) : null}
-                </section>
-                <p className="mock-exam-form-note">Voce nao precisa saber a TRI. O app estima automaticamente a nota a partir dos acertos, da area e da dificuldade das questoes. A estimativa nao e TRI oficial.</p>
-                <div className="today-action-row">
-                  {editingExamId != null ? <button type="button" className="app-secondary-action" onClick={() => { setEditingExamId(null); setForm(emptyForm); setFormOpen(false); setFormError(null); }}>Cancelar edicao</button> : null}
-                  <button type="submit" className="app-primary-action app-primary-action-blue" disabled={saveMutation.isPending}>{saveMutation.isPending ? "Salvando..." : editingExamId == null ? "Salvar simulado" : "Atualizar simulado"}</button>
-                </div>
-              </form>
-            ) : null}
-          </section>
-        ) : null}
+          <div className="mt-7 grid gap-3 border-t border-white/10 pt-5 sm:grid-cols-3">
+            <div className="rounded-2xl bg-slate-950/70 p-4">
+              <span className="text-xs font-bold text-slate-500">Simulados</span>
+              <strong className="mt-1 block text-2xl font-black">{summaryQuery.data?.total_exams ?? 0}</strong>
+            </div>
+            <div className="rounded-2xl bg-slate-950/70 p-4">
+              <span className="text-xs font-bold text-slate-500">TRI recente</span>
+              <strong className="mt-1 block text-2xl font-black">{summaryQuery.isLoading ? "..." : formatTri(summaryQuery.data?.last_three_average_tri)}</strong>
+            </div>
+            <div className="rounded-2xl bg-slate-950/70 p-4">
+              <span className="text-xs font-bold text-slate-500">Acerto recente</span>
+              <strong className="mt-1 block text-2xl font-black">{summaryQuery.isLoading ? "..." : formatPercent(summaryQuery.data?.last_three_average_accuracy)}</strong>
+            </div>
+          </div>
+        </section>
 
-        {activeView === "run" ? (
-          <section className="mock-exams-run-grid-v2">
-            <section className="today-panel mock-exams-run-callout">
+        {feedback ? <div className="rounded-2xl border border-sky-400/30 bg-sky-950/50 p-4 text-sm font-bold text-sky-100">{feedback}</div> : null}
+        {formError ? <div className="rounded-2xl border border-red-400/30 bg-red-950/40 p-4 text-sm font-bold text-red-100">{formError}</div> : null}
+
+        {externalOpen ? (
+          <section className="rounded-[1.5rem] border border-white/10 bg-slate-900/80 p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="today-eyebrow">Modo prova</p>
-                <h2>Entre em uma prova existente</h2>
-                <p>Escolha um simulado em rascunho ou em andamento para abrir a grade de questoes, o timer lateral e a navegacao por item.</p>
+                <p className="text-xs font-black uppercase tracking-[0.28em] text-sky-300">Registro externo</p>
+                <h2 className="mt-1 text-2xl font-black">Lancar resultado de prova pronta</h2>
               </div>
-            </section>
-            <section className="today-panel mock-exams-list-panel">
-              {draftOrRunning.length > 0 ? (
-                <div className="mock-exams-table">
-                  {draftOrRunning.map((exam) => (
-                    <article key={exam.id} className="mock-exam-row">
-                      <div className="mock-exam-row-main">
-                        <div>
-                          <strong>{exam.title}</strong>
-                          <span>{formatDate(exam.exam_date)} · {exam.area} · {formatMode(exam.mode)}</span>
-                        </div>
-                        <div className="mock-exam-status-stack">
-                          <span className="mock-exam-row-area-badge">{exam.area}</span>
-                          <span className={`mock-exam-status-badge is-${exam.status}`}>{formatStatus(exam.status)}</span>
-                        </div>
-                      </div>
-                      <div className="mock-exam-row-metrics">
-                        <MetricPill label="Acertos" value={`${exam.correct_count}/${exam.total_questions}`} />
-                        <MetricPill label="Acuracia" value={formatPercent(exam.accuracy)} />
-                        <MetricPill label="Estimativa TRI" value={formatTri(exam.estimated_tri_score)} />
-                        <MetricPill label="Nota oficial" value={formatTri(exam.official_tri_score)} />
-                      </div>
-                      <div className="mock-exam-row-actions mock-exam-row-actions-wide">
-                        <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/run`)}>{isExamRunning(exam) ? "Continuar prova" : "Iniciar prova"}</button>
-                        <button type="button" className="app-secondary-action mock-exam-edit-button" onClick={() => navigate(`/mock-exams/${exam.id}/results`)} disabled={!isExamFinished(exam)}>Ver resultados</button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="app-empty-card mock-exam-empty-state">
-                  <strong>Nenhum simulado pronto para execucao.</strong>
-                  <p>Crie um novo simulado e marque o modo externo para abrir o executor de prova.</p>
-                  <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => { setActiveView("quick"); setFormOpen(true); }}>Criar primeiro simulado</button>
-                </div>
-              )}
-            </section>
+              <button type="button" className="rounded-full border border-white/10 px-4 py-2 text-sm font-black text-slate-300" onClick={() => setExternalOpen(false)}>
+                Fechar
+              </button>
+            </div>
+            <form className="mt-5 grid gap-3 md:grid-cols-4" onSubmit={(event) => { event.preventDefault(); externalMutation.mutate(); }}>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 md:col-span-2">
+                Titulo
+                <input className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ex.: ENEM Dia 1" />
+              </label>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                Data
+                <input type="date" className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.exam_date} onChange={(event) => setForm((current) => ({ ...current, exam_date: event.target.value }))} />
+              </label>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                Area
+                <select className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.area} onChange={(event) => setForm((current) => ({ ...current, area: event.target.value as MockExamArea }))}>
+                  {areaOptions.map((area) => <option key={area.value} value={area.value}>{area.label}</option>)}
+                </select>
+              </label>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                Total
+                <input type="number" min={1} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.total_questions} onChange={(event) => setForm((current) => ({ ...current, total_questions: event.target.value }))} />
+              </label>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                Acertos
+                <input type="number" min={0} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.correct_count} onChange={(event) => setForm((current) => ({ ...current, correct_count: event.target.value }))} />
+              </label>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                TRI oficial
+                <input type="number" min={0} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.tri_score} onChange={(event) => setForm((current) => ({ ...current, tri_score: event.target.value }))} placeholder="Opcional" />
+              </label>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                Minutos
+                <input type="number" min={0} className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.duration_minutes} onChange={(event) => setForm((current) => ({ ...current, duration_minutes: event.target.value }))} placeholder="Opcional" />
+              </label>
+              <label className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 md:col-span-4">
+                Observacoes
+                <textarea className="mt-2 min-h-24 w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm font-bold text-white outline-none focus:border-sky-400" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Contexto, prova, sensacao..." />
+              </label>
+              <div className="flex justify-end md:col-span-4">
+                <button type="submit" className="rounded-2xl bg-sky-400 px-6 py-3 font-black text-slate-950" disabled={externalMutation.isPending}>
+                  {externalMutation.isPending ? "Salvando..." : "Salvar gabarito"}
+                </button>
+              </div>
+            </form>
           </section>
         ) : null}
 
-        {activeView === "history" ? (
-          <>
-            <section className="today-panel mock-exams-history-panel-v2">
-              <div className="today-section-heading"><div><p className="today-eyebrow">Recentes</p><h2>Historico de simulados</h2></div></div>
-              {examsQuery.isLoading ? (
-                <div className="app-empty-card"><strong>Carregando simulados...</strong><p>Assim que a lista responder, seus registros aparecem aqui.</p></div>
-              ) : examsQuery.isError ? (
-                <div className="app-empty-card"><strong>Simulados indisponiveis.</strong><p>O backend nao respondeu agora. Vale tentar de novo em instantes.</p></div>
-              ) : examsQuery.data && examsQuery.data.length > 0 ? (
-                <div className="mock-exams-table">
-                  {examsQuery.data.map((exam) => (
-                    <article key={exam.id} className="mock-exam-row mock-exam-row-v2">
-                      <div className="mock-exam-row-main">
-                        <div>
-                          <strong>{exam.title}</strong>
-                          <span>{formatDate(exam.exam_date)} · {exam.area} · {formatMode(exam.mode)}</span>
-                        </div>
-                        <div className="mock-exam-status-stack">
-                          <span className="mock-exam-row-area-badge">{exam.area}</span>
-                          <span className={`mock-exam-status-badge is-${exam.status}`}>{formatStatus(exam.status)}</span>
-                        </div>
-                      </div>
-                      <div className="mock-exam-row-metrics">
-                        <MetricPill label="Acertos" value={`${exam.correct_count}/${exam.total_questions}`} />
-                        <MetricPill label="Acuracia" value={formatPercent(exam.accuracy)} />
-                        <MetricPill label="Estimativa TRI" value={formatTri(exam.estimated_tri_score)} />
-                        <MetricPill label="Nota oficial" value={formatTri(exam.official_tri_score)} />
-                      </div>
-                      {exam.notes ? <p className="mock-exam-row-notes" title={exam.notes}>{exam.notes}</p> : null}
-                      <div className="mock-exam-row-actions mock-exam-row-actions-wide">
-                        <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => navigate(`/mock-exams/${exam.id}/${isExamFinished(exam) ? "results" : "run"}`)}>{isExamFinished(exam) ? "Ver resultados" : isExamRunning(exam) ? "Continuar prova" : "Iniciar prova"}</button>
-                        <button type="button" className="app-secondary-action mock-exam-edit-button" onClick={() => { setEditingExamId(exam.id); setForm(formFromExam(exam)); setFormOpen(true); setActiveView("quick"); setFormError(null); setFeedback(null); }}>Editar</button>
-                        <button type="button" className="app-secondary-action mock-exam-delete-button" disabled={deleteMutation.isPending} onClick={() => { setFormError(null); setFeedback(null); deleteMutation.mutate(exam.id); }}>Excluir</button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="app-empty-card mock-exam-empty-state">
-                  <strong>Nenhum simulado registrado ainda.</strong>
-                  <p>Comece criando seu primeiro simulado para abrir historico, graficos e resultados.</p>
-                  <button type="button" className="app-primary-action app-primary-action-blue" onClick={() => { setActiveView("quick"); setFormOpen(true); }}>Criar primeiro simulado</button>
-                </div>
-              )}
-            </section>
-            <section className="mock-exams-chart-grid">
-              <MockExamLineChart title="Evolucao da estimativa TRI" subtitle="Leitura automatica em ordem cronologica." values={estimatedTriChartValues} colorClassName="is-tri" formatter={(value) => `${value.toFixed(1)} pts`} />
-              <MockExamBarChart values={correctChartValues} />
-              <MockExamAreaChart values={areaChartValues} />
-            </section>
-          </>
-        ) : null}
+        <section className="rounded-[2rem] border border-white/10 bg-slate-900/60 p-5 shadow-xl shadow-black/20">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-sky-300">Historico</p>
+              <h2 className="mt-1 text-2xl font-black">Historico de Performance e Endurance</h2>
+            </div>
+            {runnableExam ? (
+              <button type="button" className="rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-slate-200 hover:border-sky-300" onClick={() => navigate(`/mock-exams/${runnableExam.id}/run`)}>
+                Continuar simulado ativo
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[760px] border-separate border-spacing-y-2 text-left">
+              <thead>
+                <tr className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                  <th className="px-4 py-2">Data</th>
+                  <th className="px-4 py-2">Modelo</th>
+                  <th className="px-4 py-2">Acertos/Total</th>
+                  <th className="px-4 py-2">Nota TRI Estimada</th>
+                  <th className="px-4 py-2">Curva de Fadiga</th>
+                  <th className="px-4 py-2 text-right">Acao</th>
+                </tr>
+              </thead>
+              <tbody>
+                {examsQuery.isLoading ? (
+                  <tr><td className="rounded-2xl bg-slate-950/70 px-4 py-5 text-slate-400" colSpan={6}>Carregando simulados...</td></tr>
+                ) : examsQuery.isError ? (
+                  <tr><td className="rounded-2xl bg-red-950/30 px-4 py-5 text-red-100" colSpan={6}>Nao foi possivel carregar o historico.</td></tr>
+                ) : recentExams.length === 0 ? (
+                  <tr><td className="rounded-2xl bg-slate-950/70 px-4 py-8 text-center text-slate-400" colSpan={6}>Nenhum simulado registrado ainda.</td></tr>
+                ) : (
+                  recentExams.map((exam) => {
+                    const results = resultsByExamId.get(exam.id);
+                    return (
+                      <tr key={exam.id} className="text-sm font-bold text-slate-200">
+                        <td className="rounded-l-2xl bg-slate-950/70 px-4 py-4">{formatDate(exam.exam_date)}</td>
+                        <td className="bg-slate-950/70 px-4 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-white">{exam.title}</span>
+                            <span className="text-xs text-slate-500">{exam.area}</span>
+                          </div>
+                        </td>
+                        <td className="bg-slate-950/70 px-4 py-4">{exam.correct_count}/{exam.total_questions}</td>
+                        <td className="bg-slate-950/70 px-4 py-4">{formatScore(exam, results)}</td>
+                        <td className="bg-slate-950/70 px-4 py-4"><FatigueSparkline results={results} /></td>
+                        <td className="rounded-r-2xl bg-slate-950/70 px-4 py-4 text-right">
+                          <button
+                            type="button"
+                            className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-200 hover:border-sky-300 hover:text-white"
+                            onClick={() => navigate(`/mock-exams/${exam.id}/${isExamFinished(exam) ? "results" : "run"}`)}
+                          >
+                            {isExamFinished(exam) ? "Resultados" : "Abrir prova"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </section>
     </main>
   );
