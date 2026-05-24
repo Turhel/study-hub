@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
+  deleteMockExam,
   finishMockExam,
   generateMockExamPlaceholders,
   getMockExam,
@@ -83,6 +84,7 @@ export default function MockExamRunPage() {
   const [questionStartedAt, setQuestionStartedAt] = useState(Date.now());
   const [placeholderForm, setPlaceholderForm] = useState<PlaceholderFormState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const finishingRef = useRef(false);
 
   useEffect(() => {
@@ -197,11 +199,35 @@ export default function MockExamRunPage() {
         nextQuestions = current.map((item) => (item.id === updated.id ? updated : item));
         return nextQuestions;
       });
+      setSelectedAnswers((current) => {
+        const next = { ...current };
+        if (updated.user_answer) {
+          next[updated.id] = updated.user_answer;
+        } else {
+          delete next[updated.id];
+        }
+        return next;
+      });
       setCurrentIndex((current) => nextOpenQuestionIndex(nextQuestions, current));
       setQuestionStartedAt(Date.now());
       setError(null);
     },
     onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel registrar a resposta."),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: () => deleteMockExam(examId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exam-questions", examId] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exams"] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exams-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exam-active"] }),
+      ]);
+      navigate("/mock-exams");
+    },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Nao foi possivel cancelar a prova."),
   });
 
   const finishMutation = useMutation({
@@ -240,6 +266,13 @@ export default function MockExamRunPage() {
   const canAnswer = Boolean(exam && isRunning(exam) && !recordAnswerMutation.isPending && selectedQuestion);
   const progressLabel = questions.length > 0 ? `Questao ${selectedQuestion?.question_number ?? currentIndex + 1} de ${questions.length}` : "Questao 0 de 0";
   const criticalTime = Boolean(exam && remainingSeconds <= 300 && isRunning(exam));
+  const examQuestionCount = exam?.total_questions ?? questions.length;
+  const examDurationMinutes = Math.max(1, Math.round((examQuestionCount * 180) / 60));
+  const examDurationHours = Math.floor(examDurationMinutes / 60);
+  const examDurationRemainder = examDurationMinutes % 60;
+  const examDurationLabel = examDurationHours > 0
+    ? `${examDurationHours}h${String(examDurationRemainder).padStart(2, "0")}`
+    : `${examDurationMinutes}min`;
 
   if (examQuery.isLoading || questionsQuery.isLoading) {
     return (
@@ -306,18 +339,37 @@ export default function MockExamRunPage() {
             <p className="truncate text-xs font-black uppercase tracking-[0.24em] text-zinc-500">{exam.title}</p>
             <strong className="mt-1 block text-sm font-black text-zinc-200 md:text-base">{progressLabel}</strong>
           </div>
-          <strong className={`font-mono text-4xl font-black tabular-nums md:text-6xl ${criticalTime ? "text-amber-300" : "text-white"}`}>
-            {isPaused(exam) ? "PAUSADO" : formatDuration(remainingSeconds)}
-          </strong>
-          <div className="flex min-w-0 justify-end">
+          <div className="text-center">
+            <strong className={`block font-mono text-4xl font-black tabular-nums md:text-6xl ${criticalTime ? "text-amber-300" : "text-white"}`}>
+              {isPaused(exam) ? "PAUSADO" : formatDuration(remainingSeconds)}
+            </strong>
+            <span className="mt-1 block text-[11px] font-black uppercase tracking-[0.18em] text-zinc-600">
+              {examQuestionCount}q - 3min/q - sem redacao - {examDurationLabel}
+            </span>
+          </div>
+          <div className="flex min-w-0 flex-col items-stretch justify-end gap-2 sm:flex-row">
             {exam.status === "draft" ? (
               <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" disabled={startMutation.isPending} onClick={() => startMutation.mutate()}>
                 {startMutation.isPending ? "Iniciando..." : "Iniciar Prova"}
               </button>
             ) : isPaused(exam) ? (
-              <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" disabled={resumeMutation.isPending} onClick={() => resumeMutation.mutate()}>
-                Retomar
-              </button>
+              <>
+                <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" disabled={resumeMutation.isPending} onClick={() => resumeMutation.mutate()}>
+                  Retomar
+                </button>
+                <button
+                  type="button"
+                  className="rounded-2xl border border-red-400/40 px-4 py-3 text-sm font-black text-red-200 transition hover:border-red-300 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={cancelMutation.isPending}
+                  onClick={() => {
+                    if (window.confirm("Cancelar esta prova e apagar o simulado em andamento?")) {
+                      cancelMutation.mutate();
+                    }
+                  }}
+                >
+                  {cancelMutation.isPending ? "Cancelando..." : "Cancelar prova"}
+                </button>
+              </>
             ) : isRunning(exam) ? (
               <button type="button" className="rounded-2xl border border-white/15 px-4 py-3 text-sm font-black text-zinc-200 hover:border-sky-300" disabled={pauseMutation.isPending} onClick={() => pauseMutation.mutate()}>
                 ⏸️ Pausar Prova
@@ -347,24 +399,44 @@ export default function MockExamRunPage() {
             </p>
 
             <div className="mx-auto mt-9 grid max-w-3xl grid-cols-5 gap-3 md:gap-5">
-              {answerOptions.map((answer) => (
-                <button
-                  key={answer}
-                  type="button"
-                  disabled={!canAnswer}
-                  className="aspect-square rounded-full border border-white/15 bg-white/[0.03] text-3xl font-black text-white shadow-xl transition hover:border-white/50 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:text-5xl"
-                  onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, answer })}
-                >
-                  {answer}
-                </button>
-              ))}
+              {answerOptions.map((answer) => {
+                const selectedAnswer = selectedQuestion ? selectedAnswers[selectedQuestion.id] ?? selectedQuestion.user_answer : null;
+                const isSelected = selectedAnswer === answer;
+                return (
+                  <button
+                    key={answer}
+                    type="button"
+                    disabled={!canAnswer}
+                    className={`aspect-square rounded-full border text-3xl font-black shadow-xl transition disabled:cursor-not-allowed disabled:opacity-30 md:text-5xl ${
+                      isSelected
+                        ? "border-sky-300 bg-sky-400/20 text-sky-100 shadow-sky-950/50"
+                        : "border-white/15 bg-white/[0.03] text-white hover:border-white/50 hover:bg-white/10"
+                    }`}
+                    onClick={() => {
+                      if (!selectedQuestion) return;
+                      setSelectedAnswers((current) => ({ ...current, [selectedQuestion.id]: answer }));
+                      recordAnswerMutation.mutate({ question: selectedQuestion, answer });
+                    }}
+                  >
+                    {answer}
+                  </button>
+                );
+              })}
             </div>
 
             <button
               type="button"
               disabled={!canAnswer}
               className="mt-8 w-full max-w-2xl rounded-2xl border border-white/15 bg-white/[0.04] px-5 py-5 text-base font-black text-zinc-200 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30 md:text-lg"
-              onClick={() => selectedQuestion && recordAnswerMutation.mutate({ question: selectedQuestion, skipped: true })}
+              onClick={() => {
+                if (!selectedQuestion) return;
+                setSelectedAnswers((current) => {
+                  const next = { ...current };
+                  delete next[selectedQuestion.id];
+                  return next;
+                });
+                recordAnswerMutation.mutate({ question: selectedQuestion, skipped: true });
+              }}
             >
               ⏩ Pular Questao / Deixar em Branco
             </button>

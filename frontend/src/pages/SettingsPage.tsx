@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
 import {
+  deleteMockExam,
   getStudyGuidePreferences,
+  getMockExams,
   getStudyPlanToday,
   getUserEnergySettings,
   recalculateStudyPlanToday,
@@ -13,6 +15,7 @@ import {
 } from "../lib/api";
 import type {
   ResetStudyDataResponse,
+  MockExam,
   StudyGuideIntensity,
   StudyGuidePreferencesPayload,
 } from "../lib/types";
@@ -99,6 +102,15 @@ function renderCountEntries(counts: Record<string, number>) {
   );
 }
 
+function formatMockExamDate(exam: MockExam): string {
+  const rawDate = exam.finished_at ?? exam.exam_date ?? exam.created_at;
+  const parsedDate = new Date(rawDate);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return rawDate;
+  }
+  return parsedDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
 function EnergyToggleCard({
   title,
   description,
@@ -163,6 +175,11 @@ export default function SettingsPage() {
   const energySettingsQuery = useQuery({
     queryKey: ["user-energy-settings"],
     queryFn: getUserEnergySettings,
+    retry: false,
+  });
+  const mockExamsQuery = useQuery({
+    queryKey: ["mock-exams"],
+    queryFn: getMockExams,
     retry: false,
   });
 
@@ -303,9 +320,24 @@ export default function SettingsPage() {
     onError: (error) => setFeedback(errorMessage(error)),
   });
 
+  const deleteMockExamMutation = useMutation({
+    mutationFn: deleteMockExam,
+    onSuccess: async () => {
+      setFeedback("Simulado excluido.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["mock-exams"] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exams-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exam-active"] }),
+        queryClient.invalidateQueries({ queryKey: ["stats-overview"] }),
+      ]);
+    },
+    onError: (error) => setFeedback(errorMessage(error)),
+  });
+
   const guideBusy = savePreferencesMutation.isPending || recalculateMutation.isPending;
   const energyBusy = saveEnergySettingsMutation.isPending || energySettingsQuery.isLoading;
   const canConfirmReset = confirmationText === RESET_CONFIRMATION_TEXT && !applyResetMutation.isPending;
+  const recentMockExams = (mockExamsQuery.data ?? []).slice(0, 8);
 
   function updatePreference<K extends keyof PreferencesForm>(key: K, value: PreferencesForm[K]) {
     setPreferencesForm((current) => ({ ...current, [key]: value }));
@@ -536,6 +568,57 @@ export default function SettingsPage() {
               <span className="font-bold text-slate-100">Teto atual:</span>{" "}
               {energySettingsQuery.data?.current_daily_target_questions ?? "--"} questoes antes dos redutores do dia.
             </div>
+          </section>
+
+          <section className="today-panel">
+            <div className="today-section-head">
+              <div>
+                <p className="today-eyebrow">Simulados</p>
+                <h2>Excluir registros</h2>
+              </div>
+              {mockExamsQuery.isError ? <span className="today-inline-error">Nao carregou</span> : null}
+            </div>
+
+            <div className="today-guide-overview">
+              <div>
+                <strong>Limpeza pontual de provas.</strong>
+                <p>Apague simulados de teste ou registros que voce nao quer mais no historico e nas estatisticas.</p>
+              </div>
+            </div>
+
+            {mockExamsQuery.isLoading ? (
+              <p className="today-empty-copy">Carregando simulados...</p>
+            ) : recentMockExams.length === 0 ? (
+              <p className="today-empty-copy">Nenhum simulado salvo ainda.</p>
+            ) : (
+              <div className="grid gap-3">
+                {recentMockExams.map((exam) => (
+                  <article
+                    key={exam.id}
+                    className="flex flex-col gap-3 rounded-2xl border border-slate-700 bg-slate-950/40 p-4 text-slate-200 dark:border-slate-700 dark:bg-slate-950/50 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <strong className="block truncate text-base font-bold text-white">{exam.title}</strong>
+                      <span className="mt-1 block text-sm font-semibold text-slate-400">
+                        {formatMockExamDate(exam)} | {exam.status} | {exam.correct_count}/{exam.total_questions} acertos
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-xl border border-red-400/40 px-4 py-2 text-sm font-black text-red-200 transition hover:border-red-300 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={deleteMockExamMutation.isPending}
+                      onClick={() => {
+                        if (window.confirm(`Excluir o simulado "${exam.title}"? Esta acao nao pode ser desfeita.`)) {
+                          deleteMockExamMutation.mutate(exam.id);
+                        }
+                      }}
+                    >
+                      Excluir
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="today-panel settings-danger-panel">
