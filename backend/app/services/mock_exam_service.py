@@ -787,11 +787,13 @@ def update_mock_exam_question(
 def start_mock_exam(session: Session, exam_id: int) -> MockExamStartResponse:
     exam = _get_exam_or_raise(session, exam_id)
     now = _utcnow()
+    configured_seconds = exam.tempo_total_min * 60 if exam.tempo_total_min and exam.tempo_total_min > 0 else None
+    fallback_seconds = max(exam.total_questoes, 1) * 180
     exam.started_at = now
     exam.finished_at = None
     exam.is_paused = False
     exam.paused_at = None
-    exam.target_end_time = now + timedelta(seconds=max(exam.total_questoes, 1) * 180)
+    exam.target_end_time = now + timedelta(seconds=configured_seconds or fallback_seconds)
     exam.status = "em_andamento"
     exam.updated_at = now
     session.add(exam)

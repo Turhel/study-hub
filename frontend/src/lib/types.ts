@@ -421,6 +421,7 @@ export type MockExamPayload = {
   title: string;
   area: MockExamArea;
   mode?: MockExamMode;
+  exam_day?: 1 | 2;
   total_questions: number;
   correct_count: number;
   tri_score?: number | null;

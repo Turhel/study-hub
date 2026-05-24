@@ -544,6 +544,7 @@ class MockExamBase(BaseModel):
     title: str = Field(min_length=1)
     area: MockExamArea
     mode: MockExamMode = "external"
+    exam_day: int | None = Field(default=None, ge=1, le=2)
     total_questions: int = Field(ge=1)
     correct_count: int = Field(ge=0)
     tri_score: float | None = Field(default=None, ge=0)

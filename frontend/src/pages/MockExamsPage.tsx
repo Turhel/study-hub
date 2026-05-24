@@ -44,6 +44,33 @@ const emptyExternalForm: ExternalFormState = {
   notes: "",
 };
 
+const mockExamDayPresets = {
+  1: {
+    day: 1,
+    title: "Simulado ENEM Dia 1",
+    area: "Geral" as MockExamArea,
+    durationMinutes: 230,
+    durationLabel: "03:50:00",
+    note: "Tempo liquido: Linguagens/Humanas sem redacao e sem gabarito fisico.",
+    areas: [
+      { area: "Linguagens", start: 1, end: 45 },
+      { area: "Humanas", start: 46, end: 90 },
+    ],
+  },
+  2: {
+    day: 2,
+    title: "Simulado ENEM Dia 2",
+    area: "Geral" as MockExamArea,
+    durationMinutes: 275,
+    durationLabel: "04:35:00",
+    note: "Tempo liquido: Natureza/Matematica sem gabarito fisico.",
+    areas: [
+      { area: "Natureza", start: 1, end: 45 },
+      { area: "Matematica", start: 46, end: 90 },
+    ],
+  },
+} as const;
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return "Sem data";
   return new Date(`${value}T12:00:00`).toLocaleDateString("pt-BR");
@@ -185,24 +212,23 @@ export default function MockExamsPage() {
   }, [finishedRecent, resultQueries]);
 
   const startDefaultMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (examDay: 1 | 2) => {
+      const preset = mockExamDayPresets[examDay];
       const created = await createMockExam({
         exam_date: new Date().toISOString().slice(0, 10),
-        title: "Simulado Padrao ENEM",
-        area: "Geral",
+        title: preset.title,
+        area: preset.area,
         mode: "external",
+        exam_day: preset.day,
         total_questions: 90,
         correct_count: 0,
         tri_score: null,
-        duration_minutes: null,
-        notes: "Modo Maratona V3.",
+        duration_minutes: preset.durationMinutes,
+        notes: `Modo Maratona V3. ${preset.note}`,
       });
       await generateMockExamPlaceholders(created.id, {
         total_questions: 90,
-        areas: [
-          { area: "Linguagens/Humanas", start: 1, end: 45 },
-          { area: "Natureza/Matematica", start: 46, end: 90 },
-        ],
+        areas: preset.areas.map((area) => ({ ...area })),
       });
       return created;
     },
@@ -244,14 +270,24 @@ export default function MockExamsPage() {
                 Entre em prova cega, registre por clique e acompanhe endurance sem transformar o simulado em dashboard.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <button
                 type="button"
-                className="rounded-2xl bg-sky-400 px-6 py-4 text-base font-black text-slate-950 shadow-lg shadow-sky-950/40 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl bg-sky-400 px-6 py-4 text-left text-base font-black text-slate-950 shadow-lg shadow-sky-950/40 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={startDefaultMutation.isPending}
-                onClick={() => startDefaultMutation.mutate()}
+                onClick={() => startDefaultMutation.mutate(1)}
               >
-                {startDefaultMutation.isPending ? "Preparando..." : "⏱️ Iniciar Novo Simulado Padrao"}
+                {startDefaultMutation.isPending ? "Preparando..." : "Iniciar Simulado: Dia 1"}
+                <span className="mt-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-700">03:50 liquido</span>
+              </button>
+              <button
+                type="button"
+                className="rounded-2xl bg-sky-400 px-6 py-4 text-left text-base font-black text-slate-950 shadow-lg shadow-sky-950/40 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={startDefaultMutation.isPending}
+                onClick={() => startDefaultMutation.mutate(2)}
+              >
+                {startDefaultMutation.isPending ? "Preparando..." : "Iniciar Simulado: Dia 2"}
+                <span className="mt-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-700">04:35 liquido</span>
               </button>
               <button
                 type="button"

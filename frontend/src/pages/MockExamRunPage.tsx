@@ -267,12 +267,19 @@ export default function MockExamRunPage() {
   const progressLabel = questions.length > 0 ? `Questao ${selectedQuestion?.question_number ?? currentIndex + 1} de ${questions.length}` : "Questao 0 de 0";
   const criticalTime = Boolean(exam && remainingSeconds <= 300 && isRunning(exam));
   const examQuestionCount = exam?.total_questions ?? questions.length;
-  const examDurationMinutes = Math.max(1, Math.round((examQuestionCount * 180) / 60));
+  const examDurationMinutes = exam?.duration_minutes && exam.duration_minutes > 0
+    ? exam.duration_minutes
+    : Math.max(1, Math.round((examQuestionCount * 180) / 60));
   const examDurationHours = Math.floor(examDurationMinutes / 60);
   const examDurationRemainder = examDurationMinutes % 60;
   const examDurationLabel = examDurationHours > 0
     ? `${examDurationHours}h${String(examDurationRemainder).padStart(2, "0")}`
     : `${examDurationMinutes}min`;
+  const examDurationContext = examDurationMinutes === 230
+    ? "Dia 1 liquido"
+    : examDurationMinutes === 275
+      ? "Dia 2 liquido"
+      : "tempo liquido";
 
   if (examQuery.isLoading || questionsQuery.isLoading) {
     return (
@@ -344,7 +351,7 @@ export default function MockExamRunPage() {
               {isPaused(exam) ? "PAUSADO" : formatDuration(remainingSeconds)}
             </strong>
             <span className="mt-1 block text-[11px] font-black uppercase tracking-[0.18em] text-zinc-600">
-              {examQuestionCount}q - 3min/q - sem redacao - {examDurationLabel}
+              {examQuestionCount}q - {examDurationContext} - {examDurationLabel}
             </span>
           </div>
           <div className="flex min-w-0 flex-col items-stretch justify-end gap-2 sm:flex-row">
