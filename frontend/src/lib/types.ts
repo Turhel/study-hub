@@ -414,7 +414,7 @@ export type MockExamArea =
 
 export type MockExamMode = "external" | "internal";
 
-export type MockExamStatus = "draft" | "in_progress" | "finished" | "em_andamento" | "pausado" | "finalizado";
+export type MockExamStatus = "draft" | "in_progress" | "finished" | "em_andamento" | "pausado" | "finalizado" | "aguardando_gabarito";
 
 export type MockExamPayload = {
   exam_date: string;

@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 
-import { getMockExamResults, updateMockExamQuestion } from "../lib/api";
+import { finishMockExam, getMockExamResults, updateMockExamQuestion } from "../lib/api";
 import type { MockExamQuestion } from "../lib/types";
 
 type SortMode = "question" | "difficulty" | "time" | "accuracy";
@@ -128,10 +128,12 @@ export default function MockExamResultsPage() {
           updateMockExamQuestion(examId, question.id, { correct_answer: answers[index] }),
         ),
       );
+      await finishMockExam(examId);
     },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["mock-exam-results", examId] }),
+        queryClient.invalidateQueries({ queryKey: ["mock-exam", examId] }),
         queryClient.invalidateQueries({ queryKey: ["mock-exams"] }),
         queryClient.invalidateQueries({ queryKey: ["mock-exams-summary"] }),
       ]);
@@ -187,6 +189,7 @@ export default function MockExamResultsPage() {
 
   const results = resultsQuery.data;
   const exam = results.exam;
+  const isPendingAnswerKey = exam.status === "aguardando_gabarito";
   const areas = ["all", ...Array.from(new Set(results.questions.map(resolveArea)))];
   const timeTrend = trendLabel(results.by_area.map((item) => item.avg_time_seconds));
   const externalAnswers = externalAnswerSheet.toUpperCase().match(/[A-E]/g) ?? [];
@@ -198,7 +201,7 @@ export default function MockExamResultsPage() {
           <div>
             <p className="today-eyebrow">Resultados do simulado</p>
             <h1>{exam.title}</h1>
-            <p>{exam.area} · {exam.mode === "external" ? "modo externo" : "modo interno"}</p>
+            <p>{exam.area} · {exam.mode === "external" ? "modo externo" : "modo interno"} · {isPendingAnswerKey ? "aguardando gabarito" : "corrigido"}</p>
           </div>
           <div className="mock-exam-run-hero-actions">
             <Link className="app-secondary-action" to="/mock-exams">Voltar</Link>
@@ -206,11 +209,18 @@ export default function MockExamResultsPage() {
           </div>
         </section>
 
+        {isPendingAnswerKey ? (
+          <section className="today-panel mock-exam-results-delta">
+            <strong>Gabarito pendente</strong>
+            <span>Suas respostas estao salvas. Cole o gabarito correto quando quiser para liberar acertos, TRI e leitura final.</span>
+          </section>
+        ) : null}
+
         <section className="mock-exam-results-score-grid">
           <article className="today-panel mock-exam-score-card is-main">
             <span>Estimativa TRI geral</span>
-            <strong>{formatTri(results.overall_area_average_score)}</strong>
-            <small>media das areas com nota. Nao e TRI oficial.</small>
+            <strong>{isPendingAnswerKey ? "Pendente" : formatTri(results.overall_area_average_score)}</strong>
+            <small>{isPendingAnswerKey ? "aguardando gabarito externo" : "media das areas com nota. Nao e TRI oficial."}</small>
           </article>
           {results.official_tri_score != null ? (
             <article className="today-panel mock-exam-score-card">
@@ -258,12 +268,12 @@ export default function MockExamResultsPage() {
           <div className="today-section-heading">
             <div>
               <p className="today-eyebrow">Gabarito externo</p>
-              <h2>Folha de conferencia</h2>
-              <p>Use esta grade para conferir rapidamente provas feitas no papel ou PDF.</p>
+              <h2>{isPendingAnswerKey ? "Inserir gabarito para corrigir" : "Folha de conferencia"}</h2>
+              <p>{isPendingAnswerKey ? "Pode ser hoje ou daqui a alguns dias. O sistema so corrige depois que voce aplicar o gabarito." : "Use esta grade para conferir rapidamente provas feitas no papel ou PDF."}</p>
             </div>
           </div>
           <label className="today-form-field">
-            Lance um gabarito externo, se quiser comparar visualmente
+            Lance o gabarito externo
             <textarea
               className="app-input"
               value={externalAnswerSheet}
@@ -284,7 +294,7 @@ export default function MockExamResultsPage() {
             disabled={applyExternalAnswersMutation.isPending || externalAnswers.length === 0}
             onClick={() => applyExternalAnswersMutation.mutate()}
           >
-            {applyExternalAnswersMutation.isPending ? "Aplicando..." : "Aplicar gabarito externo"}
+            {applyExternalAnswersMutation.isPending ? "Aplicando..." : isPendingAnswerKey ? "Aplicar gabarito e corrigir" : "Aplicar gabarito externo"}
           </button>
           <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
             {results.questions.map((question, index) => {

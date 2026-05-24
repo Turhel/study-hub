@@ -98,6 +98,10 @@ function isExamRunnable(exam: MockExam): boolean {
   return exam.status === "draft" || exam.status === "in_progress" || exam.status === "em_andamento" || exam.status === "pausado";
 }
 
+function isExamPendingAnswerKey(exam: MockExam): boolean {
+  return exam.status === "aguardando_gabarito";
+}
+
 function buildExternalPayload(form: ExternalFormState): MockExamPayload {
   return {
     exam_date: form.exam_date,
@@ -191,13 +195,13 @@ export default function MockExamsPage() {
 
   const recentExams = useMemo(() => (examsQuery.data ?? []).slice(0, 8), [examsQuery.data]);
   const runnableExam = useMemo(() => (examsQuery.data ?? []).find(isExamRunnable), [examsQuery.data]);
-  const finishedRecent = useMemo(() => recentExams.filter(isExamFinished).slice(0, 5), [recentExams]);
+  const finishedRecent = useMemo(() => recentExams.filter((exam) => isExamFinished(exam) || isExamPendingAnswerKey(exam)).slice(0, 5), [recentExams]);
 
   const resultQueries = useQueries({
     queries: finishedRecent.map((exam) => ({
       queryKey: ["mock-exam-results", exam.id],
       queryFn: () => getMockExamResults(exam.id),
-      enabled: isExamFinished(exam),
+      enabled: isExamFinished(exam) || isExamPendingAnswerKey(exam),
       retry: false,
     })),
   });
@@ -424,9 +428,9 @@ export default function MockExamsPage() {
                           <button
                             type="button"
                             className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-slate-200 hover:border-sky-300 hover:text-white"
-                            onClick={() => navigate(`/mock-exams/${exam.id}/${isExamFinished(exam) ? "results" : "run"}`)}
+                            onClick={() => navigate(`/mock-exams/${exam.id}/${isExamFinished(exam) || isExamPendingAnswerKey(exam) ? "results" : "run"}`)}
                           >
-                            {isExamFinished(exam) ? "Resultados" : "Abrir prova"}
+                            {isExamPendingAnswerKey(exam) ? "Inserir gabarito" : isExamFinished(exam) ? "Resultados" : "Abrir prova"}
                           </button>
                         </td>
                       </tr>

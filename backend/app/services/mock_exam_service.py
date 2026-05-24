@@ -187,6 +187,15 @@ def _question_correctness(
     return user_answer.strip().upper() == correct_answer.strip().upper()
 
 
+def _has_pending_answer_key(questions: list[MockExamQuestion]) -> bool:
+    return any(
+        bool(question.user_answer)
+        and not question.skipped
+        and not question.correct_answer
+        for question in questions
+    )
+
+
 def _to_response(exam: MockExam, *, estimated_tri_score: float | None = None) -> MockExamResponse:
     return MockExamResponse(
         id=exam.id or 0,
@@ -393,6 +402,8 @@ def _estimate_from_question_set(exam: MockExam, questions: list[MockExamQuestion
 
 
 def _resolve_exam_estimated_tri(session: Session, exam: MockExam) -> float | None:
+    if exam.status == "aguardando_gabarito":
+        return None
     questions = _list_question_rows(session, exam.id or 0)
     if questions:
         question_estimate = _estimate_from_question_set(exam, questions)
@@ -403,6 +414,7 @@ def _resolve_exam_estimated_tri(session: Session, exam: MockExam) -> float | Non
 
 def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
     questions = _list_question_rows(session, exam.id or 0)
+    pending_answer_key = exam.status == "aguardando_gabarito" or _has_pending_answer_key(questions)
     total_questions = len(questions)
     answered_questions = [question for question in questions if question.user_answer and not question.skipped]
     skipped_questions = [question for question in questions if question.skipped]
@@ -434,7 +446,7 @@ def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
                 avg_time_seconds=round(mean(area_timed), 1) if area_timed else None,
                 avg_time_correct_seconds=round(mean(area_timed_correct), 1) if area_timed_correct else None,
                 average_difficulty_percent=round(mean(area_difficulty), 1) if area_difficulty else None,
-                estimated_tri_score=_compute_estimated_tri(area, area_questions),
+                estimated_tri_score=None if pending_answer_key else _compute_estimated_tri(area, area_questions),
             )
         )
 
@@ -444,7 +456,7 @@ def _build_results(session: Session, exam: MockExam) -> MockExamResultsResponse:
     return MockExamResultsResponse(
         exam=_to_response(
             exam,
-            estimated_tri_score=overall_area_average_score if overall_area_average_score is not None else _estimate_score_from_exam(exam),
+            estimated_tri_score=None if pending_answer_key else overall_area_average_score if overall_area_average_score is not None else _estimate_score_from_exam(exam),
         ),
         total_questions=total_questions,
         answered_count=len(answered_questions),
@@ -570,14 +582,17 @@ def delete_mock_exam(session: Session, exam_id: int) -> None:
 def get_mock_exam_summary(session: Session) -> MockExamSummaryResponse:
     rows = session.exec(select(MockExam).order_by(MockExam.data.desc(), MockExam.id.desc())).all()
     estimated_by_exam_id = {row.id or 0: _resolve_exam_estimated_tri(session, row) for row in rows}
+    corrected_rows = [row for row in rows if row.status != "aguardando_gabarito"]
+    corrected_ids = {row.id for row in corrected_rows}
 
     tri_recent = [estimated_by_exam_id[row.id or 0] for row in rows if estimated_by_exam_id[row.id or 0] is not None][:3]
-    accuracy_recent = [_accuracy(row) for row in rows if row.total_questoes > 0][:3]
+    accuracy_recent = [_accuracy(row) for row in corrected_rows if row.total_questoes > 0][:3]
     best_tri_values = [estimated_by_exam_id[row.id or 0] for row in rows if estimated_by_exam_id[row.id or 0] is not None]
 
     by_area_map: dict[str, list[MockExam]] = {}
     for row in rows:
-        by_area_map.setdefault(row.area, []).append(row)
+        if row.id in corrected_ids:
+            by_area_map.setdefault(row.area, []).append(row)
 
     by_area = [
         MockExamAreaSummary(
@@ -886,23 +901,34 @@ def finish_mock_exam(session: Session, exam_id: int) -> MockExamFinishResponse:
         exam.started_at = _utcnow()
 
     now = _utcnow()
-    for question in _list_question_rows(session, exam_id):
+    questions = _list_question_rows(session, exam_id)
+    for question in questions:
         if not question.user_answer and not question.skipped:
             question.skipped = True
-            question.is_correct = False
             question.answered_at = question.answered_at or now
-            question.updated_at = now
-            session.add(question)
+        question.is_correct = _question_correctness(
+            user_answer=question.user_answer,
+            correct_answer=question.correct_answer,
+            skipped=question.skipped,
+        )
+        question.updated_at = now
+        session.add(question)
 
     results = _build_results(session, exam)
-    exam.status = "finalizado"
+    pending_answer_key = _has_pending_answer_key(questions)
+    exam.status = "aguardando_gabarito" if pending_answer_key else "finalizado"
     exam.is_paused = False
     exam.paused_at = None
     exam.finished_at = now
     exam.total_questoes = results.total_questions or exam.total_questoes
-    exam.total_acertos = results.correct_count
-    exam.estimated_tri_score = results.overall_area_average_score or _estimate_score_from_exam(exam)
-    exam.result_json = json.dumps(results.model_dump(mode="json"), ensure_ascii=True, sort_keys=True)
+    if pending_answer_key:
+        exam.total_acertos = 0
+        exam.estimated_tri_score = None
+        exam.result_json = None
+    else:
+        exam.total_acertos = results.correct_count
+        exam.estimated_tri_score = results.overall_area_average_score or _estimate_score_from_exam(exam)
+        exam.result_json = json.dumps(results.model_dump(mode="json"), ensure_ascii=True, sort_keys=True)
     exam.updated_at = exam.finished_at
     session.add(exam)
     session.commit()

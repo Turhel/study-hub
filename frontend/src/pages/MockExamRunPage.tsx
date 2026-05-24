@@ -51,7 +51,7 @@ function isPaused(exam: MockExam): boolean {
 }
 
 function isFinished(exam: MockExam): boolean {
-  return exam.status === "finalizado" || exam.status === "finished";
+  return exam.status === "finalizado" || exam.status === "finished" || exam.status === "aguardando_gabarito";
 }
 
 function buildPlaceholderDefault(totalQuestions: number, area: string): PlaceholderFormState {
@@ -455,7 +455,7 @@ export default function MockExamRunPage() {
                 disabled={finishMutation.isPending}
                 onClick={() => finishMutation.mutate()}
               >
-                {finishMutation.isPending ? "Encerrando..." : "Finalizar e corrigir"}
+                {finishMutation.isPending ? "Encerrando..." : "Encerrar prova"}
               </button>
             </div>
           </div>

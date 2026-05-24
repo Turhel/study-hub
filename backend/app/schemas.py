@@ -535,7 +535,7 @@ MockExamArea = Literal[
     "Geral",
 ]
 MockExamMode = Literal["external", "internal"]
-MockExamStatus = Literal["draft", "in_progress", "finished", "em_andamento", "finalizado", "pausado"]
+MockExamStatus = Literal["draft", "in_progress", "finished", "em_andamento", "finalizado", "pausado", "aguardando_gabarito"]
 MockExamQuestionSourceType = Literal["external", "internal"]
 
 

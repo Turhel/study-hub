@@ -363,12 +363,30 @@ def test_mock_exam_execution_flow_and_results(monkeypatch) -> None:
         finish_response = client.post(f"/api/mock-exams/{exam_id}/finish")
         assert finish_response.status_code == 200
         finished = finish_response.json()
-        assert finished["exam"]["status"] == "finalizado"
+        assert finished["exam"]["status"] == "aguardando_gabarito"
         assert finished["total_questions"] == 6
         assert finished["answered_count"] == 3
         assert finished["skipped_count"] == 3
         assert finished["correct_count"] == 1
         assert len(finished["by_area"]) == 2
+
+        pending_results_response = client.get(f"/api/mock-exams/{exam_id}/results")
+        assert pending_results_response.status_code == 200
+        pending_results = pending_results_response.json()
+        assert pending_results["exam"]["status"] == "aguardando_gabarito"
+        assert pending_results["overall_area_average_score"] is None
+
+        apply_late_key = client.put(
+            f"/api/mock-exams/{exam_id}/questions/{questions[2]['id']}",
+            json={"correct_answer": "C"},
+        )
+        assert apply_late_key.status_code == 200
+
+        finish_again_response = client.post(f"/api/mock-exams/{exam_id}/finish")
+        assert finish_again_response.status_code == 200
+        finished_again = finish_again_response.json()
+        assert finished_again["exam"]["status"] == "finalizado"
+        assert finished_again["correct_count"] == 2
 
         results_response = client.get(f"/api/mock-exams/{exam_id}/results")
         assert results_response.status_code == 200
