@@ -1,10 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useNavigate } from "react-router-dom";
 
 import { StudyTimerDock, StudyTimerProvider } from "./components/StudyTimer";
-import { getGamificationSummary, getRecentActivity } from "./lib/api";
-import type { ActivityItem } from "./lib/types";
 import EssayPage from "./pages/EssayPage";
 import FreeStudyPage from "./pages/FreeStudyPage";
 import LessonsPage from "./pages/LessonsPage";
@@ -29,6 +26,14 @@ const primaryNavigationItems = [
 const secondaryNavigationItems = [
   { label: "Timer", path: "/timer", icon: <TimerEmojiIcon /> },
   { label: "Redacao", path: "/essay", icon: <MemoEmojiIcon /> },
+];
+
+const mobileNavigationItems = [
+  primaryNavigationItems[0],
+  primaryNavigationItems[1],
+  primaryNavigationItems[2],
+  primaryNavigationItems[3],
+  primaryNavigationItems[4],
 ];
 
 const profileMenuItems = [
@@ -188,84 +193,6 @@ function AvatarIcon() {
   );
 }
 
-function HoverPanelButton({
-  icon,
-  panelClassName,
-  children,
-}: {
-  icon: ReactNode;
-  panelClassName?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="topbar-hover-group">
-      <button type="button" className="topbar-hover-icon" aria-haspopup="true">
-        <span className="topbar-hover-icon-glyph">{icon}</span>
-      </button>
-      <div className={`topbar-hover-panel ${panelClassName ?? ""}`.trim()}>{children}</div>
-    </div>
-  );
-}
-
-function formatDate(value?: string | null): string {
-  if (!value) {
-    return "Sem registro";
-  }
-
-  return new Date(`${value}T00:00:00`).toLocaleDateString("pt-BR");
-}
-
-function toDateKey(value: Date): string {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function toRecentStudyDateKeys(activity: ActivityItem[] | undefined, studiedToday: boolean | undefined): Set<string> {
-  const keys = new Set<string>();
-
-  for (const item of activity ?? []) {
-    if (item.type === "daily_plan_generated") {
-      continue;
-    }
-
-    const parsed = new Date(item.created_at);
-    if (Number.isNaN(parsed.getTime())) {
-      continue;
-    }
-
-    keys.add(toDateKey(parsed));
-  }
-
-  if (studiedToday) {
-    keys.add(toDateKey(new Date()));
-  }
-
-  return keys;
-}
-
-function buildRollingStreakDays(activity: ActivityItem[] | undefined, studiedToday: boolean | undefined) {
-  const recentStudyDates = toRecentStudyDateKeys(activity, studiedToday);
-  const base = new Date();
-  base.setHours(0, 0, 0, 0);
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const day = new Date(base);
-    day.setDate(base.getDate() - (6 - index));
-    const key = toDateKey(day);
-
-    return {
-      key,
-      label: streakWeekdayLabels[day.getDay()],
-      shortDate: String(day.getDate()).padStart(2, "0"),
-      done: recentStudyDates.has(key),
-      isToday: index === 6,
-      fullDate: day.toLocaleDateString("pt-BR"),
-    };
-  });
-}
-
 export default function App() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -280,24 +207,7 @@ export default function App() {
 
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
-  const gamificationQuery = useQuery({
-    queryKey: ["gamification-summary"],
-    queryFn: getGamificationSummary,
-    retry: false,
-  });
-  const recentActivityQuery = useQuery({
-    queryKey: ["activity-recent", 100],
-    queryFn: () => getRecentActivity(100),
-    retry: false,
-  });
-
-  const streak = gamificationQuery.data?.streak;
-  const mastery = gamificationQuery.data?.mastery;
-  const streakDays = useMemo(
-    () => buildRollingStreakDays(recentActivityQuery.data, streak?.studied_today),
-    [recentActivityQuery.data, streak?.studied_today],
-  );
-  const hasRollingStreakData = (recentActivityQuery.data?.length ?? 0) > 0;
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuItems = [
     { label: "Configuracoes", icon: "⚙️", onClick: () => navigate("/settings") },
     { label: "Preferencias de estudo", icon: "🧠", onClick: () => navigate("/settings") },
@@ -308,6 +218,17 @@ export default function App() {
     document.documentElement.style.colorScheme = theme;
     window.localStorage.setItem("study-hub-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    function closeMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", closeMenuOnEscape);
+    return () => window.removeEventListener("keydown", closeMenuOnEscape);
+  }, []);
 
   return (
     <StudyTimerProvider>
@@ -346,84 +267,20 @@ export default function App() {
           </nav>
 
           <div className="app-topbar-actions">
-            <HoverPanelButton icon={<FireEmojiIcon idPrefix="fire-trigger" />} panelClassName="topbar-hover-panel-compact">
-              <section className="topbar-stat-card">
-                <div className="topbar-stat-card-head">
-                  <div>
-                    <h2>{streak ? `${streak.current_streak_days} dias de ofensiva` : "Ofensiva"}</h2>
-                    <p>
-                      {gamificationQuery.isError
-                        ? "Dados indisponiveis agora."
-                        : streak?.studied_today
-                          ? `Voce estudou hoje. Ultimo registro: ${formatDate(streak.last_study_date)}.`
-                          : `Registre questoes hoje para manter a sequencia. Ultimo registro: ${formatDate(streak?.last_study_date)}.`}
-                    </p>
-                  </div>
-                  <div className="topbar-stat-icon topbar-stat-icon-fire" aria-hidden="true">
-                    <FireEmojiIcon idPrefix="fire-panel" />
-                  </div>
-                </div>
-
-                <div className="topbar-streak-row">
-                  {streakDays.map((day) => (
-                    <div key={day.key} className={`topbar-streak-day ${day.isToday ? "is-today" : ""}`} title={day.fullDate}>
-                      <span>{day.label}</span>
-                      <small>{day.shortDate}</small>
-                      <i className={day.done ? "is-active" : ""} />
-                    </div>
-                  ))}
-                </div>
-                <p className="topbar-stat-note">
-                  {hasRollingStreakData
-                    ? "Janela movel dos ultimos 7 dias corridos."
-                    : "Mostrando os ultimos 7 dias. Os marcadores acendem conforme voce registra estudo real."}
-                </p>
-                <p className="topbar-stat-note">Maior sequencia: {streak?.longest_streak_days ?? 0} dias</p>
-              </section>
-            </HoverPanelButton>
-
-            <HoverPanelButton icon={<StarEmojiIcon />} panelClassName="topbar-hover-panel-wide">
-              <section className="topbar-stat-card">
-                <div className="topbar-stat-card-head">
-                  <div>
-                    <h2>{mastery ? `${mastery.total_mastery_stars} estrelas` : "Maestria"}</h2>
-                    <p>
-                      {gamificationQuery.isError
-                        ? "Maestria indisponivel agora."
-                        : mastery && mastery.total_mastery_stars > 0
-                          ? `${mastery.mastered_subjects_count} assuntos dominados.`
-                          : "Registre questoes e revisoes para gerar suas primeiras estrelas."}
-                    </p>
-                  </div>
-                  <div className="topbar-stat-icon topbar-stat-icon-star" aria-hidden="true">
-                    <StarEmojiIcon />
-                  </div>
-                </div>
-
-                <div className="topbar-mastery-grid">
-                  {masterySummaryItems.map((item) => (
-                    <article key={item.label} className="topbar-mastery-item">
-                      <strong>{item.label}</strong>
-                      <span>{mastery?.[item.key] ?? 0}</span>
-                      <small>Estrelas</small>
-                    </article>
-                  ))}
-                </div>
-                <div className="topbar-mastery-subjects">
-                  {(mastery?.top_mastery_subjects ?? []).slice(0, 3).map((subject) => (
-                    <span key={subject.subject_id}>
-                      {subject.subject_name} - {subject.stars} estrelas
-                    </span>
-                  ))}
-                  {mastery && mastery.top_mastery_subjects.length === 0 ? (
-                    <span>Nenhum assunto com maestria ainda.</span>
-                  ) : null}
-                </div>
-              </section>
-            </HoverPanelButton>
-
-            <HoverPanelButton icon={<AvatarIcon />} panelClassName="topbar-hover-panel-profile">
-              <section className="topbar-profile-card">
+            <div className="topbar-hover-group">
+              <button
+                type="button"
+                className="topbar-hover-icon"
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                onClick={() => setProfileMenuOpen((current) => !current)}
+              >
+                <span className="topbar-hover-icon-glyph">
+                  <AvatarIcon />
+                </span>
+              </button>
+              {profileMenuOpen ? (
+              <section className="topbar-profile-card topbar-profile-card-open" role="menu">
                 <div className="topbar-profile-header">
                   <div>
                     <h2>Ola, Thullyo</h2>
@@ -455,7 +312,15 @@ export default function App() {
                   </button>
 
                   {profileMenuItems.map((item) => (
-                    <button key={item.label} type="button" className="topbar-profile-item" onClick={item.onClick}>
+                    <button
+                      key={item.label}
+                      type="button"
+                      className="topbar-profile-item"
+                      onClick={() => {
+                        item.onClick();
+                        setProfileMenuOpen(false);
+                      }}
+                    >
                       <span className="topbar-profile-item-icon" aria-hidden="true">
                         {item.icon}
                       </span>
@@ -467,10 +332,24 @@ export default function App() {
                   ))}
                 </div>
               </section>
-            </HoverPanelButton>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>
+
+        <nav className="app-mobile-nav" aria-label="Navegacao rapida">
+          {mobileNavigationItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => `app-mobile-nav-link ${isActive ? "is-active" : ""}`}
+            >
+              <span className="app-mobile-nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
 
         <div className="app-content">
           <Routes>

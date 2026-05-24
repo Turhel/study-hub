@@ -737,12 +737,20 @@ textarea {
   padding-bottom: 7rem;
 }
 
+.app-mobile-nav {
+  display: none;
+}
+
 body.mock-exam-isolated {
   overflow: hidden;
   background: #000;
 }
 
 body.mock-exam-isolated .app-topbar {
+  display: none !important;
+}
+
+body.mock-exam-isolated .app-mobile-nav {
   display: none !important;
 }
 
@@ -5124,9 +5132,163 @@ body.mock-exam-isolated .app-content {
     width: 100%;
   }
 
-  .stats-list-item {
+.stats-list-item {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+.topbar-profile-card-open {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  z-index: 60;
+  width: min(24rem, calc(100vw - 2rem));
+}
+
+.stats-native-heat-panel {
+  border: 1px solid rgba(30, 41, 59, 0.95);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(14px);
+}
+
+.stats-native-heat-shell {
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.stats-native-heat-track {
+  width: max-content;
+  min-width: 100%;
+}
+
+.stats-native-heat-grid,
+.stats-native-heat-track .stats-heatmap-months {
+  grid-template-columns: repeat(53, minmax(0, 0.92rem));
+}
+
+.stats-native-heat-week {
+  gap: 0.24rem;
+}
+
+.heatmap-native-cell {
+  width: 0.92rem;
+  height: 0.92rem;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  border-radius: 0.25rem;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.heatmap-native-cell:hover {
+  border-color: rgba(125, 211, 252, 0.8);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
+  transform: translateY(-1px);
+}
+
+.heatmap-native-level-0 {
+  background: rgba(30, 41, 59, 0.42);
+}
+
+.heatmap-native-level-1 {
+  background: rgba(14, 165, 233, 0.22);
+}
+
+.heatmap-native-level-2 {
+  background: rgba(14, 165, 233, 0.42);
+}
+
+.heatmap-native-level-3 {
+  background: rgba(16, 185, 129, 0.52);
+}
+
+.heatmap-native-level-4 {
+  background: rgba(52, 211, 153, 0.86);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.heatmap-native-cell.is-today {
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 767px) {
+  .app-topbar {
+    border-bottom-color: rgba(30, 41, 59, 0.95);
+    background: rgba(15, 23, 42, 0.75);
+  }
+
+  .app-topbar-row {
+    justify-content: flex-end;
+    padding: 0.6rem 0.9rem;
+  }
+
+  .app-topbar-nav {
+    display: none !important;
+  }
+
+  .topbar-profile-card-open {
+    right: 0.75rem;
+    width: min(22rem, calc(100vw - 1.5rem));
+  }
+
+  .app-mobile-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 45;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.15rem;
+    border-top: 1px solid rgba(30, 41, 59, 0.95);
+    background: rgba(2, 6, 23, 0.92);
+    padding: 0.45rem max(0.45rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom)) max(0.45rem, env(safe-area-inset-right));
+    backdrop-filter: blur(14px);
+  }
+
+  .app-mobile-nav-link {
+    display: grid;
+    min-width: 0;
+    justify-items: center;
+    gap: 0.2rem;
+    border-radius: 1rem;
+    padding: 0.45rem 0.2rem;
+    color: #94a3b8;
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .app-mobile-nav-link.is-active {
+    background: rgba(14, 165, 233, 0.18);
+    color: #f8fafc;
+  }
+
+  .app-mobile-nav-icon {
+    display: inline-grid;
+    width: 1.2rem;
+    height: 1.2rem;
+    place-items: center;
+  }
+
+  .app-mobile-nav-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .app-content {
+    padding-bottom: 6.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-native-heat-grid,
+  .stats-native-heat-track .stats-heatmap-months {
+    grid-template-columns: repeat(53, minmax(0, 0.78rem));
+  }
+
+  .heatmap-native-cell {
+    width: 0.78rem;
+    height: 0.78rem;
   }
 }
 

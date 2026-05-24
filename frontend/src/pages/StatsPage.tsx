@@ -324,13 +324,18 @@ function Heatmap({
   title: string;
 }) {
   const weeks = useMemo(() => buildHeatmapWeeks(data?.days ?? []), [data?.days]);
+  const nativeWeeks = useMemo(() => {
+    const visibleWeeks = weeks.slice(-53);
+    const paddingWeeks = Array.from({ length: Math.max(53 - visibleWeeks.length, 0) }, () => [] as StatsHeatmapDay[]);
+    return [...paddingWeeks, ...visibleWeeks];
+  }, [weeks]);
   const heatmapTrackStyle = useMemo(
-    () => ({ "--heatmap-weeks": String(weeks.length) }) as CSSProperties,
-    [weeks.length],
+    () => ({ "--heatmap-weeks": "53" }) as CSSProperties,
+    [],
   );
   const monthLabels = useMemo(() => {
     let lastMonth = "";
-    return weeks
+    return nativeWeeks
       .map((week, index) => {
         const firstDay = week[0];
         if (!firstDay) {
@@ -344,16 +349,17 @@ function Heatmap({
         return { index, month };
       })
       .filter((item): item is { index: number; month: string } => item !== null);
-  }, [weeks]);
+  }, [nativeWeeks]);
   const todayKey = new Date().toISOString().slice(0, 10);
 
   if (!data || data.days.length === 0) {
     return (
-      <section className="stats-chart-card stats-heatmap-panel">
+      <section className="stats-chart-card stats-heatmap-panel stats-native-heat-panel">
         <div className="stats-chart-head">
           <div>
-            <span className="today-eyebrow">Heatmap</span>
-            <h3>{title}</h3>
+            <span className="today-eyebrow">Constancia Cognitiva</span>
+            <h3>Histórico de Atividade</h3>
+            <p>{title}</p>
           </div>
         </div>
         <div className="app-empty-card">
@@ -365,15 +371,16 @@ function Heatmap({
   }
 
   return (
-    <section className="stats-chart-card stats-heatmap-panel">
+    <section className="stats-chart-card stats-heatmap-panel stats-native-heat-panel">
       <div className="stats-chart-head">
         <div>
-          <span className="today-eyebrow">Heatmap</span>
-          <h3>{title}</h3>
+          <span className="today-eyebrow">Constancia Cognitiva</span>
+          <h3>Histórico de Atividade</h3>
+          <p>{title}</p>
         </div>
         <div className="stats-heatmap-summary">
-          <strong>{data.current_streak_days} dias</strong>
-          <span>ofensiva atual</span>
+          <strong>{data.active_days} dias</strong>
+          <span>ativos no periodo</span>
         </div>
       </div>
 
@@ -392,8 +399,8 @@ function Heatmap({
         </article>
       </div>
 
-      <div className="stats-heatmap-shell">
-        <div className="stats-heatmap-track" style={heatmapTrackStyle}>
+      <div className="stats-heatmap-shell stats-native-heat-shell">
+        <div className="stats-heatmap-track stats-native-heat-track" style={heatmapTrackStyle}>
           <div className="stats-heatmap-months" aria-hidden="true">
             {monthLabels.map(({ month, index }) => (
               <span key={`${month}-${index}`} style={{ gridColumn: `${index + 1}` }}>
@@ -401,19 +408,19 @@ function Heatmap({
               </span>
             ))}
           </div>
-          <div className="stats-heatmap-grid">
-            {weeks.map((week, index) => (
-              <div key={`week-${index}`} className="stats-heatmap-week">
+          <div className="stats-heatmap-grid stats-native-heat-grid">
+            {nativeWeeks.map((week, index) => (
+              <div key={`week-${index}`} className="stats-heatmap-week stats-native-heat-week">
                 {Array.from({ length: 7 }, (_, rowIndex) => {
                   const day = week.find((item) => item.weekday === rowIndex);
                   if (!day) {
-                    return <span key={`empty-${index}-${rowIndex}`} className="heatmap-cell heatmap-cell-empty" />;
+                    return <span key={`empty-${index}-${rowIndex}`} className="heatmap-cell heatmap-native-cell heatmap-cell-empty" />;
                   }
 
                   return (
                     <span
                       key={day.date}
-                      className={`heatmap-cell heatmap-level-${day.intensity_level} ${day.date === todayKey ? "is-today" : ""}`}
+                      className={`heatmap-cell heatmap-native-cell heatmap-native-level-${day.intensity_level} ${day.date === todayKey ? "is-today" : ""}`}
                       title={`${formatDateLabel(day.date)} - ${day.questions_count} questoes - ${day.correct_count} acertos - ${formatPercent(day.accuracy)}`}
                     />
                   );
@@ -426,11 +433,11 @@ function Heatmap({
 
       <div className="stats-heatmap-legend">
         <span>sem estudo</span>
-        <i className="heatmap-legend-cell heatmap-level-0" />
-        <i className="heatmap-legend-cell heatmap-level-1" />
-        <i className="heatmap-legend-cell heatmap-level-2" />
-        <i className="heatmap-legend-cell heatmap-level-3" />
-        <i className="heatmap-legend-cell heatmap-level-4" />
+        <i className="heatmap-legend-cell heatmap-native-level-0" />
+        <i className="heatmap-legend-cell heatmap-native-level-1" />
+        <i className="heatmap-legend-cell heatmap-native-level-2" />
+        <i className="heatmap-legend-cell heatmap-native-level-3" />
+        <i className="heatmap-legend-cell heatmap-native-level-4" />
         <span className="stats-heatmap-legend-separator">/</span>
         <span>mais questoes</span>
       </div>
