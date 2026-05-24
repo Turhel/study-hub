@@ -16,8 +16,10 @@ import type {
   FreeStudySubjectContextResponse,
   FreeStudyCatalogResponse,
   GamificationSummaryResponse,
+  LessonA1RecoveryBlock,
   LessonContent,
   LessonContentPayload,
+  LessonSavedError,
   MockExam,
   MockExamActiveResponse,
   MockExamFinishResponse,
@@ -643,6 +645,26 @@ export async function getLessonContentsBySubject(subjectId: number): Promise<Les
   }
 
   return response.json() as Promise<LessonContent[]>;
+}
+
+export async function getLessonA1RecoveryBlocks(): Promise<LessonA1RecoveryBlock[]> {
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/a1-recovery`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar os conteudos em recuperacao A1.");
+  }
+
+  return response.json() as Promise<LessonA1RecoveryBlock[]>;
+}
+
+export async function getLessonSavedErrorsByBlock(blockId: number): Promise<LessonSavedError[]> {
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/block-errors/${blockId}`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar os erros salvos deste bloco.");
+  }
+
+  return response.json() as Promise<LessonSavedError[]>;
 }
 
 export async function getLessonContentsByRoadmapNode(nodeId: string): Promise<LessonContent[]> {

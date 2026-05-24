@@ -3,14 +3,22 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 
 from app.db import get_session
-from app.schemas import LessonContentCreate, LessonContentResponse, LessonContentUpdate
+from app.schemas import (
+    LessonA1RecoveryBlockResponse,
+    LessonContentCreate,
+    LessonContentResponse,
+    LessonContentUpdate,
+    LessonSavedErrorResponse,
+)
 from app.services.lesson_content_service import (
     create_lesson_content,
     delete_lesson_content,
     get_lesson_content,
+    list_a1_recovery_blocks,
     list_lesson_contents,
     list_lesson_contents_by_roadmap_node,
     list_lesson_contents_by_subject,
+    list_saved_errors_by_block,
     update_lesson_content,
 )
 
@@ -22,6 +30,21 @@ router = APIRouter(prefix="/api/lessons")
 def read_lesson_contents(published_only: bool = Query(default=False)) -> list[LessonContentResponse]:
     with get_session() as session:
         return list_lesson_contents(session, published_only=published_only)
+
+
+@router.get("/a1-recovery", response_model=list[LessonA1RecoveryBlockResponse])
+def read_a1_recovery_blocks() -> list[LessonA1RecoveryBlockResponse]:
+    with get_session() as session:
+        return list_a1_recovery_blocks(session)
+
+
+@router.get("/block-errors/{block_id}", response_model=list[LessonSavedErrorResponse])
+def read_lesson_block_errors(block_id: int) -> list[LessonSavedErrorResponse]:
+    with get_session() as session:
+        try:
+            return list_saved_errors_by_block(session, block_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.get("/contents/{content_id}", response_model=LessonContentResponse)

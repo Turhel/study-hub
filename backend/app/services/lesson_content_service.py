@@ -6,8 +6,15 @@ from typing import Any
 
 from sqlmodel import Session, select
 
-from app.models import LessonContent, RoadmapNode, Subject
-from app.schemas import LessonContentCreate, LessonContentResponse, LessonContentUpdate, LessonExtraLink
+from app.models import Block, BlockMastery, BlockSubject, LessonContent, MockExamQuestion, RoadmapNode, Subject
+from app.schemas import (
+    LessonA1RecoveryBlockResponse,
+    LessonContentCreate,
+    LessonContentResponse,
+    LessonContentUpdate,
+    LessonExtraLink,
+    LessonSavedErrorResponse,
+)
 
 
 def _extra_links_json(extra_links: list[LessonExtraLink] | None) -> str:
@@ -163,4 +170,77 @@ def list_lesson_contents_by_roadmap_node(session: Session, node_id: str) -> list
         .order_by(LessonContent.updated_at.desc(), LessonContent.id.desc())
     ).all()
     return [_to_response(item) for item in rows]
+
+
+def _subject_name(subject: Subject | None) -> str | None:
+    if subject is None:
+        return None
+    if subject.subassunto:
+        return f"{subject.assunto} - {subject.subassunto}"
+    return subject.assunto
+
+
+def list_a1_recovery_blocks(session: Session) -> list[LessonA1RecoveryBlockResponse]:
+    rows = session.exec(
+        select(BlockMastery, Block)
+        .join(Block, Block.id == BlockMastery.block_id)
+        .where(BlockMastery.eaere_stage.startswith("EX"))
+        .order_by(BlockMastery.eaere_stage, Block.disciplina, Block.ordem, Block.id)
+    ).all()
+    responses: list[LessonA1RecoveryBlockResponse] = []
+    for mastery, block in rows:
+        subject = session.exec(
+            select(Subject)
+            .join(BlockSubject, BlockSubject.subject_id == Subject.id)
+            .where(BlockSubject.block_id == block.id)
+            .order_by(Subject.id)
+        ).first()
+        saved_errors_count = session.exec(
+            select(MockExamQuestion)
+            .where(MockExamQuestion.block_id == block.id)
+            .where(MockExamQuestion.source_type == "saved_bank")
+            .where(MockExamQuestion.is_correct == False)  # noqa: E712
+        ).all()
+        responses.append(
+            LessonA1RecoveryBlockResponse(
+                block_id=block.id or 0,
+                block_name=block.nome,
+                discipline=block.disciplina,
+                subject_id=subject.id if subject is not None else None,
+                subject_name=_subject_name(subject),
+                eaere_stage=mastery.eaere_stage,
+                ex_moving_average=mastery.ex_moving_average,
+                mastery_score=mastery.score_domino,
+                saved_errors_count=len(saved_errors_count),
+            )
+        )
+    return responses
+
+
+def list_saved_errors_by_block(session: Session, block_id: int) -> list[LessonSavedErrorResponse]:
+    block = session.get(Block, block_id)
+    if block is None:
+        raise ValueError("Bloco nao encontrado.")
+    rows = session.exec(
+        select(MockExamQuestion)
+        .where(MockExamQuestion.block_id == block_id)
+        .where(MockExamQuestion.source_type == "saved_bank")
+        .where(MockExamQuestion.is_correct == False)  # noqa: E712
+        .order_by(MockExamQuestion.created_at.desc(), MockExamQuestion.question_number)
+    ).all()
+    return [
+        LessonSavedErrorResponse(
+            id=row.id or 0,
+            question_number=row.question_number,
+            subject_id=row.subject_id,
+            prompt_markdown=row.prompt_markdown,
+            correct_answer=row.correct_answer,
+            user_answer=row.user_answer,
+            difficulty_percent=row.difficulty_percent,
+            time_seconds=row.time_seconds,
+            notes=row.notes,
+            created_at=row.created_at.isoformat(),
+        )
+        for row in rows
+    ]
 

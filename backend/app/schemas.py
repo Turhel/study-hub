@@ -987,6 +987,31 @@ class LessonContentResponse(BaseModel):
     updated_at: str
 
 
+class LessonA1RecoveryBlockResponse(BaseModel):
+    block_id: int
+    block_name: str
+    discipline: str
+    subject_id: int | None = None
+    subject_name: str | None = None
+    eaere_stage: str
+    ex_moving_average: float | None = None
+    mastery_score: float
+    saved_errors_count: int = 0
+
+
+class LessonSavedErrorResponse(BaseModel):
+    id: int
+    question_number: int
+    subject_id: int | None = None
+    prompt_markdown: str | None = None
+    correct_answer: str | None = None
+    user_answer: str | None = None
+    difficulty_percent: float | None = None
+    time_seconds: int | None = None
+    notes: str | None = None
+    created_at: str
+
+
 class FreeStudyRoadmapNodeBrief(BaseModel):
     node_id: str
     discipline: str

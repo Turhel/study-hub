@@ -649,6 +649,31 @@ export type LessonContent = {
   updated_at: string;
 };
 
+export type LessonA1RecoveryBlock = {
+  block_id: number;
+  block_name: string;
+  discipline: string;
+  subject_id: number | null;
+  subject_name: string | null;
+  eaere_stage: string;
+  ex_moving_average: number | null;
+  mastery_score: number;
+  saved_errors_count: number;
+};
+
+export type LessonSavedError = {
+  id: number;
+  question_number: number;
+  subject_id: number | null;
+  prompt_markdown: string | null;
+  correct_answer: string | null;
+  user_answer: string | null;
+  difficulty_percent: number | null;
+  time_seconds: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
 export type LessonContentPayload = {
   roadmap_node_id?: string | null;
   subject_id?: number | null;
