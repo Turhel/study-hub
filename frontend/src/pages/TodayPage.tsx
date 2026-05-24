@@ -639,8 +639,8 @@ export default function TodayPage() {
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8"
       >
-        <header className="grid gap-5 border-b border-white/10 pb-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <div className="flex min-h-52 flex-col justify-between gap-6">
+        <header className="grid gap-5 border-b border-white/10 pb-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
+          <div className="flex h-full min-h-[24rem] flex-col gap-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-black tracking-[0.08em] text-white">HOJE</h1>
@@ -669,6 +669,72 @@ export default function TodayPage() {
                 </span>
               ) : null}
             </div>
+            <section className="flex flex-1 flex-col justify-between rounded-[1.75rem] border border-white/10 bg-slate-900/50 p-5 shadow-2xl shadow-black/10">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Fazer agora</p>
+                {isAdvanceSuspended ? (
+                  <div className="mt-4">
+                    <h2 className="text-2xl font-black text-white">Avanco suspenso</h2>
+                    <p className="mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-slate-400">
+                      Hoje o sistema protege sua carga mental. Foque em revisoes criticas, RRs ou teoria ativa.
+                    </p>
+                  </div>
+                ) : planQuery.isLoading ? (
+                  <p className="mt-4 text-sm font-semibold text-slate-400">Carregando focos do dia...</p>
+                ) : focusGroups.advance.length > 0 ? (
+                  <div className="mt-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <span className="rounded-full border border-sky-400/50 px-3 py-1 text-xs font-black text-sky-300">
+                          {eaereTag(focusGroups.advance[0].item)}
+                        </span>
+                        <h2 className="mt-3 max-w-3xl text-2xl font-black leading-tight text-white">
+                          {focusGroups.advance[0].item.subject_name}
+                        </h2>
+                        <p className="mt-1 text-sm font-semibold text-slate-400">
+                          {focusGroups.advance[0].item.discipline} / {focusGroups.advance[0].item.block_name}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="w-fit rounded-2xl bg-sky-500 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-sky-400"
+                        onClick={() => openTrainingTimer(focusGroups.advance[0].item)}
+                      >
+                        Iniciar timer
+                      </button>
+                    </div>
+                    <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-2xl bg-slate-950/70 p-3">
+                        <span className="text-xs font-semibold text-slate-500">Meta</span>
+                        <strong className="block text-lg text-white">{focusGroups.advance[0].item.planned_questions}</strong>
+                      </div>
+                      <div className="rounded-2xl bg-slate-950/70 p-3">
+                        <span className="text-xs font-semibold text-slate-500">Feitas</span>
+                        <strong className="block text-lg text-white">{focusGroups.advance[0].item.completed_today}</strong>
+                      </div>
+                      <div className="rounded-2xl bg-slate-950/70 p-3">
+                        <span className="text-xs font-semibold text-slate-500">TRI</span>
+                        <strong className="block text-lg text-white">{formatTri(focusGroups.advance[0].item.estimated_tri_score)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm font-semibold text-slate-400">Sem bloco E1/E2 ativo agora.</p>
+                )}
+              </div>
+              {focusGroups.advance.length > 1 && !isAdvanceSuspended ? (
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                  {focusGroups.advance.slice(1, 4).map(({ item }) => (
+                    <span
+                      key={`top-focus-${item.block_id}-${item.subject_id}`}
+                      className="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs font-bold text-slate-300"
+                    >
+                      {eaereTag(item)} · {item.subject_name}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </section>
           </div>
 
           <section className="rounded-[1.75rem] border border-white/10 bg-slate-900/70 p-4 shadow-2xl shadow-black/20">
