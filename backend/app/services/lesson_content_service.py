@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlmodel import Session, select
 
-from app.models import Block, BlockMastery, BlockSubject, LessonContent, MockExamQuestion, RoadmapNode, Subject
+from app.models import Block, BlockMastery, BlockSubject, LessonContent, MockExamQuestion, RoadmapNode, StudyEvent, Subject
 from app.schemas import (
     LessonA1RecoveryBlockResponse,
     LessonContentCreate,
@@ -14,7 +14,9 @@ from app.schemas import (
     LessonContentUpdate,
     LessonExtraLink,
     LessonSavedErrorResponse,
+    LessonStudiedSubjectResponse,
 )
+from app.services.study_event_service import record_study_event
 
 
 def _extra_links_json(extra_links: list[LessonExtraLink] | None) -> str:
@@ -243,4 +245,65 @@ def list_saved_errors_by_block(session: Session, block_id: int) -> list[LessonSa
         )
         for row in rows
     ]
+
+
+def list_lesson_studied_subjects(session: Session) -> list[LessonStudiedSubjectResponse]:
+    rows = session.exec(
+        select(StudyEvent)
+        .where(StudyEvent.event_type == "lesson_studied")
+        .where(StudyEvent.subject_id.is_not(None))
+        .order_by(StudyEvent.created_at.desc(), StudyEvent.id.desc())
+    ).all()
+    seen: set[int] = set()
+    responses: list[LessonStudiedSubjectResponse] = []
+    for event in rows:
+        if event.subject_id is None or event.subject_id in seen:
+            continue
+        subject = session.get(Subject, event.subject_id)
+        if subject is None:
+            continue
+        seen.add(event.subject_id)
+        responses.append(
+            LessonStudiedSubjectResponse(
+                subject_id=event.subject_id,
+                block_id=event.block_id,
+                discipline=event.discipline or subject.disciplina,
+                subject_name=_subject_name(subject) or subject.assunto,
+                studied_at=event.created_at.isoformat(),
+            )
+        )
+    return responses
+
+
+def mark_lesson_subject_studied(session: Session, subject_id: int) -> LessonStudiedSubjectResponse:
+    subject = session.get(Subject, subject_id)
+    if subject is None:
+        raise ValueError("Assunto nao encontrado.")
+    block = session.exec(
+        select(Block)
+        .join(BlockSubject, BlockSubject.block_id == Block.id)
+        .where(BlockSubject.subject_id == subject_id)
+        .order_by(Block.ordem, Block.id)
+    ).first()
+    block_id = block.id if block is not None else None
+    subject_name = _subject_name(subject) or subject.assunto
+    event = record_study_event(
+        session,
+        event_type="lesson_studied",
+        title=f"A1 estudado em {subject.disciplina}",
+        description=f"Ancoragem teorica marcada como estudada em {subject_name}.",
+        discipline=subject.disciplina,
+        block_id=block_id,
+        subject_id=subject_id,
+        metadata={"source": "lessons_page", "study_mode": "a1"},
+    )
+    session.commit()
+    session.refresh(event)
+    return LessonStudiedSubjectResponse(
+        subject_id=subject_id,
+        block_id=block_id,
+        discipline=subject.disciplina,
+        subject_name=subject_name,
+        studied_at=event.created_at.isoformat(),
+    )
 

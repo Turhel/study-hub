@@ -493,7 +493,7 @@ class ResetStudyDataResponse(BaseModel):
 
 
 class ActivityItem(BaseModel):
-    type: Literal["question_attempt_bulk", "review_upsert", "daily_plan_generated", "block_progress_decision"]
+    type: Literal["question_attempt_bulk", "review_upsert", "daily_plan_generated", "block_progress_decision", "lesson_studied"]
     created_at: str
     title: str
     description: str
@@ -1010,6 +1010,14 @@ class LessonSavedErrorResponse(BaseModel):
     time_seconds: int | None = None
     notes: str | None = None
     created_at: str
+
+
+class LessonStudiedSubjectResponse(BaseModel):
+    subject_id: int
+    block_id: int | None = None
+    discipline: str
+    subject_name: str
+    studied_at: str
 
 
 class FreeStudyRoadmapNodeBrief(BaseModel):

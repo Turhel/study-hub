@@ -9,6 +9,8 @@ import {
   getLessonContentsByRoadmapNode,
   getLessonContentsBySubject,
   getLessonSavedErrorsByBlock,
+  getLessonStudiedSubjects,
+  markLessonSubjectStudied,
   updateLessonContent,
 } from "../lib/api";
 import type {
@@ -252,6 +254,12 @@ export default function LessonsPage() {
     retry: false,
   });
 
+  const studiedSubjectsQuery = useQuery({
+    queryKey: ["lessons-studied-subjects"],
+    queryFn: getLessonStudiedSubjects,
+    retry: false,
+  });
+
   const catalogQuery = useQuery({
     queryKey: ["free-study-catalog", selectedDiscipline],
     queryFn: () => getFreeStudyCatalogByDiscipline(selectedDiscipline!),
@@ -261,7 +269,12 @@ export default function LessonsPage() {
 
   const discipline = catalogQuery.data?.disciplines[0] ?? null;
   const subjects = useMemo(() => flattenSubjects(discipline), [discipline]);
+  const studiedSubjectIds = useMemo(
+    () => new Set((studiedSubjectsQuery.data ?? []).map((item) => item.subject_id)),
+    [studiedSubjectsQuery.data],
+  );
   const selectedSubject = subjects.find((subject) => subject.subject_id === selectedSubjectId) ?? null;
+  const selectedSubjectStudied = selectedSubjectId !== null && studiedSubjectIds.has(selectedSubjectId);
   const subjectPageCount = Math.max(1, Math.ceil(subjects.length / SUBJECTS_PAGE_SIZE));
   const pagedSubjects = subjects.slice(
     subjectPage * SUBJECTS_PAGE_SIZE,
@@ -343,6 +356,26 @@ export default function LessonsPage() {
     },
     onError: (error) => {
       setFormError(error instanceof Error ? error.message : "Nao foi possivel excluir a aula.");
+    },
+  });
+
+  const markStudiedMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSubjectId) {
+        throw new Error("Selecione um assunto antes de marcar como estudado.");
+      }
+      return markLessonSubjectStudied(selectedSubjectId);
+    },
+    onSuccess: async () => {
+      setFeedback("A1 marcado como estudado.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["lessons-studied-subjects"] }),
+        queryClient.invalidateQueries({ queryKey: ["activity-recent"] }),
+        queryClient.invalidateQueries({ queryKey: ["activity-today"] }),
+      ]);
+    },
+    onError: (error) => {
+      setFeedback(error instanceof Error ? error.message : "Nao foi possivel marcar como estudado.");
     },
   });
 
@@ -438,37 +471,47 @@ export default function LessonsPage() {
 
           {recoveryQuery.data && recoveryQuery.data.length > 0 ? (
             <div className="mt-5 grid gap-3 lg:grid-cols-3">
-              {recoveryQuery.data.map((block) => (
-                <article key={block.block_id} className="rounded-2xl border border-amber-500/25 bg-slate-950/70 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <span className="rounded-full border border-amber-500/30 px-2 py-1 text-xs font-black text-amber-200">
-                        {block.eaere_stage}
+              {recoveryQuery.data.map((block) => {
+                const studied = block.subject_id !== null && studiedSubjectIds.has(block.subject_id);
+                return (
+                  <article key={block.block_id} className="rounded-2xl border border-amber-500/25 bg-slate-950/70 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="rounded-full border border-amber-500/30 px-2 py-1 text-xs font-black text-amber-200">
+                            {block.eaere_stage}
+                          </span>
+                          {studied ? (
+                            <span className="rounded-full border border-emerald-500/30 px-2 py-1 text-xs font-black text-emerald-200">
+                              Estudado
+                            </span>
+                          ) : null}
+                        </div>
+                        <h3 className="mt-3 text-lg font-black text-white">{block.subject_name ?? block.block_name}</h3>
+                        <p className="mt-1 text-xs font-bold text-slate-500">
+                          {block.discipline} / {block.block_name}
+                        </p>
+                      </div>
+                      <span className="text-right text-xs font-black text-amber-200">
+                        MM
+                        <br />
+                        {formatPercent(block.ex_moving_average)}
                       </span>
-                      <h3 className="mt-3 text-lg font-black text-white">{block.subject_name ?? block.block_name}</h3>
-                      <p className="mt-1 text-xs font-bold text-slate-500">
-                        {block.discipline} / {block.block_name}
-                      </p>
                     </div>
-                    <span className="text-right text-xs font-black text-amber-200">
-                      MM
-                      <br />
-                      {formatPercent(block.ex_moving_average)}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold text-slate-400">
-                    <span>Score {formatPercent(block.mastery_score)}</span>
-                    <span>{block.saved_errors_count} erro(s) salvos</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="mt-4 w-full rounded-2xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-300"
-                    onClick={() => startRecovery(block)}
-                  >
-                    📖 Iniciar Ancoragem Teorica
-                  </button>
-                </article>
-              ))}
+                    <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold text-slate-400">
+                      <span>Score {formatPercent(block.mastery_score)}</span>
+                      <span>{block.saved_errors_count} erro(s) salvos</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-4 w-full rounded-2xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-300"
+                      onClick={() => startRecovery(block)}
+                    >
+                      📖 Iniciar Ancoragem Teorica
+                    </button>
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <p className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-sm font-semibold text-slate-400">
@@ -540,22 +583,36 @@ export default function LessonsPage() {
               ) : null}
 
               <div className="grid gap-2">
-                {pagedSubjects.map((subject) => (
-                  <button
-                    key={subject.subject_id}
-                    type="button"
-                    className="flex flex-col gap-1 rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-left transition hover:border-sky-500/70 hover:bg-sky-500/10 sm:flex-row sm:items-center sm:justify-between"
-                    onClick={() => chooseSubject(subject.subject_id)}
-                  >
-                    <span>
-                      <strong className="block text-sm font-black text-white">{subject.subject_name}</strong>
-                      <span className="text-xs font-semibold text-slate-500">
-                        {subject.subarea} / {subject.block_name ?? "Bloco livre"}
+                {pagedSubjects.map((subject) => {
+                  const studied = studiedSubjectIds.has(subject.subject_id);
+                  return (
+                    <button
+                      key={subject.subject_id}
+                      type="button"
+                      className={`flex flex-col gap-1 rounded-2xl border px-4 py-3 text-left transition sm:flex-row sm:items-center sm:justify-between ${
+                        studied
+                          ? "border-emerald-500/35 bg-emerald-500/10 hover:border-emerald-400"
+                          : "border-slate-800 bg-slate-900/70 hover:border-sky-500/70 hover:bg-sky-500/10"
+                      }`}
+                      onClick={() => chooseSubject(subject.subject_id)}
+                    >
+                      <span>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <strong className="block text-sm font-black text-white">{subject.subject_name}</strong>
+                          {studied ? (
+                            <span className="rounded-full border border-emerald-500/30 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-200">
+                              Estudado
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-500">
+                          {subject.subarea} / {subject.block_name ?? "Bloco livre"}
+                        </span>
                       </span>
-                    </span>
-                    <span className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Abrir A1</span>
-                  </button>
-                ))}
+                      <span className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Abrir A1</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {subjects.length > SUBJECTS_PAGE_SIZE ? (
@@ -598,13 +655,38 @@ export default function LessonsPage() {
                     {selectedDiscipline} / {selectedSubject.block_name ?? "Bloco livre"}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="rounded-full border border-slate-700 px-4 py-2 text-sm font-black text-slate-300 hover:border-sky-500 hover:text-white"
-                  onClick={startEditing}
-                >
-                  {lessonContent ? "Editar A1" : "Criar A1"}
-                </button>
+                <div className="flex flex-wrap gap-2 sm:justify-end">
+                  {selectedSubjectStudied ? (
+                    <span className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-200">
+                      Estudado
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="rounded-full border border-emerald-500/35 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-100 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={markStudiedMutation.isPending}
+                      onClick={() => markStudiedMutation.mutate()}
+                    >
+                      {markStudiedMutation.isPending ? "Marcando..." : "Marcar como estudado"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="rounded-full border border-slate-700 px-4 py-2 text-sm font-black text-slate-300 hover:border-sky-500 hover:text-white"
+                    onClick={startEditing}
+                  >
+                    {lessonContent ? "Editar A1" : "Criar A1"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">Status de execucao</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-300">
+                  {selectedSubjectStudied
+                    ? "Voce ja marcou este A1 como estudado. Agora a teoria esta registrada como apoio feito."
+                    : "Depois de assistir, fichar ou revisar a teoria ativa, marque este assunto como estudado."}
+                </p>
               </div>
 
               {lessonError ? <p className="mt-4 text-sm font-bold text-red-200">{lessonError}</p> : null}

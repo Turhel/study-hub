@@ -26,7 +26,7 @@ export type TodayResponse = {
 };
 
 export type ActivityItem = {
-  type: "question_attempt_bulk" | "review_upsert" | "daily_plan_generated" | "block_progress_decision";
+  type: "question_attempt_bulk" | "review_upsert" | "daily_plan_generated" | "block_progress_decision" | "lesson_studied";
   created_at: string;
   title: string;
   description: string;
@@ -672,6 +672,14 @@ export type LessonSavedError = {
   time_seconds: number | null;
   notes: string | null;
   created_at: string;
+};
+
+export type LessonStudiedSubject = {
+  subject_id: number;
+  block_id: number | null;
+  discipline: string;
+  subject_name: string;
+  studied_at: string;
 };
 
 export type LessonContentPayload = {

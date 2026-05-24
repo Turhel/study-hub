@@ -20,6 +20,7 @@ import type {
   LessonContent,
   LessonContentPayload,
   LessonSavedError,
+  LessonStudiedSubject,
   MockExam,
   MockExamActiveResponse,
   MockExamFinishResponse,
@@ -665,6 +666,28 @@ export async function getLessonSavedErrorsByBlock(blockId: number): Promise<Less
   }
 
   return response.json() as Promise<LessonSavedError[]>;
+}
+
+export async function getLessonStudiedSubjects(): Promise<LessonStudiedSubject[]> {
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/studied-subjects`);
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel carregar os assuntos estudados.");
+  }
+
+  return response.json() as Promise<LessonStudiedSubject[]>;
+}
+
+export async function markLessonSubjectStudied(subjectId: number): Promise<LessonStudiedSubject> {
+  const response = await apiFetch(`${API_BASE_URL}/api/lessons/subjects/${subjectId}/studied`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel marcar a aula como estudada.");
+  }
+
+  return response.json() as Promise<LessonStudiedSubject>;
 }
 
 export async function getLessonContentsByRoadmapNode(nodeId: string): Promise<LessonContent[]> {

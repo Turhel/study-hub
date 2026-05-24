@@ -9,6 +9,7 @@ from app.schemas import (
     LessonContentResponse,
     LessonContentUpdate,
     LessonSavedErrorResponse,
+    LessonStudiedSubjectResponse,
 )
 from app.services.lesson_content_service import (
     create_lesson_content,
@@ -18,7 +19,9 @@ from app.services.lesson_content_service import (
     list_lesson_contents,
     list_lesson_contents_by_roadmap_node,
     list_lesson_contents_by_subject,
+    list_lesson_studied_subjects,
     list_saved_errors_by_block,
+    mark_lesson_subject_studied,
     update_lesson_content,
 )
 
@@ -43,6 +46,21 @@ def read_lesson_block_errors(block_id: int) -> list[LessonSavedErrorResponse]:
     with get_session() as session:
         try:
             return list_saved_errors_by_block(session, block_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/studied-subjects", response_model=list[LessonStudiedSubjectResponse])
+def read_lesson_studied_subjects() -> list[LessonStudiedSubjectResponse]:
+    with get_session() as session:
+        return list_lesson_studied_subjects(session)
+
+
+@router.post("/subjects/{subject_id}/studied", response_model=LessonStudiedSubjectResponse)
+def mark_lesson_subject_as_studied(subject_id: int) -> LessonStudiedSubjectResponse:
+    with get_session() as session:
+        try:
+            return mark_lesson_subject_studied(session, subject_id)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
