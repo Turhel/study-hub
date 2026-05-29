@@ -127,6 +127,18 @@ export async function recalculateStudyPlanToday(): Promise<StudyPlanRecalculateR
   return response.json() as Promise<StudyPlanRecalculateResponse>;
 }
 
+export async function addStudyPlanFocusToday(): Promise<StudyPlanTodayResponse> {
+  const response = await apiFetch(`${API_BASE_URL}/api/study-plan/today/add-focus`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel adicionar um foco ao dia.");
+  }
+
+  return response.json() as Promise<StudyPlanTodayResponse>;
+}
+
 export async function getSystemCapabilities(): Promise<SystemCapabilitiesResponse> {
   const response = await apiFetch(`${API_BASE_URL}/api/system/capabilities`);
 

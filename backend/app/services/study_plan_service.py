@@ -224,6 +224,10 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
             discipline=row.discipline,
             subject_id=row.subject_id,
         )
+        subject_attempt_count, subject_correct_count, subject_accuracy = _recent_subject_accuracy(
+            session,
+            subject_id=row.subject_id,
+        )
         items.append(
             StudyPlanItem(
                 discipline=row.discipline,
@@ -241,6 +245,9 @@ def _items_for_plan(session: Session, plan: DailyStudyPlan, today: date) -> list
                 priority_score=row.priority_score,
                 estimated_tri_score=estimated_tri_score,
                 estimated_tri_basis=estimated_tri_basis,
+                subject_attempt_count=subject_attempt_count,
+                subject_correct_count=subject_correct_count,
+                subject_accuracy=round(subject_accuracy, 4) if subject_accuracy is not None else None,
                 primary_reason=row.primary_reason,
                 planned_mode=row.planned_mode,
                 roadmap_node_id=subject_state.roadmap_node_id if subject_state is not None else None,
@@ -713,6 +720,9 @@ def build_study_plan_calendar(
                         priority_score=candidate.priority_score,
                         primary_reason=candidate.primary_reason,
                         planned_mode=candidate.planned_mode,
+                        subject_attempt_count=0,
+                        subject_correct_count=0,
+                        subject_accuracy=None,
                         roadmap_node_id=candidate.roadmap_node_id,
                         roadmap_mapped=candidate.roadmap_mapped,
                         roadmap_mapping_source=candidate.roadmap_mapping_source,
@@ -1114,6 +1124,66 @@ def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
         return _empty_plan_response()
     plan = _create_plan(session, selected, question_counts)
 
+    return _response_from_items(_items_for_plan(session, plan, today))
+
+
+def add_focus_to_today_plan(session: Session) -> StudyPlanTodayResponse:
+    today = _current_plan_day()
+    _replace_stale_active_plans(session, today)
+    plan = _latest_active_plan(session, today)
+    if plan is None or plan.id is None:
+        get_today_study_plan(session)
+        plan = _latest_active_plan(session, today)
+    if plan is None or plan.id is None:
+        return _empty_plan_response()
+
+    existing_items = list(
+        session.exec(
+            select(DailyStudyPlanItem)
+            .where(DailyStudyPlanItem.plan_id == plan.id)
+            .order_by(DailyStudyPlanItem.priority_score.desc(), DailyStudyPlanItem.id)
+        ).all()
+    )
+    if len(existing_items) >= 5:
+        return _response_from_items(_items_for_plan(session, plan, today))
+
+    existing_subject_ids = {item.subject_id for item in existing_items}
+    capacity = get_or_create_capacity(session)
+    energy_settings = _energy_settings_snapshot(session)
+    block_progress, subject_progress = sync_progression(session, today)
+    roadmap_overview = build_guided_roadmap_overview(session, block_progress)
+    candidates = [
+        candidate
+        for candidate in _eligible_candidates(session, today, block_progress, subject_progress, roadmap_overview)
+        if candidate.subject_id not in existing_subject_ids
+    ]
+    selected, question_counts = _select_candidates_by_question_budget(
+        candidates,
+        max(calculate_dynamic_daily_target(session), 10),
+        1,
+        allow_new_content=capacity.include_new_content and not energy_settings.mode_provas_academicas,
+    )
+    if not selected:
+        return _response_from_items(_items_for_plan(session, plan, today))
+
+    candidate = selected[0]
+    planned_questions = question_counts[0]
+    session.add(
+        DailyStudyPlanItem(
+            plan_id=plan.id,
+            discipline=candidate.discipline,
+            block_id=candidate.block_id,
+            subject_id=candidate.subject_id,
+            planned_questions=planned_questions,
+            priority_score=candidate.priority_score,
+            primary_reason=f"{candidate.primary_reason}. Foco adicional solicitado manualmente para hoje.",
+            planned_mode=candidate.planned_mode,
+        )
+    )
+    plan.total_planned_questions += planned_questions
+    session.add(plan)
+    session.commit()
+    session.refresh(plan)
     return _response_from_items(_items_for_plan(session, plan, today))
 
 

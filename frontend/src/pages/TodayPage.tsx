@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { useStudyTimer } from "../components/StudyTimer";
 import {
+  addStudyPlanFocusToday,
   createStudyGuideCalendarEvent,
   getActiveMockExam,
   getStudyGuideCalendarProjection,
@@ -301,11 +302,11 @@ function PreferenceNumberInput({
   );
 }
 
-function formatTri(value: number | null | undefined): string {
+function formatAccuracy(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "--";
   }
-  return value.toFixed(1);
+  return `${Math.round(value * 100)}%`;
 }
 
 function shouldShowAcademicExamsReminder(activatedAt: string | null | undefined): boolean {
@@ -358,7 +359,8 @@ export default function TodayPage() {
   const smartCalendarQuery = useQuery({
     queryKey: ["study-guide-calendar-projection"],
     queryFn: getStudyGuideCalendarProjection,
-    retry: false,
+    retry: 2,
+    retryDelay: 700,
   });
   const energySettingsQuery = useQuery({
     queryKey: ["user-energy-settings"],
@@ -381,6 +383,7 @@ export default function TodayPage() {
     await Promise.all([
       queryClient.refetchQueries({ queryKey: studyPlanTodayQueryKey, type: "active" }),
       queryClient.refetchQueries({ queryKey: ["study-plan-calendar"], type: "active" }),
+      queryClient.refetchQueries({ queryKey: ["study-guide-calendar-projection"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["user-energy-settings"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["activity-today"], type: "active" }),
       queryClient.refetchQueries({ queryKey: ["gamification-summary"], type: "active" }),
@@ -435,6 +438,15 @@ export default function TodayPage() {
     },
     onError: (error) => setFeedback(errorMessage(error)),
   });
+  const addFocusMutation = useMutation({
+    mutationFn: addStudyPlanFocusToday,
+    onSuccess: async (data) => {
+      queryClient.setQueryData(studyPlanTodayQueryKey, data);
+      setFeedback("Foco adicional adicionado ao dia.");
+      await refreshTodayData();
+    },
+    onError: (error) => setFeedback(errorMessage(error)),
+  });
 
   const planItems = planQuery.data?.items ?? [];
   const planSummary = planQuery.data?.summary;
@@ -477,6 +489,9 @@ export default function TodayPage() {
   const remainingQuestionsToday = planItems.reduce((total, item) => total + Math.max(item.remaining_today, 0), 0);
   const completedPlanItemsToday = planItems.filter((item) => item.remaining_today <= 0).length;
   const isDailyPlanComplete = planItems.length > 0 && remainingQuestionsToday <= 0;
+  const currentAdvanceFocus =
+    focusGroups.advance.find(({ item }) => item.remaining_today > 0) ?? focusGroups.advance[0] ?? null;
+  const secondaryAdvanceFoci = focusGroups.advance.filter((focusCard) => focusCard !== currentAdvanceFocus);
   const mockExamRecommendation = calendarDays.find((day) => day.mock_exam_recommendation.recommended)?.mock_exam_recommendation;
   const smartCalendarMap = useMemo(
     () => new Map(smartCalendarDays.map((day) => [day.date, day])),
@@ -743,24 +758,24 @@ export default function TodayPage() {
                   </div>
                 ) : planQuery.isLoading ? (
                   <p className="mt-4 text-sm font-semibold text-slate-400">Carregando focos do dia...</p>
-                ) : focusGroups.advance.length > 0 ? (
+                ) : currentAdvanceFocus ? (
                   <div className="mt-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <span className="rounded-full border border-sky-400/50 px-3 py-1 text-xs font-black text-sky-300">
-                          {eaereTag(focusGroups.advance[0].item)}
+                          {eaereTag(currentAdvanceFocus.item)}
                         </span>
                         <h2 className="mt-3 max-w-3xl text-2xl font-black leading-tight text-white">
-                          {focusGroups.advance[0].item.subject_name}
+                          {currentAdvanceFocus.item.subject_name}
                         </h2>
                         <p className="mt-1 text-sm font-semibold text-slate-400">
-                          {focusGroups.advance[0].item.discipline} / {focusGroups.advance[0].item.block_name}
+                          {currentAdvanceFocus.item.discipline} / {currentAdvanceFocus.item.block_name}
                         </p>
                       </div>
                       <button
                         type="button"
                         className="w-fit rounded-2xl bg-sky-500 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-sky-400"
-                        onClick={() => openTrainingTimer(focusGroups.advance[0].item)}
+                        onClick={() => openTrainingTimer(currentAdvanceFocus.item)}
                       >
                         Iniciar timer
                       </button>
@@ -768,15 +783,15 @@ export default function TodayPage() {
                     <div className="mt-5 grid gap-2 sm:grid-cols-3">
                       <div className="rounded-2xl bg-slate-950/70 p-3">
                         <span className="text-xs font-semibold text-slate-500">Meta</span>
-                        <strong className="block text-lg text-white">{focusGroups.advance[0].item.planned_questions}</strong>
+                        <strong className="block text-lg text-white">{currentAdvanceFocus.item.planned_questions}</strong>
                       </div>
                       <div className="rounded-2xl bg-slate-950/70 p-3">
                         <span className="text-xs font-semibold text-slate-500">Feitas</span>
-                        <strong className="block text-lg text-white">{focusGroups.advance[0].item.completed_today}</strong>
+                        <strong className="block text-lg text-white">{currentAdvanceFocus.item.completed_today}</strong>
                       </div>
                       <div className="rounded-2xl bg-slate-950/70 p-3">
-                        <span className="text-xs font-semibold text-slate-500">TRI</span>
-                        <strong className="block text-lg text-white">{formatTri(focusGroups.advance[0].item.estimated_tri_score)}</strong>
+                        <span className="text-xs font-semibold text-slate-500">Desempenho</span>
+                        <strong className="block text-lg text-white">{formatAccuracy(currentAdvanceFocus.item.subject_accuracy)}</strong>
                       </div>
                     </div>
                   </div>
@@ -784,9 +799,9 @@ export default function TodayPage() {
                   <p className="mt-4 text-sm font-semibold text-slate-400">Sem bloco E1/E2 ativo agora.</p>
                 )}
               </div>
-              {focusGroups.advance.length > 1 && !isAdvanceSuspended && !isDailyPlanComplete ? (
+              {secondaryAdvanceFoci.length > 0 && !isAdvanceSuspended && !isDailyPlanComplete ? (
                 <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4">
-                  {focusGroups.advance.slice(1, 4).map(({ item }) => (
+                  {secondaryAdvanceFoci.slice(0, 4).map(({ item }) => (
                     <span
                       key={`top-focus-${item.block_id}-${item.subject_id}`}
                       className="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs font-bold text-slate-300"
@@ -889,7 +904,19 @@ export default function TodayPage() {
               <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Avanco do edital</p>
               <h2 className="mt-1 text-3xl font-black text-white">Zona E1 / E2</h2>
             </div>
-            <span className="text-sm font-semibold text-slate-400">{focusGroups.advance.length} bloco(s) ativos</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-semibold text-slate-400">{focusGroups.advance.length} bloco(s) ativos</span>
+              {!isAdvanceSuspended && !isDailyPlanComplete ? (
+                <button
+                  type="button"
+                  className="rounded-full border border-sky-400/40 px-3 py-1 text-xs font-black text-sky-200 transition hover:border-sky-300 hover:bg-sky-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => addFocusMutation.mutate()}
+                  disabled={addFocusMutation.isPending || focusGroups.advance.length >= 5}
+                >
+                  + foco extra
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {isAdvanceSuspended ? (
@@ -940,8 +967,8 @@ export default function TodayPage() {
                       <strong className="block text-lg text-white">{item.completed_today}</strong>
                     </div>
                     <div className="rounded-2xl bg-slate-900 p-3">
-                      <span className="text-slate-500">TRI</span>
-                      <strong className="block text-lg text-white">{formatTri(item.estimated_tri_score)}</strong>
+                      <span className="text-slate-500">Desempenho</span>
+                      <strong className="block text-lg text-white">{formatAccuracy(item.subject_accuracy)}</strong>
                     </div>
                   </div>
                   <div className="mt-5 flex flex-wrap gap-3">
@@ -985,7 +1012,7 @@ export default function TodayPage() {
                 <div key={`${item.block_id}-${item.subject_id}`} className="rounded-2xl border border-amber-400/20 bg-slate-950 p-3">
                   <span className="text-xs font-black text-amber-300">{eaereTag(item)}</span>
                   <strong className="mt-1 block text-sm text-white">{item.subject_name}</strong>
-                  <small className="text-slate-500">score {formatTri(item.estimated_tri_score)}</small>
+                  <small className="text-slate-500">desempenho {formatAccuracy(item.subject_accuracy)}</small>
                   <Link to="/lessons" className="mt-3 inline-flex rounded-xl border border-amber-300/50 px-3 py-2 text-xs font-black text-amber-200">
                     Estudar Teoria A1
                   </Link>

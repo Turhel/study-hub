@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query
 from app.db import get_session
 from app.schemas import StudyPlanCalendarResponse, StudyPlanRecalculateResponse, StudyPlanTodayResponse
 from app.services.study_plan_service import (
+    add_focus_to_today_plan,
     get_study_plan_calendar,
     get_today_study_plan,
     recalculate_today_study_plan,
@@ -30,3 +31,9 @@ def study_plan_calendar(days: int = Query(default=7, ge=1, le=14)) -> StudyPlanC
 def recalculate_today_plan() -> StudyPlanRecalculateResponse:
     with get_session() as session:
         return recalculate_today_study_plan(session)
+
+
+@router.post("/today/add-focus", response_model=StudyPlanTodayResponse)
+def add_today_focus() -> StudyPlanTodayResponse:
+    with get_session() as session:
+        return add_focus_to_today_plan(session)

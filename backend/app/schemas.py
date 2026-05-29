@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class TodayMetrics(BaseModel):
@@ -95,6 +95,9 @@ class StudyPlanItem(BaseModel):
     priority_score: float
     estimated_tri_score: float | None = None
     estimated_tri_basis: Literal["subject", "discipline"] | None = None
+    subject_attempt_count: int = 0
+    subject_correct_count: int = 0
+    subject_accuracy: float | None = None
     primary_reason: str
     planned_mode: str
     roadmap_node_id: str | None = None
@@ -177,11 +180,9 @@ class UserEnergySettingsResponse(BaseModel):
 
 
 class StudyGuideCalendarProjectionDay(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     date: str
     has_simulado: bool
-    revisoes_count: int = Field(alias="revisões_count")
+    revisoes_count: int
     total_questoes_estimadas: int
     status_protecao: str
     scheduled_items: list[str] = Field(default_factory=list)

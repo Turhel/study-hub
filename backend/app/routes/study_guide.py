@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -33,6 +34,7 @@ from app.services.review_service import review_question_target_for_stage
 
 
 router = APIRouter(prefix="/api/study-guide")
+logger = logging.getLogger(__name__)
 
 
 PROTECTION_EXAMS = "PROVAS_ACADEMICAS"
@@ -322,8 +324,12 @@ def build_calendar_projection(session: Session, *, today: date | None = None) ->
     projected_days: list[StudyGuideCalendarProjectionDay] = []
     pending_reviews = _build_review_queue(session)
     review_schedule = _simulate_review_schedule(session, pending_reviews, reference_day=reference_day)
-    study_calendar = build_study_plan_calendar(session, start_day=reference_day, days=7)
-    study_day_by_date = {day.date: day for day in study_calendar.days}
+    try:
+        study_calendar = build_study_plan_calendar(session, start_day=reference_day, days=7)
+        study_day_by_date = {day.date: day for day in study_calendar.days}
+    except Exception:
+        logger.exception("calendar_projection_study_plan_fallback")
+        study_day_by_date = {}
 
     for offset in range(7):
         target_date = reference_day + timedelta(days=offset)

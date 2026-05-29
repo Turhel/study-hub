@@ -16,6 +16,7 @@ from app.models import (
     EssayStudySession,
     EssaySubmission,
     MockExam,
+    MockExamQuestion,
     QuestionAttempt,
     Review,
     StudyCapacity,
@@ -57,6 +58,7 @@ USAGE_DELETE_SPECS = [
     _TableSpec("daily_study_plan", "daily_study_plan", DailyStudyPlan),
     _TableSpec("timer_session_items", "timer_session_items", TimerSessionItem),
     _TableSpec("timer_sessions", "timer_sessions", TimerSession),
+    _TableSpec("mock_exam_questions", "mock_exam_questions", MockExamQuestion),
     _TableSpec("mock_exams", "mock_exams", MockExam),
 ]
 

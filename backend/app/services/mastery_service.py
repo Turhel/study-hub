@@ -187,7 +187,7 @@ def _apply_eaere_transition(
     stage = (mastery.eaere_stage or "E1").upper()
 
     if stage == "E1":
-        if len(current_attempts) != 5:
+        if len(current_attempts) < 5:
             mastery.status = "em_andamento"
             return
         mastery.eaere_stage = "E2"
