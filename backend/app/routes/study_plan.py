@@ -9,6 +9,7 @@ from app.services.study_plan_service import (
     get_study_plan_calendar,
     get_today_study_plan,
     recalculate_today_study_plan,
+    remove_extra_focus_from_today_plan,
 )
 
 
@@ -37,3 +38,9 @@ def recalculate_today_plan() -> StudyPlanRecalculateResponse:
 def add_today_focus() -> StudyPlanTodayResponse:
     with get_session() as session:
         return add_focus_to_today_plan(session)
+
+
+@router.delete("/today/extra-focus/{subject_id}", response_model=StudyPlanTodayResponse)
+def remove_today_extra_focus(subject_id: int) -> StudyPlanTodayResponse:
+    with get_session() as session:
+        return remove_extra_focus_from_today_plan(session, subject_id)

@@ -139,6 +139,18 @@ export async function addStudyPlanFocusToday(): Promise<StudyPlanTodayResponse> 
   return response.json() as Promise<StudyPlanTodayResponse>;
 }
 
+export async function removeStudyPlanExtraFocusToday(subjectId: number): Promise<StudyPlanTodayResponse> {
+  const response = await apiFetch(`${API_BASE_URL}/api/study-plan/today/extra-focus/${subjectId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw await responseError(response, "Nao foi possivel remover o foco extra do dia.");
+  }
+
+  return response.json() as Promise<StudyPlanTodayResponse>;
+}
+
 export async function getSystemCapabilities(): Promise<SystemCapabilitiesResponse> {
   const response = await apiFetch(`${API_BASE_URL}/api/system/capabilities`);
 

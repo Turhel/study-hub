@@ -30,6 +30,10 @@ def _attempt_accuracy(attempts: list[QuestionAttempt]) -> float | None:
     return sum(1 for attempt in attempts if attempt.acertou) / len(attempts)
 
 
+def _distinct_attempt_days(attempts: list[QuestionAttempt]) -> int:
+    return len({attempt.data for attempt in attempts})
+
+
 def _stage_is_new_content(stage: str) -> bool:
     normalized = stage.upper()
     return normalized in {"E1", "E2", "A1"} or normalized.startswith("EX")
@@ -185,27 +189,35 @@ def _apply_eaere_transition(
         return
 
     stage = (mastery.eaere_stage or "E1").upper()
+    all_attempts = session.exec(
+        select(QuestionAttempt).where(QuestionAttempt.block_id == block_id)
+    ).all()
+    total_attempts = len(all_attempts)
+    combined_accuracy = _attempt_accuracy(all_attempts) or 0.0
+    distinct_days = _distinct_attempt_days(all_attempts)
 
-    if stage == "E1":
-        if len(current_attempts) < 5:
-            mastery.status = "em_andamento"
-            return
-        mastery.eaere_stage = "E2"
-        mastery.status = "em_andamento"
-        return
-
-    if stage == "E2":
-        all_attempts = session.exec(
-            select(QuestionAttempt).where(QuestionAttempt.block_id == block_id)
-        ).all()
-        combined_accuracy = _attempt_accuracy(all_attempts) or 0.0
-        if combined_accuracy >= 0.85:
-            mastery.eaere_stage = "R1"
-            mastery.status = "aprovado"
-            mastery.consecutive_failures = 0
-        else:
+    if stage in {"E1", "E2"}:
+        if total_attempts >= 15 and combined_accuracy < 0.70:
             mastery.eaere_stage = "EX1"
             mastery.status = STATUS_EM_RISCO
+            return
+
+        if total_attempts < 15 or distinct_days < 2:
+            mastery.eaere_stage = stage
+            mastery.status = "em_andamento"
+            return
+
+        if combined_accuracy >= 0.85:
+            if stage == "E1":
+                mastery.eaere_stage = "E2"
+                mastery.status = "em_andamento"
+            else:
+                mastery.eaere_stage = "R1"
+                mastery.status = "aprovado"
+                mastery.consecutive_failures = 0
+        else:
+            mastery.eaere_stage = stage
+            mastery.status = "em_andamento"
         return
 
     if stage.startswith("EX"):
@@ -218,7 +230,7 @@ def _apply_eaere_transition(
         if batch_accuracies:
             moving_average = sum(batch_accuracies) / len(batch_accuracies)
             mastery.ex_moving_average = round(moving_average, 4)
-            if len(batch_accuracies) >= 3 and moving_average >= 0.85:
+            if len(batch_accuracies) >= 3 and moving_average >= 0.90:
                 mastery.eaere_stage = "R1"
                 mastery.status = "aprovado"
                 mastery.consecutive_failures = 0

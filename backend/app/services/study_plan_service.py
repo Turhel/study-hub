@@ -29,6 +29,7 @@ from app.models import (
     MockExam,
     QuestionAttempt,
     Review,
+    StudyEvent,
     Subject,
     SubjectProgress,
     UserEnergySettings,
@@ -48,6 +49,7 @@ from app.services.discipline_normalization_service import normalize_discipline
 from app.services.mock_exam_service import _estimate_score_from_counts
 from app.services.progression_service import sync_progression
 from app.services.roadmap_progression_service import GuidedRoadmapOverview, build_guided_roadmap_overview
+from app.services.review_service import review_question_target_for_stage
 from app.services.study_event_service import record_study_event
 
 
@@ -382,17 +384,19 @@ def _mock_exam_area_hint(discipline: str) -> str:
 
 def _eaere_stage_priority(stage: str | None) -> int:
     normalized = (stage or "E1").upper()
-    if normalized.startswith("EX") or normalized == "A1":
+    if normalized.startswith("RR") or normalized in {"R1", "R2", "R3", "R4", "R5", "R6", "R7"}:
+        return 0
+    if normalized.startswith("EX") or normalized in {"A1", "AX"}:
         return 3
     if normalized in {"E1", "E2"}:
         return 1
-    if normalized.startswith("RR") or normalized in {"R1", "R2", "R3"}:
-        return 2
     return 3
 
 
 def _minimum_questions_for_stage(stage: str | None) -> int:
     normalized = (stage or "E1").upper()
+    if normalized == "AX":
+        return 1
     if normalized == "E1":
         return 5
     if normalized in {"R2", "R3", "R4", "R5", "R6", "R7"}:
@@ -404,7 +408,20 @@ def _minimum_questions_for_stage(stage: str | None) -> int:
 
 def _is_new_content_stage(stage: str | None) -> bool:
     normalized = (stage or "E1").upper()
-    return normalized in {"E1", "E2", "A1"} or normalized.startswith("EX")
+    return normalized in {"E1", "E2", "A1", "AX"} or normalized.startswith("EX")
+
+
+def _has_theory_support_for_subject(session: Session, subject_id: int) -> bool:
+    return (
+        session.exec(
+            select(StudyEvent.id)
+            .where(StudyEvent.event_type == "lesson_studied")
+            .where(StudyEvent.subject_id == subject_id)
+            .order_by(StudyEvent.created_at.desc(), StudyEvent.id.desc())
+            .limit(1)
+        ).first()
+        is not None
+    )
 
 
 def _block_mastery_by_id(session: Session) -> dict[int, BlockMastery]:
@@ -904,6 +921,42 @@ def _eligible_candidates(
     blocks = session.exec(select(Block).order_by(Block.disciplina, Block.ordem, Block.id)).all()
     mastery_by_block = _block_mastery_by_id(session)
 
+    due_reviews = session.exec(
+        select(Review)
+        .where(Review.status == "pendente")
+        .where(Review.proxima_data <= today)
+        .order_by(Review.proxima_data, Review.id)
+    ).all()
+    for review in due_reviews:
+        if review.subject_id is None or review.block_id is None or review.subject_id in seen_subjects:
+            continue
+        subject = session.get(Subject, review.subject_id)
+        block = session.get(Block, review.block_id)
+        if subject is None or subject.id is None or block is None:
+            continue
+        stage = (mastery_by_block.get(review.block_id).eaere_stage if review.block_id in mastery_by_block else "R1").upper()
+        if not (stage.startswith("R") or stage.startswith("RR")):
+            continue
+        normalized = normalize_discipline(subject.disciplina)
+        seen_subjects.add(subject.id)
+        candidates.append(
+            StudyPlanCandidate(
+                discipline=subject.disciplina,
+                strategic_discipline=normalized.strategic_discipline,
+                subarea=normalized.subarea,
+                block_id=review.block_id,
+                block_name=block.nome,
+                block_order=block.ordem,
+                subject_id=subject.id,
+                subject_name=_subject_label(subject),
+                priority_score=1.0,
+                raw_score=10.0,
+                primary_reason="Revisao RX agendada tem prioridade absoluta antes de novo avanco.",
+                planned_mode="revisao",
+                eaere_stage=stage,
+            )
+        )
+
     for block in blocks:
         if block.id is None:
             continue
@@ -959,7 +1012,13 @@ def _eligible_candidates(
             planned_mode = block_planned_mode(progress.status)
             eaere_stage = mastery_by_block.get(block.id).eaere_stage if block.id in mastery_by_block else "E1"
             normalized = normalize_discipline(subject.disciplina)
-            if (eaere_stage or "").upper().startswith("EX"):
+            if (eaere_stage or "").upper().startswith("EX") and not _has_theory_support_for_subject(session, subject.id):
+                eaere_stage = "AX"
+                planned_mode = "teoria"
+                reason = (
+                    f"{reason}. Pedagio teorico AX ativo: valide A1 antes de liberar nova bateria pratica em massa."
+                )
+            elif (eaere_stage or "").upper().startswith("EX"):
                 reason = (
                     f"{reason}. Suporte A1 ativo: antes do proximo {eaere_stage}, revise a teoria pelo erro, "
                     "faca fichamento curto e ataque a causa da falha."
@@ -1093,6 +1152,23 @@ def _create_plan(
     return plan
 
 
+def _is_extra_plan_item(item: DailyStudyPlanItem) -> bool:
+    return "Foco adicional solicitado manualmente" in item.primary_reason
+
+
+def _refresh_plan_total(session: Session, plan: DailyStudyPlan) -> None:
+    total_questions = int(
+        session.exec(
+            select(func.coalesce(func.sum(DailyStudyPlanItem.planned_questions), 0)).where(
+                DailyStudyPlanItem.plan_id == plan.id,
+            )
+        ).one()
+        or 0
+    )
+    plan.total_planned_questions = total_questions
+    session.add(plan)
+
+
 def get_today_study_plan(session: Session) -> StudyPlanTodayResponse:
     today = _current_plan_day()
     _replace_stale_active_plans(session, today)
@@ -1148,6 +1224,44 @@ def add_focus_to_today_plan(session: Session) -> StudyPlanTodayResponse:
         return _response_from_items(_items_for_plan(session, plan, today))
 
     existing_subject_ids = {item.subject_id for item in existing_items}
+    mastery_by_block = _block_mastery_by_id(session)
+    due_reviews = session.exec(
+        select(Review)
+        .where(Review.status == "pendente")
+        .where(Review.proxima_data <= today)
+        .order_by(Review.proxima_data, Review.id)
+    ).all()
+    for review in due_reviews:
+        if review.subject_id is None or review.block_id is None or review.subject_id in existing_subject_ids:
+            continue
+        subject = session.get(Subject, review.subject_id)
+        block = session.get(Block, review.block_id)
+        if subject is None or block is None:
+            continue
+        stage = (mastery_by_block.get(review.block_id).eaere_stage if review.block_id in mastery_by_block else "R1").upper()
+        if not (stage.startswith("R") or stage.startswith("RR")):
+            continue
+        planned_questions = review_question_target_for_stage(stage)
+        session.add(
+            DailyStudyPlanItem(
+                plan_id=plan.id,
+                discipline=subject.disciplina,
+                block_id=review.block_id,
+                subject_id=review.subject_id,
+                planned_questions=planned_questions,
+                priority_score=1.0,
+                primary_reason=(
+                    f"Revisao vencida adicionada manualmente ao dia. "
+                    f"Foco adicional solicitado manualmente para hoje."
+                ),
+                planned_mode="revisao",
+            )
+        )
+        _refresh_plan_total(session, plan)
+        session.commit()
+        session.refresh(plan)
+        return _response_from_items(_items_for_plan(session, plan, today))
+
     capacity = get_or_create_capacity(session)
     energy_settings = _energy_settings_snapshot(session)
     block_progress, subject_progress = sync_progression(session, today)
@@ -1180,8 +1294,31 @@ def add_focus_to_today_plan(session: Session) -> StudyPlanTodayResponse:
             planned_mode=candidate.planned_mode,
         )
     )
-    plan.total_planned_questions += planned_questions
+    _refresh_plan_total(session, plan)
     session.add(plan)
+    session.commit()
+    session.refresh(plan)
+    return _response_from_items(_items_for_plan(session, plan, today))
+
+
+def remove_extra_focus_from_today_plan(session: Session, subject_id: int) -> StudyPlanTodayResponse:
+    today = _current_plan_day()
+    plan = _latest_active_plan(session, today)
+    if plan is None or plan.id is None:
+        return get_today_study_plan(session)
+
+    item = session.exec(
+        select(DailyStudyPlanItem)
+        .where(DailyStudyPlanItem.plan_id == plan.id)
+        .where(DailyStudyPlanItem.subject_id == subject_id)
+        .order_by(DailyStudyPlanItem.id.desc())
+    ).first()
+    if item is None or not _is_extra_plan_item(item):
+        return _response_from_items(_items_for_plan(session, plan, today))
+
+    session.delete(item)
+    session.flush()
+    _refresh_plan_total(session, plan)
     session.commit()
     session.refresh(plan)
     return _response_from_items(_items_for_plan(session, plan, today))

@@ -14,6 +14,7 @@ import {
   getSystemCapabilities,
   getTodayActivity,
   getUserEnergySettings,
+  removeStudyPlanExtraFocusToday,
   saveQuestionAttemptsBulk,
   saveUserEnergySettings,
 } from "../lib/api";
@@ -199,6 +200,7 @@ function plannedModeLabel(value: string | null | undefined): string {
   if (value === "aprendizado") return "Aprendizado";
   if (value === "revisao") return "Revisao";
   if (value === "consolidacao") return "Consolidacao";
+  if (value === "teoria") return "Teoria";
   return value;
 }
 
@@ -214,7 +216,7 @@ function focusLane(item: StudyPlanItem): FocusLane {
     .join(" ")
     .toLowerCase();
 
-  if (/\bex\d*\b/.test(searchText) || /\ba1\b/.test(searchText) || searchText.includes("recupera")) {
+  if (/\bex\d*\b/.test(searchText) || /\bax\b/.test(searchText) || /\ba1\b/.test(searchText) || searchText.includes("recupera")) {
     return "recovery";
   }
   if (/\brr\d*\b/.test(searchText) || /\br[1-9]\b/.test(searchText) || searchText.includes("revis")) {
@@ -228,7 +230,7 @@ function eaereTag(item: StudyPlanItem): string {
     .filter(Boolean)
     .join(" ")
     .toUpperCase();
-  const explicitTag = searchText.match(/\b(RR\d+|EX\d+|EX|A1|E1|E2|R[1-9])\b/);
+  const explicitTag = searchText.match(/\b(RR\d+|EX\d+|EX|AX|A1|E1|E2|R[1-9])\b/);
   if (explicitTag) return explicitTag[1];
   if (item.planned_mode === "aprendizado") return item.planned_questions <= 5 ? "E1" : "E2";
   if (item.planned_mode === "revisao") return "R";
@@ -307,6 +309,10 @@ function formatAccuracy(value: number | null | undefined): string {
     return "--";
   }
   return `${Math.round(value * 100)}%`;
+}
+
+function isExtraFocus(item: StudyPlanItem): boolean {
+  return item.primary_reason.includes("Foco adicional solicitado manualmente");
 }
 
 function shouldShowAcademicExamsReminder(activatedAt: string | null | undefined): boolean {
@@ -447,6 +453,15 @@ export default function TodayPage() {
     },
     onError: (error) => setFeedback(errorMessage(error)),
   });
+  const removeExtraFocusMutation = useMutation({
+    mutationFn: removeStudyPlanExtraFocusToday,
+    onSuccess: async (data) => {
+      queryClient.setQueryData(studyPlanTodayQueryKey, data);
+      setFeedback("Foco extra removido do dia.");
+      await refreshTodayData();
+    },
+    onError: (error) => setFeedback(errorMessage(error)),
+  });
 
   const planItems = planQuery.data?.items ?? [];
   const planSummary = planQuery.data?.summary;
@@ -462,7 +477,7 @@ export default function TodayPage() {
   const isAcademicExamMode = Boolean(energySettings?.mode_provas_academicas) || isCalendarAcademicExamMode;
   const isAdvanceSuspended = isLightDayMode || isAcademicExamMode || isTravelRestToday;
   const questionsDoneToday = activityToday?.question_attempts_registered ?? 0;
-  const dailyQuestionTarget = energySettings?.current_daily_target_questions ?? planSummary?.total_questions ?? 0;
+  const dailyQuestionTarget = planSummary?.total_questions ?? energySettings?.current_daily_target_questions ?? 0;
 
   const backendOffline = planQuery.isError && capabilitiesQuery.isError && energySettingsQuery.isError;
   const focusCards = useMemo(
@@ -672,9 +687,6 @@ export default function TodayPage() {
                   {questionsDoneToday} / {dailyQuestionTarget} Questoes
                 </p>
               </div>
-              <span className="grid h-11 w-11 place-items-center rounded-full border border-sky-400 bg-sky-500 text-lg font-black text-white shadow-lg shadow-sky-950/40">
-                T
-              </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {isLightDayMode ? (
@@ -913,7 +925,7 @@ export default function TodayPage() {
                   onClick={() => addFocusMutation.mutate()}
                   disabled={addFocusMutation.isPending || focusGroups.advance.length >= 5}
                 >
-                  + foco extra
+                  {addFocusMutation.isPending ? "adicionando..." : "+ foco extra"}
                 </button>
               ) : null}
             </div>
@@ -978,6 +990,16 @@ export default function TodayPage() {
                     <button type="button" className="rounded-2xl border border-slate-600 px-5 py-3 text-sm font-bold text-slate-200 transition hover:border-slate-300" onClick={() => openAttemptModal(item)}>
                       Registrar
                     </button>
+                    {isExtraFocus(item) ? (
+                      <button
+                        type="button"
+                        className="rounded-2xl border border-rose-400/50 px-5 py-3 text-sm font-bold text-rose-200 transition hover:border-rose-300 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => removeExtraFocusMutation.mutate(item.subject_id)}
+                        disabled={removeExtraFocusMutation.isPending}
+                      >
+                        Remover extra
+                      </button>
+                    ) : null}
                   </div>
                 </article>
               ))}
@@ -995,11 +1017,23 @@ export default function TodayPage() {
             <h3 className="mt-2 text-xl font-black text-white">Manutencao</h3>
             <div className="mt-4 space-y-3">
               {focusGroups.maintenance.length > 0 ? focusGroups.maintenance.slice(0, 3).map(({ item }) => (
-                <button key={`${item.block_id}-${item.subject_id}`} type="button" onClick={() => openTrainingTimer(item)} className="w-full rounded-2xl border border-slate-700 bg-slate-950 p-3 text-left transition hover:border-sky-400">
-                  <span className="text-xs font-black text-sky-300">{eaereTag(item)}</span>
-                  <strong className="mt-1 block text-sm text-white">{item.subject_name}</strong>
-                  <small className="text-slate-500">{item.planned_questions} questoes</small>
-                </button>
+                <div key={`${item.block_id}-${item.subject_id}`} className="rounded-2xl border border-slate-700 bg-slate-950 p-3 transition hover:border-sky-400">
+                  <button type="button" onClick={() => openTrainingTimer(item)} className="w-full text-left">
+                    <span className="text-xs font-black text-sky-300">{eaereTag(item)}</span>
+                    <strong className="mt-1 block text-sm text-white">{item.subject_name}</strong>
+                    <small className="text-slate-500">{item.planned_questions} questoes</small>
+                  </button>
+                  {isExtraFocus(item) ? (
+                    <button
+                      type="button"
+                      className="mt-3 rounded-xl border border-rose-400/40 px-3 py-2 text-xs font-black text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => removeExtraFocusMutation.mutate(item.subject_id)}
+                      disabled={removeExtraFocusMutation.isPending}
+                    >
+                      Remover extra
+                    </button>
+                  ) : null}
+                </div>
               )) : <p className="text-sm text-slate-500">Sem RR ou revisao imediata.</p>}
             </div>
           </article>

@@ -185,7 +185,8 @@ def register_question_attempts_bulk(
         session.refresh(attempt)
 
     mastery = recalculate_block_mastery(session, payload.block_id, current_attempts=created_attempts)
-    review = upsert_review_from_attempt(session, created_attempts[-1])
+    mastery_stage = (mastery.eaere_stage or "").upper()
+    review = upsert_review_from_attempt(session, created_attempts[-1]) if mastery_stage.startswith("R") else None
     subject_name = _subject_label(subject)
     correct_count = sum(1 for attempt in created_attempts if attempt.acertou)
     metadata_extra = {"study_mode": payload.study_mode}

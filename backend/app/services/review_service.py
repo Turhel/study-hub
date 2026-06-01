@@ -5,7 +5,7 @@ from datetime import date, timedelta
 
 from sqlmodel import Session, select
 
-from app.models import Block, BlockSubject, MockExamQuestion, QuestionAttempt, Review, Subject
+from app.models import Block, BlockMastery, BlockSubject, MockExamQuestion, QuestionAttempt, Review, Subject
 from app.services.study_event_service import record_study_event
 
 
@@ -146,6 +146,13 @@ def generate_r1_tribunal_session(session: Session, block_id: int, user_id: int =
 def upsert_review_from_attempt(session: Session, attempt: QuestionAttempt) -> Review | None:
     if attempt.subject_id is None:
         return None
+    if attempt.block_id is not None:
+        mastery = session.exec(
+            select(BlockMastery).where(BlockMastery.block_id == attempt.block_id)
+        ).first()
+        stage = (mastery.eaere_stage if mastery is not None else "E1").upper()
+        if not (stage.startswith("R") or stage.startswith("RR")):
+            return None
 
     interval_days = review_interval_days(attempt.acertou, attempt.confianca)
     next_date = date.today() + timedelta(days=interval_days)
