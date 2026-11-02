@@ -1,36 +1,29 @@
-# Study Hub
+# Study Hub — ENEM e Medicina
 
-Biblioteca pessoal de materiais de estudo: apostilas, livros, questões, provas e anotações.
+Biblioteca para estudar sem depender da internet. Os materiais estão **baixados neste repositório**, em PDF; basta abrir as pastas locais.
 
-## Onde encontrar cada coisa
+**176 PDFs · 9,869 páginas · 1.59 GiB de arquivos**. Coleta: 02/11/2026.
 
-| Pasta | Conteúdo |
+| Material | Onde abrir |
 | --- | --- |
-| [apostilas](apostilas/) | Teoria, resumos de referência e listas de exercícios. |
-| [livros](livros/) | Livros e capítulos de consulta. |
-| [questoes](questoes/) | Bancos de questões, listas por assunto, gabaritos e resoluções. |
-| [provas](provas/) | Provas completas, simulados e respectivos gabaritos. |
-| [anotacoes](anotacoes/) | Notas de estudo, resoluções próprias e explicações de erros. |
+| 92 apostilas de ensino médio, em 13 disciplinas | [Apostilas por disciplina](apostilas/README.md) |
+| ENEM 2009–2025: 34 cadernos e 34 gabaritos | [Índice das provas](provas/enem/README.md) |
+| Cartilha de redação 2026 e cinco manuais de correção de 2020 | [Redação](apostilas/redacao/README.md) |
+| Matriz de habilidades do ENEM | [Matriz de referência](apostilas/referencia/matriz-de-referencia-enem.pdf) |
+| Sete materiais de exercícios de contagem e probabilidade | [Questões e exercícios](questoes/README.md) |
+| Dom Casmurro e Iracema | [Livros](livros/README.md) |
+| Resoluções e notas próprias | [Anotações](anotacoes/) |
 
-## Como guardar os materiais
+## Por onde começar
 
-Crie uma subpasta por disciplina quando adicionar o primeiro material daquela matéria. Use nomes que permitam reconhecer o assunto sem abrir o arquivo, por exemplo:
+1. Faça uma prova antiga para identificar lacunas e anote os erros por assunto.
+2. Revise esses assuntos nas apostilas, resolva as atividades e retome as questões erradas depois.
+3. Pratique redação com os critérios da cartilha atual. Reserve provas recentes para simulados.
 
-```text
-apostilas/matematica/funcoes-introducao.pdf
-livros/biologia/titulo-do-livro.pdf
-questoes/quimica/estequiometria-lista-01.pdf
-questoes/quimica/estequiometria-lista-01-gabarito.pdf
-provas/enem/2025/dia-1-caderno-azul.pdf
-anotacoes/fisica/cinematica.md
-```
+## Levar para outras máquinas
 
-Guarde o gabarito e a resolução junto da lista ou prova, com o mesmo início de nome. Registre a fonte, o autor e o ano quando estiverem disponíveis.
+No GitHub Desktop, clone este repositório. Antes de ficar sem internet, use **Fetch origin → Pull origin**. Os PDFs são arquivos Git comuns: não precisam de Git LFS, conta em plataforma de aulas ou download separado. Reserve alguns GB para a pasta e o histórico Git.
 
-Para materiais disponíveis na internet, use [fontes.md](fontes.md). Arquivos com 100 MiB ou mais devem ficar em armazenamento externo, com o link registrado nesse índice.
+Os índices Markdown também estão na pasta local; podem ser lidos no VS Code ou em qualquer editor. Abra os PDFs em um leitor instalado. Links externos e conteúdos audiovisuais citados nas apostilas precisam de internet.
 
-## Para estudar sem internet
-
-Clone o repositório pelo GitHub Desktop e faça **Fetch origin → Pull origin** antes de ficar offline. Os arquivos baixados ficam disponíveis na pasta local, inclusive PDFs e anotações.
-
-Abra o material e estude. Organize os arquivos novos ao terminar a sessão.
+[Fontes e limites do acervo](fontes.md) · [Catálogo de arquivos e hashes](catalogo.json).
