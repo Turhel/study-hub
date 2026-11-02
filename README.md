@@ -27,3 +27,7 @@ No GitHub Desktop, clone este repositório. Antes de ficar sem internet, use **F
 Os índices Markdown também estão na pasta local; podem ser lidos no VS Code ou em qualquer editor. Abra os PDFs em um leitor instalado. Links externos e conteúdos audiovisuais citados nas apostilas precisam de internet.
 
 [Fontes e limites do acervo](fontes.md) · [Catálogo de arquivos e hashes](catalogo.json).
+
+## Complemento local do Telegram
+
+A exportação recebida foi organizada separadamente. Consulte o [relatório e catálogo](catalogos/telegram-2026-11-02/README.md). **Os PDFs desse complemento ficam fora do GitHub e precisam ser copiados separadamente para outras máquinas.**
