@@ -1,5 +1,15 @@
 # Study Hub — ENEM e Medicina
 
+Biblioteca e tutor de estudo para ENEM e vestibulares de Medicina.
+
+## Retomar com o Codex em qualquer máquina
+
+Abra este repositório no VS Code e peça: **“Retoma meu estudo pelo AGENTS.md e pelo tutor/estado.md.”**
+
+O [guia do tutor](tutor/README.md) explica o método, a memória em arquivos e a sincronização entre PC e notebook. Preferências já registradas: questões primeiro, 45 minutos como mínimo flexível e redação com os dois modelos escolhidos. Nenhum resultado de estudo foi inventado para iniciar o histórico.
+
+## Biblioteca offline
+
 Biblioteca para estudar sem depender da internet. Os materiais estão **baixados neste repositório**, em PDF; basta abrir as pastas locais.
 
 **176 PDFs · 9,869 páginas · 1.59 GiB de arquivos**. Coleta: 02/11/2026.
