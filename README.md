@@ -31,3 +31,7 @@ Os índices Markdown também estão na pasta local; podem ser lidos no VS Code o
 ## Complemento local do Telegram
 
 A exportação recebida foi organizada separadamente. Consulte o [relatório e catálogo](catalogos/telegram-2026-11-02/README.md). **Os PDFs desse complemento ficam fora do GitHub e precisam ser copiados separadamente para outras máquinas.**
+
+## Organização atualizada — 12/11/2026
+
+[Catálogo atual do acervo e das provas com gabaritos](catalogos/telegram-2026-11-12/README.md). A organização atual substitui os caminhos da coleta inicial de 02/11; os PDFs adicionais continuam na biblioteca externa e no Google Drive.

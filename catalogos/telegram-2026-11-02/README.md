@@ -1,3 +1,5 @@
+> Catálogo histórico de 02/11/2026. Para os caminhos atuais, consulte a [organização de 12/11](../telegram-2026-11-12/README.md).
+
 # Acervo de ENEM — exportação do Telegram
 
 Exportação fornecida pelo usuário em 02/11/2026. Análise restrita à pasta indicada, sem acesso a outros chats.
