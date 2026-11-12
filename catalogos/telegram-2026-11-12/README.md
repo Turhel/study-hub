@@ -5,7 +5,7 @@ O acervo completo está fora do GitHub, em `/home/turhel/Biblioteca/ENEM/Telegra
 - 1374 PDFs, 28 baralhos do Anki e 13.02 GiB de materiais.
 - 365 pastas de provas identificadas, das quais 272 contêm prova e gabarito/resolução juntos.
 - 38 pastas sem respostas e 55 pastas de respostas sem a prova correspondente no material recebido.
-- 44 arquivos de prova/resposta com identificação incompleta, separados em `provas/a-conferir`.
+- 37 arquivos de prova/resposta com identificação incompleta, separados em `provas/a-conferir`.
 - 763 ocorrências idênticas omitidas da cópia organizada.
 
 Cada instituição, ano, edição/sessão, dia/fase e cor ficam separados. Os casos com nomes divergentes foram comparados ao cabeçalho e, quando necessário, à imagem da capa. A identificação editorial não substitui a conferência de cada resposta do material.

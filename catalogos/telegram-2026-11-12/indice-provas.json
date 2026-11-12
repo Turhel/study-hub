@@ -1965,7 +1965,7 @@
     "folder": "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada",
     "status": "prova-e-respostas",
     "roles": {
-      "gabarito": 1,
+      "gabarito": 2,
       "prova": 2
     },
     "metadata": {
@@ -1985,7 +1985,8 @@
     "files": [
       "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada/gabarito.pdf",
       "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada/prova.pdf",
-      "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada/prova-variante-02-83630521.pdf"
+      "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada/prova-variante-02-83630521.pdf",
+      "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada/gabarito-variante-1c2e9b37.pdf"
     ]
   },
   {
@@ -2071,7 +2072,7 @@
     "folder": "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada",
     "status": "prova-e-respostas",
     "roles": {
-      "gabarito": 1,
+      "gabarito": 2,
       "prova": 2
     },
     "metadata": {
@@ -2091,14 +2092,15 @@
     "files": [
       "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada/gabarito.pdf",
       "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada/prova.pdf",
-      "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada/prova-variante-02-5628f0d3.pdf"
+      "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada/prova-variante-02-5628f0d3.pdf",
+      "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada/gabarito-variante-21af065d.pdf"
     ]
   },
   {
     "folder": "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada",
     "status": "prova-e-respostas",
     "roles": {
-      "gabarito": 1,
+      "gabarito": 2,
       "prova": 2
     },
     "metadata": {
@@ -2118,7 +2120,8 @@
     "files": [
       "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada/gabarito.pdf",
       "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada/prova.pdf",
-      "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada/prova-variante-02-da17f228.pdf"
+      "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada/prova-variante-02-da17f228.pdf",
+      "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada/gabarito-variante-e211221b.pdf"
     ]
   },
   {
@@ -2126,7 +2129,8 @@
     "status": "prova-e-respostas",
     "roles": {
       "gabarito": 1,
-      "prova": 2
+      "prova": 2,
+      "resolucao": 1
     },
     "metadata": {
       "exam": true,
@@ -2145,7 +2149,8 @@
     "files": [
       "provas/bernoulli/2026/enem/simulado-02/dia-1/nao-informada/gabarito.pdf",
       "provas/bernoulli/2026/enem/simulado-02/dia-1/nao-informada/prova.pdf",
-      "provas/bernoulli/2026/enem/simulado-02/dia-1/nao-informada/prova-variante-02-11ad180e.pdf"
+      "provas/bernoulli/2026/enem/simulado-02/dia-1/nao-informada/prova-variante-02-11ad180e.pdf",
+      "provas/bernoulli/2026/enem/simulado-02/dia-1/nao-informada/resolucao.pdf"
     ]
   },
   {
@@ -2153,7 +2158,8 @@
     "status": "prova-e-respostas",
     "roles": {
       "gabarito": 1,
-      "prova": 2
+      "prova": 2,
+      "resolucao": 1
     },
     "metadata": {
       "exam": true,
@@ -2172,7 +2178,8 @@
     "files": [
       "provas/bernoulli/2026/enem/simulado-02/dia-2/nao-informada/gabarito.pdf",
       "provas/bernoulli/2026/enem/simulado-02/dia-2/nao-informada/prova.pdf",
-      "provas/bernoulli/2026/enem/simulado-02/dia-2/nao-informada/prova-variante-02-3fd7175d.pdf"
+      "provas/bernoulli/2026/enem/simulado-02/dia-2/nao-informada/prova-variante-02-3fd7175d.pdf",
+      "provas/bernoulli/2026/enem/simulado-02/dia-2/nao-informada/resolucao.pdf"
     ]
   },
   {
@@ -2180,7 +2187,8 @@
     "status": "prova-e-respostas",
     "roles": {
       "gabarito": 1,
-      "prova": 2
+      "prova": 2,
+      "resolucao": 1
     },
     "metadata": {
       "exam": true,
@@ -2199,7 +2207,8 @@
     "files": [
       "provas/bernoulli/2026/enem/simulado-03/dia-1/nao-informada/gabarito.pdf",
       "provas/bernoulli/2026/enem/simulado-03/dia-1/nao-informada/prova.pdf",
-      "provas/bernoulli/2026/enem/simulado-03/dia-1/nao-informada/prova-variante-02-8c3204ce.pdf"
+      "provas/bernoulli/2026/enem/simulado-03/dia-1/nao-informada/prova-variante-02-8c3204ce.pdf",
+      "provas/bernoulli/2026/enem/simulado-03/dia-1/nao-informada/resolucao.pdf"
     ]
   },
   {
@@ -2207,7 +2216,8 @@
     "status": "prova-e-respostas",
     "roles": {
       "gabarito": 1,
-      "prova": 2
+      "prova": 2,
+      "resolucao": 1
     },
     "metadata": {
       "exam": true,
@@ -2226,7 +2236,8 @@
     "files": [
       "provas/bernoulli/2026/enem/simulado-03/dia-2/nao-informada/gabarito.pdf",
       "provas/bernoulli/2026/enem/simulado-03/dia-2/nao-informada/prova.pdf",
-      "provas/bernoulli/2026/enem/simulado-03/dia-2/nao-informada/prova-variante-02-7fe3525a.pdf"
+      "provas/bernoulli/2026/enem/simulado-03/dia-2/nao-informada/prova-variante-02-7fe3525a.pdf",
+      "provas/bernoulli/2026/enem/simulado-03/dia-2/nao-informada/resolucao.pdf"
     ]
   },
   {

@@ -5569,30 +5569,6 @@
     }
   },
   {
-    "path": "provas/a-conferir/prova-00-2026-dia-01-b-gabarito-comentado-1c2e9b37/gabarito.pdf",
-    "sha256": "1c2e9b37a5be9ab39ab67afaadf1b49f10d0510b7baaf3607a3927120093af95",
-    "bytes": 3537267,
-    "category": "prova-identificacao-incompleta",
-    "original_names": [
-      "PROVA 00 - 2026 - DIA 01 - B - GABARITO COMENTADO.pdf"
-    ],
-    "source_occurrences": 1,
-    "exam": {
-      "exam": true,
-      "publisher": null,
-      "year": "2026",
-      "edition": 0,
-      "day": 1,
-      "color": "nao-informada",
-      "family": "regular",
-      "role": "gabarito",
-      "complete": false,
-      "warnings": [],
-      "publisher_source": "nome",
-      "target": "enem"
-    }
-  },
-  {
     "path": "provas/a-conferir/prova-00-2026-dia-02-b-gabarito-comentado-4a385796/gabarito.pdf",
     "sha256": "4a3857967be7966cabe23e06bee9e25f33d6810efe9270847018a04d2e330757",
     "bytes": 4934094,
@@ -5610,150 +5586,6 @@
       "color": "nao-informada",
       "family": "regular",
       "role": "gabarito",
-      "complete": false,
-      "warnings": [],
-      "publisher_source": "nome",
-      "target": "enem"
-    }
-  },
-  {
-    "path": "provas/a-conferir/prova-01-2026-dia-01-b-gabarito-comentado-21af065d/gabarito.pdf",
-    "sha256": "21af065d6e236a1703fb842ba9a0b45329c3f976fa9deebd453cf4a804a18804",
-    "bytes": 4930751,
-    "category": "prova-identificacao-incompleta",
-    "original_names": [
-      "PROVA 01 - 2026 - DIA 01 - B - GABARITO COMENTADO.pdf"
-    ],
-    "source_occurrences": 1,
-    "exam": {
-      "exam": true,
-      "publisher": null,
-      "year": "2026",
-      "edition": 1,
-      "day": 1,
-      "color": "nao-informada",
-      "family": "regular",
-      "role": "gabarito",
-      "complete": false,
-      "warnings": [],
-      "publisher_source": "nome",
-      "target": "enem"
-    }
-  },
-  {
-    "path": "provas/a-conferir/prova-01-2026-dia-02-b-gabarito-comentado-e211221b/gabarito.pdf",
-    "sha256": "e211221b5340a786b2bfb0a7ab3a9a1a697912e2d1d80f4108b808722fa011d1",
-    "bytes": 5985996,
-    "category": "prova-identificacao-incompleta",
-    "original_names": [
-      "PROVA 01 - 2026 - DIA 02 - B - GABARITO COMENTADO.pdf"
-    ],
-    "source_occurrences": 1,
-    "exam": {
-      "exam": true,
-      "publisher": null,
-      "year": "2026",
-      "edition": 1,
-      "day": 2,
-      "color": "nao-informada",
-      "family": "regular",
-      "role": "gabarito",
-      "complete": false,
-      "warnings": [],
-      "publisher_source": "nome",
-      "target": "enem"
-    }
-  },
-  {
-    "path": "provas/a-conferir/prova-02-2026-respostas-dia-01-b-befb3328/resolucao.pdf",
-    "sha256": "befb332870051172c3288b4752386ed519578ada47cc73babf06c8a97cc596b3",
-    "bytes": 4093059,
-    "category": "prova-identificacao-incompleta",
-    "original_names": [
-      "PROVA 02 - 2026 - RESPOSTAS DIA 01 - B.pdf"
-    ],
-    "source_occurrences": 1,
-    "exam": {
-      "exam": true,
-      "publisher": null,
-      "year": "2026",
-      "edition": 2,
-      "day": 1,
-      "color": "nao-informada",
-      "family": "regular",
-      "role": "resolucao",
-      "complete": false,
-      "warnings": [],
-      "publisher_source": "nome",
-      "target": "enem"
-    }
-  },
-  {
-    "path": "provas/a-conferir/prova-02-2026-respostas-dia-02-b-7529fe8f/resolucao.pdf",
-    "sha256": "7529fe8fafaa13eab2b693cec720773dce4492f9a32cf1e337820219fbd8096d",
-    "bytes": 8920503,
-    "category": "prova-identificacao-incompleta",
-    "original_names": [
-      "PROVA 02 - 2026 - RESPOSTAS DIA 02 - B.pdf"
-    ],
-    "source_occurrences": 1,
-    "exam": {
-      "exam": true,
-      "publisher": null,
-      "year": "2026",
-      "edition": 2,
-      "day": 2,
-      "color": "nao-informada",
-      "family": "regular",
-      "role": "resolucao",
-      "complete": false,
-      "warnings": [],
-      "publisher_source": "nome",
-      "target": "enem"
-    }
-  },
-  {
-    "path": "provas/a-conferir/prova-03-2026-respostas-dia-01-b-6659f155/resolucao.pdf",
-    "sha256": "6659f15561f89d5724fcdb7b53b2625b16cc4b9b270706948ce82d8608f975f0",
-    "bytes": 2782792,
-    "category": "prova-identificacao-incompleta",
-    "original_names": [
-      "PROVA 03 - 2026 - RESPOSTAS DIA 01 - B.pdf"
-    ],
-    "source_occurrences": 1,
-    "exam": {
-      "exam": true,
-      "publisher": null,
-      "year": "2026",
-      "edition": 3,
-      "day": 1,
-      "color": "nao-informada",
-      "family": "regular",
-      "role": "resolucao",
-      "complete": false,
-      "warnings": [],
-      "publisher_source": "nome",
-      "target": "enem"
-    }
-  },
-  {
-    "path": "provas/a-conferir/prova-03-2026-respostas-dia-02-b-e11c0b81/resolucao.pdf",
-    "sha256": "e11c0b81c0b546c41d041f42f6716b5b96e1363e6b1d7b3d48900a3e7fb9f711",
-    "bytes": 3067518,
-    "category": "prova-identificacao-incompleta",
-    "original_names": [
-      "PROVA 03 - 2026 - RESPOSTAS DIA 02 - B.pdf"
-    ],
-    "source_occurrences": 1,
-    "exam": {
-      "exam": true,
-      "publisher": null,
-      "year": "2026",
-      "edition": 3,
-      "day": 2,
-      "color": "nao-informada",
-      "family": "regular",
-      "role": "resolucao",
       "complete": false,
       "warnings": [],
       "publisher_source": "nome",
@@ -9666,6 +9498,32 @@
     }
   },
   {
+    "path": "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada/gabarito-variante-1c2e9b37.pdf",
+    "sha256": "1c2e9b37a5be9ab39ab67afaadf1b49f10d0510b7baaf3607a3927120093af95",
+    "bytes": 3537267,
+    "category": "prova-ou-resposta",
+    "original_names": [
+      "PROVA 00 - 2026 - DIA 01 - B - GABARITO COMENTADO.pdf"
+    ],
+    "source_occurrences": 1,
+    "exam": {
+      "exam": true,
+      "publisher": "bernoulli",
+      "year": "2026",
+      "edition": 0,
+      "day": 1,
+      "color": "nao-informada",
+      "family": "regular",
+      "role": "gabarito",
+      "complete": true,
+      "warnings": [],
+      "publisher_source": "texto",
+      "target": "enem",
+      "pairing_evidence": "nome-base-identico-a-uma-unica-prova-e-metadados-compativeis"
+    },
+    "review_note": "Identificação herdada de uma única prova com nome-base idêntico, após retirar somente os marcadores de gabarito/resolução; ano/edição/dia existentes não divergem."
+  },
+  {
     "path": "provas/bernoulli/2026/enem/simulado-00/dia-1/nao-informada/gabarito.pdf",
     "sha256": "38dbc135f55e89c6828bf68f50e7b7eaf553c96d070e653f86fa042682eae53d",
     "bytes": 3819060,
@@ -9912,6 +9770,32 @@
     }
   },
   {
+    "path": "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada/gabarito-variante-21af065d.pdf",
+    "sha256": "21af065d6e236a1703fb842ba9a0b45329c3f976fa9deebd453cf4a804a18804",
+    "bytes": 4930751,
+    "category": "prova-ou-resposta",
+    "original_names": [
+      "PROVA 01 - 2026 - DIA 01 - B - GABARITO COMENTADO.pdf"
+    ],
+    "source_occurrences": 1,
+    "exam": {
+      "exam": true,
+      "publisher": "bernoulli",
+      "year": "2026",
+      "edition": 1,
+      "day": 1,
+      "color": "nao-informada",
+      "family": "regular",
+      "role": "gabarito",
+      "complete": true,
+      "warnings": [],
+      "publisher_source": "texto",
+      "target": "enem",
+      "pairing_evidence": "nome-base-identico-a-uma-unica-prova-e-metadados-compativeis"
+    },
+    "review_note": "Identificação herdada de uma única prova com nome-base idêntico, após retirar somente os marcadores de gabarito/resolução; ano/edição/dia existentes não divergem."
+  },
+  {
     "path": "provas/bernoulli/2026/enem/simulado-01/dia-1/nao-informada/gabarito.pdf",
     "sha256": "35583e1caa7030aba2f44f23cd41c082f44956864b1fa3ccfe211380f110f4d5",
     "bytes": 3809795,
@@ -9984,6 +9868,32 @@
       "publisher_source": "nome",
       "target": "enem"
     }
+  },
+  {
+    "path": "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada/gabarito-variante-e211221b.pdf",
+    "sha256": "e211221b5340a786b2bfb0a7ab3a9a1a697912e2d1d80f4108b808722fa011d1",
+    "bytes": 5985996,
+    "category": "prova-ou-resposta",
+    "original_names": [
+      "PROVA 01 - 2026 - DIA 02 - B - GABARITO COMENTADO.pdf"
+    ],
+    "source_occurrences": 1,
+    "exam": {
+      "exam": true,
+      "publisher": "bernoulli",
+      "year": "2026",
+      "edition": 1,
+      "day": 2,
+      "color": "nao-informada",
+      "family": "regular",
+      "role": "gabarito",
+      "complete": true,
+      "warnings": [],
+      "publisher_source": "texto",
+      "target": "enem",
+      "pairing_evidence": "nome-base-identico-a-uma-unica-prova-e-metadados-compativeis"
+    },
+    "review_note": "Identificação herdada de uma única prova com nome-base idêntico, após retirar somente os marcadores de gabarito/resolução; ano/edição/dia existentes não divergem."
   },
   {
     "path": "provas/bernoulli/2026/enem/simulado-01/dia-2/nao-informada/gabarito.pdf",
@@ -10130,6 +10040,32 @@
     }
   },
   {
+    "path": "provas/bernoulli/2026/enem/simulado-02/dia-1/nao-informada/resolucao.pdf",
+    "sha256": "befb332870051172c3288b4752386ed519578ada47cc73babf06c8a97cc596b3",
+    "bytes": 4093059,
+    "category": "prova-ou-resposta",
+    "original_names": [
+      "PROVA 02 - 2026 - RESPOSTAS DIA 01 - B.pdf"
+    ],
+    "source_occurrences": 1,
+    "exam": {
+      "exam": true,
+      "publisher": "bernoulli",
+      "year": "2026",
+      "edition": 2,
+      "day": 1,
+      "color": "nao-informada",
+      "family": "regular",
+      "role": "resolucao",
+      "complete": true,
+      "warnings": [],
+      "publisher_source": "texto",
+      "target": "enem",
+      "pairing_evidence": "nome-base-identico-a-uma-unica-prova-e-metadados-compativeis"
+    },
+    "review_note": "Identificação herdada de uma única prova com nome-base idêntico, após retirar somente os marcadores de gabarito/resolução; ano/edição/dia existentes não divergem."
+  },
+  {
     "path": "provas/bernoulli/2026/enem/simulado-02/dia-2/nao-informada/gabarito.pdf",
     "sha256": "31766509dd3f882d163d7de21f1f55db664b4ef360b85c05c4afa026d321fa45",
     "bytes": 6715768,
@@ -10200,6 +10136,32 @@
       "publisher_source": "nome",
       "target": "enem"
     }
+  },
+  {
+    "path": "provas/bernoulli/2026/enem/simulado-02/dia-2/nao-informada/resolucao.pdf",
+    "sha256": "7529fe8fafaa13eab2b693cec720773dce4492f9a32cf1e337820219fbd8096d",
+    "bytes": 8920503,
+    "category": "prova-ou-resposta",
+    "original_names": [
+      "PROVA 02 - 2026 - RESPOSTAS DIA 02 - B.pdf"
+    ],
+    "source_occurrences": 1,
+    "exam": {
+      "exam": true,
+      "publisher": "bernoulli",
+      "year": "2026",
+      "edition": 2,
+      "day": 2,
+      "color": "nao-informada",
+      "family": "regular",
+      "role": "resolucao",
+      "complete": true,
+      "warnings": [],
+      "publisher_source": "texto",
+      "target": "enem",
+      "pairing_evidence": "nome-base-identico-a-uma-unica-prova-e-metadados-compativeis"
+    },
+    "review_note": "Identificação herdada de uma única prova com nome-base idêntico, após retirar somente os marcadores de gabarito/resolução; ano/edição/dia existentes não divergem."
   },
   {
     "path": "provas/bernoulli/2026/enem/simulado-03/dia-1/nao-informada/gabarito.pdf",
@@ -10274,6 +10236,32 @@
     }
   },
   {
+    "path": "provas/bernoulli/2026/enem/simulado-03/dia-1/nao-informada/resolucao.pdf",
+    "sha256": "6659f15561f89d5724fcdb7b53b2625b16cc4b9b270706948ce82d8608f975f0",
+    "bytes": 2782792,
+    "category": "prova-ou-resposta",
+    "original_names": [
+      "PROVA 03 - 2026 - RESPOSTAS DIA 01 - B.pdf"
+    ],
+    "source_occurrences": 1,
+    "exam": {
+      "exam": true,
+      "publisher": "bernoulli",
+      "year": "2026",
+      "edition": 3,
+      "day": 1,
+      "color": "nao-informada",
+      "family": "regular",
+      "role": "resolucao",
+      "complete": true,
+      "warnings": [],
+      "publisher_source": "texto",
+      "target": "enem",
+      "pairing_evidence": "nome-base-identico-a-uma-unica-prova-e-metadados-compativeis"
+    },
+    "review_note": "Identificação herdada de uma única prova com nome-base idêntico, após retirar somente os marcadores de gabarito/resolução; ano/edição/dia existentes não divergem."
+  },
+  {
     "path": "provas/bernoulli/2026/enem/simulado-03/dia-2/nao-informada/gabarito.pdf",
     "sha256": "740f4f9dd26daaa1a130a2575baa532e556224538fb2d2925bfc62d1432a1be0",
     "bytes": 3339374,
@@ -10344,6 +10332,32 @@
       "publisher_source": "nome",
       "target": "enem"
     }
+  },
+  {
+    "path": "provas/bernoulli/2026/enem/simulado-03/dia-2/nao-informada/resolucao.pdf",
+    "sha256": "e11c0b81c0b546c41d041f42f6716b5b96e1363e6b1d7b3d48900a3e7fb9f711",
+    "bytes": 3067518,
+    "category": "prova-ou-resposta",
+    "original_names": [
+      "PROVA 03 - 2026 - RESPOSTAS DIA 02 - B.pdf"
+    ],
+    "source_occurrences": 1,
+    "exam": {
+      "exam": true,
+      "publisher": "bernoulli",
+      "year": "2026",
+      "edition": 3,
+      "day": 2,
+      "color": "nao-informada",
+      "family": "regular",
+      "role": "resolucao",
+      "complete": true,
+      "warnings": [],
+      "publisher_source": "texto",
+      "target": "enem",
+      "pairing_evidence": "nome-base-identico-a-uma-unica-prova-e-metadados-compativeis"
+    },
+    "review_note": "Identificação herdada de uma única prova com nome-base idêntico, após retirar somente os marcadores de gabarito/resolução; ano/edição/dia existentes não divergem."
   },
   {
     "path": "provas/bernoulli/2026/enem/simulado-04/dia-1/nao-informada/gabarito.pdf",
