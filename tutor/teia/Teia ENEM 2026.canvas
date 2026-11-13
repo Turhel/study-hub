@@ -1,0 +1,762 @@
+{
+  "nodes": [
+    {
+      "id": "6e4b8a29d5aa8dbb",
+      "type": "text",
+      "text": "",
+      "x": 319,
+      "y": 1746,
+      "width": 250,
+      "height": 60
+    },
+    {
+      "id": "inicio",
+      "type": "text",
+      "x": 0,
+      "y": -400,
+      "width": 1550,
+      "height": 300,
+      "color": "6",
+      "text": "# Sua teia · ENEM 2026\n\n**19 questões de Linguagens + 11 de Humanas** · Branco 3 · Espanhol\n\nClique nos links para abrir as notas. As linhas ligam questões ao raciocínio exigido. **Conexão não é diagnóstico de dificuldade.**\n\n[[00 Comece aqui|Comece aqui]] · [[03 Evidencias/Gabaritos em conferencia|Gabaritos em conferência]]"
+    },
+    {
+      "id": "h3",
+      "type": "text",
+      "x": 0,
+      "y": 1100,
+      "width": 500,
+      "height": 200,
+      "color": "5",
+      "text": "## [[01 Habilidades/Finalidade e sustentação de argumentos|Finalidade e sustentação de argumentos]]\n\n**4 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q008",
+      "type": "text",
+      "x": 0,
+      "y": 1340,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q008|Q008]]\n\nCampanha contra a poluição plástica"
+    },
+    {
+      "id": "Q019",
+      "type": "text",
+      "x": 250,
+      "y": 1340,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q019|Q019]]\n\nFunção referencial em texto legal"
+    },
+    {
+      "id": "Q032",
+      "type": "text",
+      "x": 0,
+      "y": 1525,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q032|Q032]]\n\nEvidências da desigualdade na ciência"
+    },
+    {
+      "id": "Q034",
+      "type": "text",
+      "x": 250,
+      "y": 1525,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q034|Q034]]\n\nArgumentação sobre racismo estrutural"
+    },
+    {
+      "id": "h4",
+      "type": "text",
+      "x": 560,
+      "y": 1100,
+      "width": 500,
+      "height": 200,
+      "color": "5",
+      "text": "## [[01 Habilidades/Inferência e sentido global|Inferência e sentido global]]\n\n**6 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q001-ESP",
+      "type": "text",
+      "x": 560,
+      "y": 1340,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q001-ESP|Q001-ESP]]\n\nIdentidade hispânica nas Américas"
+    },
+    {
+      "id": "Q003-ESP",
+      "type": "text",
+      "x": 810,
+      "y": 1340,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q003-ESP|Q003-ESP]]\n\nO medo da liberdade"
+    },
+    {
+      "id": "Q010",
+      "type": "text",
+      "x": 560,
+      "y": 1525,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q010|Q010]]\n\nMulheres em Menino de engenho\n\n**Texto não lido**"
+    },
+    {
+      "id": "Q027",
+      "type": "text",
+      "x": 810,
+      "y": 1525,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q027|Q027]]\n\nMetáfora da emergência na vida conectada"
+    },
+    {
+      "id": "Q028",
+      "type": "text",
+      "x": 560,
+      "y": 1710,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q028|Q028]]\n\nDescrição poética em Herbarium"
+    },
+    {
+      "id": "Q039",
+      "type": "text",
+      "x": 810,
+      "y": 1710,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q039|Q039]]\n\nTecnologia e influência sobre decisões"
+    },
+    {
+      "id": "h5",
+      "type": "text",
+      "x": 1120,
+      "y": 1100,
+      "width": 500,
+      "height": 200,
+      "color": "4",
+      "text": "## [[01 Habilidades/Leitura de gráfico e unidades|Leitura de gráfico e unidades]]\n\n**1 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q080",
+      "type": "text",
+      "x": 1120,
+      "y": 1340,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q080|Q080]]\n\nReservas e produção de terras-raras"
+    },
+    {
+      "id": "h6",
+      "type": "text",
+      "x": 0,
+      "y": 2200,
+      "width": 500,
+      "height": 200,
+      "color": "5",
+      "text": "## [[01 Habilidades/Leitura de imagem e de obra de arte|Leitura de imagem e de obra de arte]]\n\n**2 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q017",
+      "type": "text",
+      "x": 0,
+      "y": 2440,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q017|Q017]]\n\nCartelas de remédio na arte de Iris Helena"
+    },
+    {
+      "id": "Q021",
+      "type": "text",
+      "x": 250,
+      "y": 2440,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q021|Q021]]\n\nDilúvio, de Renina Katz\n\n**Gabarito em disputa**"
+    },
+    {
+      "id": "h7",
+      "type": "text",
+      "x": 560,
+      "y": 2200,
+      "width": 500,
+      "height": 200,
+      "color": "5",
+      "text": "## [[01 Habilidades/Recursos linguísticos e seus efeitos|Recursos linguísticos e seus efeitos]]\n\n**7 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q005-ESP",
+      "type": "text",
+      "x": 560,
+      "y": 2440,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q005-ESP|Q005-ESP]]\n\nEncadeamento no microconto Palabras parcas"
+    },
+    {
+      "id": "Q011",
+      "type": "text",
+      "x": 810,
+      "y": 2440,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q011|Q011]]\n\nExpressão estética em Menino de engenho\n\n**Texto não lido**\n\n**Gabarito em disputa**"
+    },
+    {
+      "id": "Q012",
+      "type": "text",
+      "x": 560,
+      "y": 2625,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q012|Q012]]\n\nMarcas regionais em Menino de engenho\n\n**Texto não lido**"
+    },
+    {
+      "id": "Q022",
+      "type": "text",
+      "x": 810,
+      "y": 2625,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q022|Q022]]\n\nPoesia e linguagem de lei"
+    },
+    {
+      "id": "Q024",
+      "type": "text",
+      "x": 560,
+      "y": 2810,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q024|Q024]]\n\nVocabulário e cultura paraense em Dona Onete"
+    },
+    {
+      "id": "Q031",
+      "type": "text",
+      "x": 810,
+      "y": 2810,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q031|Q031]]\n\nMatabichar e variedades do português"
+    },
+    {
+      "id": "Q035",
+      "type": "text",
+      "x": 560,
+      "y": 2995,
+      "width": 235,
+      "height": 160,
+      "color": "5",
+      "text": "### [[02 Questoes/Linguagens/Q035|Q035]]\n\nGênero gramatical e representação social"
+    },
+    {
+      "id": "h8",
+      "type": "text",
+      "x": 1120,
+      "y": 2200,
+      "width": 500,
+      "height": 200,
+      "color": "4",
+      "text": "## [[01 Habilidades/Relações causais socioambientais|Relações causais socioambientais]]\n\n**2 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q067",
+      "type": "text",
+      "x": 1120,
+      "y": 2440,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q067|Q067]]\n\nErosão costeira em Atafona"
+    },
+    {
+      "id": "Q071",
+      "type": "text",
+      "x": 1370,
+      "y": 2440,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q071|Q071]]\n\nIrrigação e salinização do solo"
+    },
+    {
+      "id": "leitura",
+      "type": "text",
+      "x": 0,
+      "y": 3300,
+      "width": 780,
+      "height": 300,
+      "color": "2",
+      "text": "## [[03 Evidencias/Textos compartilhados nao lidos|Textos compartilhados não lidos]]\n\nVocê relatou não ter lido os blocos 9–13 e 46–50.\n\nNesta lista: **10, 11, 12, 46 e 47**.\n\nSeparar acesso ao texto de desconhecimento conceitual; causa ainda a investigar."
+    },
+    {
+      "id": "contagem",
+      "type": "text",
+      "x": 850,
+      "y": 3300,
+      "width": 780,
+      "height": 300,
+      "color": "2",
+      "text": "## [[03 Evidencias/Resultado provisorio|Resultado provisório]]\n\nLista com **30 erros relatados**; não fechar os acertos por subtração. Estimativas e listagem ainda não coincidem.\n\nSó três alternativas marcadas foram recebidas. Não há nota TRI nem domínio medido aqui."
+    },
+    {
+      "id": "h0",
+      "type": "text",
+      "x": -367,
+      "y": 120,
+      "width": 500,
+      "height": 200,
+      "color": "4",
+      "text": "## [[01 Habilidades/Aplicação de conceitos filosóficos|Aplicação de conceitos filosóficos]]\n\n**2 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q062",
+      "type": "text",
+      "x": -485,
+      "y": 505,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q062|Q062]]\n\nÉtica estoica e preparação para a perda"
+    },
+    {
+      "id": "Q074",
+      "type": "text",
+      "x": -235,
+      "y": 505,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q074|Q074]]\n\nMelhoramento genético e conflito moral"
+    },
+    {
+      "id": "Q086",
+      "type": "text",
+      "x": -117,
+      "y": -720,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q086|Q086]]\n\nPatrimonialismo e interesse coletivo"
+    },
+    {
+      "id": "h1",
+      "type": "text",
+      "x": -117,
+      "y": -960,
+      "width": 500,
+      "height": 200,
+      "color": "4",
+      "text": "## [[01 Habilidades/Aplicação de conceitos políticos|Aplicação de conceitos políticos]]\n\n**1 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    },
+    {
+      "id": "Q046",
+      "type": "text",
+      "x": -1440,
+      "y": 1710,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q046|Q046]]\n\nCirculação internacional de coleções naturais\n\n**Texto não lido**"
+    },
+    {
+      "id": "Q065",
+      "type": "text",
+      "x": -1440,
+      "y": 1895,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q065|Q065]]\n\nGabinete de leitura e biblioteca no século XIX"
+    },
+    {
+      "id": "Q083",
+      "type": "text",
+      "x": -1440,
+      "y": 2080,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q083|Q083]]\n\nBrazil Railway e Guerra do Contestado"
+    },
+    {
+      "id": "Q047",
+      "type": "text",
+      "x": -1190,
+      "y": 1710,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q047|Q047]]\n\nDiversidade natural e acervos coloniais\n\n**Texto não lido**\n\n**Gabarito em disputa**"
+    },
+    {
+      "id": "Q070",
+      "type": "text",
+      "x": -1190,
+      "y": 1895,
+      "width": 235,
+      "height": 160,
+      "color": "4",
+      "text": "### [[02 Questoes/Humanas/Q070|Q070]]\n\nTradições indígenas em dois contextos"
+    },
+    {
+      "id": "h2",
+      "type": "text",
+      "x": -1440,
+      "y": 1470,
+      "width": 500,
+      "height": 200,
+      "color": "4",
+      "text": "## [[01 Habilidades/Comparação de fontes e contexto|Comparação de fontes e contexto]]\n\n**5 questões conectadas**\n\nExigência do enunciado; dificuldade ainda a verificar."
+    }
+  ],
+  "edges": [
+    {
+      "id": "root-0",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h0",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q062",
+      "fromNode": "h0",
+      "fromSide": "bottom",
+      "toNode": "Q062",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q074",
+      "fromNode": "h0",
+      "fromSide": "bottom",
+      "toNode": "Q074",
+      "toSide": "top"
+    },
+    {
+      "id": "root-1",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h1",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q086",
+      "fromNode": "h1",
+      "fromSide": "bottom",
+      "toNode": "Q086",
+      "toSide": "top"
+    },
+    {
+      "id": "root-2",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h2",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q046",
+      "fromNode": "h2",
+      "fromSide": "bottom",
+      "toNode": "Q046",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q047",
+      "fromNode": "h2",
+      "fromSide": "bottom",
+      "toNode": "Q047",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q065",
+      "fromNode": "h2",
+      "fromSide": "bottom",
+      "toNode": "Q065",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q070",
+      "fromNode": "h2",
+      "fromSide": "bottom",
+      "toNode": "Q070",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q083",
+      "fromNode": "h2",
+      "fromSide": "bottom",
+      "toNode": "Q083",
+      "toSide": "top"
+    },
+    {
+      "id": "root-3",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h3",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q008",
+      "fromNode": "h3",
+      "fromSide": "bottom",
+      "toNode": "Q008",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q019",
+      "fromNode": "h3",
+      "fromSide": "bottom",
+      "toNode": "Q019",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q032",
+      "fromNode": "h3",
+      "fromSide": "bottom",
+      "toNode": "Q032",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q034",
+      "fromNode": "h3",
+      "fromSide": "bottom",
+      "toNode": "Q034",
+      "toSide": "top"
+    },
+    {
+      "id": "root-4",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h4",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q001-ESP",
+      "fromNode": "h4",
+      "fromSide": "bottom",
+      "toNode": "Q001-ESP",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q003-ESP",
+      "fromNode": "h4",
+      "fromSide": "bottom",
+      "toNode": "Q003-ESP",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q010",
+      "fromNode": "h4",
+      "fromSide": "bottom",
+      "toNode": "Q010",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q027",
+      "fromNode": "h4",
+      "fromSide": "bottom",
+      "toNode": "Q027",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q028",
+      "fromNode": "h4",
+      "fromSide": "bottom",
+      "toNode": "Q028",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q039",
+      "fromNode": "h4",
+      "fromSide": "bottom",
+      "toNode": "Q039",
+      "toSide": "top"
+    },
+    {
+      "id": "root-5",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h5",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q080",
+      "fromNode": "h5",
+      "fromSide": "bottom",
+      "toNode": "Q080",
+      "toSide": "top"
+    },
+    {
+      "id": "root-6",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h6",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q017",
+      "fromNode": "h6",
+      "fromSide": "bottom",
+      "toNode": "Q017",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q021",
+      "fromNode": "h6",
+      "fromSide": "bottom",
+      "toNode": "Q021",
+      "toSide": "top"
+    },
+    {
+      "id": "root-7",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h7",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q005-ESP",
+      "fromNode": "h7",
+      "fromSide": "bottom",
+      "toNode": "Q005-ESP",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q011",
+      "fromNode": "h7",
+      "fromSide": "bottom",
+      "toNode": "Q011",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q012",
+      "fromNode": "h7",
+      "fromSide": "bottom",
+      "toNode": "Q012",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q022",
+      "fromNode": "h7",
+      "fromSide": "bottom",
+      "toNode": "Q022",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q024",
+      "fromNode": "h7",
+      "fromSide": "bottom",
+      "toNode": "Q024",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q031",
+      "fromNode": "h7",
+      "fromSide": "bottom",
+      "toNode": "Q031",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q035",
+      "fromNode": "h7",
+      "fromSide": "bottom",
+      "toNode": "Q035",
+      "toSide": "top"
+    },
+    {
+      "id": "root-8",
+      "fromNode": "inicio",
+      "fromSide": "bottom",
+      "toNode": "h8",
+      "toSide": "top",
+      "label": "exigência a investigar"
+    },
+    {
+      "id": "e-Q067",
+      "fromNode": "h8",
+      "fromSide": "bottom",
+      "toNode": "Q067",
+      "toSide": "top"
+    },
+    {
+      "id": "e-Q071",
+      "fromNode": "h8",
+      "fromSide": "bottom",
+      "toNode": "Q071",
+      "toSide": "top"
+    },
+    {
+      "id": "nl-10",
+      "fromNode": "leitura",
+      "fromSide": "top",
+      "toNode": "Q010",
+      "toSide": "bottom",
+      "color": "2",
+      "label": "texto não lido"
+    },
+    {
+      "id": "nl-11",
+      "fromNode": "leitura",
+      "fromSide": "top",
+      "toNode": "Q011",
+      "toSide": "bottom",
+      "color": "2",
+      "label": "texto não lido"
+    },
+    {
+      "id": "nl-12",
+      "fromNode": "leitura",
+      "fromSide": "top",
+      "toNode": "Q012",
+      "toSide": "bottom",
+      "color": "2",
+      "label": "texto não lido"
+    },
+    {
+      "id": "nl-46",
+      "fromNode": "leitura",
+      "fromSide": "top",
+      "toNode": "Q046",
+      "toSide": "bottom",
+      "color": "2",
+      "label": "texto não lido"
+    },
+    {
+      "id": "nl-47",
+      "fromNode": "leitura",
+      "fromSide": "top",
+      "toNode": "Q047",
+      "toSide": "bottom",
+      "color": "2",
+      "label": "texto não lido"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "collapse-filter": false,
+  "search": "-path:dados",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": false,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:\"02 Questoes/Linguagens\"",
+      "color": {
+        "a": 1,
+        "rgb": 9346047
+      }
+    },
+    {
+      "query": "path:\"02 Questoes/Humanas\"",
+      "color": {
+        "a": 1,
+        "rgb": 7129283
+      }
+    },
+    {
+      "query": "path:\"01 Habilidades\"",
+      "color": {
+        "a": 1,
+        "rgb": 15910509
+      }
+    },
+    {
+      "query": "path:\"03 Evidencias\"",
+      "color": {
+        "a": 1,
+        "rgb": 15898489
+      }
+    },
+    {
+      "query": "path:\"04 Conceitos\"",
+      "color": {
+        "a": 1,
+        "rgb": 14395879
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.2,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.5,
+  "repelStrength": 12,
+  "linkStrength": 0.8,
+  "linkDistance": 200,
+  "scale": 0.4177202463170421,
+  "close": true
+}

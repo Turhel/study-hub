@@ -1,23 +1,25 @@
 # Onde paramos
 
-Atualizado em 12/11/2026 — configuração inicial do tutor.
+Atualizado em 13/11/2026 — triagem visual do primeiro dia do ENEM 2026.
 
 ## Situação real
 
-- Método e preferências foram registrados. Nenhuma lista de questões ou redação foi corrigida neste tutor ainda.
-- Não há dificuldades diagnosticadas nem dados para estimar desempenho por área.
+- Recebida lista de 30 questões relatadas como erradas: 19 de Linguagens e 11 de Humanas, ENEM 2026 regular, D1, branco 3, espanhol. As estimativas iniciais de acertos são inseguras e não foram consolidadas.
+- Teia criada em `teia/`, com exigências das questões, conteúdos e evidências separados. A leitura dos enunciados é triagem; não houve correção dialogada nem nova tentativa.
+- Há hipóteses a verificar nas três questões de espanhol com marcadas conhecidas. Textos 9–13 e 46–50 não lidos por declaração do aluno; não atribuir falta de conteúdo a todo o bloco.
+- Divergências extraoficiais em 11, 21 e 47; conferir também o fundamento da 32. Não consolidar resultados com base nessas referências.
 - Os dois modelos de redação foram recebidos e preservados. Seus dados e afirmações de repertório ainda precisam de verificação; não houve auditoria factual completa.
 - Nenhuma prova-alvo, data de exame ou calendário de simulados foi definido.
 
 ## Próximo passo
 
-Receber uma lista resolvida, com questões completas, alternativas marcadas e gabarito; ou selecionar a primeira lista com o aluno a partir das provas disponíveis. Referência: 18 questões. Não exigir mais configuração para começar.
+Retomar `teia/00 Comece aqui.md`. O aluno escolhe entre revisar um bloco de texto compartilhado ou discutir as três questões de espanhol. Também pode escolher outro nó da teia. Não abrir novo assunto automaticamente.
 
 ## Pendências
 
-- Primeira análise para descobrir lacunas reais.
+- Confirmar respostas oficiais e, quando pertinente, alternativas marcadas que ainda não foram informadas; verificar hipóteses em nova tentativa.
 - Verificar os repertórios do documento quando forem usados numa redação.
 
 ## Última sessão
 
-Nenhuma sessão de estudo registrada. A criação destes arquivos não conta como estudo concluído.
+[2026-11-13-01](sessoes/2026-11-13-01.md): triagem, criação da teia e instalação do Obsidian. Organização e leitura pelo tutor não contam como aprendizagem já demonstrada pelo aluno.

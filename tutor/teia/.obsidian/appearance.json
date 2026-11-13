@@ -1,0 +1,9 @@
+{
+  "theme": "obsidian",
+  "accentColor": "#6cc8c3",
+  "baseFontSize": 18,
+  "enabledCssSnippets": [
+    "estudo"
+  ],
+  "showRibbon": true
+}

@@ -1,6 +1,6 @@
 # Perfil e preferências declaradas
 
-Atualizado em 12/11/2026. Fonte: decisões do aluno nesta conversa; não é avaliação psicológica.
+Atualizado em 13/11/2026. Fonte: decisões do aluno nesta conversa; não é avaliação psicológica.
 
 - Aluno: Turhel. Objetivo: ENEM e vestibulares para Medicina. Tem experiência com graduação em Enfermagem.
 - Prefere aprender resolvendo provas e aproveitar o material offline já reunido.
@@ -10,6 +10,8 @@ Atualizado em 12/11/2026. Fonte: decisões do aluno nesta conversa; não é aval
 - Prefere redação a partir dos modelos memorizados de O Quinze e Senhora para ganhar tempo; quer adaptar o argumento ao tema.
 - Relata dificuldade de manter continuidade: às vezes estuda por poucos dias e passa uma ou duas semanas sem retomar. Já teve facilidade com provas estudando perto da data. Não deduzir diagnóstico ou capacidade futura a partir disso.
 - Gosta de conversa direta e informal, com humor, sem sermão, cobranças humilhantes ou burocracia que substitua estudar.
+- Declarou preferência visual e pediu uma teia no Obsidian para conectar questões, conceitos e habilidades. Recursos visuais devem ajudar a estudar, sem substituir as tentativas.
+- Considera resolver no papel e enviar fotos dos rascunhos, inclusive das tentativas de cálculo. Não exigir que passe tudo a limpo ou transcreva para receber ajuda.
 
 ## Ideias ainda não contratadas como obrigação
 

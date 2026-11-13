@@ -32,3 +32,7 @@ Ou:
 O Git transporta os arquivos, não o histórico privado deste chat. O tutor não roda em segundo plano. Os PDFs locais podem ser lidos offline, mas conversar com o Codex normalmente exige conexão. PDFs externos do Telegram não vêm no clone.
 
 [Como o Codex lê AGENTS.md — documentação oficial](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
+## Teia visual no Obsidian
+
+Abra a pasta [teia/](teia/) como cofre e comece por [00 Comece aqui](teia/00%20Comece%20aqui.md). O [guia do Obsidian](OBSIDIAN.md) explica o Canvas, o grafo e os limites dos diagnósticos. A primeira triagem é do ENEM 2026, aplicação regular, primeiro dia, branco 3, espanhol.
